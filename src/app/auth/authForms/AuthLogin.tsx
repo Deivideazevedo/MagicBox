@@ -14,11 +14,12 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { useState } from "react";
+import { redirect, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
+import Swal from "sweetalert2";
 
 const validationSchema = yup.object({
   username: yup.string().required("Usuário é obrigatório"),
@@ -29,10 +30,37 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const { data: session } = useSession();
   const [error, setError] = useState("");
 
-  const {
-    handleSubmit,
-    control,
-  } = useForm({
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const errorType = searchParams.get("error");
+
+    if (errorType) {
+      if (errorType === "OAuthSignin") {
+        // É aqui que a mágica acontece para o erro de conexão
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Falha na Conexão",
+          text: "Verifique sua internet e tente novamente.",
+          showConfirmButton: false,
+          timer: 4000,
+        });
+      } else if (errorType === "AccessDenied" || errorType === "Callback") {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "info",
+          title: "Autenticação cancelada",
+          showConfirmButton: false,
+          timer: 3000,
+        });
+      }
+    }
+  }, [searchParams]);
+
+  const { handleSubmit, control } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
       username: "admin",
@@ -47,7 +75,12 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       password: data.password,
     });
 
-    if (result?.error) setError(result.error);
+    console.log("result", result);
+
+    if (result?.error) {
+      setError(result.error);
+      console.log("result?.error", result?.error);
+    }
   };
 
   if (session) redirect("/");
@@ -61,7 +94,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
       {subtext}
 
-      <AuthSocialButtons title="Sign in with" />
+      <AuthSocialButtons title="Entrar com" />
+
       <Box mt={3}>
         <Divider>
           <Typography
@@ -72,15 +106,15 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             position="relative"
             px={2}
           >
-            or sign in with
+            ou entre com
           </Typography>
         </Divider>
       </Box>
 
       {error ? (
         <Box mt={3}>
-          <Alert severity="error">
-            Sign-in error: Username or Password is Wrong
+          <Alert severity="error" sx={{ alignItems: "center" }}>
+            {error}
           </Alert>
         </Box>
       ) : (

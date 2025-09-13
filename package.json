@@ -44,6 +44,7 @@
     "react-spring": "^9.7.3",
     "redux-persist": "^6.0.0",
     "simplebar-react": "^3.2.4",
+    "sweetalert2": "^11.23.0",
     "typescript": "^5.2.2",
     "yup": "^1.7.0"
   },

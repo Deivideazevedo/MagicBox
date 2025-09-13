@@ -10,9 +10,15 @@ const AuthSocialButtons = ({ title }: signInType) => {
   const handleGoogleSignIn = async () => {
     await signIn('google');
   };
+
   const handleGithubSignIn = async () => {
     await signIn('github');
   };
+
+  const handleMicrosoftSignIn = async () => {
+    await signIn('azure-ad');
+  }
+
   return (
   <>
     <Stack direction="row" justifyContent="center" spacing={2} mt={3}>
@@ -38,7 +44,8 @@ const AuthSocialButtons = ({ title }: signInType) => {
         </Box>{" "}
         Google
       </CustomSocialButton>
-      <CustomSocialButton onClick={handleGithubSignIn}>
+
+      {/* <CustomSocialButton onClick={handleGithubSignIn}>
         <Avatar
           src={"/images/svgs/git-icon.svg"}
           alt={"icon2"}
@@ -59,6 +66,29 @@ const AuthSocialButtons = ({ title }: signInType) => {
           {title}{" "}
         </Box>{" "}
         Git
+      </CustomSocialButton> */}
+
+      <CustomSocialButton onClick={handleMicrosoftSignIn}>
+        <Avatar
+          src={"/images/svgs/microsoft-icon.svg"}
+          alt={"icon2"}
+          sx={{
+            width: 26,
+            height: 26,
+            borderRadius: 0,
+            mr: 1,
+          }}
+        />
+        <Box
+          sx={{
+            display: { xs: "none", sm: "flex" },
+            whiteSpace: "nowrap",
+            mr: { sm: "3px" },
+          }}
+        >
+          {title}{" "}
+        </Box>{" "}
+        Microsoft
       </CustomSocialButton>
     </Stack>
   </>

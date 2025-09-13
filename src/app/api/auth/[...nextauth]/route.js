@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
+import AzureADProvider from "next-auth/providers/azure-ad";
 
 const handler = NextAuth({
   site: process.env.NEXTAUTH_URL || "http://localhost:3000",
@@ -13,6 +14,10 @@ const handler = NextAuth({
     GitHubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
+    }),
+    AzureADProvider({
+      clientId: process.env.AZURE_AD_CLIENT_ID,
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -27,18 +32,20 @@ const handler = NextAuth({
           credentials.password === "wise951"
         ) {
           // Return user object if credentials are valid
-          return Promise.resolve({
+          return {
             id: 1,
             name: "Admin",
             email: "admin@example.com",
-          });
+          };
         } else {
-          // Return null if credentials are invalid
-          return Promise.resolve(null);
+          throw new Error("Ops! Credenciais Inválidas. Tente novamente");
         }
       },
     }),
   ],
+  pages: {
+    signIn: '/auth/auth1/login', 
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
