@@ -75,7 +75,16 @@ const Menuitems: MenuitemsType[] = [
     id: uniqueId(),
     title: "Sample Page",
     icon: IconAperture,
-    href: "/",
+    href: "/dashboard",
+    chip: "New",
+    chipColor: "secondary",
+  },
+
+  {
+    id: uniqueId(),
+    title: "Sample Page",
+    icon: IconAperture,
+    href: "/about",
     chip: "New",
     chipColor: "secondary",
   },

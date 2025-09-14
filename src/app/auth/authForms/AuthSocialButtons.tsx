@@ -3,7 +3,7 @@ import CustomSocialButton from "@/app/components/forms/theme-elements/CustomSoci
 import { Stack } from "@mui/system";
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import { signInType } from "@/app/(DashboardLayout)/types/auth/auth";
+import { signInType } from "@/app/(Private)/types/auth/auth";
 import { signIn } from 'next-auth/react';
 
 const AuthSocialButtons = ({ title }: signInType) => {

@@ -2,7 +2,7 @@
 import React from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import RTL from "@/app/(DashboardLayout)/layout/shared/customizer/RTL";
+import RTL from "@/app/(Private)/layout/shared/customizer/RTL";
 import { ThemeSettings } from "@/utils/theme/Theme";
 import { useSelector } from 'react-redux';
 import { SessionProvider } from "next-auth/react"

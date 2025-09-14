@@ -1,5 +1,5 @@
 "use client";
-import { loginType } from "@/app/(DashboardLayout)/types/auth/auth";
+import { loginType } from "@/app/(Private)/types/auth/auth";
 import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
@@ -14,12 +14,13 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
-import { redirect, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 import Swal from "sweetalert2";
+import LoadingButton from '@mui/lab/LoadingButton'; 
 
 const validationSchema = yup.object({
   username: yup.string().required("Usuário é obrigatório"),
@@ -27,17 +28,26 @@ const validationSchema = yup.object({
 });
 
 const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
+  // --- 1. Hooks para gerenciar estado, roteamento e parâmetros ---
   const { data: session } = useSession();
-  const [error, setError] = useState("");
-
+  const [error, setError] = useState(""); // Erro do formulário de credenciais
+  const router = useRouter();
   const searchParams = useSearchParams();
 
+  // --- 2. useEffect para tratar erros de OAuth e limpar a URL ---
   useEffect(() => {
-    const errorType = searchParams.get("error");
-
+    const errorType = searchParams.get("callbackError");
     if (errorType) {
-      if (errorType === "OAuthSignin") {
-        // É aqui que a mágica acontece para o erro de conexão
+      if (errorType === "AccessDenied") {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "info",
+          title: "Autenticação cancelada",
+          showConfirmButton: false,
+          timer: 5000,
+        });
+      } else if (errorType === "NetworkError") {
         Swal.fire({
           toast: true,
           position: "top-end",
@@ -45,22 +55,20 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
           title: "Falha na Conexão",
           text: "Verifique sua internet e tente novamente.",
           showConfirmButton: false,
-          timer: 4000,
-        });
-      } else if (errorType === "AccessDenied" || errorType === "Callback") {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "info",
-          title: "Autenticação cancelada",
-          showConfirmButton: false,
-          timer: 3000,
+          timer: 5000,
         });
       }
-    }
-  }, [searchParams]);
 
-  const { handleSubmit, control } = useForm({
+      // Limpa os parâmetros da URL após exibir o toast, sem recarregar a página
+      router.replace("/auth/auth1/login", { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  const {
+    handleSubmit,
+    control,
+    formState: { isSubmitting },
+  } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
       username: "admin",
@@ -68,6 +76,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     },
   });
 
+  // --- 3. Lógica de login com credenciais e redirecionamento para callbackUrl ---
   const onSubmit = async (data: { username: string; password: string }) => {
     const result = await signIn("credentials", {
       redirect: false,
@@ -75,15 +84,23 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       password: data.password,
     });
 
-    console.log("result", result);
-
     if (result?.error) {
+      // Define o erro do formulário (ex: "Credenciais Inválidas")
       setError(result.error);
-      console.log("result?.error", result?.error);
+    } else if (result?.ok) {
+      // Se o login for bem-sucedido, redireciona para a callbackUrl
+      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      router.push(callbackUrl);
     }
   };
 
-  if (session) redirect("/");
+  // if (session) {
+  //   // Se já houver uma sessão, redireciona imediatamente
+  //   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  //   router.push(callbackUrl);
+  //   return null; // Evita renderizar o resto da página durante o redirecionamento
+  // }
+
   return (
     <>
       {title ? (
@@ -168,15 +185,16 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
           </Stack>
         </Stack>
         <Box>
-          <Button
+          <LoadingButton
             color="primary"
             variant="contained"
             size="large"
             fullWidth
             type="submit"
+            loading={isSubmitting} // <-- Use isSubmitting aqui
           >
             Sign In
-          </Button>
+          </LoadingButton>
         </Box>
       </form>
       {subtitle}

@@ -1,87 +1,106 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
+// Componentes do Material-UI
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import Icon from '@mui/material/Icon'; // Usaremos para ícones dinâmicos
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Fade from '@mui/material/Fade';
 
-// Objeto de configuração para cada tipo de erro
-const errorDetails: {
-  [key: string]: {
-    icon: string; // Nome do ícone do Material Icons
-    title: string;
-    message: string;
-    buttonText: string;
-  };
-} = {
+// Ícones SVG do Material-UI
+import AccessDeniedIcon from '@mui/icons-material/Block';
+import ConnectionErrorIcon from '@mui/icons-material/WifiOff';
+import CallbackErrorIcon from '@mui/icons-material/SyncProblem';
+import GenericErrorIcon from '@mui/icons-material/ErrorOutline';
+
+// Tipagem para as chaves de erro
+type ErrorKey = 'AccessDenied' | 'NetworkError' | 'default';
+
+// Detalhes do erro, agora com componentes de ícone JSX
+const errorDetails = {
   AccessDenied: {
-    icon: 'block',
+    icon: <AccessDeniedIcon sx={{ fontSize: '4rem' }} color="error" />,
     title: 'Acesso Negado',
-    message: 'Você cancelou o processo de autenticação ou não concedeu as permissões necessárias.',
+    message: 'Você não concedeu as permissões necessárias ou cancelou a autenticação.',
     buttonText: 'Tentar Novamente',
   },
-  OAuthSignin: {
-    icon: 'wifi_off',
+  NetworkError: {
+    icon: <ConnectionErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
     title: 'Falha na Conexão',
-    message: 'Não foi possível conectar ao provedor de login. Verifique sua conexão com a internet.',
+    message: 'Não foi possível conectar ao provedor. Verifique sua internet e tente novamente.',
     buttonText: 'Tentar Novamente',
   },
-  Callback: {
-    icon: 'sync_problem',
-    title: 'Erro no Retorno',
-    message: 'Houve um problema no retorno da autenticação. Por favor, tente novamente.',
-    buttonText: 'Tentar Novamente',
-  },
-  // Erro padrão para qualquer outro caso
   default: {
-    icon: 'error_outline',
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
     title: 'Ocorreu um Erro',
-    message: 'Um erro inesperado aconteceu durante o login. Por favor, tente novamente mais tarde.',
+    message: 'Um erro inesperado aconteceu durante o login. Por favor, tente novamente.',
     buttonText: 'Voltar para o Login',
   },
 };
 
-const CustomErrorPage = () => {
+const AuthErrorPage = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const errorCode = searchParams.get('error') || 'default';
+  const [details, setDetails] = useState(errorDetails.default);
+  const [visible, setVisible] = useState(false);
 
-  // Seleciona os detalhes do erro com base no código, ou usa o padrão
-  const details = errorDetails[errorCode] || errorDetails.default;
+  useEffect(() => {
+    // NextAuth v4 usa o parâmetro 'error' por padrão
+    const errorCode = searchParams.get('callbackError') as ErrorKey | null;
+    
+    // Define os detalhes corretos ou o padrão
+    setDetails(errorDetails[errorCode ?? 'default']);
+    setVisible(true); // Ativa a animação de Fade
+
+    // Limpa a URL para que o erro não persista no refresh
+    // O ideal é que a URL base seja a da própria página de erro
+    router.replace('/auth/error', { scroll: false });
+    
+  }, [searchParams, router]);
 
   return (
     <Box
       display="flex"
-      flexDirection="column"
-      height="100vh"
-      textAlign="center"
+      alignItems="center"
       justifyContent="center"
+      sx={{ height: '100vh', bgcolor: 'grey.100' }}
     >
-      <Container maxWidth="md">
-        <Icon style={{ fontSize: '6rem', color: '#d32f2f' }}>
-          {details.icon}
-        </Icon>
-        <Typography align="center" variant="h2" mt={2} mb={1}>
-          {details.title}
-        </Typography>
-        <Typography align="center" variant="h5" color="textSecondary" mb={4}>
-          {details.message}
-        </Typography>
-        <Button
-          color="primary"
-          variant="contained"
-          component={Link}
-          // Sempre envia o usuário de volta para a página de login para tentar de novo
-          href="/auth/auth1/login" 
-          disableElevation
-        >
-          {details.buttonText}
-        </Button>
+      <Container maxWidth="sm">
+        <Fade in={visible} timeout={500}>
+          <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
+            <Stack spacing={2} alignItems="center" textAlign="center">
+              {/* Renderiza o componente do ícone diretamente */}
+              {details.icon}
+              
+              <Typography variant="h4" component="h1" fontWeight="600">
+                {details.title}
+              </Typography>
+              
+              <Typography color="text.secondary">
+                {details.message}
+              </Typography>
+              
+              <Button
+                component={Link}
+                href="/auth/auth1/login"
+                variant="contained"
+                size="large"
+                sx={{ mt: 2 }}
+              >
+                {details.buttonText}
+              </Button>
+            </Stack>
+          </Paper>
+        </Fade>
       </Container>
     </Box>
   );
 };
 
-export default CustomErrorPage;
+export default AuthErrorPage;

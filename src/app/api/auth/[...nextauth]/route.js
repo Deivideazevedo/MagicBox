@@ -44,14 +44,26 @@ const handler = NextAuth({
     }),
   ],
   pages: {
-    signIn: '/auth/auth1/login', 
+    signIn: "/auth/auth1/login",
+    signOut: "/",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile, session, trigger }) {
       if (user) {
         token.id = user.id;
-        token.role = "admin"; // Exemplo de role
+        // token.role = "admin"; // Exemplo de role
       }
+
+      // console.log("------------------------------------");
+
+      //     console.log('token:', token);
+      //     console.log('user:', user);
+      //     console.log('account:', account);
+      //     console.log('profile:', profile);
+      //     console.log('session:', session);
+      //     console.log('trigger:', trigger);
+
+      // console.log("------------------------------------");
       return token;
     },
     async session({ session, token }) {
@@ -61,7 +73,7 @@ const handler = NextAuth({
       // Vamos adicionar os dados do token ao objeto session.user
       if (token) {
         session.user.id = token.id;
-        session.user.role = token.role;
+        // session.user.role = token.role;
       }
 
       // O frontend (via useSession) receberá este objeto session customizado.
