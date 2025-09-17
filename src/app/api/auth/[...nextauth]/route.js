@@ -26,16 +26,24 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        // Add your own authentication logic here
+        // Use environment variables for security instead of hardcoded values
+        const validUsername = process.env.ADMIN_USERNAME || "admin";
+        const validPassword = process.env.ADMIN_PASSWORD;
+        
+        if (!validPassword) {
+          console.error("ADMIN_PASSWORD environment variable is not set");
+          throw new Error("Configuração de autenticação inválida");
+        }
+
         if (
-          credentials.username === "admin" &&
-          credentials.password === "wise951"
+          credentials.username === validUsername &&
+          credentials.password === validPassword
         ) {
           // Return user object if credentials are valid
           return {
             id: 1,
-            name: "Admin",
-            email: "admin@example.com",
+            name: process.env.ADMIN_NAME || "Admin",
+            email: process.env.ADMIN_EMAIL || "admin@magicbox.com",
           };
         } else {
           throw new Error("Ops! Credenciais Inválidas. Tente novamente");

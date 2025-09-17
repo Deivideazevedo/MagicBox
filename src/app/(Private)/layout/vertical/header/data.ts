@@ -1,4 +1,5 @@
-// Notifications dropdown
+// Notifications dropdown - replaced with financial notifications
+import { ROUTES } from "@/constants/routes";
 
 interface notificationType {
   avatar: string;
@@ -9,48 +10,28 @@ interface notificationType {
 const notifications: notificationType[] = [
   {
     avatar: "/images/profile/user-10.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
+    title: "Novo lançamento registrado!",
+    subtitle: "Pagamento de R$ 250,00 processado",
   },
   {
     avatar: "/images/profile/user-2.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
+    title: "Meta financeira atingida",
+    subtitle: "Parabéns! Você economizou R$ 500 este mês",
   },
   {
     avatar: "/images/profile/user-3.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
+    title: "Conta a vencer",
+    subtitle: "Luz vence em 3 dias - R$ 185,90",
   },
   {
     avatar: "/images/profile/user-4.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
-  },
-  {
-    avatar: "/images/profile/user-5.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
-  },
-  {
-    avatar: "/images/profile/user-6.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
-  },
-  {
-    avatar: "/images/profile/user-7.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
-  },
-  {
-    avatar: "/images/profile/user-8.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
+    title: "Relatório mensal disponível",
+    subtitle: "Confira seu resumo financeiro",
   },
 ];
 
 //
-// Profile dropdown
+// Profile dropdown - using proper routes
 //
 interface ProfileType {
   href: string;
@@ -60,26 +41,26 @@ interface ProfileType {
 }
 const profile: ProfileType[] = [
   {
-    href: "/",
-    title: "My Profile",
-    subtitle: "Account Settings",
+    href: ROUTES.DASHBOARD.PERFIL,
+    title: "Meu Perfil",
+    subtitle: "Configurações da conta",
     icon: "/images/svgs/icon-account.svg",
   },
   {
-    href: "/",
-    title: "My Inbox",
-    subtitle: "Messages & Emails",
+    href: ROUTES.DASHBOARD.EXTRATO,
+    title: "Meu Extrato",
+    subtitle: "Histórico de transações",
     icon: "/images/svgs/icon-inbox.svg",
   },
   {
-    href: "/",
-    title: "My Tasks",
-    subtitle: "To-do and Daily Tasks",
+    href: ROUTES.DASHBOARD.RELATORIOS,
+    title: "Meus Relatórios",
+    subtitle: "Análises financeiras",
     icon: "/images/svgs/icon-tasks.svg",
   },
 ];
 
-// apps dropdown
+// apps dropdown - financial tools instead of generic apps
 
 interface appsLinkType {
   href: string;
@@ -90,52 +71,28 @@ interface appsLinkType {
 
 const appsLink: appsLinkType[] = [
   {
-    href: "/",
-    title: "Chat Application",
-    subtext: "New messages arrived",
+    href: ROUTES.DASHBOARD.LANCAMENTOS,
+    title: "Lançamentos",
+    subtext: "Registrar novas transações",
     avatar: "/images/svgs/icon-dd-chat.svg",
   },
   {
-    href: "/",
-    title: "eCommerce App",
-    subtext: "New stock available",
+    href: ROUTES.DASHBOARD.EXTRATO,
+    title: "Extrato Financeiro",
+    subtext: "Visualizar histórico",
     avatar: "/images/svgs/icon-dd-cart.svg",
   },
   {
-    href: "/",
-    title: "Notes App",
-    subtext: "To-do and Daily tasks",
+    href: ROUTES.DASHBOARD.CADASTROS,
+    title: "Cadastros",
+    subtext: "Gerenciar contas e categorias",
     avatar: "/images/svgs/icon-dd-invoice.svg",
   },
   {
-    href: "/",
-    title: "Calendar App",
-    subtext: "Get dates",
+    href: ROUTES.DASHBOARD.RELATORIOS,
+    title: "Relatórios",
+    subtext: "Análises e gráficos",
     avatar: "/images/svgs/icon-dd-date.svg",
-  },
-  {
-    href: "/",
-    title: "Contact Application",
-    subtext: "2 Unsaved Contacts",
-    avatar: "/images/svgs/icon-dd-mobile.svg",
-  },
-  {
-    href: "/",
-    title: "Tickets App",
-    subtext: "Submit tickets",
-    avatar: "/images/svgs/icon-dd-lifebuoy.svg",
-  },
-  {
-    href: "/",
-    title: "Email App",
-    subtext: "Get new emails",
-    avatar: "/images/svgs/icon-dd-message-box.svg",
-  },
-  {
-    href: "/",
-    title: "Blog App",
-    subtext: "added new blog",
-    avatar: "/images/svgs/icon-dd-application.svg",
   },
 ];
 
@@ -146,37 +103,25 @@ interface LinkType {
 
 const pageLinks: LinkType[] = [
   {
-    href: "/",
-    title: "Pricing Page",
+    href: ROUTES.DASHBOARD.HOME,
+    title: "Dashboard Principal",
   },
   {
-    href: "/",
-    title: "Authentication Design",
+    href: ROUTES.DASHBOARD.LANCAMENTOS,
+    title: "Novo Lançamento",
   },
   {
-    href: "/",
-    title: "Register Now",
+    href: ROUTES.DASHBOARD.EXTRATO,
+    title: "Consultar Extrato",
   },
   {
-    href: "/",
-    title: "404 Error Page",
+    href: ROUTES.DASHBOARD.RELATORIOS,
+    title: "Relatórios Financeiros",
   },
   {
-    href: "/",
-    title: "Notes App",
-  },
-  {
-    href: "/",
-    title: "User Application",
-  },
-  {
-    href: "/",
-    title: "Blog Design",
-  },
-  {
-    href: "/",
-    title: "Shopping Cart",
+    href: ROUTES.DASHBOARD.CADASTROS,
+    title: "Configurações",
   },
 ];
 
-export { notifications,  profile, pageLinks, appsLink };
+export { notifications, profile, pageLinks, appsLink };

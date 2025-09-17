@@ -1,3 +1,6 @@
 import mock from './mock';
 
-mock.onAny().passThrough();
+// Only configure mock if it's enabled
+if (mock) {
+  mock.onAny().passThrough();
+}

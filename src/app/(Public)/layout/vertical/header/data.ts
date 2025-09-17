@@ -1,4 +1,5 @@
-// Notifications dropdown
+// Public layout notifications - generic financial content
+import { ROUTES } from "@/constants/routes";
 
 interface notificationType {
   avatar: string;
@@ -9,43 +10,23 @@ interface notificationType {
 const notifications: notificationType[] = [
   {
     avatar: "/images/profile/user-10.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
+    title: "Bem-vindo ao MagicBox!",
+    subtitle: "Comece a organizar suas finanças",
   },
   {
     avatar: "/images/profile/user-2.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
+    title: "Dica Financeira",
+    subtitle: "Controle seus gastos mensais",
   },
   {
     avatar: "/images/profile/user-3.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
+    title: "Nova Funcionalidade",
+    subtitle: "Relatórios detalhados disponíveis",
   },
   {
     avatar: "/images/profile/user-4.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
-  },
-  {
-    avatar: "/images/profile/user-5.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
-  },
-  {
-    avatar: "/images/profile/user-6.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
-  },
-  {
-    avatar: "/images/profile/user-7.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
-  },
-  {
-    avatar: "/images/profile/user-8.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
+    title: "Educação Financeira",
+    subtitle: "Aprenda a economizar melhor",
   },
 ];
 
