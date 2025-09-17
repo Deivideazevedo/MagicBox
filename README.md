@@ -79,31 +79,61 @@ A arquitetura do projeto é modular e escalável, organizada da seguinte forma:
 ```
 src/
 ├── app/
-│   ├── (public)/
+│   ├── (Private)/              # Rotas protegidas (Dashboard)
+│   │   ├── cadastros/          # Gestão de categorias e contas
+│   │   │   ├── components/     # Componentes específicos
+│   │   │   └── hooks/          # Hooks customizados
+│   │   ├── dashboard/          # Página principal do dashboard
+│   │   │   ├── components/     # Componentes do dashboard
+│   │   │   └── hooks/          # Hooks do dashboard
+│   │   ├── extrato/            # Visualização de lançamentos
+│   │   │   └── components/     # Componentes do extrato
+│   │   ├── lancamentos/        # Registro de transações
+│   │   │   ├── components/     # Componentes de lançamentos
+│   │   │   └── hooks/          # Hooks de lançamentos
+│   │   ├── relatorios/         # Gráficos e análises
+│   │   │   └── components/     # Componentes de relatórios
+│   │   ├── layout/             # Layouts das rotas privadas
+│   │   │   ├── shared/         # Componentes compartilhados
+│   │   │   └── vertical/       # Layout vertical (sidebar)
+│   │   ├── layout.tsx          # Layout principal do Dashboard
+│   │   └── types/              # Tipos TypeScript
+│   ├── (Public)/               # Rotas públicas (Landing page)
+│   │   ├── about/              # Página sobre
+│   │   ├── layout/             # Layouts das rotas públicas
+│   │   │   └── vertical/       # Layout público
+│   │   ├── layout.tsx          # Layout das rotas públicas
 │   │   └── page.tsx            # Landing Page
-│   ├── dashboard/              # Rotas protegidas
-│   │   ├── cadastros/
-│   │   ├── extrato/
-│   │   ├── lancamentos/
-│   │   ├── relatorios/
-│   │   └── layout.tsx          # Layout principal do Dashboard
-│   │   └── page.tsx            # Página inicial do Dashboard
 │   ├── api/                    # Backend (Route Handlers)
-│   │   ├── auth/
-│   │   └── [module]/
-│   │       ├── GET.ts
-│   │       └── POST.ts
-│   └── layout.tsx              # Layout raiz
-├── components/                 # Componentes globais (Header, Navbar, etc.)
+│   │   ├── auth/               # Autenticação NextAuth
+│   │   ├── contas/             # API de contas
+│   │   ├── despesas/           # API de despesas
+│   │   ├── lancamentos/        # API de lançamentos
+│   │   └── users/              # API de usuários
+│   ├── auth/                   # Páginas de autenticação
+│   │   ├── auth1/login/        # Página de login
+│   │   ├── authForms/          # Formulários de auth
+│   │   └── error/              # Página de erro
+│   ├── components/             # Componentes globais do app
+│   │   ├── container/          # Container de páginas
+│   │   ├── forms/              # Componentes de formulário
+│   │   └── shared/             # Componentes compartilhados
+│   ├── global.css              # Estilos globais
+│   └── layout.tsx              # Layout raiz da aplicação
+├── components/                 # Componentes globais reutilizáveis
 ├── data/                       # Arquivos JSON para simulação de DB
-│   ├── despesas.json
-│   └── lancamentos.json
+│   ├── contas.json             # Dados de contas
+│   ├── despesas.json           # Dados de despesas
+│   ├── lancamentos.json        # Dados de lançamentos
+│   └── users.json              # Dados de usuários
 ├── lib/                        # Configurações (Redux, NextAuth)
 ├── services/                   # Lógica de API com RTK Query
-│   ├── api.ts                  # createApi
-│   └── endpoints/
-│       └── despesasApi.ts      # Endpoints injetáveis
-└── styles/                     # Estilos globais e tema
+│   └── endpoints/              # Endpoints injetáveis
+├── store/                      # Redux store e slices
+│   └── customizer/             # Configurações do customizer
+├── utils/                      # Utilitários e configurações
+│   └── theme/                  # Configurações do tema MUI
+└── middleware.ts               # Middleware de autenticação
 ```
 
 ---
