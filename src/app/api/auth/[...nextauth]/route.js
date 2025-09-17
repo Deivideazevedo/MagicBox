@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import AzureADProvider from "next-auth/providers/azure-ad";
+import { ROUTES } from "@/constants/routes";
 
 const handler = NextAuth({
   site: process.env.NEXTAUTH_URL || "http://localhost:3000",
@@ -26,10 +27,17 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        // Add your own authentication logic here
+        // For development, use environment variables or hardcoded credentials
+        // In production, this should authenticate against a real database/API
+        // TODO: Implement proper user authentication with password hashing
+        // Example: const user = await authenticateUser(credentials.username, credentials.password);
+        
+        const validUsername = process.env.DEV_ADMIN_USERNAME || "admin";
+        const validPassword = process.env.DEV_ADMIN_PASSWORD || "wise951";
+        
         if (
-          credentials.username === "admin" &&
-          credentials.password === "wise951"
+          credentials.username === validUsername &&
+          credentials.password === validPassword
         ) {
           // Return user object if credentials are valid
           return {
@@ -44,8 +52,8 @@ const handler = NextAuth({
     }),
   ],
   pages: {
-    signIn: "/auth/auth1/login",
-    signOut: "/",
+    signIn: ROUTES.AUTH.LOGIN,
+    signOut: ROUTES.HOME,
   },
   callbacks: {
     async jwt({ token, user, account, profile, session, trigger }) {

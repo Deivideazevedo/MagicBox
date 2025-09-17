@@ -3,6 +3,7 @@ import { loginType } from "@/app/(Private)/types/auth/auth";
 import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
+import { ROUTES } from "@/constants/routes";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Alert } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -20,7 +21,7 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 import Swal from "sweetalert2";
-import LoadingButton from '@mui/lab/LoadingButton'; 
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const validationSchema = yup.object({
   username: yup.string().required("Usuário é obrigatório"),
@@ -60,7 +61,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       }
 
       // Limpa os parâmetros da URL após exibir o toast, sem recarregar a página
-      router.replace("/auth/auth1/login", { scroll: false });
+      router.replace(ROUTES.AUTH.LOGIN, { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -71,8 +72,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      username: "admin",
-      password: "wise951",
+      username: process.env.NODE_ENV === "development" ? "admin" : "",
+      password: process.env.NODE_ENV === "development" ? "wise951" : "",
     },
   });
 
@@ -89,7 +90,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       setError(result.error);
     } else if (result?.ok) {
       // Se o login for bem-sucedido, redireciona para a callbackUrl
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      const callbackUrl = searchParams.get("callbackUrl") || ROUTES.DASHBOARD;
       router.push(callbackUrl);
     }
   };
@@ -141,22 +142,24 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack>
           <Box>
-            <CustomFormLabel htmlFor="username">Username</CustomFormLabel>
+            <CustomFormLabel htmlFor="username">Usuário</CustomFormLabel>
             <HookTextField
               name="username"
               control={control}
               fullWidth
               variant="outlined"
+              placeholder="Digite seu usuário"
             />
           </Box>
           <Box>
-            <CustomFormLabel htmlFor="password">Password</CustomFormLabel>
+            <CustomFormLabel htmlFor="password">Senha</CustomFormLabel>
             <HookTextField
               name="password"
               type="password"
               variant="outlined"
               control={control}
               fullWidth
+              placeholder="Digite sua senha"
             />
           </Box>
           <Stack
@@ -168,19 +171,22 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             <FormGroup>
               <FormControlLabel
                 control={<CustomCheckbox defaultChecked />}
-                label="Remeber this Device"
+                label="Lembrar deste dispositivo"
               />
             </FormGroup>
             <Typography
               component={Link}
-              href="/"
+              href={ROUTES.AUTH.FORGOT_PASSWORD}
               fontWeight="500"
               sx={{
                 textDecoration: "none",
                 color: "primary.main",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
               }}
             >
-              Forgot Password ?
+              Esqueceu a senha?
             </Typography>
           </Stack>
         </Stack>
@@ -191,9 +197,16 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             size="large"
             fullWidth
             type="submit"
-            loading={isSubmitting} // <-- Use isSubmitting aqui
+            loading={isSubmitting}
+            sx={{
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1.1rem',
+              fontWeight: 600,
+            }}
           >
-            Sign In
+            Entrar
           </LoadingButton>
         </Box>
       </form>

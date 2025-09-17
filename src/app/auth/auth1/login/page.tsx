@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { ROUTES } from '@/constants/routes';
 import PageContainer from '@/app/components/container/PageContainer';
 import Logo from '@/app/(Private)/layout/shared/logo/Logo';
 import AuthLogin from '../../authForms/AuthLogin';
@@ -10,7 +11,7 @@ import Image from 'next/image';
 
 export default function Login () {
   return(
-  <PageContainer title="Login Page" description="this is Sample page">
+  <PageContainer title="Login - MagicBox" description="Acesse sua plataforma de controle financeiro">
     <Grid container spacing={0} justifyContent="center" sx={{ height: '100vh' }}>
       <Grid
         item
@@ -22,7 +23,7 @@ export default function Login () {
           position: 'relative',
           '&:before': {
             content: '""',
-            background: 'radial-gradient(#d2f1df, #d3d7fa, #bad8f4)',
+            background: 'radial-gradient(#e3f2fd, #f3e5f5, #e0f2f1)',
             backgroundSize: '400% 400%',
             animation: 'gradient 15s ease infinite',
             position: 'absolute',
@@ -49,7 +50,9 @@ export default function Login () {
           >
             <Image
               src={"/images/backgrounds/login-bg.svg"}
-              alt="bg" width={500} height={500}
+              alt="Login background illustration" 
+              width={500} 
+              height={500}
               style={{
                 width: '100%',
                 maxWidth: '500px',
@@ -69,29 +72,32 @@ export default function Login () {
         justifyContent="center"
         alignItems="center"
       >
-        <Box p={4}>
+        <Box p={4} sx={{ width: '100%', maxWidth: 480 }}>
           <AuthLogin
-            title="Welcome to Modernize"
+            title="Bem-vindo ao MagicBox"
             subtext={
               <Typography variant="subtitle1" color="textSecondary" mb={1}>
-                Your Admin Dashboard
+                Sua Plataforma de Controle Financeiro
               </Typography>
             }
             subtitle={
               <Stack direction="row" spacing={1} mt={3}>
                 <Typography color="textSecondary" variant="h6" fontWeight="500">
-                  New to Modernize?
+                  Novo por aqui?
                 </Typography>
                 <Typography
                   component={Link}
-                  href="/auth/auth1/register"
+                  href={ROUTES.AUTH.REGISTER}
                   fontWeight="500"
                   sx={{
                     textDecoration: 'none',
                     color: 'primary.main',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
                   }}
                 >
-                  Create an account
+                  Criar uma conta
                 </Typography>
               </Stack>
             }
