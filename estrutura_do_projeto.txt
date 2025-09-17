@@ -1,0 +1,245 @@
+├── favicon.ico
+├── LICENSE
+├── next.config.mjs
+├── next-env.d.ts
+├── package.json
+├── public
+│   ├── favicon.ico
+│   └── images
+│       ├── backgrounds
+│       │   ├── errorimg.svg
+│       │   ├── login-bg.svg
+│       │   ├── maintenance2.svg
+│       │   └── unlimited-bg.png
+│       ├── breadcrumb
+│       │   └── ChatBc.png
+│       ├── flag
+│       │   ├── icon-flag-cn.svg
+│       │   ├── icon-flag-en.svg
+│       │   ├── icon-flag-fr.svg
+│       │   ├── icon-flag-sa.svg
+│       │   └── icon-flag-vn.svg
+│       ├── logos
+│       │   ├── dark-logo.svg
+│       │   ├── dark-rtl-logo.svg
+│       │   ├── light-logo-rtl.svg
+│       │   ├── light-logo.svg
+│       │   └── logoIcon.svg
+│       ├── products
+│       │   ├── empty-shopping-cart.svg
+│       │   ├── payment-complete.gif
+│       │   ├── payment.svg
+│       │   ├── s10.jpg
+│       │   ├── s11.jpg
+│       │   ├── s12.jpg
+│       │   ├── s1.jpg
+│       │   ├── s2.jpg
+│       │   ├── s3.jpg
+│       │   ├── s4.jpg
+│       │   ├── s5.jpg
+│       │   ├── s6.jpg
+│       │   ├── s7.jpg
+│       │   ├── s8.jpg
+│       │   └── s9.jpg
+│       ├── profile
+│       │   ├── user-10.jpg
+│       │   ├── user-1.jpg
+│       │   ├── user-2.jpg
+│       │   ├── user-3.jpg
+│       │   ├── user-4.jpg
+│       │   ├── user-5.jpg
+│       │   ├── user-6.jpg
+│       │   ├── user-7.jpg
+│       │   ├── user-8.jpg
+│       │   └── user-9.jpg
+│       └── svgs
+│           ├── facebook-icon.svg
+│           ├── git-icon.svg
+│           ├── google-icon.svg
+│           ├── icon-account.svg
+│           ├── icon-dd-application.svg
+│           ├── icon-dd-cart.svg
+│           ├── icon-dd-chat.svg
+│           ├── icon-dd-date.svg
+│           ├── icon-dd-invoice.svg
+│           ├── icon-dd-lifebuoy.svg
+│           ├── icon-dd-message-box.svg
+│           ├── icon-dd-mobile.svg
+│           ├── icon-inbox.svg
+│           ├── icon-tasks.svg
+│           ├── microsoft-icon.svg
+│           └── outlook-icon.svg
+├── README.md
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   ├── auth
+│   │   │   │   └── [...nextauth]
+│   │   │   │       ├── route.js
+│   │   │   │       └── users.json
+│   │   │   ├── index.ts
+│   │   │   └── mock.ts
+│   │   ├── app.tsx
+│   │   ├── auth
+│   │   │   ├── auth1
+│   │   │   │   └── login
+│   │   │   │       └── page.tsx
+│   │   │   ├── authForms
+│   │   │   │   ├── AuthLogin.tsx
+│   │   │   │   └── AuthSocialButtons.tsx
+│   │   │   └── error
+│   │   │       └── page.tsx
+│   │   ├── components
+│   │   │   ├── container
+│   │   │   │   └── PageContainer.tsx
+│   │   │   ├── custom-scroll
+│   │   │   │   └── Scrollbar.tsx
+│   │   │   ├── forms
+│   │   │   │   ├── hooksForm
+│   │   │   │   │   └── HookTextField.tsx
+│   │   │   │   └── theme-elements
+│   │   │   │       ├── CustomCheckbox.tsx
+│   │   │   │       ├── CustomFormLabel.tsx
+│   │   │   │       ├── CustomSocialButton.tsx
+│   │   │   │       └── CustomTextField.tsx
+│   │   │   └── shared
+│   │   │       ├── DashboardCard.tsx
+│   │   │       └── ScrollToTop.tsx
+│   │   ├── global.css
+│   │   ├── layout.tsx
+│   │   ├── loading.tsx
+│   │   ├── not-found.tsx
+│   │   ├── (Private)
+│   │   │   ├── dashboard
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout
+│   │   │   │   ├── horizontal
+│   │   │   │   │   ├── header
+│   │   │   │   │   │   └── Header.tsx
+│   │   │   │   │   └── navbar
+│   │   │   │   │       ├── Menudata.ts
+│   │   │   │   │       ├── NavCollapse
+│   │   │   │   │       │   └── NavCollapse.tsx
+│   │   │   │   │       ├── Navigation.tsx
+│   │   │   │   │       ├── NavItem
+│   │   │   │   │       │   └── NavItem.tsx
+│   │   │   │   │       └── NavListing
+│   │   │   │   │           └── NavListing.tsx
+│   │   │   │   ├── shared
+│   │   │   │   │   ├── breadcrumb
+│   │   │   │   │   │   └── Breadcrumb.tsx
+│   │   │   │   │   ├── customizer
+│   │   │   │   │   │   ├── Customizer.tsx
+│   │   │   │   │   │   ├── RTL.tsx
+│   │   │   │   │   │   └── typings.d.ts
+│   │   │   │   │   ├── logo
+│   │   │   │   │   │   └── Logo.tsx
+│   │   │   │   │   └── welcome
+│   │   │   │   │       └── Welcome.tsx
+│   │   │   │   └── vertical
+│   │   │   │       ├── header
+│   │   │   │       │   ├── AppLinks.tsx
+│   │   │   │       │   ├── data.ts
+│   │   │   │       │   ├── Header.tsx
+│   │   │   │       │   ├── MobileRightSidebar.tsx
+│   │   │   │       │   ├── Navigation.tsx
+│   │   │   │       │   ├── Notification.tsx
+│   │   │   │       │   ├── Profile.tsx
+│   │   │   │       │   ├── QuickLinks.tsx
+│   │   │   │       │   └── Search.tsx
+│   │   │   │       └── sidebar
+│   │   │   │           ├── MenuItems.ts
+│   │   │   │           ├── module-name.d.ts
+│   │   │   │           ├── NavCollapse
+│   │   │   │           │   └── index.tsx
+│   │   │   │           ├── NavGroup
+│   │   │   │           │   └── NavGroup.tsx
+│   │   │   │           ├── NavItem
+│   │   │   │           │   └── index.tsx
+│   │   │   │           ├── SidebarItems.tsx
+│   │   │   │           ├── SidebarProfile
+│   │   │   │           │   └── Profile.tsx
+│   │   │   │           └── Sidebar.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── loading.tsx
+│   │   │   └── types
+│   │   │       ├── auth
+│   │   │       │   └── auth.ts
+│   │   │       └── layout
+│   │   │           └── sidebar.ts
+│   │   └── (Public)
+│   │       ├── about
+│   │       │   └── page.tsx
+│   │       ├── layout
+│   │       │   ├── horizontal
+│   │       │   │   ├── header
+│   │       │   │   │   └── Header.tsx
+│   │       │   │   └── navbar
+│   │       │   │       ├── Menudata.ts
+│   │       │   │       ├── NavCollapse
+│   │       │   │       │   └── NavCollapse.tsx
+│   │       │   │       ├── Navigation.tsx
+│   │       │   │       ├── NavItem
+│   │       │   │       │   └── NavItem.tsx
+│   │       │   │       └── NavListing
+│   │       │   │           └── NavListing.tsx
+│   │       │   ├── shared
+│   │       │   │   ├── breadcrumb
+│   │       │   │   │   └── Breadcrumb.tsx
+│   │       │   │   ├── customizer
+│   │       │   │   │   ├── Customizer.tsx
+│   │       │   │   │   ├── RTL.tsx
+│   │       │   │   │   └── typings.d.ts
+│   │       │   │   ├── logo
+│   │       │   │   │   └── Logo.tsx
+│   │       │   │   └── welcome
+│   │       │   │       └── Welcome.tsx
+│   │       │   └── vertical
+│   │       │       ├── header
+│   │       │       │   ├── AppLinks.tsx
+│   │       │       │   ├── data.ts
+│   │       │       │   ├── Header.tsx
+│   │       │       │   ├── MobileRightSidebar.tsx
+│   │       │       │   ├── Navigation.tsx
+│   │       │       │   ├── Notification.tsx
+│   │       │       │   ├── Profile.tsx
+│   │       │       │   ├── QuickLinks.tsx
+│   │       │       │   └── Search.tsx
+│   │       │       └── sidebar
+│   │       │           ├── MenuItems.ts
+│   │       │           ├── module-name.d.ts
+│   │       │           ├── NavCollapse
+│   │       │           │   └── index.tsx
+│   │       │           ├── NavGroup
+│   │       │           │   └── NavGroup.tsx
+│   │       │           ├── NavItem
+│   │       │           │   └── index.tsx
+│   │       │           ├── SidebarItems.tsx
+│   │       │           ├── SidebarProfile
+│   │       │           │   └── Profile.tsx
+│   │       │           └── Sidebar.tsx
+│   │       ├── layout.tsx
+│   │       ├── loading.tsx
+│   │       └── page.tsx
+│   ├── middleware.ts
+│   ├── store
+│   │   ├── customizer
+│   │   │   └── CustomizerSlice.tsx
+│   │   ├── hooks.ts
+│   │   ├── providers.tsx
+│   │   └── store.ts
+│   └── utils
+│       ├── axios.js
+│       ├── theme
+│       │   ├── Components.tsx
+│       │   ├── DarkThemeColors.tsx
+│       │   ├── DefaultColors.tsx
+│       │   ├── EmotionCache.tsx
+│       │   ├── LightThemeColors.tsx
+│       │   ├── Shadows.tsx
+│       │   ├── ThemeColors.tsx
+│       │   ├── Theme.tsx
+│       │   └── Typography.tsx
+│       └── theme.ts
+├── tsconfig.json
+└── yarn.lock

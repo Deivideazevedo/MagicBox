@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1",
+    "username": "admin",
+    "email": "admin@magicbox.com",
+    "password": "wise951",
+    "name": "Administrador",
+    "role": "admin",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  }
+]
