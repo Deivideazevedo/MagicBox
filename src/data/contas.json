@@ -1,0 +1,90 @@
+[
+  {
+    "id": "1",
+    "despesaId": "1",
+    "nome": "Supermercado",
+    "valorEstimado": 800,
+    "diaVencimento": 15,
+    "status": false,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-09-17T09:22:26.372Z"
+  },
+  {
+    "id": "2",
+    "despesaId": "1",
+    "nome": "Restaurante",
+    "valorEstimado": 300,
+    "diaVencimento": 30,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "despesaId": "2",
+    "nome": "Combustível",
+    "valorEstimado": 400,
+    "diaVencimento": 5,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "4",
+    "despesaId": "2",
+    "nome": "Uber",
+    "valorEstimado": 200,
+    "diaVencimento": 25,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "5",
+    "despesaId": "3",
+    "nome": "Aluguel",
+    "valorEstimado": 1200,
+    "diaVencimento": 10,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "6",
+    "despesaId": "3",
+    "nome": "Condomínio",
+    "valorEstimado": 350,
+    "diaVencimento": 15,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "7",
+    "despesaId": "4",
+    "nome": "Plano de Saúde",
+    "valorEstimado": 450,
+    "diaVencimento": 20,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  },
+  {
+    "id": "8",
+    "despesaId": "5",
+    "nome": "Cinema",
+    "valorEstimado": 100,
+    "diaVencimento": null,
+    "status": true,
+    "userId": "1",
+    "createdAt": "2025-01-01T10:00:00.000Z",
+    "updatedAt": "2025-01-01T10:00:00.000Z"
+  }
+]
