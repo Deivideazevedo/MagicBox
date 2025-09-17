@@ -8,15 +8,12 @@ import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { styled } from '@mui/material/styles';
-import { IconMenu2, IconMoon, IconSun } from '@tabler/icons-react';
+import { IconMenu2 } from '@tabler/icons-react';
 import { Button, Container, Divider, Drawer, List, ListItemButton, ListItemText, Typography, useTheme } from '@mui/material';
 import Link from 'next/link';
 import PublicSearch from './Search';
 import { useSession } from 'next-auth/react';
 import Profile from './Profile';
-import { useSelector, useDispatch } from '@/store/hooks';
-import { AppState } from '@/store/store';
-import { setDarkMode } from '@/store/customizer/CustomizerSlice';
 
 // Links de navegação para a área pública
 const publicNavLinks = [
@@ -28,8 +25,6 @@ const publicNavLinks = [
 
 const PublicHeader = () => {
   const theme = useTheme();
-  const dispatch = useDispatch();
-  const customizer = useSelector((state: AppState) => state.customizer);
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
   const lgDown = useMediaQuery((theme: any) => theme.breakpoints.down('lg'));
   
@@ -99,15 +94,6 @@ const PublicHeader = () => {
           {/* Ações da Direita (Busca e Autenticação) */}
           <Stack spacing={1} direction="row" alignItems="center">
             <PublicSearch />
-            
-            {/* Toggle de Tema */}
-            <IconButton
-              color="inherit"
-              onClick={() => dispatch(setDarkMode(customizer.activeMode === 'dark' ? 'light' : 'dark'))}
-              sx={{ mx: 1 }}
-            >
-              {customizer.activeMode === 'dark' ? <IconSun size="20" /> : <IconMoon size="20" />}
-            </IconButton>
             
             {status === 'authenticated' ? (
               <Profile />

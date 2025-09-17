@@ -34,11 +34,9 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- 2. useEffect para tratar erros de OAuth e mensagens de sucesso ---
+  // --- 2. useEffect para tratar erros de OAuth e limpar a URL ---
   useEffect(() => {
     const errorType = searchParams.get("callbackError");
-    const successMessage = searchParams.get("message");
-    
     if (errorType) {
       if (errorType === "AccessDenied") {
         Swal.fire({
@@ -61,22 +59,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
         });
       }
 
-      // Limpa os parâmetros da URL após exibir o toast
-      router.replace("/auth/auth1/login", { scroll: false });
-    }
-
-    if (successMessage) {
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: "Sucesso!",
-        text: successMessage,
-        showConfirmButton: false,
-        timer: 6000,
-      });
-
-      // Limpa a mensagem da URL
+      // Limpa os parâmetros da URL após exibir o toast, sem recarregar a página
       router.replace("/auth/auth1/login", { scroll: false });
     }
   }, [searchParams, router]);
@@ -156,47 +139,36 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={2}>
+        <Stack>
           <Box>
-            <CustomFormLabel htmlFor="username" sx={{ textAlign: 'left', mb: 0.5 }}>
-              Username
-            </CustomFormLabel>
+            <CustomFormLabel htmlFor="username">Username</CustomFormLabel>
             <HookTextField
               name="username"
               control={control}
               fullWidth
               variant="outlined"
-              size="medium"
             />
           </Box>
           <Box>
-            <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.5 }}>
-              Password
-            </CustomFormLabel>
+            <CustomFormLabel htmlFor="password">Password</CustomFormLabel>
             <HookTextField
               name="password"
               type="password"
               variant="outlined"
               control={control}
               fullWidth
-              size="medium"
             />
           </Box>
           <Stack
             justifyContent="space-between"
             direction="row"
             alignItems="center"
-            sx={{ mt: 1, mb: 2 }}
+            my={2}
           >
             <FormGroup>
               <FormControlLabel
                 control={<CustomCheckbox defaultChecked />}
-                label="Remember this Device"
-                sx={{ 
-                  '& .MuiFormControlLabel-label': { 
-                    fontSize: '0.875rem' 
-                  }
-                }}
+                label="Remeber this Device"
               />
             </FormGroup>
             <Typography
@@ -206,28 +178,20 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
               sx={{
                 textDecoration: "none",
                 color: "primary.main",
-                fontSize: '0.875rem',
               }}
             >
-              Forgot Password?
+              Forgot Password ?
             </Typography>
           </Stack>
         </Stack>
-        <Box sx={{ mt: 3 }}>
+        <Box>
           <LoadingButton
             color="primary"
             variant="contained"
             size="large"
             fullWidth
             type="submit"
-            loading={isSubmitting}
-            sx={{ 
-              py: 1.5,
-              borderRadius: 2,
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 600,
-            }}
+            loading={isSubmitting} // <-- Use isSubmitting aqui
           >
             Sign In
           </LoadingButton>

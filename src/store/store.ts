@@ -3,7 +3,6 @@ import { combineReducers } from "redux";
 import { persistReducer, persistStore } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import CustomizerReducer from "./customizer/CustomizerSlice";
-import { api } from "../services/api";
 
 
 const persistConfig = {
@@ -15,22 +14,14 @@ const persistConfig = {
 export const store = configureStore({
   reducer: {
     customizer: persistReducer<any>(persistConfig, CustomizerReducer),
-    [api.reducerPath]: api.reducer,
   },
   devTools: process.env.NODE_ENV !== "production",
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({ 
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      }, 
-      immutableCheck: false 
-    })
-    .concat(api.middleware),
+    getDefaultMiddleware({ serializableCheck: false, immutableCheck: false }),
 });
 
 const rootReducer = combineReducers({
  customizer: CustomizerReducer,
- [api.reducerPath]: api.reducer,
 });
 
 export const persistor = persistStore(store);

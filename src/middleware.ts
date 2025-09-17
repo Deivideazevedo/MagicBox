@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
 
   // --- 1. Definição de Rotas ---
   const publicRoutes = ["/", "/about"];
-  const authRoutes = ["/auth/auth1/login", "/auth/error", "/auth/auth1/register"];
+  const authRoutes = ["/auth/auth1/login", "/auth/error"];
   const publicOrAuthRoutes = [...publicRoutes, ...authRoutes];
 
   // --- 2. Verificação de Sessão ---
