@@ -11,7 +11,7 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Despesas', 'Contas', 'Lancamentos', 'Dashboard'],
+  tagTypes: ['Despesas', 'Contas', 'Lancamentos', 'Dashboard', 'Receita', 'FonteRenda'],
   endpoints: () => ({}), // Endpoints serão injetados nos arquivos de serviço específicos
 });
 

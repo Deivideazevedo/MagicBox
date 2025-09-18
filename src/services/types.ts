@@ -8,6 +8,14 @@ export interface Despesa {
   updatedAt: string;
 }
 
+export interface Receita {
+  id: string;
+  nome: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Conta {
   id: string;
   despesaId: string;
@@ -20,11 +28,25 @@ export interface Conta {
   updatedAt: string;
 }
 
+export interface FonteRenda {
+  id: string;
+  receitaId: string;
+  nome: string;
+  valorEstimado?: number;
+  diaRecebimento?: number; // 1-31
+  status: boolean; // true = ativo, false = inativo
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Lancamento {
   id: string;
-  despesaId: string;
-  contaId: string;
-  tipo: 'pagamento' | 'agendamento';
+  despesaId?: string;
+  contaId?: string;
+  receitaId?: string;
+  fonteRendaId?: string;
+  tipo: 'pagamento' | 'agendamento' | 'receita';
   valor: number;
   data: string; // Data do pagamento ou início do agendamento
   descricao?: string;
@@ -41,6 +63,10 @@ export interface CreateDespesaDto {
   nome: string;
 }
 
+export interface CreateReceitaDto {
+  nome: string;
+}
+
 export interface CreateContaDto {
   despesaId: string;
   nome: string;
@@ -49,10 +75,20 @@ export interface CreateContaDto {
   status: boolean;
 }
 
+export interface CreateFonteRendaDto {
+  receitaId: string;
+  nome: string;
+  valorEstimado?: number;
+  diaRecebimento?: number;
+  status: boolean;
+}
+
 export interface CreateLancamentoDto {
-  despesaId: string;
-  contaId: string;
-  tipo: 'pagamento' | 'agendamento';
+  despesaId?: string;
+  contaId?: string;
+  receitaId?: string;
+  fonteRendaId?: string;
+  tipo: 'pagamento' | 'agendamento' | 'receita';
   valor: number;
   data: string;
   descricao?: string;
@@ -60,7 +96,21 @@ export interface CreateLancamentoDto {
 }
 
 // DTOs para atualização
+export interface UpdateDespesaDto {
+  id: string;
+  nome?: string;
+}
+
+export interface UpdateReceitaDto {
+  id: string;
+  nome?: string;
+}
+
 export interface UpdateContaDto extends Partial<CreateContaDto> {
+  id: string;
+}
+
+export interface UpdateFonteRendaDto extends Partial<CreateFonteRendaDto> {
   id: string;
 }
 

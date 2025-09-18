@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
     const dataFim = searchParams.get("dataFim");
     const despesaId = searchParams.get("despesaId");
     const contaId = searchParams.get("contaId");
+    const receitaId = searchParams.get("receitaId");
+    const fonteRendaId = searchParams.get("fonteRendaId");
+    const tipo = searchParams.get("tipo");
     const status = searchParams.get("status");
 
     const lancamentos = readLancamentos();
@@ -53,6 +56,18 @@ export async function GET(request: NextRequest) {
     
     if (contaId) {
       userLancamentos = userLancamentos.filter((lancamento: any) => lancamento.contaId === contaId);
+    }
+    
+    if (receitaId) {
+      userLancamentos = userLancamentos.filter((lancamento: any) => lancamento.receitaId === receitaId);
+    }
+    
+    if (fonteRendaId) {
+      userLancamentos = userLancamentos.filter((lancamento: any) => lancamento.fonteRendaId === fonteRendaId);
+    }
+    
+    if (tipo && tipo !== "todos") {
+      userLancamentos = userLancamentos.filter((lancamento: any) => lancamento.tipo === tipo);
     }
     
     if (status && status !== "todos") {
@@ -75,38 +90,68 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tipo, despesaId, contaId, valor, data, descricao, parcelas } = body;
+    const { tipo, despesaId, contaId, receitaId, fonteRendaId, valor, data, descricao, parcelas } = body;
 
-    if (!despesaId || !contaId || !valor || !data) {
+    // Validação: deve ter ou (despesaId + contaId) ou (receitaId + fonteRendaId)
+    const temDespesa = despesaId && contaId;
+    const temReceita = receitaId && fonteRendaId;
+    
+    if (!temDespesa && !temReceita) {
       return NextResponse.json({ 
-        error: "Despesa, conta, valor e data são obrigatórios" 
+        error: "Informe despesa e conta OU receita e fonte de renda" 
+      }, { status: 400 });
+    }
+    
+    if (temDespesa && temReceita) {
+      return NextResponse.json({ 
+        error: "Informe apenas despesa/conta OU receita/fonte de renda, não ambos" 
+      }, { status: 400 });
+    }
+
+    if (!valor || !data) {
+      return NextResponse.json({ 
+        error: "Valor e data são obrigatórios" 
       }, { status: 400 });
     }
 
     const lancamentos = readLancamentos();
     const novosLancamentos: any[] = [];
     
-    if (tipo === "pagamento") {
+    if (tipo === "pagamento" || tipo === "receita") {
       // Criar um único lançamento
-      const novoLancamento = {
+      const novoLancamento: any = {
         id: randomUUID(),
-        despesaId,
-        contaId,
         tipo,
         valor,
         data,
         descricao: descricao || null,
         parcelas: null,
-        valorPago: valor, // Para pagamentos, considera-se já pago
-        status: "pago",
+        valorPago: valor, // Para pagamentos e receitas, considera-se já efetivado
+        status: "pago", // Unifica status para ambos os tipos
         userId: session.user.id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
+      // Adicionar campos específicos baseado no tipo
+      if (tipo === "pagamento") {
+        novoLancamento.despesaId = despesaId;
+        novoLancamento.contaId = contaId;
+      } else {
+        novoLancamento.receitaId = receitaId;
+        novoLancamento.fonteRendaId = fonteRendaId;
+      }
+      
       novosLancamentos.push(novoLancamento);
       
     } else if (tipo === "agendamento") {
+      // Agendamentos só são válidos para despesas/contas
+      if (!temDespesa) {
+        return NextResponse.json({ 
+          error: "Agendamentos só são válidos para despesas/contas" 
+        }, { status: 400 });
+      }
+      
       // Criar múltiplos lançamentos (um para cada parcela)
       if (!parcelas || parcelas < 1) {
         return NextResponse.json({ 

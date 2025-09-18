@@ -79,30 +79,46 @@ A arquitetura do projeto é modular e escalável, organizada da seguinte forma:
 ```
 src/
 ├── app/
-│   ├── (public)/
-│   │   └── page.tsx            # Landing Page
-│   ├── dashboard/              # Rotas protegidas
-│   │   ├── cadastros/
-│   │   ├── extrato/
-│   │   ├── lancamentos/
-│   │   ├── relatorios/
-│   │   └── layout.tsx          # Layout principal do Dashboard
-│   │   └── page.tsx            # Página inicial do Dashboard
+│   ├── (Public)/               # Rotas públicas (landing page, about)
+│   ├── (Private)/dashboard/    # Rotas protegidas do dashboard
+│   │   ├── cadastros/          # Gestão de despesas e contas
+│   │   │   ├── components/     # Components específicos de cadastros
+│   │   │   ├── hooks/          # Hooks de cadastros (useDespesas, useContas)
+│   │   ├── extrato/            # Visualização de lançamentos
+│   │   │   ├── components/     # Components de extrato
+│   │   │   ├── hooks/          # Hooks de extrato
+│   │   ├── lancamentos/        # Registro de transações
+│   │   │   ├── components/     # Components de lançamentos
+│   │   │   ├── hooks/          # Hooks de lançamentos
+│   │   ├── relatorios/         # Gráficos e análises
+│   │   │   ├── components/     # Components de relatórios
+│   │   │   ├── hooks/          # Hooks de relatórios
+│   │   ├── layout/             # Layouts do dashboard
+│   │   ├── types/              # Tipos do dashboard
 │   ├── api/                    # Backend (Route Handlers)
 │   │   ├── auth/
-│   │   └── [module]/
-│   │       ├── GET.ts
-│   │       └── POST.ts
-│   └── layout.tsx              # Layout raiz
-├── components/                 # Componentes globais (Header, Navbar, etc.)
+│   │   ├── contas/
+│   │   ├── despesas/
+│   │   ├── lancamentos/
+│   │   ├── users/
+│   ├── components/             # Componentes globais reutilizáveis
+├── components/                 # Componentes globais compartilhados
 ├── data/                       # Arquivos JSON para simulação de DB
+│   ├── contas.json
 │   ├── despesas.json
-│   └── lancamentos.json
+│   ├── lancamentos.json
+│   ├── users.json
 ├── lib/                        # Configurações (Redux, NextAuth)
-├── services/                   # Lógica de API com RTK Query
-│   ├── api.ts                  # createApi
-│   └── endpoints/
-│       └── despesasApi.ts      # Endpoints injetáveis
+├── services/                   # RTK Query endpoints
+│   ├── api.ts
+│   ├── despesaService.ts
+│   ├── types.ts
+│   ├── endpoints/
+│   │   ├── contasApi.ts
+│   │   ├── despesasApi.ts
+│   │   ├── lancamentosApi.ts
+├── store/                      # Redux store, providers, customizer
+├── utils/                      # Utilitários globais
 └── styles/                     # Estilos globais e tema
 ```
 
