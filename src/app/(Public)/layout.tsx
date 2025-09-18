@@ -13,14 +13,14 @@ const MainWrapper = styled("div")(() => ({
   width: "100%",
 }));
 
-const PageWrapper = styled("div")(({ theme }) => ({
+const PageWrapper = styled("div")(() => ({
   display: "flex",
   flexGrow: 1,
   paddingBottom: "60px",
   flexDirection: "column",
   zIndex: 1,
   width: "100%",
-  backgroundColor: theme.palette.background.default,
+  backgroundColor: "transparent",
 }));
 
 export default function PublicLayout({
