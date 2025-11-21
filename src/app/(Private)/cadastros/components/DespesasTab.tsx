@@ -1,42 +1,42 @@
 "use client";
 
-import { useState } from "react";
 import {
+  Alert,
   Box,
-  Grid,
+  Button,
   Card,
   CardContent,
-  Typography,
-  TextField,
-  Button,
-  Alert,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  InputAdornment,
   List,
   ListItem,
-  ListItemText,
   ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Fab,
-  Chip,
+  ListItemText,
   Stack,
-  Divider,
-  InputAdornment,
+  TextField,
+  Typography
 } from "@mui/material";
-import { 
-  IconPlus, 
-  IconEdit, 
-  IconTrash, 
+import {
   IconCategory,
-  IconSearch,
+  IconEdit,
+  IconPlus,
+  IconTrash,
   IconX
 } from "@tabler/icons-react";
+import { useRef } from "react";
 import { useDespesas } from "../hooks/useDespesas";
 
 export default function DespesasTab() {
+  const formRef = useRef<HTMLDivElement>(null);
+  
   const {
     despesas,
     isLoading,
@@ -56,6 +56,22 @@ export default function DespesasTab() {
     handleDeleteCancel,
     deleteDialog
   } = useDespesas();
+
+  const scrollToForm = () => {
+    if (formRef.current) {
+      const elementPosition = formRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 200; // 120px de offset do topo
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleEditWithScroll = (despesa: any) => {
+    handleEdit(despesa, scrollToForm);
+  };
 
   if (isLoading) {
     return (
@@ -79,6 +95,7 @@ export default function DespesasTab() {
         {/* Formulário de Cadastro */}
         <Grid item xs={12} md={4}>
           <Card 
+            ref={formRef}
             elevation={2}
             sx={{ 
               borderRadius: 3,
@@ -237,7 +254,7 @@ export default function DespesasTab() {
                           <Stack direction="row" spacing={1}>
                             <IconButton
                               size="small"
-                              onClick={() => handleEdit(despesa)}
+                              onClick={() => handleEditWithScroll(despesa)}
                               sx={{ 
                                 color: 'primary.main',
                                 '&:hover': { backgroundColor: 'primary.light' }

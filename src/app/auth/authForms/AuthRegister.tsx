@@ -1,5 +1,6 @@
 "use client";
 import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
+import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -177,10 +178,9 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
             <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.5 }}>
               Senha
             </CustomFormLabel>
-            <HookTextField
+            <HookPasswordField
               id="password"
               name="password"
-              type="password"
               control={control}
               variant="outlined"
               fullWidth
@@ -195,10 +195,9 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
             <CustomFormLabel htmlFor="confirmPassword" sx={{ textAlign: 'left', mb: 0.5 }}>
               Confirmar Senha
             </CustomFormLabel>
-            <HookTextField
+            <HookPasswordField
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               control={control}
               variant="outlined"
               fullWidth

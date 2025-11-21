@@ -57,7 +57,7 @@ export default function CadastrosPage() {
         </Typography>
       </Box>
 
-      <Paper elevation={2} sx={{ borderRadius: 3 }}>
+      <Paper elevation={1} sx={{ borderRadius: 1 }}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
             value={currentTab}

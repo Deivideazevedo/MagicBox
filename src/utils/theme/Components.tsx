@@ -145,39 +145,39 @@ const components: any = (theme: Theme) => {
           },
         },
         colorPrimary: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.primary.main,
-            color: 'white',
+            color: "white",
           },
         },
         colorSecondary: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.secondary.main,
-            color: 'white',
+            color: "white",
           },
         },
         colorSuccess: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.success.main,
-            color: 'white',
+            color: "white",
           },
         },
         colorError: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.error.main,
-            color: 'white',
+            color: "white",
           },
         },
         colorWarning: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.warning.main,
-            color: 'white',
+            color: "white",
           },
         },
         colorInfo: {
-          '&:hover': {
+          "&:hover": {
             backgroundColor: theme.palette.info.main,
-            color: 'white',
+            color: "white",
           },
         },
       },
@@ -187,7 +187,6 @@ const components: any = (theme: Theme) => {
         root: {
           textTransform: "none",
           boxShadow: "none",
-          
         },
         text: {
           padding: "5px 15px",
@@ -418,7 +417,23 @@ const components: any = (theme: Theme) => {
                 : theme.palette.grey[300],
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: theme.palette.grey[300],
+            borderColor: theme.palette.grey[400],
+          },
+          // 🔹 Cor de fundo quando o campo está desabilitado
+          "&.Mui-disabled": {
+            backgroundColor: theme.palette.grey[100],
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: theme.palette.primary.main,
+          },
+          // 🔹 Cor padrão dos ícones no InputAdornment (não focado)
+          "& .MuiInputAdornment-root svg": {
+            color: theme.palette.grey[500],
+            transition: "color 0.15s ease-in-out",
+          },
+          // 🔹 Muda a cor dos ícones no InputAdornment quando focado
+          "&.Mui-focused .MuiInputAdornment-root svg": {
+            color: theme.palette.primary.main,
           },
         },
         input: {
@@ -441,6 +456,21 @@ const components: any = (theme: Theme) => {
       styleOverrides: {
         paper: {
           borderColor: `${theme.palette.divider}`,
+        },
+      },
+    },
+    MuiAutocomplete: {
+      styleOverrides: {
+        root: {
+          "& .MuiOutlinedInput-root": {
+            height: "44px", // Altura padrão do TextField para consistência
+          },
+        },
+        popupIndicator: {
+          // color: theme.palette.grey[500],
+        },
+        clearIndicator: {
+          // color: theme.palette.grey[500],
         },
       },
     },

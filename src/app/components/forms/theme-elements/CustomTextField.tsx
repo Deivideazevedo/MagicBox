@@ -1,94 +1,53 @@
-import React, { useState, useEffect, forwardRef } from "react"; // 1. Importe forwardRef
+import React, { forwardRef } from "react";
 import { styled } from "@mui/material/styles";
-import {
-  TextField,
-  TextFieldProps,
-  InputAdornment,
-  IconButton,
-  CircularProgress,
-} from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
-
-export type CustomTextFieldProps = TextFieldProps & {
-  isLoading?: boolean;
-  endIcon?: React.ReactNode;
-};
+import { TextField, TextFieldProps } from "@mui/material";
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiInputLabel-root.Mui-focused": {
-    color: theme.palette.primary.main,
-  },
-  "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline, & .MuiOutlinedInput-root.Moi-focused .MuiOutlinedInput-notchedOutline":
-    {
+  '& .MuiOutlinedInput-root': {
+    // 🔹 Borda ao passar o mouse
+    '&:hover .MuiOutlinedInput-notchedOutline': {
+      borderColor: theme.palette.grey[400],
+    },
+
+    // 🔹 Borda ao focar no campo
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
       borderColor: theme.palette.primary.main,
     },
+
+    // 🔹 Estilização do placeholder normal
+    '& .MuiOutlinedInput-input::-webkit-input-placeholder': {
+      color: theme.palette.text.primary,
+      opacity: '0.8',
+    },
+
+    // 🔹 Cor da borda quando o campo está desabilitado
+    '&.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+      borderColor: theme.palette.grey[200],
+    },
+
+    // 🔹 Placeholder quando o campo está desabilitado (deve vir ANTES do texto)
+    '& .MuiOutlinedInput-input.Mui-disabled::-webkit-input-placeholder': {
+      color: theme.palette.grey[400],
+      WebkitTextFillColor: theme.palette.grey[400], // Sobrepoe a cor padrão do navegador
+    },
+
+    // 🔹 Cor de fundo quando o campo está desabilitado
+    '&.Mui-disabled': {
+      backgroundColor: theme.palette.grey[100],
+    },
+  },
 }));
 
-// 2. Envolvemos toda a definição do componente com forwardRef
-const CustomTextField = forwardRef<HTMLDivElement, CustomTextFieldProps>(
-  (props, ref) => {
-    const {
-      isLoading = false,
-      endIcon,
-      type,
-      value,
-    } = props;
+const CustomTextField = forwardRef<HTMLDivElement, TextFieldProps>((props, ref) => {
+  return (
+    <StyledTextField
+      autoComplete="off"
+      {...props}
+      ref={ref}
+    />
+  );
+});
 
-    const [showPassword, setShowPassword] = useState(false);
-    const isPasswordType = type === "password";
-
-    const handleTogglePasswordVisibility = () => {
-      setShowPassword((prev) => !prev);
-    };
-
-    const determineEndAdornment = () => {
-      if (isLoading) {
-        return (
-          <InputAdornment position="end">
-            <CircularProgress size={20} />
-          </InputAdornment>
-        );
-      }
-      if (endIcon) {
-        return <InputAdornment position="end">{endIcon}</InputAdornment>;
-      }
-      if (isPasswordType && value) {
-        return (
-          <InputAdornment position="end">
-            <IconButton
-              aria-label="toggle password visibility"
-              onClick={handleTogglePasswordVisibility}
-              edge="end"
-              size="small"
-            >
-              {showPassword ? (
-                <Visibility fontSize="small" />
-              ) : (
-                <VisibilityOff fontSize="small" />
-              )}
-            </IconButton>
-          </InputAdornment>
-        );
-      }
-      return null;
-    };
-
-    return (
-      <StyledTextField
-        autoComplete="off"
-        {...props}
-        ref={ref}
-        type={isPasswordType ? (showPassword ? "text" : "password") : type}
-        InputProps={{
-          ...props.InputProps,
-          endAdornment: determineEndAdornment(),
-        }}
-      />
-    );
-  }
-);
-
-// Adicionar um nome de exibição é uma boa prática para depuração
 CustomTextField.displayName = "CustomTextField";
 
 export default CustomTextField;

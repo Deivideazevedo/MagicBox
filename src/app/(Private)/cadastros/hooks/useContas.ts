@@ -81,13 +81,19 @@ export function useContas() {
     }
   };
 
-  const handleEdit = (conta: any) => {
+  const handleEdit = (conta: any, scrollCallback?: () => void) => {
     setEditingConta(conta);
     setValue("despesaId", conta.despesaId);
     setValue("nome", conta.nome);
     setValue("valorEstimado", conta.valorEstimado || undefined);
     setValue("diaVencimento", conta.diaVencimento || undefined);
     setValue("status", conta.status);
+    
+    // Chama o callback de scroll se fornecido
+    if (scrollCallback) {
+      // Pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => scrollCallback(), 100);
+    }
   };
 
   const handleCancelEdit = () => {

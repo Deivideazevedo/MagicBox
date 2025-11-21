@@ -14,12 +14,12 @@
     "id": "2",
     "despesaId": "1",
     "nome": "Restaurante",
-    "valorEstimado": 300,
+    "valorEstimado": "30.10",
     "diaVencimento": 30,
     "status": true,
     "userId": "1",
     "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
+    "updatedAt": "2025-11-21T04:15:45.977Z"
   },
   {
     "id": "3",
@@ -85,6 +85,6 @@
     "status": true,
     "userId": "1",
     "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
+    "updatedAt": "2025-11-21T04:12:56.421Z"
   }
 ]

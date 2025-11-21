@@ -21,28 +21,49 @@ export const Profile = () => {
     <Box
       display={"flex"}
       alignItems="center"
-      gap={2}
-      sx={{ m: 3, p: 2, bgcolor: `${"secondary.light"}` }}
+      gap={1.5}
+      sx={{ m: 3, p: 1.5, bgcolor: `${"secondary.light"}` }}
     >
       {!hideMenu ? (
         <>
           <Avatar
             alt="Remy Sharp"
             src={session?.user?.image || "/images/profile/user-1.jpg"}
-            sx={{ height: 40, width: 40 }}
+            sx={{ height: 40, width: 40, flexShrink: 0 }}
           />
 
-          <Box>
-            <Typography variant="h6">{session?.user?.name}</Typography>
-            <Typography variant="caption">Programador</Typography>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography 
+              variant="h6"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.2
+              }}
+            >
+              {session?.user?.name}
+            </Typography>
+            <Typography 
+              variant="caption"
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'block'
+              }}
+            >
+              Programador
+            </Typography>
           </Box>
-          <Box sx={{ ml: "auto" }}>
+          <Box sx={{ flexShrink: 0 }}>
             <Tooltip title="Logout" placement="top">
               <IconButton
                 color="primary"
                 onClick={() => signOut({ callbackUrl: "/" })}
                 aria-label="logout"
                 size="small"
+                sx={{ p: 0 }}
               >
                 <IconPower size="20" />
               </IconButton>

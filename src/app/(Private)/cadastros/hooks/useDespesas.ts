@@ -56,9 +56,15 @@ export const useDespesas = () => {
     }
   };
 
-  const handleEdit = (despesa: any) => {
+  const handleEdit = (despesa: any, scrollCallback?: () => void) => {
     setEditingDespesa(despesa);
     setValue("nome", despesa.nome);
+    
+    // Chama o callback de scroll se fornecido
+    if (scrollCallback) {
+      // Pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => scrollCallback(), 100);
+    }
   };
 
   const handleCancelEdit = () => {
