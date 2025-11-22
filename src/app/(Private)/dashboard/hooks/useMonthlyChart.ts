@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 interface MonthData {
   month: string;
   receitas: number;
-  despesas: number;
+  categorias: number;
   saldo: number;
 }
 
@@ -42,16 +42,16 @@ export const useMonthlyChart = () => {
           return isWithinInterval(lancamentoDate, { start: monthStart, end: monthEnd });
         });
 
-        // Calcular receitas e despesas
+        // Calcular receitas e categorias
         let receitas = 0;
-        let despesas = 0;
+        let categorias = 0;
 
         monthLancamentos.forEach(lancamento => {
           if (lancamento.tipo === 'pagamento') {
             if (lancamento.valor > 0) {
               receitas += lancamento.valor;
             } else {
-              despesas += Math.abs(lancamento.valor);
+              categorias += Math.abs(lancamento.valor);
             }
           }
         });
@@ -59,8 +59,8 @@ export const useMonthlyChart = () => {
         monthsData.push({
           month: monthName,
           receitas,
-          despesas,
-          saldo: receitas - despesas
+          categorias,
+          saldo: receitas - categorias
         });
       }
 
@@ -71,15 +71,15 @@ export const useMonthlyChart = () => {
 
   const currentMonth = monthlyData[monthlyData.length - 1];
   const totalReceitas = monthlyData.reduce((acc, month) => acc + month.receitas, 0);
-  const totalDespesas = monthlyData.reduce((acc, month) => acc + month.despesas, 0);
-  const saldoTotal = totalReceitas - totalDespesas;
+  const totalCategorias = monthlyData.reduce((acc, month) => acc + month.categorias, 0);
+  const saldoTotal = totalReceitas - totalCategorias;
 
   return {
     monthlyData,
     loading: loading || isLoading,
     currentMonth,
     totalReceitas,
-    totalDespesas,
+    totalCategorias,
     saldoTotal,
     percentualSaldo: totalReceitas > 0 ? ((saldoTotal / totalReceitas) * 100).toFixed(1) : "0"
   };

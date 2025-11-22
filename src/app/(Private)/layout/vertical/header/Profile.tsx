@@ -237,7 +237,7 @@ const Profile = () => {
             startIcon={<IconLogout size={18} />}
             onClick={() => {
               handleClose2();
-              signOut();
+              signOut({ callbackUrl: '/' });
             }}
             sx={{
               borderRadius: 2,

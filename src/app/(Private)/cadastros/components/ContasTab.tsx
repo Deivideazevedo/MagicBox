@@ -40,7 +40,7 @@ import {
 } from "@tabler/icons-react";
 import { Controller } from "react-hook-form";
 import { useContas } from "../hooks/useContas";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 
 // Tipo para o formulário baseado no CreateContaDto
 interface FormData {
@@ -75,7 +75,7 @@ export default function ContasTab() {
     deleteDialog
   } = useContas();
 
-  const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: categorias = [] } = useGetCategoriasQuery();
 
   const scrollToForm = () => {
     if (formRef.current) {
@@ -128,14 +128,14 @@ export default function ContasTab() {
               <Box display="flex" alignItems="center" gap={2} mb={3}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    backgroundColor: 'success.main',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 4,
+                    backgroundColor: (theme) => theme.palette.success.light,
+                    color: (theme) => theme.palette.success.main,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
                   }}
                 >
                   <IconCreditCard size={24} />
@@ -162,7 +162,7 @@ export default function ContasTab() {
                         {...field}
                         label="Categoria de Despesa"
                       >
-                        {despesas.map((despesa: any) => (
+                        {categorias.map((despesa: any) => (
                           <MenuItem key={despesa.id} value={despesa.id}>
                             {despesa.nome}
                           </MenuItem>
@@ -333,7 +333,7 @@ export default function ContasTab() {
               ) : (
                 <List disablePadding>
                   {contas.map((conta: any, index: number) => {
-                    const despesa = despesas.find((d: any) => d.id === conta.despesaId);
+                    const despesa = categorias.find((d: any) => d.id === conta.despesaId);
                     return (
                       <Box key={conta.id}>
                         <ListItem

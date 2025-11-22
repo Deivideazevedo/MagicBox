@@ -108,6 +108,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     } else if (result?.ok) {
       // Se o login for bem-sucedido, redireciona para a callbackUrl
       const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      console.log('callbackUrl', callbackUrl);
       router.push(callbackUrl);
     }
   };

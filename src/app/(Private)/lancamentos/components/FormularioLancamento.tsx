@@ -55,8 +55,8 @@ import { format } from "date-fns";
 
 // Hooks
 import { useLancamentos } from "../hooks/useLancamentos";
-import { useGetContasQuery } from "@/services/endpoints/contasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 
 const steps = [
   { label: 'Tipo & Conta', icon: IconCreditCard },
@@ -85,12 +85,12 @@ export default function FormularioLancamento() {
     isCreating,
   } = useLancamentos();
 
-  const { data: contas = [] } = useGetContasQuery();
   const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: categorias = [] } = useGetCategoriasQuery();
 
-  // Encontrar a conta selecionada para mostrar detalhes
-  const contaSelecionada = contas.find((conta: any) => conta.id === watchedValues.contaId);
-  const despesaSelecionada = despesas.find((despesa: any) => despesa.id === contaSelecionada?.despesaId);
+  // Encontrar a despesa selecionada para mostrar detalhes
+  const despesaSelecionada = despesas.find((d: any) => d.id === watchedValues.despesaId);
+  const categoriaSelecionada = categorias.find((c: any) => c.id === despesaSelecionada?.categoriaId);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
@@ -146,19 +146,50 @@ export default function FormularioLancamento() {
               </Card>
             </Grid>
 
-            {/* Despesa */}
+            {/* Categoria */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!errors.categoriaId}>
+                <InputLabel>Categoria</InputLabel>
+                <Controller
+                  name="categoriaId"
+                  control={control}
+                  rules={{ required: "Categoria é obrigatória" }}
+                  render={({ field }) => (
+                    <Select {...field} label="Categoria">
+                      {categorias.map((cat: any) => (
+                        <MenuItem key={cat.id} value={cat.id}>
+                          {cat.nome}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+                {errors.categoriaId && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
+                    {errors.categoriaId.message}
+                  </Typography>
+                )}
+              </FormControl>
+            </Grid>
+
+            {/* Despesa (antes 'Conta') */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth error={!!errors.despesaId}>
-                <InputLabel>Categoria de Despesa</InputLabel>
+                <InputLabel>Despesa</InputLabel>
                 <Controller
                   name="despesaId"
                   control={control}
                   rules={{ required: "Despesa é obrigatória" }}
                   render={({ field }) => (
-                    <Select {...field} label="Categoria de Despesa">
-                      {despesas.map((despesa: any) => (
-                        <MenuItem key={despesa.id} value={despesa.id}>
-                          {despesa.nome}
+                    <Select {...field} label="Despesa">
+                      {despesas.map((desp: any) => (
+                        <MenuItem key={desp.id} value={desp.id}>
+                          {desp.nome}
+                          {desp.valorEstimado && (
+                            <Typography variant="caption" sx={{ ml: 1, opacity: 0.7 }}>
+                              (R$ {Number(desp.valorEstimado).toFixed(2)})
+                            </Typography>
+                          )}
                         </MenuItem>
                       ))}
                     </Select>
@@ -167,37 +198,6 @@ export default function FormularioLancamento() {
                 {errors.despesaId && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
                     {errors.despesaId.message}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
-
-            {/* Conta */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.contaId}>
-                <InputLabel>Conta</InputLabel>
-                <Controller
-                  name="contaId"
-                  control={control}
-                  rules={{ required: "Conta é obrigatória" }}
-                  render={({ field }) => (
-                    <Select {...field} label="Conta">
-                      {contas.map((conta: any) => (
-                        <MenuItem key={conta.id} value={conta.id}>
-                          {conta.nome}
-                          {conta.valorEstimado && (
-                            <Typography variant="caption" sx={{ ml: 1, opacity: 0.7 }}>
-                              (R$ {conta.valorEstimado.toFixed(2)})
-                            </Typography>
-                          )}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-                />
-                {errors.contaId && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
-                    {errors.contaId.message}
                   </Typography>
                 )}
               </FormControl>

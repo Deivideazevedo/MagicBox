@@ -20,7 +20,7 @@ export default function LancamentosPage() {
           Lançamentos
         </Typography>
         <Typography variant="h6" color="textSecondary">
-          Registre pagamentos e agende despesas futuras
+          Registre pagamentos e agende categorias futuras
         </Typography>
       </Box>
 

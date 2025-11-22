@@ -43,7 +43,7 @@ import {
   useDeleteLancamentosMutation,
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetContasQuery } from "@/services/endpoints/contasApi";
 
 interface TabelaExtratoProps {
@@ -63,7 +63,7 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
 
   // RTK Query hooks
   const { data: lancamentos = [], isLoading, error } = useGetLancamentosQuery(filtros);
-  const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: contas = [] } = useGetContasQuery();
   const [deleteLancamento, { isLoading: isDeletingSingle }] = useDeleteLancamentoMutation();
   const [deleteLancamentos, { isLoading: isDeletingMultiple }] = useDeleteLancamentosMutation();
@@ -167,7 +167,7 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
       headerName: "Despesa",
       width: 150,
       valueGetter: (params: GridValueGetterParams) => {
-        const despesa = despesas.find((d: any) => d.id === params.row.despesaId);
+        const despesa = categorias.find((d: any) => d.id === params.row.despesaId);
         return despesa?.nome || "N/A";
       },
     },

@@ -61,8 +61,9 @@ export function useContas() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Mapear para o novo DTO de Despesa: categoriaId em vez de despesaId
       const contaData = {
-        despesaId: data.despesaId,
+        categoriaId: data.despesaId,
         nome: data.nome,
         valorEstimado: data.valorEstimado || undefined,
         diaVencimento: data.diaVencimento || undefined,

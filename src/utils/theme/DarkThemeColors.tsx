@@ -14,6 +14,12 @@ const DarkThemeColors = [
         dark: '#23afdb',
         contrastText: '#ffffff',
       },
+      success: {
+        main: '#10B981',
+        light: '#064E3B',
+        dark: '#059669',
+        contrastText: '#ffffff',
+      },
     },
   },
   {

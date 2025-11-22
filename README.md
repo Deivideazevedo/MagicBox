@@ -9,12 +9,12 @@ Bem-vindo ao **MagicBox**, uma aplicação web moderna e intuitiva para controle
 
 ## 🚀 Visão Geral do Projeto
 
-O MagicBox é construído com uma stack de tecnologias de ponta para oferecer uma experiência de usuário rápida, responsiva e rica em funcionalidades. A aplicação permite que os usuários cadastrem suas despesas e contas, lancem transações diárias, visualizem extratos detalhados e obtenham insights valiosos através de relatórios e gráficos interativos.
+O MagicBox é construído com uma stack de tecnologias de ponta para oferecer uma experiência de usuário rápida, responsiva e rica em funcionalidades. A aplicação permite que os usuários cadastrem suas categorias e contas, lancem transações diárias, visualizem extratos detalhados e obtenham insights valiosos através de relatórios e gráficos interativos.
 
 ### Principais Funcionalidades:
 -   **Dashboard Intuitivo:** Uma visão geral e imediata da sua saúde financeira.
--   **Cadastro Flexível:** Gerencie categorias de despesas e contas detalhadas (com valor estimado, vencimento, etc.).
--   **Lançamentos Rápidos:** Um fluxo otimizado para registrar pagamentos e agendar despesas futuras, incluindo parcelamentos.
+-   **Cadastro Flexível:** Gerencie categorias de categorias e contas detalhadas (com valor estimado, vencimento, etc.).
+-   **Lançamentos Rápidos:** Um fluxo otimizado para registrar pagamentos e agendar categorias futuras, incluindo parcelamentos.
 -   **Extrato Detalhado:** Visualize, filtre e gerencie todos os seus lançamentos em uma grade de dados poderosa.
 -   **Relatórios Visuais:** Gráficos interativos que transformam números em insights claros sobre seus hábitos de consumo.
 -   **Autenticação Segura:** Proteção de dados com `Next-Auth`.
@@ -81,9 +81,9 @@ src/
 ├── app/
 │   ├── (Public)/               # Rotas públicas (landing page, about)
 │   ├── (Private)/dashboard/    # Rotas protegidas do dashboard
-│   │   ├── cadastros/          # Gestão de despesas e contas
+│   │   ├── cadastros/          # Gestão de categorias e contas
 │   │   │   ├── components/     # Components específicos de cadastros
-│   │   │   ├── hooks/          # Hooks de cadastros (useDespesas, useContas)
+│   │   │   ├── hooks/          # Hooks de cadastros (useCategorias, useContas)
 │   │   ├── extrato/            # Visualização de lançamentos
 │   │   │   ├── components/     # Components de extrato
 │   │   │   ├── hooks/          # Hooks de extrato
@@ -98,14 +98,14 @@ src/
 │   ├── api/                    # Backend (Route Handlers)
 │   │   ├── auth/
 │   │   ├── contas/
-│   │   ├── despesas/
+│   │   ├── categorias/
 │   │   ├── lancamentos/
 │   │   ├── users/
 │   ├── components/             # Componentes globais reutilizáveis
 ├── components/                 # Componentes globais compartilhados
 ├── data/                       # Arquivos JSON para simulação de DB
 │   ├── contas.json
-│   ├── despesas.json
+│   ├── categorias.json
 │   ├── lancamentos.json
 │   ├── users.json
 ├── lib/                        # Configurações (Redux, NextAuth)
@@ -115,7 +115,7 @@ src/
 │   ├── types.ts
 │   ├── endpoints/
 │   │   ├── contasApi.ts
-│   │   ├── despesasApi.ts
+│   │   ├── categoriasApi.ts
 │   │   ├── lancamentosApi.ts
 ├── store/                      # Redux store, providers, customizer
 ├── utils/                      # Utilitários globais

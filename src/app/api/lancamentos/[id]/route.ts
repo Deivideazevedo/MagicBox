@@ -1,6 +1,6 @@
-import { authOptions } from "@/lib/authOptions";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
@@ -19,6 +19,10 @@ function writeLancamentos(lancamentos: any[]) {
   writeFileSync(DATA_PATH, JSON.stringify(lancamentos, null, 2));
 }
 
+/**
+ * PATCH /api/lancamentos/[id]
+ * Atualiza um lançamento existente
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -57,6 +61,10 @@ export async function PATCH(
   }
 }
 
+/**
+ * DELETE /api/lancamentos/[id]
+ * Remove um lançamento
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -55,7 +55,7 @@ const baselightTheme = {
     // Cores para financeiro
     financial: {
       income: '#10B981', // Verde para receitas
-      expense: '#EF4444', // Vermelho para despesas
+      expense: '#EF4444', // Vermelho para categorias
       investment: '#8B5CF6', // Roxo para investimentos
       saving: '#06B6D4', // Azul para poupança
       neutral: '#6B7280', // Cinza para neutro
@@ -134,10 +134,10 @@ const baseDarkTheme = {
       contrastText: '#000000',
     },
     success: {
-      main: '#34D399', // Emerald claro
-      light: '#6EE7B7',
-      dark: '#10B981',
-      contrastText: '#000000',
+      main: '#10B981', // Emerald - tom mais balanceado
+      light: '#064E3B', // Verde escuro para fundos
+      dark: '#059669', // Verde mais escuro para hover
+      contrastText: '#ffffff',
     },
     info: {
       main: '#60A5FA', // Blue claro

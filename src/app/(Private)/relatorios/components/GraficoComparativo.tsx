@@ -22,7 +22,7 @@ export default function GraficoComparativo() {
         color: "#13DEB9",
       },
       {
-        name: "Despesas",
+        name: "Categorias",
         data: [6800, 7200, 6950, 6230, 7100, 6800],
         color: "#FA896B",
       },

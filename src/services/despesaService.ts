@@ -26,41 +26,41 @@ export interface UpdateDespesaData extends Partial<CreateDespesaData> {
 }
 
 class DespesaService {
-  private readonly DATA_PATH = join(process.cwd(), "src/data/despesas.json");
+  private readonly DATA_PATH = join(process.cwd(), "src/data/categorias.json");
 
-  private readDespesas(): Despesa[] {
+  private readCategorias(): Despesa[] {
     try {
       const data = readFileSync(this.DATA_PATH, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error("Erro ao ler despesas:", error);
+      console.error("Erro ao ler categorias:", error);
       return [];
     }
   }
 
-  private writeDespesas(despesas: Despesa[]): void {
+  private writeCategorias(categorias: Despesa[]): void {
     try {
-      writeFileSync(this.DATA_PATH, JSON.stringify(despesas, null, 2));
+      writeFileSync(this.DATA_PATH, JSON.stringify(categorias, null, 2));
     } catch (error) {
-      console.error("Erro ao salvar despesas:", error);
-      throw new Error("Falha ao salvar despesas");
+      console.error("Erro ao salvar categorias:", error);
+      throw new Error("Falha ao salvar categorias");
     }
   }
 
   /**
-   * Busca todas as despesas de um usuário
+   * Busca todas as categorias de um usuário
    */
-  async getDespesasByUserId(userId: string): Promise<Despesa[]> {
-    const despesas = this.readDespesas();
-    return despesas.filter(despesa => despesa.userId === userId);
+  async getCategoriasByUserId(userId: string): Promise<Despesa[]> {
+    const categorias = this.readCategorias();
+    return categorias.filter(despesa => despesa.userId === userId);
   }
 
   /**
    * Busca uma despesa específica
    */
   async getDespesaById(id: string, userId: string): Promise<Despesa | null> {
-    const despesas = this.readDespesas();
-    const despesa = despesas.find(d => d.id === id && d.userId === userId);
+    const categorias = this.readCategorias();
+    const despesa = categorias.find(d => d.id === id && d.userId === userId);
     return despesa || null;
   }
 
@@ -68,7 +68,7 @@ class DespesaService {
    * Cria uma nova despesa
    */
   async createDespesa(userId: string, data: CreateDespesaData): Promise<Despesa> {
-    const despesas = this.readDespesas();
+    const categorias = this.readCategorias();
     
     const novaDespesa: Despesa = {
       id: randomUUID(),
@@ -82,8 +82,8 @@ class DespesaService {
       updatedAt: new Date().toISOString(),
     };
 
-    despesas.push(novaDespesa);
-    this.writeDespesas(despesas);
+    categorias.push(novaDespesa);
+    this.writeCategorias(categorias);
     
     return novaDespesa;
   }
@@ -92,21 +92,21 @@ class DespesaService {
    * Atualiza uma despesa existente
    */
   async updateDespesa(id: string, userId: string, data: UpdateDespesaData): Promise<Despesa | null> {
-    const despesas = this.readDespesas();
-    const index = despesas.findIndex(d => d.id === id && d.userId === userId);
+    const categorias = this.readCategorias();
+    const index = categorias.findIndex(d => d.id === id && d.userId === userId);
     
     if (index === -1) {
       return null;
     }
 
     const despesaAtualizada: Despesa = {
-      ...despesas[index],
+      ...categorias[index],
       ...data,
       updatedAt: new Date().toISOString(),
     };
 
-    despesas[index] = despesaAtualizada;
-    this.writeDespesas(despesas);
+    categorias[index] = despesaAtualizada;
+    this.writeCategorias(categorias);
     
     return despesaAtualizada;
   }
@@ -115,15 +115,15 @@ class DespesaService {
    * Remove uma despesa
    */
   async deleteDespesa(id: string, userId: string): Promise<boolean> {
-    const despesas = this.readDespesas();
-    const index = despesas.findIndex(d => d.id === id && d.userId === userId);
+    const categorias = this.readCategorias();
+    const index = categorias.findIndex(d => d.id === id && d.userId === userId);
     
     if (index === -1) {
       return false;
     }
 
-    despesas.splice(index, 1);
-    this.writeDespesas(despesas);
+    categorias.splice(index, 1);
+    this.writeCategorias(categorias);
     
     return true;
   }

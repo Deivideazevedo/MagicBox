@@ -23,7 +23,7 @@ const FinancialSummaryCards = () => {
   // Mock data - em produção, estes dados viriam de APIs
   const [financialData, setFinancialData] = useState({
     totalReceitas: 5420.50,
-    totalDespesas: 3245.75,
+    totalCategorias: 3245.75,
     saldoAtual: 2174.75,
     economiaDoMes: 892.30,
     metaMensal: 1500.00,
@@ -40,8 +40,8 @@ const FinancialSummaryCards = () => {
       color: "#13DEB9",
     },
     {
-      title: "Despesas do Mês",
-      value: financialData.totalDespesas,
+      title: "Categorias do Mês",
+      value: financialData.totalCategorias,
       change: "-8.2%",
       changeType: "positive" as const,
       icon: <IconTrendingDown size={24} />,

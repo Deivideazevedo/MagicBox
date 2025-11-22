@@ -13,11 +13,12 @@ import {
   CardContent,
   CardHeader,
 } from "@mui/material";
-import { IconBuilding, IconCreditCard } from "@tabler/icons-react";
+import { IconBuilding, IconCreditCard, IconWallet } from "@tabler/icons-react";
 
 // Components (serão criados separadamente)
+import CategoriasTab from "./components/CategoriasTab";
 import DespesasTab from "./components/DespesasTab";
-import ContasTab from "./components/ContasTab";
+import FontesRendaTab from "./components/FontesRendaTab";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -53,7 +54,7 @@ export default function CadastrosPage() {
           Cadastros
         </Typography>
         <Typography variant="h6" color="textSecondary">
-          Gerencie suas despesas e contas de forma organizada
+          Gerencie suas categorias, despesas e fontes de renda de forma organizada
         </Typography>
       </Box>
 
@@ -66,14 +67,20 @@ export default function CadastrosPage() {
             sx={{ px: 3, pt: 2 }}
           >
             <Tab
-              label="Despesas"
+              label="Categorias"
               icon={<IconBuilding size={20} />}
               iconPosition="start"
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
             <Tab
-              label="Contas"
+              label="Despesas"
               icon={<IconCreditCard size={20} />}
+              iconPosition="start"
+              sx={{ minHeight: 48, fontWeight: 600 }}
+            />
+            <Tab
+              label="Fontes de Renda"
+              icon={<IconWallet size={20} />}
               iconPosition="start"
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
@@ -81,11 +88,15 @@ export default function CadastrosPage() {
         </Box>
 
         <TabPanel value={currentTab} index={0}>
-          <DespesasTab />
+          <CategoriasTab />
         </TabPanel>
 
         <TabPanel value={currentTab} index={1}>
-          <ContasTab />
+          <DespesasTab />
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={2}>
+          <FontesRendaTab />
         </TabPanel>
       </Paper>
     </Container>

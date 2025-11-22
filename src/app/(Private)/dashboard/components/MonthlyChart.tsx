@@ -22,7 +22,7 @@ const MonthlyChart = () => {
     loading, 
     currentMonth, 
     totalReceitas, 
-    totalDespesas, 
+    totalCategorias, 
     saldoTotal, 
     percentualSaldo 
   } = useMonthlyChart();
@@ -39,7 +39,7 @@ const MonthlyChart = () => {
     );
   }
 
-  const maxValue = Math.max(...monthlyData.map(m => Math.max(m.receitas, m.despesas)));
+  const maxValue = Math.max(...monthlyData.map(m => Math.max(m.receitas, m.categorias)));
 
   return (
     <Card
@@ -53,7 +53,7 @@ const MonthlyChart = () => {
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Box>
             <Typography variant="h6" fontWeight={600} gutterBottom color="text.primary">
-              Receitas vs Despesas
+              Receitas vs Categorias
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Comparativo dos últimos 6 meses
@@ -114,14 +114,14 @@ const MonthlyChart = () => {
                       }
                     }}
                   />
-                  {/* Barra Despesas */}
+                  {/* Barra Categorias */}
                   <Box
                     sx={{
                       width: 16,
-                      height: `${(month.despesas / maxValue) * 100}%`,
+                      height: `${(month.categorias / maxValue) * 100}%`,
                       backgroundColor: theme.palette.error.main,
                       borderRadius: 1,
-                      minHeight: month.despesas > 0 ? 8 : 0,
+                      minHeight: month.categorias > 0 ? 8 : 0,
                       transition: "all 0.3s ease",
                       "&:hover": {
                         backgroundColor: theme.palette.error.dark,
@@ -169,7 +169,7 @@ const MonthlyChart = () => {
               }} 
             />
             <Typography variant="caption" color="text.secondary">
-              Despesas
+              Categorias
             </Typography>
           </Box>
         </Box>

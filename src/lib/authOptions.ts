@@ -1,12 +1,13 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import GitHubProvider from "next-auth/providers/github";
+import NextAuth, { Account, AuthOptions, User } from "next-auth";
+import { JWT } from "next-auth/jwt/types";
 import AzureADProvider from "next-auth/providers/azure-ad";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GitHubProvider from "next-auth/providers/github";
+import GoogleProvider from "next-auth/providers/google";
 import { authenticateUser } from "./auth-utils";
+import { generateAccessToken } from "./jwt-utils";
 
-export const authOptions = {
-  site: process.env.NEXTAUTH_URL || "http://localhost:3000",
+export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -28,16 +29,14 @@ export const authOptions = {
       },
       authorize: async (credentials) => {
         try {
-          const user = await authenticateUser(credentials?.username || "", credentials?.password || "");
-          
+          const user = await authenticateUser(
+            credentials?.username || "",
+            credentials?.password || ""
+          );
+
           if (user) {
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              username: user.username,
-              role: user.role,
-            };
+            const { password, ...userWithoutPassword } = user;
+            return userWithoutPassword;
           } else {
             throw new Error("Ops! Credenciais Inválidas. Tente novamente");
           }
@@ -53,24 +52,39 @@ export const authOptions = {
     signOut: "/",
   },
   callbacks: {
-    async jwt({ token, user, account, profile, session, trigger }: any) {
+    async jwt({
+      token,
+      user,
+      account,
+    }: {
+      token: JWT;
+      user: User;
+      account: Account | null;
+    }) {
+      // 🔹 Primeira vez que o usuário faz login
       if (user) {
-        token.id = user.id;
-        token.username = user.username;
-        token.role = user.role;
+        token.user = user;
+
+        // 🔹 Gerar um JWT customizado para uso em APIs externas
+        const customToken = await generateAccessToken(user.id);
+        token.accessToken = customToken;
+      }
+
+      // 🔹 Para providers OAuth, armazenar o access_token do provider
+      if (account?.access_token) {
+        token.oauthAccessToken = account.access_token;
       }
 
       return token;
     },
-    async session({ session, token }: any) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.username = token.username;
-        session.user.role = token.role;
-      }
-
+    async session({ session, token }) {
+      if (token.user) session.user = token.user;
       return session;
     },
+  },
+  session: {
+    strategy: "jwt", // Garante que usamos JWT ao invés de database sessions
+    maxAge: 60 * 60 * 24 * 30, // 30 dias
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

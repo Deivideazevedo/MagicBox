@@ -47,7 +47,7 @@ export default function Register() {
 
   const features = [
     "Dashboard com gráficos interativos",
-    "Controle de despesas e receitas",
+    "Controle de categorias e receitas",
     "Relatórios detalhados",
     "Gestão de metas financeiras",
     "Alertas de vencimento",

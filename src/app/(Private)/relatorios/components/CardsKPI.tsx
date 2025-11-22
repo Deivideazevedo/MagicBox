@@ -96,7 +96,7 @@ export default function CardsKPI() {
       color: "success" as const,
     },
     {
-      title: "Despesas do Mês",
+      title: "Categorias do Mês",
       value: "R$ 6.230,00",
       subtitle: "Total de saídas",
       trend: { direction: "down" as const, value: "-5.3%" },
@@ -106,7 +106,7 @@ export default function CardsKPI() {
     {
       title: "Saldo Atual",
       value: "R$ 2.310,00",
-      subtitle: "Diferença receitas/despesas",
+      subtitle: "Diferença receitas/categorias",
       trend: { direction: "up" as const, value: "+18.2%" },
       icon: <AccountBalance />,
       color: "primary" as const,

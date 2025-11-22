@@ -1,10 +1,19 @@
 import { api } from '../api';
-import { Despesa, CreateDespesaDto } from '../types';
+import { Despesa, CreateDespesaDto, UpdateDespesaDto } from '../types';
+import { fnBuildSearchParams } from '../../utils/searchParams';
 
 export const despesasApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getDespesas: builder.query<Despesa[], void>({
       query: () => '/despesas',
+      providesTags: ['Despesas'],
+    }),
+    
+    getDespesasByCategoria: builder.query<Despesa[], string>({
+      query: (categoriaId) => {
+        const queryString = fnBuildSearchParams({ categoriaId });
+        return `/despesas?${queryString}`;
+      },
       providesTags: ['Despesas'],
     }),
     
@@ -17,8 +26,8 @@ export const despesasApi = api.injectEndpoints({
       invalidatesTags: ['Despesas'],
     }),
     
-    updateDespesa: builder.mutation<Despesa, { id: string; data: Partial<CreateDespesaDto> }>({
-      query: ({ id, data }) => ({
+    updateDespesa: builder.mutation<Despesa, UpdateDespesaDto>({
+      query: ({ id, ...data }) => ({
         url: `/despesas/${id}`,
         method: 'PATCH',
         body: data,
@@ -38,6 +47,7 @@ export const despesasApi = api.injectEndpoints({
 
 export const {
   useGetDespesasQuery,
+  useGetDespesasByCategoriaQuery,
   useCreateDespesaMutation,
   useUpdateDespesaMutation,
   useDeleteDespesaMutation,
