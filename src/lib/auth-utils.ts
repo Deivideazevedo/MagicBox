@@ -2,6 +2,12 @@ import { readFileSync } from "fs";
 import { User } from "next-auth";
 import { join } from "path";
 
+type authParams = {
+  username?: string;
+  email?: string;
+  password?: string;
+};
+
 // Caminho do arquivo de usuários
 const usersFilePath = join(process.cwd(), "src/data/users.json");
 
@@ -18,15 +24,16 @@ function readUsers(): User[] {
 
 // Função para autenticação (verificar credenciais)
 export async function authenticateUser(
-  username: string,
-  password: string
+  params: authParams
 ): Promise<User | null> {
   try {
     const users = readUsers();
-    const user = users.find(
-      (user) => user.username === username && user.password === password
+    const authUser = users.find(
+      (user) =>
+        (user.username === params.username || user.email === params.email) &&
+        user.password === params.password
     );
-    return user || null;
+    return authUser || null;
   } catch (error) {
     console.error("Erro na autenticação:", error);
     return null;

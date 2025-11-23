@@ -1,31 +1,56 @@
 import { JWTPayload, SignJWT, jwtVerify } from "jose";
-/**
- * Gera um JWT token customizado para o usuário
- * Este token pode ser usado por sistemas externos
- */
-export async function generateAccessToken(userId: string) {
-  const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
+import { User } from "next-auth";
 
-  const token = await new SignJWT({ userId })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("30d") // Token expira em 30 dias
-    .setSubject(userId)
+/**
+ * Gera um JWT assinado (JWS) customizado para o usuário
+ * 
+ * ✅ Mais seguro para APIs externas (assinado, não apenas criptografado)
+ * ✅ Padrão da indústria (RFC 7519)
+ * ✅ Pode ser validado por qualquer biblioteca JWT
+ * ✅ Menor overhead que JWE
+ * 
+ * Este token pode ser usado por sistemas externos para autenticação
+ */
+export async function generateAccessToken(user: Omit<User, 'password'>) {
+  const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 60 * 60 * 24 * 7; // 7 dias
+
+  const token = await new SignJWT({
+    user,  // Dados completos do usuário (sem senha)
+  })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setSubject(user.id)           // Subject: ID do usuário
+    .setIssuedAt(iat)              // Emitido em
+    .setExpirationTime(exp)        // Expira em 7 dias
+    .setIssuer("magicbox-api")     // Emissor
+    .setAudience("magicbox-client") // Audiência
     .sign(secret);
 
   return token;
 }
 
 /**
- * Verifica e decodifica um JWT token
+ * Verifica e decodifica um JWT assinado (JWS)
+ * 
+ * ✅ Valida assinatura (garante integridade)
+ * ✅ Valida expiração automaticamente
+ * ✅ Valida issuer e audience
+ * 
  * Usado para validar tokens de sistemas externos
+ * Retorna todos os dados do usuário incluídos no token
  */
 export async function verifyAccessToken(
   token: string
 ): Promise<JWTPayload | null> {
   try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const { payload } = await jwtVerify(token, secret);
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+    
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: "magicbox-api",
+      audience: "magicbox-client",
+    });
+    
     return payload;
   } catch (error) {
     console.error("Token inválido:", error);

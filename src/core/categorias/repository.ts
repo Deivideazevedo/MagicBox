@@ -22,5 +22,18 @@ export const categoriaRepository = {
     categorias.push(categoria);
     writeFile(categorias);
     return categoria;
+  },
+
+  deleteById(categoriaId: string, userId: string) {
+    let categorias = fnReadFile<Categoria>(DATA_PATH);
+    const initialLength = categorias.length;
+
+    categorias = categorias.filter(c => !(c.id === categoriaId && c.userId === userId));
+    if (categorias.length === initialLength) {
+      throw new Error("Categoria não encontrada ou não pertence ao usuário");
+    }
+    
+    writeFile(categorias);
+    return true;
   }
 };

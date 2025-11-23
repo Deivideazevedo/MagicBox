@@ -5,7 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { authenticateUser } from "./auth-utils";
-import { generateAccessToken } from "./jwt-utils";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -25,14 +24,16 @@ export const authOptions: AuthOptions = {
       name: "credentials",
       credentials: {
         username: { label: "Username", type: "text" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
         try {
-          const user = await authenticateUser(
-            credentials?.username || "",
-            credentials?.password || ""
-          );
+          const user = await authenticateUser({
+            username: credentials?.username,
+            email: credentials?.email,
+            password: credentials?.password,
+          });
 
           if (user) {
             const { password, ...userWithoutPassword } = user;
@@ -62,13 +63,7 @@ export const authOptions: AuthOptions = {
       account: Account | null;
     }) {
       // 🔹 Primeira vez que o usuário faz login
-      if (user) {
-        token.user = user;
-
-        // 🔹 Gerar um JWT customizado para uso em APIs externas
-        const customToken = await generateAccessToken(user.id);
-        token.accessToken = customToken;
-      }
+      if (user) token.user = user;      
 
       // 🔹 Para providers OAuth, armazenar o access_token do provider
       if (account?.access_token) {
@@ -84,7 +79,7 @@ export const authOptions: AuthOptions = {
   },
   session: {
     strategy: "jwt", // Garante que usamos JWT ao invés de database sessions
-    maxAge: 60 * 60 * 24 * 30, // 30 dias
+    maxAge: 60 * 60 * 24 * 7, // 7 dias
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

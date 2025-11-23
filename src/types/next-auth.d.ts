@@ -14,26 +14,37 @@ declare module "next-auth" {
     createdAt?: Date;
   }
 
-
   /**
    * Extensão da interface Session
    * Adiciona propriedades customizadas ao objeto session
    */
   interface Session {
     user: User;
-    accessToken?: string; // Token JWT customizado do MagicBox para APIs externas
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
   }
 }
 
-declare module "next-auth/jwt" {
   /**
    * Extensão da interface JWT
    * Adiciona propriedades customizadas ao token JWT
    */
+declare module "next-auth/jwt" {
+  import { User } from "next-auth"; 
+  
   interface JWT extends DefaultJWT {
     user?: User;
-    accessToken?: string; // Token JWT customizado do MagicBox para APIs externas
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
+  }
+}
+
+/**
+ * Extensão do JWTPayload do jose
+ * Define a estrutura customizada dos tokens JWT do MagicBox
+ */
+declare module "jose" {
+  import { User } from "next-auth"; // ✅ Importa o User dentro do módulo
+  
+  interface JWTPayload {
+    user?: User;
   }
 }
