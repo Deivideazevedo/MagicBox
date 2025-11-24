@@ -33,21 +33,21 @@ export default function GraficoEvolucao() {
     const data6m = {
       categories: ["Nov", "Dez", "Jan", "Fev", "Mar", "Abr"],
       receitas: [7200, 8100, 7850, 8540, 7900, 8200],
-      despesas: [6800, 7200, 6950, 6230, 7100, 6800],
+      categorias: [6800, 7200, 6950, 6230, 7100, 6800],
       saldo: [400, 900, 900, 2310, 800, 1400],
     };
 
     const data1y = {
       categories: ["Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez", "Jan", "Fev", "Mar", "Abr"],
       receitas: [6800, 7200, 7500, 7100, 6900, 7300, 7200, 8100, 7850, 8540, 7900, 8200],
-      despesas: [6200, 6800, 7100, 6700, 6500, 6900, 6800, 7200, 6950, 6230, 7100, 6800],
+      categorias: [6200, 6800, 7100, 6700, 6500, 6900, 6800, 7200, 6950, 6230, 7100, 6800],
       saldo: [600, 400, 400, 400, 400, 400, 400, 900, 900, 2310, 800, 1400],
     };
 
     const data2y = {
       categories: ["Abr 22", "Jul 22", "Out 22", "Jan 23", "Abr 23", "Jul 23", "Out 23", "Jan 24", "Abr 24"],
       receitas: [6500, 6800, 7000, 7200, 7500, 7800, 7200, 8100, 8200],
-      despesas: [6300, 6600, 6800, 6800, 7200, 7400, 6800, 7200, 6800],
+      categorias: [6300, 6600, 6800, 6800, 7200, 7400, 6800, 7200, 6800],
       saldo: [200, 200, 200, 400, 300, 400, 400, 900, 1400],
     };
 
@@ -68,9 +68,9 @@ export default function GraficoEvolucao() {
         data: currentData.receitas,
       },
       {
-        name: "Despesas",
+        name: "Categorias",
         type: "column" as const,
-        data: currentData.despesas,
+        data: currentData.categorias,
       },
       {
         name: "Saldo Acumulado",
@@ -114,7 +114,7 @@ export default function GraficoEvolucao() {
       yaxis: [
         {
           title: {
-            text: "Receitas/Despesas (R$)",
+            text: "Receitas/Categorias (R$)",
             style: {
               fontFamily: "inherit",
             },

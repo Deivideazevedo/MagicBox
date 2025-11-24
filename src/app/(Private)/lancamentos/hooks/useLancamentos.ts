@@ -10,8 +10,8 @@ import { CreateLancamentoDto } from "@/services/types";
 
 // Interface para o formulário
 interface FormData {
+  categoriaId: string;
   despesaId: string;
-  contaId: string;
   descricao: string;
   valor: number;
   data: string;
@@ -21,8 +21,8 @@ interface FormData {
 
 // Schema de validação
 const lancamentoSchema: yup.ObjectSchema<FormData> = yup.object({
+  categoriaId: yup.string().required("Categoria é obrigatória"),
   despesaId: yup.string().required("Despesa é obrigatória"),
-  contaId: yup.string().required("Conta é obrigatória"),
   descricao: yup.string().required("Descrição é obrigatória"),
   valor: yup.number().positive("Valor deve ser positivo").required("Valor é obrigatório"),
   data: yup.string().required("Data é obrigatória"),
@@ -35,7 +35,7 @@ export function useLancamentos() {
   const [isParcelado, setIsParcelado] = useState(false);
 
   // RTK Query hooks
-  const { data: lancamentos = [], isLoading: isLoadingList } = useGetLancamentosQuery();
+  const { data: lancamentos = [], isLoading: isLoadingList } = useGetLancamentosQuery(undefined);
   const [createLancamento, { isLoading: isCreating }] = useCreateLancamentoMutation();
 
   // React Hook Form
@@ -67,8 +67,8 @@ export function useLancamentos() {
   const onSubmit = async (data: FormData) => {
     try {
       const lancamentoData: CreateLancamentoDto = {
+        categoriaId: data.categoriaId,
         despesaId: data.despesaId,
-        contaId: data.contaId,
         descricao: data.descricao,
         valor: data.valor,
         data: data.data,

@@ -127,7 +127,7 @@ export default function GraficoDistribuicao() {
         title={
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Typography variant="h6" fontWeight={600}>
-              Distribuição de Despesas
+              Distribuição de Categorias
             </Typography>
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Agrupar por</InputLabel>

@@ -1,17 +1,12 @@
 import { readFileSync } from "fs";
+import { User } from "next-auth";
 import { join } from "path";
 
-// Interface para User
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  password: string;
-  name: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
+type authParams = {
+  username?: string;
+  email?: string;
+  password?: string;
+};
 
 // Caminho do arquivo de usuários
 const usersFilePath = join(process.cwd(), "src/data/users.json");
@@ -28,11 +23,17 @@ function readUsers(): User[] {
 }
 
 // Função para autenticação (verificar credenciais)
-export async function authenticateUser(username: string, password: string): Promise<User | null> {
+export async function authenticateUser(
+  params: authParams
+): Promise<User | null> {
   try {
     const users = readUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    return user || null;
+    const authUser = users.find(
+      (user) =>
+        (user.username === params.username || user.email === params.email) &&
+        user.password === params.password
+    );
+    return authUser || null;
   } catch (error) {
     console.error("Erro na autenticação:", error);
     return null;
@@ -40,12 +41,15 @@ export async function authenticateUser(username: string, password: string): Prom
 }
 
 // Função para buscar usuário por username ou email
-export async function findUserByUsernameOrEmail(username?: string, email?: string): Promise<User | null> {
+export async function findUserByUsernameOrEmail(
+  username?: string,
+  email?: string
+): Promise<User | null> {
   try {
     const users = readUsers();
-    const user = users.find(u => 
-      (username && u.username === username) || 
-      (email && u.email === email)
+    const user = users.find(
+      (u) =>
+        (username && u.username === username) || (email && u.email === email)
     );
     return user || null;
   } catch (error) {

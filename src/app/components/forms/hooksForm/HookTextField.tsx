@@ -1,26 +1,26 @@
 // src/app/components/forms/theme-elements/HookTextField.tsx
 
 import { Control, Controller } from 'react-hook-form';
-import CustomTextField, { CustomTextFieldProps } from '../theme-elements/CustomTextField';
+import CustomTextField from '../theme-elements/CustomTextField';
+import { TextFieldProps } from '@mui/material';
 
-// As props do nosso novo componente. Inclui as props do TextField, 
-// mais 'name' e 'control' que são obrigatórios.
-type HookTextFieldProps = CustomTextFieldProps & {
+// Inclui props do Controller, exceto 'render' (definido internamente)
+type HookTextFieldProps = TextFieldProps & {
   name: string;
   control: Control<any>;
 };
 
 const HookTextField = (props: HookTextFieldProps) => {
-  const { name, control, ...rest } = props;
+  const { name, control, ...customProps } = props;
 
   return (
     <Controller
       name={name}
       control={control}
-      render={({ field, fieldState: { error } }) => (
+      render={({ field, fieldState: { error }}) => (
         <CustomTextField
           {...field}
-          {...rest}
+          {...customProps}
           error={!!error}
           helperText={error?.message}
         />

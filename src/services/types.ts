@@ -1,13 +1,5 @@
 // Interfaces para as entidades do sistema financeiro
 
-export interface Despesa {
-  id: string;
-  nome: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Receita {
   id: string;
   nome: string;
@@ -16,9 +8,9 @@ export interface Receita {
   updatedAt: string;
 }
 
-export interface Conta {
+export interface Despesa {
   id: string;
-  despesaId: string;
+  categoriaId: string;
   nome: string;
   valorEstimado?: number;
   diaVencimento?: number; // 1-31
@@ -42,8 +34,8 @@ export interface FonteRenda {
 
 export interface Lancamento {
   id: string;
+  categoriaId?: string;
   despesaId?: string;
-  contaId?: string;
   receitaId?: string;
   fonteRendaId?: string;
   tipo: 'pagamento' | 'agendamento' | 'receita';
@@ -58,17 +50,12 @@ export interface Lancamento {
   updatedAt: string;
 }
 
-// DTOs para criação
-export interface CreateDespesaDto {
-  nome: string;
-}
-
 export interface CreateReceitaDto {
   nome: string;
 }
 
-export interface CreateContaDto {
-  despesaId: string;
+export interface CreateDespesaDto {
+  categoriaId: string;
   nome: string;
   valorEstimado?: number;
   diaVencimento?: number;
@@ -84,8 +71,8 @@ export interface CreateFonteRendaDto {
 }
 
 export interface CreateLancamentoDto {
+  categoriaId?: string;
   despesaId?: string;
-  contaId?: string;
   receitaId?: string;
   fonteRendaId?: string;
   tipo: 'pagamento' | 'agendamento' | 'receita';
@@ -95,48 +82,53 @@ export interface CreateLancamentoDto {
   parcelas?: number;
 }
 
-// DTOs para atualização
-export interface UpdateDespesaDto {
-  id: string;
-  nome?: string;
+// Filtro usado para consultas de extrato
+export interface FiltroExtrato {
+  categoriaId?: string;
+  despesaId?: string;
+  receitaId?: string;
+  fonteRendaId?: string;
+  status?: 'pendente' | 'pago' | 'atrasado';
+  dataInicio?: string; // ISO date
+  dataFim?: string; // ISO date
 }
 
 export interface UpdateReceitaDto {
   id: string;
+  nome: string;
+}
+
+export interface UpdateDespesaDto {
+  id: string;
+  // Campos opcionais para permitir atualizações parciais
+  categoriaId?: string;
   nome?: string;
+  valorEstimado?: number;
+  diaVencimento?: number;
+  status?: boolean;
 }
 
-export interface UpdateContaDto extends Partial<CreateContaDto> {
+export interface UpdateFonteRendaDto {
   id: string;
+  receitaId: string;
+  nome: string;
+  valorEstimado?: number;
+  diaRecebimento?: number;
+  status: boolean;
 }
 
-export interface UpdateFonteRendaDto extends Partial<CreateFonteRendaDto> {
+export interface UpdateLancamentoDto {
   id: string;
-}
-
-export interface UpdateLancamentoDto extends Partial<CreateLancamentoDto> {
-  id: string;
+  categoriaId?: string;
+  despesaId?: string;
+  receitaId?: string;
+  fonteRendaId?: string;
+  // Campos opcionais para permitir atualizações parciais
+  tipo?: 'pagamento' | 'agendamento' | 'receita';
+  valor?: number;
+  data?: string;
+  descricao?: string;
+  parcelas?: number;
   valorPago?: number;
   status?: 'pendente' | 'pago' | 'atrasado';
-}
-
-// Interface para filtros de extrato
-export interface FiltroExtrato {
-  dataInicio?: string;
-  dataFim?: string;
-  despesaId?: string;
-  contaId?: string;
-  status?: 'pendente' | 'pago' | 'atrasado' | 'todos';
-}
-
-// Interface para relatórios
-export interface RelatorioKPI {
-  gastoTotal: number;
-  deficitTotal: number;
-  mediaGastoMensal: number;
-}
-
-export interface DadosGrafico {
-  labels: string[];
-  valores: number[];
 }

@@ -1,46 +1,47 @@
 import { api } from '../api';
-import { Conta, CreateContaDto, UpdateContaDto } from '../types';
+import { Despesa, CreateDespesaDto, UpdateDespesaDto } from '../types';
 import { fnBuildSearchParams } from '../../utils/searchParams';
 
 export const contasApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getContas: builder.query<Conta[], void>({
-      query: () => '/contas',
-      providesTags: ['Contas'],
+    // Mantemos hooks compatíveis, mas internamente usam /despesas
+    getContas: builder.query<Despesa[], void>({
+      query: () => '/despesas',
+      providesTags: ['Despesas'],
     }),
-    
-    getContasByDespesa: builder.query<Conta[], string>({
-      query: (despesaId) => {
-        const queryString = fnBuildSearchParams({ despesaId });
-        return `/contas?${queryString}`;
+
+    getContasByDespesa: builder.query<Despesa[], string>({
+      query: (categoriaId) => {
+        const queryString = fnBuildSearchParams({ categoriaId });
+        return `/despesas?${queryString}`;
       },
-      providesTags: ['Contas'],
+      providesTags: ['Despesas'],
     }),
-    
-    createConta: builder.mutation<Conta, CreateContaDto>({
-      query: (newConta) => ({
-        url: '/contas',
+
+    createConta: builder.mutation<Despesa, CreateDespesaDto>({
+      query: (newDespesa) => ({
+        url: '/despesas',
         method: 'POST',
-        body: newConta,
+        body: newDespesa,
       }),
-      invalidatesTags: ['Contas'],
+      invalidatesTags: ['Despesas'],
     }),
-    
-    updateConta: builder.mutation<Conta, UpdateContaDto>({
+
+    updateConta: builder.mutation<Despesa, UpdateDespesaDto>({
       query: ({ id, ...data }) => ({
-        url: `/contas/${id}`,
+        url: `/despesas/${id}`,
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: ['Contas'],
+      invalidatesTags: ['Despesas'],
     }),
-    
+
     deleteConta: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
-        url: `/contas/${id}`,
+        url: `/despesas/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Contas'],
+      invalidatesTags: ['Despesas'],
     }),
   }),
 });

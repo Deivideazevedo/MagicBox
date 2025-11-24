@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Box,
   Grid,
@@ -40,7 +40,7 @@ import {
 } from "@tabler/icons-react";
 import { Controller } from "react-hook-form";
 import { useContas } from "../hooks/useContas";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 
 // Tipo para o formulário baseado no CreateContaDto
 interface FormData {
@@ -52,6 +52,8 @@ interface FormData {
 }
 
 export default function ContasTab() {
+  const formRef = useRef<HTMLDivElement>(null);
+  
   const {
     contas,
     isLoading,
@@ -73,7 +75,23 @@ export default function ContasTab() {
     deleteDialog
   } = useContas();
 
-  const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: categorias = [] } = useGetCategoriasQuery();
+
+  const scrollToForm = () => {
+    if (formRef.current) {
+      const elementPosition = formRef.current.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 180; // 120px de offset do topo
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleEditWithScroll = (conta: any) => {
+    handleEdit(conta, scrollToForm);
+  };
 
   if (isLoading) {
     return (
@@ -97,26 +115,27 @@ export default function ContasTab() {
         {/* Formulário de Cadastro */}
         <Grid item xs={12} md={4}>
           <Card 
+            ref={formRef}
             elevation={2}
             sx={{ 
-              borderRadius: 3,
+              borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider',
-              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
+              // background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
             }}
           >
             <CardContent sx={{ p: 3 }}>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2,
-                    backgroundColor: 'success.main',
+                    width: 40,
+                    height: 40,
+                    borderRadius: 4,
+                    backgroundColor: (theme) => theme.palette.success.light,
+                    color: (theme) => theme.palette.success.main,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
                   }}
                 >
                   <IconCreditCard size={24} />
@@ -143,7 +162,7 @@ export default function ContasTab() {
                         {...field}
                         label="Categoria de Despesa"
                       >
-                        {despesas.map((despesa: any) => (
+                        {categorias.map((despesa: any) => (
                           <MenuItem key={despesa.id} value={despesa.id}>
                             {despesa.nome}
                           </MenuItem>
@@ -171,7 +190,7 @@ export default function ContasTab() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconCreditCard size={20} color="gray" />
+                        <IconCreditCard size={20}/>
                       </InputAdornment>
                     ),
                   }}
@@ -191,7 +210,7 @@ export default function ContasTab() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconCurrencyDollar size={20} color="gray" />
+                        <IconCurrencyDollar size={20} />
                       </InputAdornment>
                     ),
                   }}
@@ -213,7 +232,7 @@ export default function ContasTab() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <IconCalendar size={20} color="gray" />
+                        <IconCalendar size={20} />
                       </InputAdornment>
                     ),
                   }}
@@ -275,7 +294,7 @@ export default function ContasTab() {
 
         {/* Lista de Contas */}
         <Grid item xs={12} md={8}>
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
+          <Card elevation={2} sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 0 }}>
               <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -314,7 +333,7 @@ export default function ContasTab() {
               ) : (
                 <List disablePadding>
                   {contas.map((conta: any, index: number) => {
-                    const despesa = despesas.find((d: any) => d.id === conta.despesaId);
+                    const despesa = categorias.find((d: any) => d.id === conta.despesaId);
                     return (
                       <Box key={conta.id}>
                         <ListItem
@@ -384,7 +403,7 @@ export default function ContasTab() {
                             <Stack direction="row" spacing={1}>
                               <IconButton
                                 size="small"
-                                onClick={() => handleEdit(conta)}
+                                onClick={() => handleEditWithScroll(conta)}
                                 sx={{ 
                                   color: 'primary.main',
                                   '&:hover': { backgroundColor: 'primary.light' }
@@ -397,7 +416,7 @@ export default function ContasTab() {
                                 onClick={() => handleDeleteClick(conta)}
                                 sx={{ 
                                   color: 'error.main',
-                                  '&:hover': { backgroundColor: 'error.light' }
+                                  '&:hover': { backgroundColor: 'error.light', color: 'error.main' }
                                 }}
                               >
                                 <IconTrash size={18} />

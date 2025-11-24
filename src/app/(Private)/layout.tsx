@@ -11,20 +11,20 @@ import HorizontalHeader from "./layout/horizontal/header/Header";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 
-const MainWrapper = styled("div")(() => ({
-  display: "flex",
-  minHeight: "100vh",
-  width: "100%",
+const MainWrapper = styled('div')(() => ({
+  display: 'flex',
+  minHeight: '100vh',
+  width: '100%',
 }));
 
-const PageWrapper = styled("div")(() => ({
-  display: "flex",
+const PageWrapper = styled('div')(({ theme }) => ({
+  display: 'flex',
   flexGrow: 1,
-  paddingBottom: "60px",
-  flexDirection: "column",
+  flexDirection: 'column',
   zIndex: 1,
-  width: "100%",
-  backgroundColor: "transparent",
+  width: '100%',
+  // backgroundColor: 'transparent',
+  background: theme.palette.grey[100],
 }));
 
 interface Props {

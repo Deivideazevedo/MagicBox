@@ -31,7 +31,7 @@ import {
 import { startOfMonth, endOfMonth, format } from "date-fns";
 
 // Hooks RTK Query
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetContasQuery } from "@/services/endpoints/contasApi";
 
 interface FiltroExtratoProps {
@@ -51,7 +51,7 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
   });
 
   // RTK Query hooks
-  const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: contas = [] } = useGetContasQuery();
 
   // Filtrar contas pela despesa selecionada
@@ -99,7 +99,7 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
   };
 
   const filtrosAtivos = [
-    filtros.despesaId && despesas.find((d: any) => d.id === filtros.despesaId)?.nome,
+    filtros.despesaId && categorias.find((d: any) => d.id === filtros.despesaId)?.nome,
     filtros.contaId && contas.find((c: any) => c.id === filtros.contaId)?.nome,
     filtros.status !== "todos" && `Status: ${filtros.status}`,
   ].filter(Boolean);
@@ -214,7 +214,7 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
                     onChange={(e) => handleFiltroChange("despesaId", e.target.value)}
                   >
                     <MenuItem value="">Todas</MenuItem>
-                    {despesas.map((despesa: any) => (
+                    {categorias.map((despesa: any) => (
                       <MenuItem key={despesa.id} value={despesa.id}>
                         {despesa.nome}
                       </MenuItem>

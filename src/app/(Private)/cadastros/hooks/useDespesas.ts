@@ -2,25 +2,39 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { 
-  useGetDespesasQuery, 
-  useCreateDespesaMutation, 
+import {
+  useGetDespesasQuery,
+  useCreateDespesaMutation,
   useUpdateDespesaMutation,
-  useDeleteDespesaMutation 
+  useDeleteDespesaMutation,
 } from "@/services/endpoints/despesasApi";
+
+// Interface específica para o formulário
+interface FormData {
+  categoriaId: string;
+  nome: string;
+  valorEstimado?: number;
+  diaVencimento?: number;
+  status: boolean;
+}
 
 // Schema de validação
 const despesaSchema = yup.object({
-  nome: yup.string().required("Nome da despesa é obrigatório").min(2, "Nome deve ter pelo menos 2 caracteres"),
+  categoriaId: yup.string().required("Categoria é obrigatória"),
+  nome: yup.string().required("Nome é obrigatório"),
+  valorEstimado: yup.number().positive("Valor deve ser positivo").optional(),
+  diaVencimento: yup.number().min(1, "Dia deve ser entre 1 e 31").max(31, "Dia deve ser entre 1 e 31").optional(),
+  status: yup.boolean().required(),
 });
 
-type FormData = {
-  nome: string;
-};
+interface DeleteDialog {
+  open: boolean;
+  despesa: any;
+}
 
-export const useDespesas = () => {
+export function useDespesas() {
   const [editingDespesa, setEditingDespesa] = useState<any>(null);
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; despesa: any }>({
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialog>({
     open: false,
     despesa: null,
   });
@@ -37,33 +51,54 @@ export const useDespesas = () => {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: yupResolver(despesaSchema),
+    defaultValues: {
+      status: true,
+    },
   });
 
   const onSubmit = async (data: FormData) => {
     try {
+      const despesaData = {
+        categoriaId: data.categoriaId,
+        nome: data.nome,
+        valorEstimado: data.valorEstimado || undefined,
+        diaVencimento: data.diaVencimento || undefined,
+        status: data.status,
+      };
+
       if (editingDespesa) {
-        await updateDespesa({ id: editingDespesa.id, data }).unwrap();
+        await updateDespesa({ id: editingDespesa.id, ...despesaData }).unwrap();
         setEditingDespesa(null);
       } else {
-        await createDespesa(data).unwrap();
+        await createDespesa(despesaData).unwrap();
       }
-      reset();
+      reset({ status: true });
     } catch (error) {
       console.error("Erro ao salvar despesa:", error);
     }
   };
 
-  const handleEdit = (despesa: any) => {
+  const handleEdit = (despesa: any, scrollCallback?: () => void) => {
     setEditingDespesa(despesa);
+    setValue("categoriaId", despesa.categoriaId);
     setValue("nome", despesa.nome);
+    setValue("valorEstimado", despesa.valorEstimado || undefined);
+    setValue("diaVencimento", despesa.diaVencimento || undefined);
+    setValue("status", despesa.status);
+    
+    // Chama o callback de scroll se fornecido
+    if (scrollCallback) {
+      // Pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => scrollCallback(), 100);
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingDespesa(null);
-    reset();
+    reset({ status: true });
   };
 
   const handleDeleteClick = (despesa: any) => {
@@ -86,31 +121,23 @@ export const useDespesas = () => {
   };
 
   return {
-    // Data
     despesas,
     isLoading,
     error,
-    
-    // Form state
     editingDespesa,
     register,
     handleSubmit,
+    control,
     errors,
-    
-    // Loading states
     isCreating,
     isUpdating,
     isDeleting,
-    
-    // Actions
     onSubmit,
     handleEdit,
     handleCancelEdit,
     handleDeleteClick,
     handleDeleteConfirm,
     handleDeleteCancel,
-    
-    // Dialog state
-    deleteDialog
+    deleteDialog,
   };
-};
+}

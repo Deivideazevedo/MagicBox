@@ -21,6 +21,11 @@ function writeLancamentos(lancamentos: any[]) {
   writeFileSync(DATA_PATH, JSON.stringify(lancamentos, null, 2));
 }
 
+/**
+ * GET /api/lancamentos
+ * Busca lançamentos com filtros opcionais
+ * Query params: dataInicio, dataFim, despesaId, contaId, receitaId, fonteRendaId, tipo, status
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
     const lancamentos = readLancamentos();
     let userLancamentos = lancamentos.filter((lancamento: any) => lancamento.userId === session.user.id);
     
-    // Filtros
+    // Aplicar filtros
     if (dataInicio && dataFim) {
       userLancamentos = userLancamentos.filter((lancamento: any) => {
         const dataLancamento = new Date(lancamento.data);
@@ -81,6 +86,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST /api/lancamentos
+ * Cria um ou mais lançamentos (suporta parcelamento)
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -145,10 +154,10 @@ export async function POST(request: NextRequest) {
       novosLancamentos.push(novoLancamento);
       
     } else if (tipo === "agendamento") {
-      // Agendamentos só são válidos para despesas/contas
+      // Agendamentos só são válidos para categorias/contas
       if (!temDespesa) {
         return NextResponse.json({ 
-          error: "Agendamentos só são válidos para despesas/contas" 
+          error: "Agendamentos só são válidos para categorias/contas" 
         }, { status: 400 });
       }
       

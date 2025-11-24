@@ -51,7 +51,7 @@ export default function LandingPage() {
     {
       icon: <IconCreditCard size={48} color={theme.palette.secondary.main} />,
       title: "Gestão Completa",
-      description: "Cadastre despesas, contas e lance transações com facilidade e organização"
+      description: "Cadastre categorias, contas e lance transações com facilidade e organização"
     },
     {
       icon: <IconReport size={48} color={theme.palette.success.main} />,
@@ -221,7 +221,7 @@ export default function LandingPage() {
                         <Typography variant="h6">R$ {demoData.receita.toLocaleString("pt-BR")}</Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ opacity: 0.8 }}>Despesas</Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.8 }}>Categorias</Typography>
                         <Typography variant="h6">R$ {demoData.despesa.toLocaleString("pt-BR")}</Typography>
                       </Grid>
                     </Grid>

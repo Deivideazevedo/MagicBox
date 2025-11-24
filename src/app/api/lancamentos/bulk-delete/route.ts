@@ -1,6 +1,6 @@
-import { authOptions } from "@/lib/authOptions";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
@@ -19,6 +19,11 @@ function writeLancamentos(lancamentos: any[]) {
   writeFileSync(DATA_PATH, JSON.stringify(lancamentos, null, 2));
 }
 
+/**
+ * DELETE /api/lancamentos/bulk-delete
+ * Remove múltiplos lançamentos de uma vez
+ * Body: { ids: string[] }
+ */
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

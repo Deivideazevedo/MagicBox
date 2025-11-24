@@ -61,8 +61,9 @@ export function useContas() {
 
   const onSubmit = async (data: FormData) => {
     try {
+      // Mapear para o novo DTO de Despesa: categoriaId em vez de despesaId
       const contaData = {
-        despesaId: data.despesaId,
+        categoriaId: data.despesaId,
         nome: data.nome,
         valorEstimado: data.valorEstimado || undefined,
         diaVencimento: data.diaVencimento || undefined,
@@ -81,13 +82,19 @@ export function useContas() {
     }
   };
 
-  const handleEdit = (conta: any) => {
+  const handleEdit = (conta: any, scrollCallback?: () => void) => {
     setEditingConta(conta);
     setValue("despesaId", conta.despesaId);
     setValue("nome", conta.nome);
     setValue("valorEstimado", conta.valorEstimado || undefined);
     setValue("diaVencimento", conta.diaVencimento || undefined);
     setValue("status", conta.status);
+    
+    // Chama o callback de scroll se fornecido
+    if (scrollCallback) {
+      // Pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => scrollCallback(), 100);
+    }
   };
 
   const handleCancelEdit = () => {

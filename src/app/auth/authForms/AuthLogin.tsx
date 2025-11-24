@@ -1,6 +1,7 @@
 "use client";
 import { loginType } from "@/app/(Private)/types/auth/auth";
 import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
+import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -107,6 +108,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     } else if (result?.ok) {
       // Se o login for bem-sucedido, redireciona para a callbackUrl
       const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+      console.log('callbackUrl', callbackUrl);
       router.push(callbackUrl);
     }
   };
@@ -173,9 +175,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.5 }}>
               Password
             </CustomFormLabel>
-            <HookTextField
+            <HookPasswordField
               name="password"
-              type="password"
               variant="outlined"
               control={control}
               fullWidth

@@ -14,10 +14,11 @@ const DarkThemeColors = [
         dark: '#23afdb',
         contrastText: '#ffffff',
       },
-      background: {
-        default: '#2A3447',
-        dark: '#2A3547',
-        paper: '#2A3447',
+      success: {
+        main: '#10B981',
+        light: '#064E3B',
+        dark: '#059669',
+        contrastText: '#ffffff',
       },
     },
   },

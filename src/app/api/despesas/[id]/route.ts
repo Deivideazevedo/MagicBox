@@ -1,6 +1,6 @@
-import { authOptions } from "@/lib/authOptions";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 
@@ -19,6 +19,10 @@ function writeDespesas(despesas: any[]) {
   writeFileSync(DATA_PATH, JSON.stringify(despesas, null, 2));
 }
 
+/**
+ * PATCH /api/despesas/[id]
+ * Atualiza uma despesa existente
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -31,7 +35,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { nome } = body;
+    const { categoriaId, nome, valorEstimado, diaVencimento, status } = body;
     const { id } = params;
 
     if (!nome) {
@@ -40,7 +44,7 @@ export async function PATCH(
 
     const despesas = readDespesas();
     const despesaIndex = despesas.findIndex(
-      (despesa: any) => despesa.id === id && despesa.userId === session.user.id
+      (desp: any) => desp.id === id && desp.userId === session.user.id
     );
 
     if (despesaIndex === -1) {
@@ -49,7 +53,11 @@ export async function PATCH(
 
     despesas[despesaIndex] = {
       ...despesas[despesaIndex],
+      categoriaId: categoriaId || despesas[despesaIndex].categoriaId,
       nome,
+      valorEstimado: valorEstimado !== undefined ? valorEstimado : despesas[despesaIndex].valorEstimado,
+      diaVencimento: diaVencimento !== undefined ? diaVencimento : despesas[despesaIndex].diaVencimento,
+      status: status !== undefined ? status : despesas[despesaIndex].status,
       updatedAt: new Date().toISOString(),
     };
 
@@ -62,6 +70,10 @@ export async function PATCH(
   }
 }
 
+/**
+ * DELETE /api/despesas/[id]
+ * Remove uma despesa
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -76,7 +88,7 @@ export async function DELETE(
     const { id } = params;
     const despesas = readDespesas();
     const despesaIndex = despesas.findIndex(
-      (despesa: any) => despesa.id === id && despesa.userId === session.user.id
+      (desp: any) => desp.id === id && desp.userId === session.user.id
     );
 
     if (despesaIndex === -1) {

@@ -94,7 +94,7 @@ const Search = () => {
       href: '/dashboard/cadastros',
       icon: <IconSettings size={20} />,
       category: 'Páginas',
-      keywords: ['configuracao', 'contas', 'categorias', 'despesas'],
+      keywords: ['configuracao', 'contas', 'categorias', 'categorias'],
     },
     
     // Ações rápidas
@@ -102,7 +102,7 @@ const Search = () => {
       id: 'nova-despesa',
       title: 'Nova Despesa',
       description: 'Cadastrar nova categoria de despesa',
-      href: '/dashboard/cadastros?tab=despesas',
+      href: '/dashboard/cadastros?tab=categorias',
       icon: <IconWallet size={20} />,
       category: 'Ações',
       keywords: ['despesa', 'categoria', 'novo', 'cadastrar'],

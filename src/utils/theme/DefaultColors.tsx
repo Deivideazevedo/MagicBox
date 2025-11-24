@@ -55,23 +55,30 @@ const baselightTheme = {
     // Cores para financeiro
     financial: {
       income: '#10B981', // Verde para receitas
-      expense: '#EF4444', // Vermelho para despesas
+      expense: '#EF4444', // Vermelho para categorias
       investment: '#8B5CF6', // Roxo para investimentos
       saving: '#06B6D4', // Azul para poupança
       neutral: '#6B7280', // Cinza para neutro
     },
-    grey: {
+    grey: {      
+      // 100: '#F3F4F6',
+      // 200: '#E5E7EB',
+      // 300: '#D1D5DB',
+      // 400: '#9CA3AF',
+      // 500: '#6B7280',
+      // 600: '#4B5563',
+
       50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
+      100: '#F2F6FA',
+      200: '#EAEFF4',
       300: '#D1D5DB',
-      400: '#9CA3AF',
-      500: '#6B7280',
-      600: '#4B5563',
+      400: '#aaaeb4ff',
+      500: '#5A6A85',
+      600: '#2A3547',
       700: '#374151',
       800: '#1F2937',
       900: '#111827',
-    },
+    } as any,
     text: {
       primary: '#111827',
       secondary: '#6B7280',
@@ -127,10 +134,10 @@ const baseDarkTheme = {
       contrastText: '#000000',
     },
     success: {
-      main: '#34D399', // Emerald claro
-      light: '#6EE7B7',
-      dark: '#10B981',
-      contrastText: '#000000',
+      main: '#10B981', // Emerald - tom mais balanceado
+      light: '#064E3B', // Verde escuro para fundos
+      dark: '#059669', // Verde mais escuro para hover
+      contrastText: '#ffffff',
     },
     info: {
       main: '#60A5FA', // Blue claro
@@ -140,7 +147,7 @@ const baseDarkTheme = {
     },
     error: {
       main: '#F87171', // Red claro
-      light: '#FCA5A5',
+      light: '#ffd9d9f5',
       dark: '#EF4444',
       contrastText: '#000000',
     },
@@ -175,16 +182,18 @@ const baseDarkTheme = {
     },
     grey: {
       50: '#1F2937',
-      100: '#374151',
-      200: '#4B5563',
-      300: '#6B7280',
-      400: '#9CA3AF',
-      500: '#D1D5DB',
-      600: '#E5E7EB',
+      100: '#333F55',
+      200: '#465670',
+      300: '#7C8FAC',
+      350: '#9CA3AF',
+      400: '#DFE5EF',
+      500: '#EAEFF4',
+      600: '#F2F6FA',
       700: '#F3F4F6',
       800: '#F9FAFB',
       900: '#FFFFFF',
-    },
+      
+    } as any,
     text: {
       primary: '#F9FAFB',
       secondary: '#D1D5DB',
