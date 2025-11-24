@@ -1,5 +1,6 @@
+import { Categoria } from '@/core/categorias/types';
 import { api } from '../api';
-import { Categoria, CreateCategoriaDto, UpdateCategoriaDto } from '../types';
+import { CategoriaPayload } from '@/core/categorias/types';
 
 export const categoriasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -8,7 +9,7 @@ export const categoriasApi = api.injectEndpoints({
       providesTags: ['Categorias'],
     }),
     
-    createCategoria: builder.mutation<Categoria, CreateCategoriaDto>({
+    createCategoria: builder.mutation<Categoria, CategoriaPayload>({
       query: (newCategoria) => ({
         url: '/categorias',
         method: 'POST',
@@ -17,7 +18,7 @@ export const categoriasApi = api.injectEndpoints({
       invalidatesTags: ['Categorias'],
     }),
     
-    updateCategoria: builder.mutation<Categoria, UpdateCategoriaDto>({
+    updateCategoria: builder.mutation<Categoria, CategoriaPayload>({
       query: ({ id, ...data }) => ({
         url: `/categorias/${id}`,
         method: 'PATCH',

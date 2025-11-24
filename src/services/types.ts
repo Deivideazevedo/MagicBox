@@ -1,19 +1,5 @@
 // Interfaces para as entidades do sistema financeiro
 
-// NOVA NOMENCLATURA:
-// - Categoria (antiga Despesa) = Categoria macro (Pessoal, Casa, Carro, etc)
-// - Despesa (antiga Conta) = Item de despesa vinculado à categoria
-// - Receita = Categoria de receita
-// - Fonte de Renda = Item de receita vinculado à receita
-
-export interface Categoria {
-  id: string;
-  nome: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Receita {
   id: string;
   nome: string;
@@ -64,11 +50,6 @@ export interface Lancamento {
   updatedAt: string;
 }
 
-// DTOs para criação
-export interface CreateCategoriaDto {
-  nome: string;
-}
-
 export interface CreateReceitaDto {
   nome: string;
 }
@@ -110,12 +91,6 @@ export interface FiltroExtrato {
   status?: 'pendente' | 'pago' | 'atrasado';
   dataInicio?: string; // ISO date
   dataFim?: string; // ISO date
-}
-
-// DTOs para atualização
-export interface UpdateCategoriaDto {
-  id: string;
-  nome: string;
 }
 
 export interface UpdateReceitaDto {

@@ -28,8 +28,8 @@ export async function middleware(request: NextRequest) {
   // ============================================================
   // 1. ROTAS PÚBLICAS DO NEXTAUTH - Liberação Imediata (CRÍTICO)
   //    ✅ /api/auth/session, /api/auth/signin, /api/auth/callback, etc.
-  //    ❌ /api/auth/token (PROTEGIDA)
-  //    ❌ /api/auth/oauth-token (PROTEGIDA)
+  //    ❌ /api/auth/token (PROTEGIDA) /api/auth/oauth-token (PROTEGIDA)
+  //    ❌ Demais privadas (PRIVATE)
   // ============================================================
   if (isPublicNextAuthRoute(pathname)) {
     return NextResponse.next();
@@ -55,8 +55,16 @@ export async function middleware(request: NextRequest) {
   if (isApiRoute(pathname)) {
     if (!isAuthenticated) return unauthorizedResponse();
 
-    // Usuário autenticado - libera acesso à API
-    return NextResponse.next();
+    // Usuário autenticado - injeta headers de debug e libera acesso à API
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-url", request.url);
+    requestHeaders.set("x-method", request.method);
+    
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   // ============================================================
