@@ -10,7 +10,7 @@ type HookTextFieldProps = TextFieldProps & {
   control: Control<any>;
 };
 
-const HookTextField = (props: HookTextFieldProps) => {
+const HookTextFieldOld = (props: HookTextFieldProps) => {
   const { name, control, ...customProps } = props;
 
   return (
@@ -29,4 +29,4 @@ const HookTextField = (props: HookTextFieldProps) => {
   );
 };
 
-export default HookTextField;
+export default HookTextFieldOld;
