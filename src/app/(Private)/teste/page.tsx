@@ -1,28 +1,17 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
 import {
   Box,
-  Typography,
   Button,
+  Typography,
   Autocomplete,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
-  Switch,
-  RadioGroup,
-  Radio,
+  TextField
 } from "@mui/material";
-import HookAutocomplete from "../../components/forms/hooksForm/HookAutocomplete";
-import CustomAutoComplete from "@/app/components/forms/theme-elements/CustomAutoComplete";
-import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
-import { HookSelect } from "@/app/components/forms/hooksForm/HookTextField2 copy";
-import { useEffect } from "react";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField2";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 type FormData = {
   nome: string;
@@ -32,6 +21,8 @@ type FormData = {
   notificacoes: boolean;
   preferencia: string;
   categoriaId: number | string;
+  paisAutocomplete: number | null;
+  categoriasMultiplas: number[];
 };
 
 const paises = [
@@ -46,6 +37,8 @@ const categorias = [
   { id: 1, nome: "Alimentos" },
   { id: 2, nome: "Vestuário" },
   { id: 3, nome: "Serviços" },
+  { id: 4, nome: "Vestuário2" },
+  { id: 5, nome: "Serviços2" },
 ];
 
 const TestePage = () => {
@@ -58,8 +51,12 @@ const TestePage = () => {
       notificacoes: false,
       categoriaId: "",
       preferencia: "",
+      paisAutocomplete: null,
+      categoriasMultiplas: [],
     },
   });
+
+  const [paisPuro, setPaisPuro] = useState<{ id: number; label: string }[]>([]);
 
   useEffect(() => {
     setFocus("nome");
@@ -211,6 +208,49 @@ const TestePage = () => {
             placeholder="Selecione"
             getValue={(c) => c.id}
             getLabel={(c) => c.nome}
+          />
+
+          {/* Autocomplete Simples */}
+          <HookAutocomplete
+            name="paisAutocomplete"
+            control={control}
+            label="País (Autocomplete)"
+            options={paises}
+            getOptionLabel={(p) => p.label}
+            getOptionValue={(p) => p.id}
+            placeholder="Digite para buscar..."
+            textFieldProps={{ sx: { mb: 2 } }}
+          />
+          {/* Autocomplete Múltiplo */}
+          <HookAutocomplete
+            name="categoriasMultiplas"
+            control={control}
+            label="Categorias (Múltiplas)"
+            multiple
+            options={categorias}
+            getOptionLabel={(c) => c.nome}
+            getOptionValue={(c) => c.id}
+            placeholder="Selecione múltiplas categorias"
+            limitTags={1}
+            textFieldProps={{ sx: { mb: 2 } }}
+          />
+
+          {/* Autocomplete Puro (sem HookForm) */}
+          <Autocomplete
+            multiple
+            value={paisPuro}
+            onChange={(_, newValue) => setPaisPuro(newValue)}
+            options={paises}
+            getOptionLabel={(option) => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="País (Autocomplete Puro - Múltiplo)"
+                placeholder="Selecione países..."
+              />
+            )}
+            sx={{ mb: 2 }}
           />
 
           <Button type="submit" variant="contained" fullWidth>

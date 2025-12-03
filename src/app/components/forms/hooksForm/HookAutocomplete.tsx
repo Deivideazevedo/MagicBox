@@ -1,73 +1,162 @@
-import { Control, Controller, Path } from 'react-hook-form';
-import { Autocomplete, TextField, AutocompleteProps, Checkbox } from '@mui/material';
+import { Control, FieldValues, Path, useController } from "react-hook-form";
+import {
+  Autocomplete,
+  AutocompleteProps,
+  AutocompleteValue,
+  AutocompleteChangeReason,
+  AutocompleteChangeDetails,
+  TextField,
+  TextFieldProps,
+} from "@mui/material";
+import { SyntheticEvent } from "react";
 
-type Option = {
-  id: number;
-  label: string;
-};
-
-type HookAutocompleteProps<T extends Record<string, any>> = Omit<
-  AutocompleteProps<Option, boolean, boolean, boolean>,
-  'renderInput'
+type HookAutocompleteProps<
+  TFieldValues extends FieldValues,
+  T,
+  Multiple extends boolean | undefined = undefined,
+  DisableClearable extends boolean | undefined = undefined,
+  FreeSolo extends boolean | undefined = undefined
+> = Omit<
+  AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
+  "renderInput"
 > & {
-  name: Path<T>;
-  control: Control<T>;
-  label: string;
+  name: Path<TFieldValues>;
+  control: Control<TFieldValues>;
+  label?: string;
   placeholder?: string;
+  textFieldProps?: Omit<TextFieldProps, "label" | "placeholder">;
+  getOptionLabel?: (option: T) => string;
+  getOptionValue?: (option: T) => string | number;
+  isOptionEqualToValue?: (option: T, value: T) => boolean;
 };
 
-const HookAutocomplete = <T extends Record<string, any>>({
+export function HookAutocomplete<
+  TFieldValues extends FieldValues,
+  T,
+  Multiple extends boolean | undefined = undefined,
+  DisableClearable extends boolean | undefined = undefined,
+  FreeSolo extends boolean | undefined = undefined
+>({
   name,
   control,
   label,
   placeholder,
-  ...autocompleteProps
-}: HookAutocompleteProps<T>) => {
-  const isMultiple = autocompleteProps.multiple;
-  const defaultRenderOption = isMultiple && !autocompleteProps.renderOption
-    ? (props: any, option: Option, { selected }: any) => (
-        <li {...props}>
-          <Checkbox style={{ marginRight: 8 }} checked={selected} />
-          {option.label}
-        </li>
-      )
-    : autocompleteProps.renderOption;
+  textFieldProps,
+  getOptionLabel,
+  getOptionValue,
+  isOptionEqualToValue,
+  ...props
+}: HookAutocompleteProps<
+  TFieldValues,
+  T,
+  Multiple,
+  DisableClearable,
+  FreeSolo
+>) {
+  const {
+    field,
+    fieldState: { error },
+  } = useController({ name, control });
+
+  // Função para lidar com a mudança do Autocomplete
+  const handleChange = (
+    _event: SyntheticEvent<Element, Event>,
+    newValue: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
+  ) => {
+    if (getOptionValue && newValue !== null && newValue !== undefined) {
+      // Se múltiplo, mapeia os valores
+      if (Array.isArray(newValue)) {
+        const mappedValues = newValue.map((item) => getOptionValue(item as T));
+
+        field.onChange(mappedValues);
+      } else {
+        // Se único, pega o valor
+        field.onChange(getOptionValue(newValue as T));
+      }
+    } else {
+      // Se não tem getOptionValue, usa o objeto completo
+      field.onChange(newValue);
+    }
+  };
+
+  // Função para obter o valor atual do campo
+  const getCurrentValue = (): AutocompleteValue<
+    T,
+    Multiple,
+    DisableClearable,
+    FreeSolo
+  > => {
+    if (!field.value) {
+      return (props.multiple ? [] : null) as AutocompleteValue<
+        T,
+        Multiple,
+        DisableClearable,
+        FreeSolo
+      >;
+    }
+
+    if (!getOptionValue || !props.options) {
+      return field.value as AutocompleteValue<
+        T,
+        Multiple,
+        DisableClearable,
+        FreeSolo
+      >;
+    }
+
+    // Se for múltiplo
+    if (props.multiple) {
+      const values: (string | number)[] = Array.isArray(field.value) 
+        ? field.value 
+        : [];
+      return props.options.filter((option) =>
+        values.includes(getOptionValue(option))
+      ) as AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>;
+    }
+
+    // Se for único
+    return (props.options.find(
+      (option) => getOptionValue(option) === field.value
+    ) || null) as AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>;
+  };
+
+  // Função auxiliar para obter o label da opção
+  const getDefaultOptionLabel = (option: T | string): string => {
+    if (typeof option === "string") return option;
+    const anyOption = option as any;
+    return (
+      anyOption?.label || anyOption?.nome || anyOption?.name || String(option)
+    );
+  };
+
+  // Função auxiliar para comparar opções
+  const getDefaultIsOptionEqualToValue = (option: T, value: T): boolean => {
+    if (getOptionValue) {
+      return getOptionValue(option) === getOptionValue(value);
+    }
+    return (option as any)?.id === (value as any)?.id;
+  };
 
   return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field }) => (
-        <Autocomplete
-          {...autocompleteProps}
-          renderOption={defaultRenderOption}
-          value={
-            isMultiple
-              ? autocompleteProps.options?.filter((opt) => field.value?.includes(opt.id)) || []
-              : autocompleteProps.options?.find((opt) => opt.id === field.value) || null
-          }
-          getOptionLabel={(option: Option | string) => (typeof option === 'string' ? option : option.label)}
-          isOptionEqualToValue={(option: Option, value: Option | string | null) =>
-            typeof value === 'string' ? option.label === value : option.id === value?.id
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label={label}
-              placeholder={placeholder}
-            />
-          )}
-          onChange={(_, value) =>
-            field.onChange(
-              isMultiple
-                ? (value as Option[])?.map((v) => v.id) || []
-                : (value as Option)?.id || null
-            )
-          }
+    <Autocomplete
+      {...props}
+      value={getCurrentValue()}
+      onChange={handleChange}
+      onBlur={field.onBlur}
+      getOptionLabel={getOptionLabel || getDefaultOptionLabel}
+      isOptionEqualToValue={
+        isOptionEqualToValue || getDefaultIsOptionEqualToValue
+      }
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={label}
+          placeholder={placeholder}
+          error={!!error}
+          helperText={error?.message}
+          {...textFieldProps}
         />
       )}
     />
   );
-};
-
-export default HookAutocomplete;
+}

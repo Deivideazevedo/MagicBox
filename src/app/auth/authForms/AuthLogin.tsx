@@ -1,6 +1,5 @@
 "use client";
 import { loginType } from "@/app/(Private)/types/auth/auth";
-import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
@@ -22,6 +21,7 @@ import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 import Swal from "sweetalert2";
 import LoadingButton from '@mui/lab/LoadingButton'; 
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
 const validationSchema = yup.object({
   username: yup.string().required("Usuário é obrigatório"),

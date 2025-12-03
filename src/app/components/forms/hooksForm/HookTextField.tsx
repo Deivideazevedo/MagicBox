@@ -1,32 +1,31 @@
-// src/app/components/forms/theme-elements/HookTextField.tsx
+// components/form/FormTextField.tsx
+import { TextField, TextFieldProps } from "@mui/material";
+import { useController, Control, FieldValues, Path } from "react-hook-form";
+import CustomTextField from "../theme-elements/CustomTextField";
 
-import { Control, Controller } from 'react-hook-form';
-import CustomTextField from '../theme-elements/CustomTextField';
-import { TextFieldProps } from '@mui/material';
-
-// Inclui props do Controller, exceto 'render' (definido internamente)
-type HookTextFieldProps = TextFieldProps & {
-  name: string;
-  control: Control<any>;
+type FormTextFieldProps<TFieldValues extends FieldValues> = TextFieldProps & {
+  name: Path<TFieldValues>;
+  control: Control<TFieldValues>;
 };
 
-const HookTextFieldOld = (props: HookTextFieldProps) => {
-  const { name, control, ...customProps } = props;
+export function HookTextField<TFieldValues extends FieldValues>({
+  name,
+  control,
+  ...props
+}: FormTextFieldProps<TFieldValues>) {
+  const {
+    field,
+    fieldState: { error },
+  } = useController({ name, control });
 
   return (
-    <Controller
-      name={name}
-      control={control}
-      render={({ field, fieldState: { error }}) => (
-        <CustomTextField
-          {...field}
-          {...customProps}
-          error={!!error}
-          helperText={error?.message}
-        />
-      )}
+    <CustomTextField
+      {...field}
+      {...props}
+      inputRef={field.ref}
+      fullWidth
+      error={!!error}
+      helperText={error?.message}
     />
   );
-};
-
-export default HookTextFieldOld;
+}

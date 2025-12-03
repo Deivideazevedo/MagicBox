@@ -163,6 +163,7 @@ const Search = () => {
       
       return 0;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   // Agrupar por categoria

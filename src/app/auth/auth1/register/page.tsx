@@ -214,7 +214,7 @@ export default function Register() {
                       ✨ Mais de 10.000 usuários confiam no MagicBox
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      "Melhor app de finanças que já usei!" - Maria S.
+                      'Melhor app de finanças que já usei!' - Maria S.
                     </Typography>
                   </Box>
                 </Box>

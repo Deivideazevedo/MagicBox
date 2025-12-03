@@ -1,12 +1,11 @@
 "use client";
-import HookTextField from "@/app/components/forms/hooksForm/HookTextField";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { yupResolver } from "@hookform/resolvers/yup";
+import LoadingButton from '@mui/lab/LoadingButton';
 import { Alert } from "@mui/material";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
@@ -18,7 +17,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
-import LoadingButton from '@mui/lab/LoadingButton';
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
 interface RegisterType {
   title?: string;

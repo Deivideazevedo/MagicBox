@@ -23,9 +23,6 @@
     "@mui/x-date-pickers": "^5.0.15",
     "@reduxjs/toolkit": "^1.9.7",
     "@tabler/icons-react": "^2.39.0",
-    "@types/node": "20.2.3",
-    "@types/react": "18.2.28",
-    "@types/react-dom": "18.2.13",
     "apexcharts": "^5.3.5",
     "axios": "^1.5.1",
     "axios-mock-adapter": "^1.22.0",
@@ -47,7 +44,7 @@
     "redux-persist": "^6.0.0",
     "simplebar-react": "^3.2.4",
     "sweetalert2": "^11.23.0",
-    "typescript": "^5.2.2",
+    "typescript": "5.4.5",
     "yup": "^1.7.0"
   },
   "devDependencies": {
@@ -55,9 +52,10 @@
     "@types/lodash": "^4.14.199",
     "@types/node": "20.2.3",
     "@types/react": "18.2.28",
+    "@types/react-dom": "18.2.13",
     "@types/react-helmet": "^6.1.7",
     "@types/uuid": "^10.0.0",
-    "eslint": "latest",
-    "eslint-config-next": "latest"
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.7"
   }
 }

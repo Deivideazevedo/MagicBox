@@ -50,4 +50,6 @@ const CustomTextField = forwardRef<HTMLDivElement, TextFieldProps>(
   }
 );
 
+CustomTextField.displayName = "CustomTextField";
+
 export default CustomTextField;

@@ -67,6 +67,7 @@ export const useMonthlyChart = () => {
       setMonthlyData(monthsData);
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lancamentos, isLoading]);
 
   const currentMonth = monthlyData[monthlyData.length - 1];
