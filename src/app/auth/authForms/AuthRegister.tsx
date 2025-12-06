@@ -1,6 +1,6 @@
 "use client";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
-import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
+import CustomCheckbox from "@/app/components/forms/theme-elements/Checkbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { yupResolver } from "@hookform/resolvers/yup";
 import LoadingButton from '@mui/lab/LoadingButton';

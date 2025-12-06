@@ -16,6 +16,7 @@ type HookSelectProps<TFieldValues extends FieldValues, T> = SelectProps & {
   getValue?: (obj: T) => any;
   getLabel?: (obj: T) => React.ReactNode;
   children?: React.ReactNode; // permite passar MenuItem manualmente
+  disableEmpty?: boolean;
 };
 
 export function HookSelect<TFieldValues extends FieldValues, T>({
@@ -26,6 +27,7 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   getValue,
   getLabel,
   children,
+  disableEmpty,
   ...props
 }: HookSelectProps<TFieldValues, T>) {
   const {
@@ -33,15 +35,19 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
     fieldState: { error },
   } = useController({ name, control });
 
+  // Determina se a label deve ter shrink ativo
+  // Quando displayEmpty está ativo e não há valor, a label deve subir para não sobrepor o placeholder
+  const shouldShrink = props.displayEmpty ? true : undefined;
+
   return (
     <FormControl fullWidth error={!!error}>
-      <InputLabel>{props.label}</InputLabel>
-      <Select {...field} {...props} inputRef={field.ref}>
+      <InputLabel shrink={props.displayEmpty}>{props.label}</InputLabel>
+      <Select {...field} {...props} inputRef={field.ref} >
         {/* Caso o pai queira criar todas as opções manualmente */}
         {children}
 
         {!children && placeholder && (
-          <MenuItem value="">
+          <MenuItem value="" disabled={disableEmpty}>
             <em>{placeholder}</em>
           </MenuItem>
         )}

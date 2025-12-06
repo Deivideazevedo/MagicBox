@@ -81,19 +81,26 @@ const Header = () => {
           {/* End Ecommerce Dropdown */}
           {/* ------------------------------------------- */}
 
-          <IconButton size="large" color="inherit">
+          <IconButton
+            size="large"
+            color="inherit"
+            sx={{
+              "&:hover": {
+                backgroundColor: "primary.light",
+              },
+            }}
+            onClick={() =>
+              dispatch(
+                setDarkMode(
+                  customizer.activeMode === "light" ? "dark" : "light"
+                )
+              )
+            }
+          >
             {customizer.activeMode === "light" ? (
-              <IconMoon
-                size="21"
-                stroke="1.5"
-                onClick={() => dispatch(setDarkMode("dark"))}
-              />
+              <IconMoon size="20" stroke="1.5" />
             ) : (
-              <IconSun
-                size="21"
-                stroke="1.5"
-                onClick={() => dispatch(setDarkMode("light"))}
-              />
+              <IconSun size="20" stroke="1.5" />
             )}
           </IconButton>
           <Notifications />

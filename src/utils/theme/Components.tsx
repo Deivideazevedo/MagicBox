@@ -1,4 +1,5 @@
 // project imports
+import { padding } from "@mui/system";
 import "./DefaultColors";
 import { Theme } from "@mui/material/styles";
 
@@ -407,6 +408,24 @@ const components: any = (theme: Theme) => {
         },
       },
     },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontWeight: 500,
+          
+          // Ajuste na posição do label para melhor alinhamento
+          transform: "translate(14px, 13px) scale(1)",
+          "&.MuiInputLabel-shrink": {
+            fontSize: "0.97rem",
+            fontWeight: 600,
+
+            // (eixo X, eixo Y)
+            // O padrão Y é -9px. Matner o scale(0.75) para preservar a animação padrão do MUI.
+            transform: "translate(14px, -11px) scale(0.75)",
+          },
+        },
+      },
+    },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -436,6 +455,13 @@ const components: any = (theme: Theme) => {
             color: theme.palette.primary.main,
           },
         },
+        notchedOutline: {
+          "& legend": {
+            // Como aumentou o label para 0.97rem, precisamos aumentar
+            // a base de cálculo da largura do corte.
+            fontSize: "0.85em",
+          },
+        },
         input: {
           padding: "12px 14px",
         },
@@ -463,15 +489,9 @@ const components: any = (theme: Theme) => {
       styleOverrides: {
         root: {
           "& .MuiOutlinedInput-root": {
-            height: "44px", // Altura padrão do TextField para consistência
+            padding: "4.5px 6px",
           },
-        },
-        popupIndicator: {
-          // color: theme.palette.grey[500],
-        },
-        clearIndicator: {
-          // color: theme.palette.grey[500],
-        },
+        }, 
       },
     },
     MuiDialogTitle: {

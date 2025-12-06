@@ -8,7 +8,8 @@ import {
   Button,
   Typography,
   Autocomplete,
-  TextField
+  TextField,
+  Chip
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -39,6 +40,10 @@ const categorias = [
   { id: 3, nome: "Serviços" },
   { id: 4, nome: "Vestuário2" },
   { id: 5, nome: "Serviços2" },
+  { id: 6, nome: "Vestuário6" },
+  { id: 7, nome: "Serviços7" },
+  { id: 8, nome: "Vestuário8" },
+  { id: 9, nome: "Serviços9" },
 ];
 
 const TestePage = () => {
@@ -57,6 +62,7 @@ const TestePage = () => {
   });
 
   const [paisPuro, setPaisPuro] = useState<{ id: number; label: string }[]>([]);
+  const [categoriasComRenderTags, setCategoriasComRenderTags] = useState<{ id: number; nome: string }[]>([]);
 
   useEffect(() => {
     setFocus("nome");
@@ -77,7 +83,7 @@ const TestePage = () => {
           <HookTextField
             name="nome"
             control={control}
-            label="Nome"
+            label="Nome grande para testar label"
             placeholder="Digite seu nome"
             fullWidth
             sx={{ mb: 2 }}
@@ -204,8 +210,8 @@ const TestePage = () => {
             control={control}
             options={categorias}
             label="Categoria"
-            // labelId="select-categoria-label"
             placeholder="Selecione"
+            disableEmpty
             getValue={(c) => c.id}
             getLabel={(c) => c.nome}
           />
@@ -219,6 +225,9 @@ const TestePage = () => {
             getOptionLabel={(p) => p.label}
             getOptionValue={(p) => p.id}
             placeholder="Digite para buscar..."
+            multiple
+            selectAll
+            limitTags={1}
             textFieldProps={{ sx: { mb: 2 } }}
           />
           {/* Autocomplete Múltiplo */}
@@ -232,6 +241,7 @@ const TestePage = () => {
             getOptionValue={(c) => c.id}
             placeholder="Selecione múltiplas categorias"
             limitTags={1}
+            disableCloseOnSelect
             textFieldProps={{ sx: { mb: 2 } }}
           />
 
@@ -250,6 +260,49 @@ const TestePage = () => {
                 placeholder="Selecione países..."
               />
             )}
+            sx={{ mb: 2 }}
+          />
+
+          {/* Autocomplete Puro com renderTags customizado */}
+          <Autocomplete
+            multiple
+            value={categoriasComRenderTags}
+            onChange={(_, newValue) => setCategoriasComRenderTags(newValue)}
+            options={categorias}
+            getOptionLabel={(option) => option.nome}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            limitTags={2}
+            disableCloseOnSelect
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Categorias com renderTags"
+                placeholder="Selecione categorias..."
+              />
+            )}
+            renderTags={(tagValue, getTagProps) => {
+              const limit = 1;
+              const contador =
+                tagValue.length > limit ? (
+                  <span style={{ marginLeft: 8 }}>
+                    +{tagValue.length - limit}
+                  </span>
+                ) : null;
+
+              return (
+                <>
+                  {tagValue.slice(0, limit).map((option, index) => (
+                    <Chip
+                      size="small"
+                      label={option.nome}
+                      {...getTagProps({ index })}
+                      key={option.id}
+                    />
+                  ))}
+                  {contador}
+                </>
+              );
+            }}
             sx={{ mb: 2 }}
           />
 
