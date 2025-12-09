@@ -1,46 +1,46 @@
-import { api } from '../api';
-import { Despesa, CreateDespesaDto, UpdateDespesaDto } from '../types';
-import { fnBuildSearchParams } from '../../utils/searchParams';
+import { api } from "../api";
+import { Despesa, DespesaDto, UpdateDespesaDto } from "../types";
+import { fnBuildSearchParams } from "../../utils/searchParams";
 
 export const despesasApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getDespesas: builder.query<Despesa[], void>({
-      query: () => '/despesas',
-      providesTags: ['Despesas'],
+      query: () => "/despesas",
+      providesTags: ["Despesas"],
     }),
-    
+
     getDespesasByCategoria: builder.query<Despesa[], string>({
       query: (categoriaId) => {
         const queryString = fnBuildSearchParams({ categoriaId });
         return `/despesas?${queryString}`;
       },
-      providesTags: ['Despesas'],
+      providesTags: ["Despesas"],
     }),
-    
-    createDespesa: builder.mutation<Despesa, CreateDespesaDto>({
+
+    createDespesa: builder.mutation<Despesa, DespesaDto>({
       query: (newDespesa) => ({
-        url: '/despesas',
-        method: 'POST',
+        url: "/despesas",
+        method: "POST",
         body: newDespesa,
       }),
-      invalidatesTags: ['Despesas'],
+      invalidatesTags: ["Despesas"],
     }),
-    
+
     updateDespesa: builder.mutation<Despesa, UpdateDespesaDto>({
-      query: ({ id, ...data }) => ({
+      query: ({ id, data }) => ({
         url: `/despesas/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ['Despesas'],
+      invalidatesTags: ["Despesas"],
     }),
-    
+
     deleteDespesa: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/despesas/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Despesas'],
+      invalidatesTags: ["Despesas"],
     }),
   }),
 });

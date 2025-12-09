@@ -5,25 +5,21 @@ import { TextField, TextFieldProps } from "@mui/material";
 const StyledTextField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root": {
     // 🔹 Borda ao passar o mouse
-    "&:hover .MuiOutlinedInput-notchedOutline": {
-      borderColor: theme.palette.grey[400],
-    },
+    // "&:hover .MuiOutlinedInput-notchedOutline": {
+    //   borderColor: theme.palette.grey[400],
+    // },
 
     // 🔹 Borda ao focar no campo
-    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-      borderColor: theme.palette.primary.main,
-    },
+    // "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    //   borderColor: theme.palette.primary.main,
+    // },
 
     // 🔹 Estilização do placeholder normal
     "& .MuiOutlinedInput-input::-webkit-input-placeholder": {
-      color: theme.palette.text.primary,
-      opacity: "0.8",
+      // color: theme.palette.text.primary,
+      opacity: "0.6",
     },
-
-    // 🔹 Cor da borda quando o campo está desabilitado
-    "&.Mui-disabled .MuiOutlinedInput-notchedOutline": {
-      borderColor: theme.palette.grey[200],
-    },
+    
 
     // 🔹 Placeholder quando o campo está desabilitado (deve vir ANTES do texto)
     "& .MuiOutlinedInput-input.Mui-disabled::-webkit-input-placeholder": {

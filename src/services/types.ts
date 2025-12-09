@@ -1,12 +1,3 @@
-// Interfaces para as entidades do sistema financeiro
-
-export interface Receita {
-  id: string;
-  nome: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface Despesa {
   id: string;
@@ -22,7 +13,6 @@ export interface Despesa {
 
 export interface FonteRenda {
   id: string;
-  receitaId: string;
   nome: string;
   valorEstimado?: number;
   diaRecebimento?: number; // 1-31
@@ -50,20 +40,15 @@ export interface Lancamento {
   updatedAt: string;
 }
 
-export interface CreateReceitaDto {
-  nome: string;
-}
-
-export interface CreateDespesaDto {
+export interface DespesaDto {
   categoriaId: string;
   nome: string;
-  valorEstimado?: number;
-  diaVencimento?: number;
+  valorEstimado?: number | string;
+  diaVencimento?: number | string;
   status: boolean;
 }
 
 export interface CreateFonteRendaDto {
-  receitaId: string;
   nome: string;
   valorEstimado?: number;
   diaRecebimento?: number;
@@ -101,11 +86,7 @@ export interface UpdateReceitaDto {
 export interface UpdateDespesaDto {
   id: string;
   // Campos opcionais para permitir atualizações parciais
-  categoriaId?: string;
-  nome?: string;
-  valorEstimado?: number;
-  diaVencimento?: number;
-  status?: boolean;
+  data: Partial<DespesaDto>;
 }
 
 export interface UpdateFonteRendaDto {

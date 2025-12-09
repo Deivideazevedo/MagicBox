@@ -1,80 +1,71 @@
 "use client";
 
-import { useRef } from "react";
+import { HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
+import { LoadingButton } from "@mui/lab";
 import {
   Box,
-  Grid,
+  Button,
   Card,
   CardContent,
-  Typography,
-  TextField,
-  Button,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  IconButton,
+  InputAdornment,
   List,
   ListItem,
-  ListItemText,
   ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
+  ListItemText,
   Stack,
-  Divider,
-  InputAdornment,
+  Switch,
+  Typography,
+  alpha,
+  CircularProgress,
 } from "@mui/material";
-import { 
-  IconPlus, 
-  IconEdit, 
-  IconTrash, 
-  IconCreditCard,
-  IconX,
+import {
   IconCalendar,
-  IconCurrencyDollar
+  IconCategory,
+  IconCreditCard,
+  IconCurrencyDollar,
+  IconEdit,
+  IconPlus,
+  IconTrash,
+  IconX,
 } from "@tabler/icons-react";
+import { useRef } from "react";
 import { Controller } from "react-hook-form";
 import { useDespesas } from "../hooks/useDespesas";
-import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { Despesa } from "@/services/types";
+import { Categoria } from "@/core/categorias/types";
 
-interface FormData {
-  categoriaId: string;
-  nome: string;
-  valorEstimado?: number;
-  diaVencimento?: number;
-  status: boolean;
+interface DespesasTabProps {
+  despesas: Despesa[];
+  categorias: Categoria[];
 }
 
-export default function DespesasTab() {
+export default function DespesasTab({ despesas: despesasProps, categorias: categoriasProps }: DespesasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
-  
+
   const {
     despesas,
-    isLoading,
-    error,
+    categorias,
     editingDespesa,
-    register,
     handleSubmit,
     control,
-    errors,
     isCreating,
     isUpdating,
     isDeleting,
-    onSubmit,
     handleEdit,
     handleCancelEdit,
     handleDeleteClick,
     handleDeleteConfirm,
     handleDeleteCancel,
-    deleteDialog
-  } = useDespesas();
-
-  const { data: categorias = [] } = useGetCategoriasQuery();
+    deleteDialog,
+  } = useDespesas({ despesas: despesasProps, categorias: categoriasProps });
 
   const scrollToForm = () => {
     if (formRef.current) {
@@ -83,7 +74,7 @@ export default function DespesasTab() {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
   };
@@ -92,190 +83,266 @@ export default function DespesasTab() {
     handleEdit(despesa, scrollToForm);
   };
 
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 3 }}>
-        Erro ao carregar despesas. Tente novamente.
-      </Alert>
-    );
-  }
-
   return (
     <Box sx={{ px: 3, pb: 3 }}>
       <Grid container spacing={3}>
         {/* Formulário de Cadastro */}
         <Grid item xs={12} md={4}>
-          <Card 
+          <Card
             ref={formRef}
-            elevation={2}
-            sx={{ 
+            elevation={0} // Fica mais moderno sem sombra se tiver borda
+            sx={{
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
+              border: "1px solid",
+              // Use a cor main com baixíssima opacidade para a borda ficar elegante
+              borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
+              // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
+              backgroundColor: (theme) => alpha(theme.palette.error.light, 0.05),
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ px: 1, py: 1.5 }}>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
                     borderRadius: 2,
-                    backgroundColor: 'success.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
+                    p: 1,
+                    display: "flex",
+                    backgroundColor: "error.main",
+                    color: "white",
                   }}
                 >
                   <IconCreditCard size={24} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" fontWeight={600} color="text.primary">
-                    {editingDespesa ? 'Editar Despesa' : 'Nova Despesa'}
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    color="text.primary"
+                  >
+                    {editingDespesa ? "Editar Despesa" : "Nova Despesa"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {editingDespesa ? 'Atualize os dados da despesa' : 'Adicione uma nova despesa'}
+                    {editingDespesa
+                      ? "Atualize os dados da despesa"
+                      : "Adicione uma nova despesa"}
                   </Typography>
                 </Box>
               </Box>
 
-              <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-                <FormControl fullWidth sx={{ mb: 3 }} error={!!errors.categoriaId}>
-                  <InputLabel>Categoria</InputLabel>
-                  <Controller
-                    name="categoriaId"
-                    control={control}
-                    rules={{ required: "Categoria é obrigatória" }}
-                    render={({ field }) => (
-                      <Select
-                        {...field}
-                        label="Categoria"
-                      >
-                        {categorias.map((categoria: any) => (
-                          <MenuItem key={categoria.id} value={categoria.id}>
-                            {categoria.nome}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    )}
-                  />
-                  {errors.categoriaId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
-                      {errors.categoriaId.message}
-                    </Typography>
-                  )}
-                </FormControl>
+              <Box component="form" onSubmit={handleSubmit}>
+                <Grid container gap={3}>
+                  <Grid item xs={12}>
+                    <HookSelect
+                      name="categoriaId"
+                      color="error"
+                      control={control}
+                      options={categorias}
+                      label="Categoria"
+                      placeholder="Selecione"
+                      displayEmpty 
+                      getValue={(obj) => obj.id}
+                      getLabel={(obj) => obj.nome}
+                      // rules={{ required: "Obrigatório" }}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <IconCategory size={20} />
+                        </InputAdornment>
+                      }
+                      sx={{
+                        "& .MuiOutlinedInput-input": {
+                          paddingLeft: "0px",
+                        },
+                      }}
+                    />
+                  </Grid>
 
-                <TextField
-                  fullWidth
-                  label="Nome da Despesa"
-                  placeholder="Ex: Conta de Luz, Gasolina..."
-                  {...register("nome", { 
-                    required: "Nome da despesa é obrigatório",
-                    minLength: { value: 2, message: "Nome deve ter pelo menos 2 caracteres" }
-                  })}
-                  error={!!errors.nome}
-                  helperText={errors.nome?.message}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconCreditCard size={20}/>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ mb: 3 }}
-                />
+                  <Grid item xs={12}>
+                    <HookTextField
+                      label="Nome da Despesa"
+                      name="nome"
+                      color="error"
+                      control={control}
+                      placeholder="Ex: Conta de Luz, Gasolina..."
+                      rules={{
+                        required: "Obrigatório",
+                        minLength: {
+                          value: 2,
+                          message: "Mín. 2 caracteres",
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconCreditCard size={20} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-input": { paddingLeft: "0px" },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <HookTextField
+                      color="error"
+                      label="Valor Estimado"
+                      type="number"
+                      placeholder="0,00"
+                      name="valorEstimado"
+                      control={control}
+                      inputProps={{ step: "0.01", min: "0" }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconCurrencyDollar size={20} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      rules={{
+                        required: "Obrigatório",
+                        min: {
+                          value: 0.01,
+                          message: "Valor deve ser positivo",
+                        },
+                      }}
+                      sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
+                    />
+                  </Grid>
 
-                <TextField
-                  fullWidth
-                  label="Valor Estimado"
-                  type="number"
-                  placeholder="0,00"
-                  {...register("valorEstimado", {
-                    min: { value: 0.01, message: "Valor deve ser positivo" }
-                  })}
-                  error={!!errors.valorEstimado}
-                  helperText={errors.valorEstimado?.message}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconCurrencyDollar size={20} color="gray" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  inputProps={{ step: "0.01", min: "0" }}
-                  sx={{ mb: 3 }}
-                />
+                  <Grid item xs={12}>
+                    <HookTextField
+                      color="error"
+                      label="Dia do Vencimento"
+                      type="number"
+                      name="diaVencimento"
+                      placeholder="Ex: 5 (Opcional)"
+                      control={control}
+                      rules={{
+                        min: { value: 1, message: "Dia deve ser entre 1 e 31" },
+                        max: {
+                          value: 31,
+                          message: "Dia deve ser entre 1 e 31",
+                        },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconCalendar size={20} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      inputProps={{ min: "1", max: "31" }}
+                      sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
+                    />
+                  </Grid>
 
-                <TextField
-                  fullWidth
-                  label="Dia do Vencimento"
-                  type="number"
-                  placeholder="15"
-                  {...register("diaVencimento", {
-                    min: { value: 1, message: "Dia deve ser entre 1 e 31" },
-                    max: { value: 31, message: "Dia deve ser entre 1 e 31" }
-                  })}
-                  error={!!errors.diaVencimento}
-                  helperText={errors.diaVencimento?.message}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconCalendar size={20} color="gray" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  inputProps={{ min: "1", max: "31" }}
-                  sx={{ mb: 3 }}
-                />
-
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <Box sx={{ mb: 3, p: 2, borderRadius: 2, backgroundColor: 'action.hover' }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            Status da Despesa
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {field.value ? 'Despesa ativa e disponível para lançamentos' : 'Despesa inativa'}
-                          </Typography>
-                        </Box>
-                        <Chip 
-                          label={field.value ? 'Ativa' : 'Inativa'}
-                          color={field.value ? 'success' : 'default'}
-                          variant="outlined"
+                  <Grid item xs={12}>
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Box
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: field.value
+                              ? "success.main"
+                              : "divider", 
+                            backgroundColor: field.value
+                              ? (theme) =>
+                                  alpha(theme.palette.success.light, 0.2)
+                              : "grey.100",
+                            transition: "all 0.3s ease",
+                            cursor: "pointer", // Permite clicar na caixa inteira
+                          }}
                           onClick={() => field.onChange(!field.value)}
-                          sx={{ cursor: 'pointer' }}
-                        />
-                      </Stack>
-                    </Box>
-                  )}
-                />
+                        >
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Box sx={{ pr: 0 }}>
+                              <Typography
+                                variant="subtitle2"
+                                fontWeight={600}
+                                color={
+                                  field.value ? "success.main" : "text.primary"
+                                }
+                              >
+                                {field.value
+                                  ? "Despesa Ativa"
+                                  : "Despesa Inativa"}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {field.value
+                                  ? "Disponível para lançamentos"
+                                  : "Não será exibida em lançamentos"}
+                              </Typography>
+                            </Box>
+                            <Switch
+                              checked={field.value}
+                              color="success"
+                              inputProps={{ "aria-label": "status switch" }}
+                            />
+                          </Stack>
+                        </Box>
+                      )}
+                    />
+                  </Grid>
 
-                <Stack direction="row" spacing={2}>
+                  <Grid container item xs={12} gap={1}>
+                    <Grid item xs={12}>
+                      <LoadingButton
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        loading={isCreating || isUpdating}
+                        color="error"
+                        startIcon={<IconPlus size={16} />}
+                        // sx={{ flex: 1 }}
+                      >
+                        {editingDespesa ? "Atualizar" : "Adicionar"}
+                      </LoadingButton>
+                    </Grid>
+
+                    {editingDespesa && (
+                      <Grid item xs={12}>
+                        <Button
+                          variant="outlined"
+                          fullWidth
+                          onClick={handleCancelEdit}
+                          startIcon={<IconX size={16} />}
+                          // sx={{ flex: 1 }}
+                        >
+                          Cancelar
+                        </Button>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Grid>
+
+                {/* <Stack direction="row" spacing={2}>
                   <Button
                     type="submit"
                     variant="contained"
                     disabled={isCreating || isUpdating}
-                    startIcon={isCreating || isUpdating ? <CircularProgress size={16} /> : <IconPlus size={16} />}
+                    startIcon={
+                      isCreating || isUpdating ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <IconPlus size={16} />
+                      )
+                    }
                     sx={{ flex: 1 }}
                   >
-                    {editingDespesa ? 'Atualizar' : 'Adicionar'}
+                    {editingDespesa ? "Atualizar" : "Adicionar"}
                   </Button>
-                  
+
                   {editingDespesa && (
                     <Button
                       variant="outlined"
@@ -285,7 +352,7 @@ export default function DespesasTab() {
                       Cancelar
                     </Button>
                   )}
-                </Stack>
+                </Stack> */}
               </Box>
             </CardContent>
           </Card>
@@ -293,35 +360,58 @@ export default function DespesasTab() {
 
         {/* Lista de Despesas */}
         <Grid item xs={12} md={8}>
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
+          <Card
+           elevation={0}
+            sx={{
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
+              // backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
+            }}
+          >
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box
+                sx={{ p:2, borderBottom: "1px solid", borderColor: "divider" }}
+              >
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
-                    <Typography variant="h6" fontWeight={600} color="text.primary">
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      color="text.primary"
+                    >
                       Despesas
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {despesas.length} despesa{despesas.length !== 1 ? 's' : ''} cadastrada{despesas.length !== 1 ? 's' : ''}
+                      {despesas.length} despesa
+                      {despesas.length !== 1 ? "s" : ""} cadastrada
+                      {despesas.length !== 1 ? "s" : ""}
                     </Typography>
                   </Box>
-                  <Chip 
+                  <Chip
                     label={`${despesas.length} despesas`}
-                    color="success"
+                    color="error"
                     variant="outlined"
                   />
                 </Stack>
               </Box>
 
               {despesas.length === 0 ? (
-                <Box 
-                  sx={{ 
-                    textAlign: 'center', 
+                <Box
+                  sx={{
+                    textAlign: "center",
                     py: 8,
-                    color: 'text.secondary'
+                    color: "text.secondary",
                   }}
                 >
-                  <IconCreditCard size={64} style={{ opacity: 0.3, marginBottom: 16 }} />
+                  <IconCreditCard
+                    size={64}
+                    style={{ opacity: 0.3, marginBottom: 16 }}
+                  />
                   <Typography variant="h6" gutterBottom>
                     Nenhuma despesa cadastrada
                   </Typography>
@@ -332,15 +422,17 @@ export default function DespesasTab() {
               ) : (
                 <List disablePadding>
                   {despesas.map((despesa: any, index: number) => {
-                    const categoria = categorias.find((d: any) => d.id === despesa.categoriaId);
+                    const categoria = categorias.find(
+                      (d: any) => d.id === despesa.categoriaId
+                    );
                     return (
                       <Box key={despesa.id}>
                         <ListItem
                           sx={{
                             py: 2,
-                            px: 3,
-                            '&:hover': {
-                              backgroundColor: 'action.hover',
+                            px: 2,
+                            "&:hover": {
+                              backgroundColor: "action.hover",
                             },
                           }}
                         >
@@ -349,47 +441,63 @@ export default function DespesasTab() {
                               width: 40,
                               height: 40,
                               borderRadius: 2,
-                              backgroundColor: despesa.status ? 'success.light' : 'grey.300',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: despesa.status ? 'success.main' : 'grey.600',
+                              backgroundColor: despesa.status
+                                ? "error.light"
+                                : "grey.300",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: despesa.status ? "error.main" : "grey.600",
                               mr: 2,
                             }}
                           >
                             <IconCreditCard size={20} />
                           </Box>
-                          
+
                           <ListItemText
                             primary={
-                              <Stack direction="row" alignItems="center" spacing={1}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={1}
+                              >
                                 <Typography variant="body1" fontWeight={500}>
                                   {despesa.nome}
                                 </Typography>
-                                <Chip 
-                                  label={despesa.status ? 'Ativa' : 'Inativa'}
-                                  color={despesa.status ? 'success' : 'default'}
+                                <Chip
+                                  label={despesa.status ? "Ativa" : "Inativa"}
+                                  color={despesa.status ? "success" : "default"}
                                   size="small"
-                                  variant="outlined"
+                                  variant="filled"
                                 />
                               </Stack>
                             }
                             secondary={
                               <Stack spacing={0.5}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Categoria: {categoria?.nome || 'N/A'}
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Categoria: {categoria?.nome || "N/A"}
                                 </Typography>
                                 <Stack direction="row" spacing={2}>
                                   {despesa.valorEstimado && (
-                                    <Typography variant="caption" color="text.secondary">
-                                      Valor: {new Intl.NumberFormat("pt-BR", {
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      Valor:{" "}
+                                      {new Intl.NumberFormat("pt-BR", {
                                         style: "currency",
                                         currency: "BRL",
                                       }).format(despesa.valorEstimado)}
                                     </Typography>
                                   )}
                                   {despesa.diaVencimento && (
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
                                       Vence dia {despesa.diaVencimento}
                                     </Typography>
                                   )}
@@ -397,15 +505,17 @@ export default function DespesasTab() {
                               </Stack>
                             }
                           />
-                          
+
                           <ListItemSecondaryAction>
                             <Stack direction="row" spacing={1}>
                               <IconButton
                                 size="small"
                                 onClick={() => handleEditWithScroll(despesa)}
-                                sx={{ 
-                                  color: 'primary.main',
-                                  '&:hover': { backgroundColor: 'primary.light' }
+                                sx={{
+                                  color: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.light",
+                                  },
                                 }}
                               >
                                 <IconEdit size={18} />
@@ -413,9 +523,9 @@ export default function DespesasTab() {
                               <IconButton
                                 size="small"
                                 onClick={() => handleDeleteClick(despesa)}
-                                sx={{ 
-                                  color: 'error.main',
-                                  '&:hover': { backgroundColor: 'error.light' }
+                                sx={{
+                                  color: "error.main",
+                                  "&:hover": { backgroundColor: "error.light" },
                                 }}
                               >
                                 <IconTrash size={18} />
@@ -441,7 +551,7 @@ export default function DespesasTab() {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 }
+          sx: { borderRadius: 3 },
         }}
       >
         <DialogTitle>
@@ -451,11 +561,11 @@ export default function DespesasTab() {
                 width: 40,
                 height: 40,
                 borderRadius: 2,
-                backgroundColor: 'error.light',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'error.main',
+                backgroundColor: "error.light",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "error.main",
               }}
             >
               <IconTrash size={20} />
@@ -472,7 +582,8 @@ export default function DespesasTab() {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            Tem certeza que deseja excluir a despesa <strong>"{deleteDialog.despesa?.nome}"</strong>?
+            Tem certeza que deseja excluir a despesa{" "}
+            <strong>"{deleteDialog.despesa?.nome}"</strong>?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
@@ -488,7 +599,13 @@ export default function DespesasTab() {
             color="error"
             variant="contained"
             disabled={isDeleting}
-            startIcon={isDeleting ? <CircularProgress size={16} /> : <IconTrash size={16} />}
+            startIcon={
+              isDeleting ? (
+                <CircularProgress size={16} />
+              ) : (
+                <IconTrash size={16} />
+              )
+            }
           >
             Excluir
           </Button>

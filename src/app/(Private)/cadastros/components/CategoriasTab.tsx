@@ -1,13 +1,11 @@
-"use client";
-
+import { useRef } from "react";
 import {
-  Alert,
+  alpha,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -21,50 +19,54 @@ import {
   ListItemSecondaryAction,
   ListItemText,
   Stack,
-  TextField,
-  Typography
+  Tooltip,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import {
   IconCategory,
   IconEdit,
   IconPlus,
   IconTrash,
-  IconX
+  IconX,
 } from "@tabler/icons-react";
-import { useRef } from "react";
 import { useCategorias } from "../hooks/useCategorias";
+import { HookTextField } from "@/app/components/forms/hooksForm";
+import { LoadingButton } from "@mui/lab";
+import { Categoria } from "@/core/categorias/types";
 
-export default function CategoriasTab() {
+interface CategoriasTabProps {
+  categorias: Categoria[];
+}
+
+export default function CategoriasTab({ categorias: categoriasProps }: CategoriasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
-  
+  const theme = useTheme();
+
   const {
     categorias,
-    isLoading,
-    error,
     editingCategoria,
-    register,
+    control,
     handleSubmit,
-    errors,
     isCreating,
     isUpdating,
     isDeleting,
-    onSubmit,
     handleEdit,
     handleCancelEdit,
     handleDeleteClick,
     handleDeleteConfirm,
     handleDeleteCancel,
-    deleteDialog
-  } = useCategorias();
+    deleteDialog,
+  } = useCategorias({ categorias: categoriasProps });
 
   const scrollToForm = () => {
     if (formRef.current) {
       const elementPosition = formRef.current.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - 200; // 120px de offset do topo
+      const offsetPosition = elementPosition + window.pageYOffset - 200;
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
   };
@@ -73,102 +75,100 @@ export default function CategoriasTab() {
     handleEdit(categoria, scrollToForm);
   };
 
-  if (isLoading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 3 }}>
-        Erro ao carregar categorias. Tente novamente.
-      </Alert>
-    );
-  }
-
   return (
     <Box sx={{ px: 3, pb: 3 }}>
       <Grid container spacing={3}>
         {/* Formulário de Cadastro */}
         <Grid item xs={12} md={4}>
-          <Card 
+          <Card
             ref={formRef}
-            elevation={2}
-            sx={{ 
+            elevation={0} // Fica mais moderno sem sombra se tiver borda
+            sx={{
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)'
+              border: "1px solid",
+              // Use a cor main com baixíssima opacidade para a borda ficar elegante
+              borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+              // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
+              backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.4),
             }}
           >
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ px: 1, py: 1.5 }}>
               <Box display="flex" alignItems="center" gap={2} mb={3}>
                 <Box
                   sx={{
-                    width: 48,
-                    height: 48,
                     borderRadius: 2,
-                    backgroundColor: 'primary.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
+                    p: 1,
+                    display: "flex",
+                    backgroundColor: "primary.main",
+                    color: "white",
                   }}
                 >
                   <IconCategory size={24} />
                 </Box>
                 <Box>
-                  <Typography variant="h6" fontWeight={600} color="text.primary">
-                    {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    color="text.primary"
+                  >
+                    {editingCategoria ? "Editar Categoria" : "Nova Categoria"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {editingCategoria ? 'Atualize os dados da categoria' : 'Adicione uma nova categoria'}
+                    {editingCategoria ? "Atualização" : "Cadastro"}
                   </Typography>
                 </Box>
               </Box>
 
-              <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-                <TextField
-                  fullWidth
-                  label="Nome da Categoria"
-                  placeholder="Ex: Alimentação, Transporte..."
-                  {...register("nome")}
-                  error={!!errors.nome}
-                  helperText={errors.nome?.message}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconCategory size={20} color="gray" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ mb: 3 }}
-                />
-
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isCreating || isUpdating}
-                    startIcon={isCreating || isUpdating ? <CircularProgress size={16} /> : <IconPlus size={16} />}
-                    sx={{ flex: 1 }}
-                  >
-                    {editingCategoria ? 'Atualizar' : 'Adicionar'}
-                  </Button>
-                  
-                  {editingCategoria && (
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancelEdit}
-                      startIcon={<IconX size={16} />}
+              <Box component="form" onSubmit={handleSubmit}>
+                <Grid container gap={1}>
+                  <Grid item xs={12}>
+                    <HookTextField
+                      control={control}
+                      name="nome"
+                      label="Nome da Categoria"
+                      placeholder="Ex: Pessoal, conjugal..."
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconCategory size={20} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      // InputLabelProps={{ shrink: true }}
+                      sx={{
+                        mb: 1,
+                        "& .MuiOutlinedInput-input": {
+                          paddingLeft: "0px",
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <LoadingButton
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      loading={isCreating || isUpdating}
+                      startIcon={<IconPlus size={16} />}
+                      sx={{ flex: 1 }}
                     >
-                      Cancelar
-                    </Button>
+                      {editingCategoria ? "Atualizar" : "Adicionar"}
+                    </LoadingButton>
+                  </Grid>
+                  {editingCategoria && (
+                    <Grid item xs={12}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        onClick={handleCancelEdit}
+                        startIcon={<IconX size={16} />}
+                        sx={{ flex: 1 }}
+                      >
+                        Cancelar
+                      </Button>
+                    </Grid>
                   )}
-                </Stack>
+                </Grid>
               </Box>
             </CardContent>
           </Card>
@@ -176,35 +176,57 @@ export default function CategoriasTab() {
 
         {/* Lista de Categorias */}
         <Grid item xs={12} md={8}>
-          <Card elevation={2} sx={{ borderRadius: 3 }}>
+          <Card
+           elevation={0}
+            sx={{
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+              // backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
+            }}
+          >
             <CardContent sx={{ p: 0 }}>
-              <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Box
+                sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}
+              >
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Box>
-                    <Typography variant="h6" fontWeight={600} color="text.primary">
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      color="text.primary"
+                    >
                       Categorias
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {categorias.length} categoria{categorias.length !== 1 ? 's' : ''} cadastrada{categorias.length !== 1 ? 's' : ''}
+                      Listagem de categorias
                     </Typography>
                   </Box>
-                  <Chip 
+                  <Chip
                     label={`${categorias.length} categorias`}
                     color="primary"
                     variant="outlined"
+                    size="medium"
                   />
                 </Stack>
               </Box>
 
               {categorias.length === 0 ? (
-                <Box 
-                  sx={{ 
-                    textAlign: 'center', 
+                <Box
+                  sx={{
+                    textAlign: "center",
                     py: 8,
-                    color: 'text.secondary'
+                    color: "text.secondary",
                   }}
                 >
-                  <IconCategory size={64} style={{ opacity: 0.3, marginBottom: 16 }} />
+                  <IconCategory
+                    size={64}
+                    style={{ opacity: 0.3, marginBottom: 16 }}
+                  />
                   <Typography variant="h6" gutterBottom>
                     Nenhuma categoria cadastrada
                   </Typography>
@@ -219,9 +241,9 @@ export default function CategoriasTab() {
                       <ListItem
                         sx={{
                           py: 2,
-                          px: 3,
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
+                          px: 2,
+                          "&:hover": {
+                            backgroundColor: "action.hover",
                           },
                         }}
                       >
@@ -230,48 +252,49 @@ export default function CategoriasTab() {
                             width: 40,
                             height: 40,
                             borderRadius: 2,
-                            backgroundColor: 'primary.light',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'primary.main',
+                            backgroundColor: "primary.light",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "primary.main",
                             mr: 2,
                           }}
                         >
                           <IconCategory size={20} />
                         </Box>
-                        
+
                         <ListItemText
                           primary={categoria.nome}
-                          secondary={`Criada em ${new Date(categoria.createdAt).toLocaleDateString('pt-BR')}`}
+                          secondary={`Criada em ${new Date(
+                            categoria.createdAt
+                          ).toLocaleDateString("pt-BR")}`}
                           primaryTypographyProps={{
                             fontWeight: 500,
-                            color: 'text.primary'
+                            color: "text.primary",
                           }}
                         />
-                        
+
                         <ListItemSecondaryAction>
                           <Stack direction="row" spacing={1}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditWithScroll(categoria)}
-                              sx={{ 
-                                color: 'primary.main',
-                                '&:hover': { backgroundColor: 'primary.light' }
-                              }}
-                            >
-                              <IconEdit size={18} />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteClick(categoria)}
-                              sx={{ 
-                                color: 'error.main',
-                                '&:hover': { backgroundColor: 'error.light' }
-                              }}
-                            >
-                              <IconTrash size={18} />
-                            </IconButton>
+                            <Tooltip title="Editar Categoria" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleEditWithScroll(categoria)}
+                                color="primary"
+                              >
+                                <IconEdit size={18} />
+                              </IconButton>
+                            </Tooltip>
+
+                            <Tooltip title="Excluir Categoria" placement="top">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(categoria)}
+                                color="error"
+                              >
+                                <IconTrash size={18} />
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
                         </ListItemSecondaryAction>
                       </ListItem>
@@ -292,7 +315,7 @@ export default function CategoriasTab() {
         maxWidth="sm"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 }
+          sx: { borderRadius: 3 },
         }}
       >
         <DialogTitle>
@@ -302,11 +325,11 @@ export default function CategoriasTab() {
                 width: 40,
                 height: 40,
                 borderRadius: 2,
-                backgroundColor: 'error.light',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'error.main',
+                backgroundColor: "error.light",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "error.main",
               }}
             >
               <IconTrash size={20} />
@@ -323,7 +346,8 @@ export default function CategoriasTab() {
         </DialogTitle>
         <DialogContent>
           <Typography>
-            Tem certeza que deseja excluir a categoria <strong>"{deleteDialog.categoria?.nome}"</strong>?
+            Tem certeza que deseja excluir a categoria{" "}
+            <strong>"{deleteDialog.categoria?.nome}"</strong>?
           </Typography>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
@@ -331,18 +355,24 @@ export default function CategoriasTab() {
             onClick={handleDeleteCancel}
             variant="outlined"
             startIcon={<IconX size={16} />}
+            sx={{
+              fontWeight: 600,
+            }}
           >
             Cancelar
           </Button>
-          <Button
+          <LoadingButton
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
-            disabled={isDeleting}
-            startIcon={isDeleting ? <CircularProgress size={16} /> : <IconTrash size={16} />}
+            loading={isDeleting}
+            startIcon={<IconTrash size={16} />}
+            sx={{
+              fontWeight: 600,
+            }}
           >
             Excluir
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </Box>

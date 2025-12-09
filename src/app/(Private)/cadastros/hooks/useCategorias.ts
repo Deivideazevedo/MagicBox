@@ -1,40 +1,61 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { 
-  useGetCategoriasQuery, 
-  useCreateCategoriaMutation, 
+import {
+  useGetCategoriasQuery,
+  useCreateCategoriaMutation,
   useUpdateCategoriaMutation,
-  useDeleteCategoriaMutation 
+  useDeleteCategoriaMutation,
 } from "@/services/endpoints/categoriasApi";
+import { Categoria } from "@/core/categorias/types";
 
 // Schema de validação
 const categoriaSchema = yup.object({
-  nome: yup.string().required("Nome da categoria é obrigatório").min(2, "Nome deve ter pelo menos 2 caracteres"),
+  nome: yup
+    .string()
+    .required("obrigatório")
+    .min(2, "Mínimo 2 caracteres"),
 });
 
 type FormData = {
   nome: string;
 };
 
-export const useCategorias = () => {
-  const [editingCategoria, setEditingCategoria] = useState<any>(null);
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; categoria: any }>({
+interface UseCategoriasProps {
+  categorias?: Categoria[];
+}
+
+export const useCategorias = ({ categorias: categoriasProps }: UseCategoriasProps = {}) => {
+  // Se categoriasProps existir (não é undefined), skip a query RTK
+  const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
+    skip: categoriasProps !== undefined,
+  });
+
+  // Usa props se fornecido, senão usa resultado da query
+  const categorias = categoriasProps ?? categoriasQuery;
+
+  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    categoria: Categoria | null;
+  }>({
     open: false,
     categoria: null,
   });
 
-  // RTK Query hooks
-  const { data: categorias = [], isLoading, error } = useGetCategoriasQuery();
-  const [createCategoria, { isLoading: isCreating }] = useCreateCategoriaMutation();
-  const [updateCategoria, { isLoading: isUpdating }] = useUpdateCategoriaMutation();
-  const [deleteCategoria, { isLoading: isDeleting }] = useDeleteCategoriaMutation();
+  // RTK Query mutations
+  const [createCategoria, { isLoading: isCreating }] =
+    useCreateCategoriaMutation();
+  const [updateCategoria, { isLoading: isUpdating }] =
+    useUpdateCategoriaMutation();
+  const [deleteCategoria, { isLoading: isDeleting }] =
+    useDeleteCategoriaMutation();
 
   // React Hook Form
   const {
-    register,
-    handleSubmit,
+    handleSubmit: handleSubmitForm,    
+    control,
     reset,
     setValue,
     formState: { errors },
@@ -42,10 +63,13 @@ export const useCategorias = () => {
     resolver: yupResolver(categoriaSchema),
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = useCallback(async (data: FormData) => {
     try {
       if (editingCategoria) {
-        await updateCategoria({ id: editingCategoria.id, nome: data.nome }).unwrap();
+        await updateCategoria({
+          id: editingCategoria.id,
+          nome: data.nome,
+        }).unwrap();
         setEditingCategoria(null);
       } else {
         await createCategoria(data).unwrap();
@@ -54,29 +78,27 @@ export const useCategorias = () => {
     } catch (error) {
       console.error("Erro ao salvar categoria:", error);
     }
-  };
+  }, [editingCategoria, updateCategoria, createCategoria, reset]);
 
-  const handleEdit = (categoria: any, scrollCallback?: () => void) => {
+  const handleEdit = useCallback((categoria: Categoria, scrollCallback?: () => void) => {
     setEditingCategoria(categoria);
     setValue("nome", categoria.nome);
-    
-    // Chama o callback de scroll se fornecido
+
     if (scrollCallback) {
-      // Pequeno delay para garantir que o estado foi atualizado
       setTimeout(() => scrollCallback(), 100);
     }
-  };
+  }, [setValue]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setEditingCategoria(null);
     reset();
-  };
+  }, [reset]);
 
-  const handleDeleteClick = (categoria: any) => {
+  const handleDeleteClick = useCallback((categoria: Categoria) => {
     setDeleteDialog({ open: true, categoria });
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (deleteDialog.categoria) {
       try {
         await deleteCategoria(deleteDialog.categoria.id).unwrap();
@@ -85,38 +107,38 @@ export const useCategorias = () => {
         console.error("Erro ao excluir categoria:", error);
       }
     }
-  };
+  }, [deleteDialog.categoria, deleteCategoria]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteDialog({ open: false, categoria: null });
-  };
+  }, []);
+
+  // submit é o handler que o <form> espera
+  const handleSubmit = handleSubmitForm(onSubmit);
 
   return {
     // Data
     categorias,
-    isLoading,
-    error,
-    
+
     // Form state
     editingCategoria,
-    register,
-    handleSubmit,
+    control,
     errors,
-    
+
     // Loading states
     isCreating,
     isUpdating,
     isDeleting,
-    
+
     // Actions
-    onSubmit,
+    handleSubmit,
     handleEdit,
     handleCancelEdit,
     handleDeleteClick,
     handleDeleteConfirm,
     handleDeleteCancel,
-    
+
     // Dialog state
-    deleteDialog
+    deleteDialog,
   };
 };

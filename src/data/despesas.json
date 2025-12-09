@@ -86,5 +86,38 @@
     "userId": "1",
     "createdAt": "2025-01-01T10:00:00.000Z",
     "updatedAt": "2025-11-21T04:12:56.421Z"
+  },
+  {
+    "id": "fd523193-10de-4f61-896d-f842aa05f1f6",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "Inter",
+    "valorEstimado": 100,
+    "diaVencimento": 23,
+    "status": true,
+    "userId": "2",
+    "createdAt": "2025-12-07T13:43:41.790Z",
+    "updatedAt": "2025-12-07T20:34:55.658Z"
+  },
+  {
+    "id": "f5bffbef-4149-4e32-9729-6269157476b8",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "Nubank",
+    "valorEstimado": 100,
+    "diaVencimento": 10,
+    "status": true,
+    "userId": "2",
+    "createdAt": "2025-12-07T23:14:11.882Z",
+    "updatedAt": "2025-12-07T23:14:11.882Z"
+  },
+  {
+    "id": "f10b06a7-7775-451f-992a-c49ee15ff11d",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "B Brasil",
+    "valorEstimado": 134.53,
+    "diaVencimento": 10,
+    "status": true,
+    "userId": "2",
+    "createdAt": "2025-12-07T23:19:07.921Z",
+    "updatedAt": "2025-12-07T23:19:07.921Z"
   }
 ]

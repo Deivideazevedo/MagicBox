@@ -1,4 +1,8 @@
-import { Control, FieldValues, Path, useController } from "react-hook-form";
+import {
+  FieldValues,
+  useController,
+  UseControllerProps,
+} from "react-hook-form";
 import {
   Select,
   MenuItem,
@@ -8,20 +12,20 @@ import {
   InputLabel,
 } from "@mui/material";
 
-type HookSelectProps<TFieldValues extends FieldValues, T> = SelectProps & {
-  name: Path<TFieldValues>;
-  control: Control<TFieldValues>;
+type HookSelectProps<TFieldValues extends FieldValues, T> = UseControllerProps<TFieldValues> & 
+  Omit<SelectProps, 'name' | 'value' | 'onChange'> & {
   options?: T[];
   placeholder?: string;
   getValue?: (obj: T) => any;
   getLabel?: (obj: T) => React.ReactNode;
-  children?: React.ReactNode; // permite passar MenuItem manualmente
+  children?: React.ReactNode;
   disableEmpty?: boolean;
 };
 
 export function HookSelect<TFieldValues extends FieldValues, T>({
   name,
   control,
+  rules,
   options,
   placeholder,
   getValue,
@@ -33,16 +37,18 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control });
+  } = useController({ name, control, rules });
 
   // Determina se a label deve ter shrink ativo
   // Quando displayEmpty está ativo e não há valor, a label deve subir para não sobrepor o placeholder
-  const shouldShrink = props.displayEmpty ? true : undefined;
+  //const shouldShrink = props.displayEmpty ? true : undefined;
 
   return (
     <FormControl fullWidth error={!!error}>
-      <InputLabel shrink={props.displayEmpty}>{props.label}</InputLabel>
-      <Select {...field} {...props} inputRef={field.ref} >
+      <InputLabel shrink={props.displayEmpty} color={props.color}>
+        {props.label}
+      </InputLabel>
+      <Select {...field} {...props} inputRef={field.ref}>
         {/* Caso o pai queira criar todas as opções manualmente */}
         {children}
 

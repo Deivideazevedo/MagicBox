@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
     
     let fontesRenda = readFontesRenda();
     
-    if (receitaId) {
-      fontesRenda = fontesRenda.filter(f => f.receitaId === receitaId);
-    }
+    // if (receitaId) {
+    //   fontesRenda = fontesRenda.filter(f => f.receitaId === receitaId);
+    // }
     
     return NextResponse.json(fontesRenda);
   } catch (error) {
@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 });
     }
     
-    if (!data.receitaId) {
-      return NextResponse.json({ error: 'Receita é obrigatória' }, { status: 400 });
-    }
+    // if (!data.receitaId) {
+    //   return NextResponse.json({ error: 'Receita é obrigatória' }, { status: 400 });
+    // }
     
     if (data.valorEstimado !== undefined && data.valorEstimado < 0) {
       return NextResponse.json({ error: 'Valor estimado não pode ser negativo' }, { status: 400 });
@@ -69,26 +69,26 @@ export async function POST(request: NextRequest) {
 
     // Verificar se a receita existe
     const receitas = readReceitas();
-    const receitaExiste = receitas.find((r: any) => r.id === data.receitaId);
-    if (!receitaExiste) {
-      return NextResponse.json({ error: 'Receita não encontrada' }, { status: 404 });
-    }
+    // const receitaExiste = receitas.find((r: any) => r.id === data.receitaId);
+    // if (!receitaExiste) {
+    //   return NextResponse.json({ error: 'Receita não encontrada' }, { status: 404 });
+    // }
 
     const fontesRenda = readFontesRenda();
     
     // Verificar se já existe fonte de renda com o mesmo nome na mesma receita
-    const existeFonteRenda = fontesRenda.find(f => 
-      f.receitaId === data.receitaId && 
-      f.nome.toLowerCase() === data.nome.trim().toLowerCase()
-    );
+    // const existeFonteRenda = fontesRenda.find(f => 
+    //   f.receitaId === data.receitaId && 
+    //   f.nome.toLowerCase() === data.nome.trim().toLowerCase()
+    // );
     
-    if (existeFonteRenda) {
-      return NextResponse.json({ error: 'Fonte de renda já cadastrada nesta receita' }, { status: 400 });
-    }
+    // if (existeFonteRenda) {
+    //   return NextResponse.json({ error: 'Fonte de renda já cadastrada nesta receita' }, { status: 400 });
+    // }
 
     const novaFonteRenda: FonteRenda = {
       id: Date.now().toString(),
-      receitaId: data.receitaId,
+      // receitaId: data.receitaId,
       nome: data.nome.trim(),
       valorEstimado: data.valorEstimado || 0,
       diaRecebimento: data.diaRecebimento,
@@ -134,21 +134,21 @@ export async function PUT(request: NextRequest) {
     const fonteAtual = fontesRenda[index];
 
     // Verificar se a receita existe (se está sendo alterada)
-    if (data.receitaId && data.receitaId !== fonteAtual.receitaId) {
-      const receitas = readReceitas();
-      const receitaExiste = receitas.find((r: any) => r.id === data.receitaId);
-      if (!receitaExiste) {
-        return NextResponse.json({ error: 'Receita não encontrada' }, { status: 404 });
-      }
-    }
+    // if (data.receitaId && data.receitaId !== fonteAtual.receitaId) {
+    //   const receitas = readReceitas();
+    //   const receitaExiste = receitas.find((r: any) => r.id === data.receitaId);
+    //   if (!receitaExiste) {
+    //     return NextResponse.json({ error: 'Receita não encontrada' }, { status: 404 });
+    //   }
+    // }
 
     // Verificar se o novo nome já existe em outra fonte de renda da mesma receita
     if (data.nome?.trim()) {
       const novoNome = data.nome.trim().toLowerCase();
-      const receitaId = data.receitaId || fonteAtual.receitaId;
+      // const receitaId = data.receitaId || fonteAtual.receitaId;
       const existeOutraFonte = fontesRenda.find(f => 
         f.id !== data.id && 
-        f.receitaId === receitaId && 
+        // f.receitaId === receitaId && 
         f.nome.toLowerCase() === novoNome
       );
       

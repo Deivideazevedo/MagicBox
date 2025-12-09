@@ -411,10 +411,42 @@ const components: any = (theme: Theme) => {
     MuiInputLabel: {
       styleOverrides: {
         root: {
-          fontWeight: 500,
-          
           // Ajuste na posição do label para melhor alinhamento
           transform: "translate(14px, 13px) scale(1)",
+          fontWeight: 500,
+          color: theme.palette.text.primary,
+
+          // -------------------------------------------------------------
+          // 🔹 TRECHO QUE CONTROLA A COR DO LABEL NO FOCO
+          // -------------------------------------------------------------
+
+          // Primary (Padrão)
+          "&.Mui-focused.MuiInputLabel-colorPrimary": {
+            color: theme.palette.primary.main,
+          },
+          // Success
+          "&.Mui-focused.MuiInputLabel-colorSuccess": {
+            color: theme.palette.success.main,
+          },
+          // Error
+          "&.Mui-focused.MuiInputLabel-colorError": {
+            color: theme.palette.error.main,
+          },
+          // Warning
+          "&.Mui-focused.MuiInputLabel-colorWarning": {
+            color: theme.palette.warning.main,
+          },
+          // Info
+          "&.Mui-focused.MuiInputLabel-colorInfo": {
+            color: theme.palette.info.main,
+          },
+          // Secondary
+          "&.Mui-focused.MuiInputLabel-colorSecondary": {
+            color: theme.palette.secondary.main,
+          },
+
+          // -------------------------------------------------------------
+
           "&.MuiInputLabel-shrink": {
             fontSize: "0.97rem",
             fontWeight: 600,
@@ -429,6 +461,9 @@ const components: any = (theme: Theme) => {
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
+          // -----------------------------------------------------------------
+          // 1. ESTILOS BASE (Borda padrão e Hover)
+          // -----------------------------------------------------------------
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor:
               theme.palette.mode === "dark"
@@ -438,28 +473,143 @@ const components: any = (theme: Theme) => {
           "&:hover .MuiOutlinedInput-notchedOutline": {
             borderColor: theme.palette.grey[400],
           },
-          // 🔹 Cor de fundo quando o campo está desabilitado
+          "& .MuiSelect-icon": {
+            color: theme.palette.grey[500],
+            transition: "color 0.15s ease-in-out",
+          },
+
+          // -----------------------------------------------------------------
+          // 2. ESTILOS DE DESABILITADO
+          // -----------------------------------------------------------------
           "&.Mui-disabled": {
             backgroundColor: theme.palette.grey[100],
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.grey[200],
+            },
           },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: theme.palette.primary.main,
-          },
-          // 🔹 Cor padrão dos ícones no InputAdornment (não focado)
+
+          // -----------------------------------------------------------------
+          // 3. CONFIGURAÇÃO BASE DO ÍCONE (Cinza quando sem foco)
+          // -----------------------------------------------------------------
           "& .MuiInputAdornment-root svg": {
             color: theme.palette.grey[500],
             transition: "color 0.15s ease-in-out",
           },
-          // 🔹 Muda a cor dos ícones no InputAdornment quando focado
-          "&.Mui-focused .MuiInputAdornment-root svg": {
-            color: theme.palette.primary.main,
+
+          // -----------------------------------------------------------------
+          // 4. CORES NO FOCO (Borda e Ícone)
+          // -----------------------------------------------------------------
+
+          // --- PRIMARY (Padrão) ---
+          "&.Mui-focused.MuiInputBase-colorPrimary": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.primary.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.primary.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.primary.main,
+            },
+          },
+
+          // --- SECONDARY ---
+          "&.Mui-focused.MuiInputBase-colorSecondary": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.secondary.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.secondary.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.secondary.main,
+            },
+          },
+
+          // --- SUCCESS ---
+          "&.Mui-focused.MuiInputBase-colorSuccess": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.success.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.success.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.success.main,
+            },
+          },
+
+          // --- ERROR ---
+          "&.Mui-focused.MuiInputBase-colorError": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.error.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.error.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.error.main,
+            },
+          },
+
+          // --- WARNING ---
+          "&.Mui-focused.MuiInputBase-colorWarning": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.warning.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.warning.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.warning.main,
+            },
+          },
+
+          // --- INFO ---
+          "&.Mui-focused.MuiInputBase-colorInfo": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.info.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.info.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.info.main,
+            },
+          },
+
+          // VALIDAÇÂO - ERRORs
+          "&.Mui-error": {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.error.main,
+            },
+            "& .MuiInputAdornment-root svg": {
+              color: theme.palette.error.main,
+            },
+            "& .MuiSelect-icon": {
+              color: theme.palette.error.main,
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.error.main,
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: theme.palette.error.main,
+            },
+            "&.Mui-focused .MuiInputAdornment-root svg": {
+              color: theme.palette.error.main,
+            },
+            "&.Mui-focused .MuiSelect-icon": {
+              color: theme.palette.error.main,
+            },
           },
         },
+
+        // -----------------------------------------------------------------
+        // 5. AJUSTES ESTRUTURAIS (Padding e Label Cut)
+        // -----------------------------------------------------------------
         notchedOutline: {
           "& legend": {
-            // Como aumentou o label para 0.97rem, precisamos aumentar
-            // a base de cálculo da largura do corte.
-            fontSize: "0.85em",
+            fontSize: "0.85em", // Ajuste para o Label aumentado
           },
         },
         input: {
@@ -491,7 +641,7 @@ const components: any = (theme: Theme) => {
           "& .MuiOutlinedInput-root": {
             padding: "4.5px 6px",
           },
-        }, 
+        },
       },
     },
     MuiDialogTitle: {

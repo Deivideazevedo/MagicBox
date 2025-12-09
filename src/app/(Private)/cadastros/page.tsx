@@ -8,17 +8,20 @@ import {
   Tabs,
   Tab,
   Paper,
-  Grid,
-  Card,
-  CardContent,
-  CardHeader,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { IconBuilding, IconCreditCard, IconWallet } from "@tabler/icons-react";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 
-// Components (serão criados separadamente)
+// Components
 import CategoriasTab from "./components/CategoriasTab";
 import DespesasTab from "./components/DespesasTab";
 import FontesRendaTab from "./components/FontesRendaTab";
+import { IconCategory } from "@tabler/icons-react";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,9 +46,54 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
 export default function CadastrosPage() {
   const [currentTab, setCurrentTab] = useState(0);
 
+  // Pré-carrega todos os dados de uma vez para evitar loading ao trocar tabs
+  const {
+    data: categorias = [],
+    isLoading: loadingCategorias,
+    error: errorCategorias,
+  } = useGetCategoriasQuery();
+  const {
+    data: despesas = [],
+    isLoading: loadingDespesas,
+    error: errorDespesas,
+  } = useGetDespesasQuery();
+  const {
+    data: fontesRenda = [],
+    isLoading: loadingFontesRenda,
+    error: errorFontesRenda,
+  } = useGetFontesRendaQuery();
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
+
+  const isLoading = loadingCategorias || loadingDespesas || loadingFontesRenda;
+  const error = errorCategorias || errorDespesas || errorFontesRenda;
+
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight={400}
+        >
+          <CircularProgress size={60} />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="lg">
+        <Alert severity="error" sx={{ mt: 3 }}>
+          Erro ao carregar dados. Tente novamente.
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -54,7 +102,8 @@ export default function CadastrosPage() {
           Cadastros
         </Typography>
         <Typography variant="h6" color="textSecondary">
-          Gerencie suas categorias, despesas e fontes de renda de forma organizada
+          Gerencie suas categorias, despesas e fontes de renda de forma
+          organizada
         </Typography>
       </Box>
 
@@ -64,11 +113,14 @@ export default function CadastrosPage() {
             value={currentTab}
             onChange={handleTabChange}
             aria-label="cadastros tabs"
+            variant="scrollable"
+            // scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{ px: 3, pt: 2 }}
           >
             <Tab
               label="Categorias"
-              icon={<IconBuilding size={20} />}
+              icon={<IconCategory size={20} />}
               iconPosition="start"
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
@@ -88,15 +140,15 @@ export default function CadastrosPage() {
         </Box>
 
         <TabPanel value={currentTab} index={0}>
-          <CategoriasTab />
+          <CategoriasTab categorias={categorias} />
         </TabPanel>
 
         <TabPanel value={currentTab} index={1}>
-          <DespesasTab />
+          <DespesasTab despesas={despesas} categorias={categorias} />
         </TabPanel>
 
         <TabPanel value={currentTab} index={2}>
-          <FontesRendaTab />
+          <FontesRendaTab fontesRenda={fontesRenda} />
         </TabPanel>
       </Paper>
     </Container>

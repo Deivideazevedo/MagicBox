@@ -30,9 +30,11 @@ const paises = [
   { id: 1, label: "Brasil" },
   { id: 2, label: "Estados Unidos" },
   { id: 3, label: "Canadá" },
-  { id: 4, label: "Portugal" },
-  { id: 5, label: "Espanha" },
+  { id: 4, label: "Argentina" },
+  { id: 5, label: "Chile" },
 ];
+
+type Pais = typeof paises[number];
 
 const categorias = [
   { id: 1, nome: "Alimentos" },
@@ -45,6 +47,8 @@ const categorias = [
   { id: 8, nome: "Vestuário8" },
   { id: 9, nome: "Serviços9" },
 ];
+
+type Categoria = typeof categorias[number];
 
 const TestePage = () => {
   const { control, handleSubmit, setFocus } = useForm<FormData>({
@@ -222,8 +226,8 @@ const TestePage = () => {
             control={control}
             label="País (Autocomplete)"
             options={paises}
-            getOptionLabel={(p) => p.label}
-            getOptionValue={(p) => p.id}
+            getOptionLabel={(p: Pais) => p.label}
+            getOptionValue={(p: Pais) => p.id}
             placeholder="Digite para buscar..."
             multiple
             selectAll
@@ -237,8 +241,8 @@ const TestePage = () => {
             label="Categorias (Múltiplas)"
             multiple
             options={categorias}
-            getOptionLabel={(c) => c.nome}
-            getOptionValue={(c) => c.id}
+            getOptionLabel={(c: Categoria) => c.nome}
+            getOptionValue={(c: Categoria) => c.id}
             placeholder="Selecione múltiplas categorias"
             limitTags={1}
             disableCloseOnSelect

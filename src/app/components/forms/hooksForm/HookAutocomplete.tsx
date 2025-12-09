@@ -10,7 +10,7 @@ import {
   TextFieldProps,
 } from "@mui/material";
 import { Fragment, SyntheticEvent, useMemo } from "react";
-import { Control, FieldValues, Path, useController } from "react-hook-form";
+import { FieldValues, useController, UseControllerProps } from "react-hook-form";
 import CustomCheckbox from "../theme-elements/CustomCheckbox";
 import CustomTextField from "../theme-elements/CustomTextField";
 
@@ -25,9 +25,7 @@ type HookAutocompleteProps<
 > = Omit<
   AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
   "renderInput"
-> & {
-  name: Path<TFieldValues>;
-  control: Control<TFieldValues>;
+> & UseControllerProps<TFieldValues> & {
   label?: string;
   placeholder?: string;
   textFieldProps?: Omit<TextFieldProps, "label" | "placeholder">;
@@ -35,6 +33,11 @@ type HookAutocompleteProps<
   getOptionLabel?: (option: T) => string;
   getOptionValue?: (option: T) => string | number;
   isOptionEqualToValue?: (option: T, value: T) => boolean;
+  onChange?: (
+    event: SyntheticEvent,
+    value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
+    reason: string
+  ) => void;
 };
 
 export function HookAutocomplete<
@@ -46,6 +49,7 @@ export function HookAutocomplete<
 >({
   name,
   control,
+  rules,
   label,
   placeholder,
   textFieldProps,
@@ -56,6 +60,7 @@ export function HookAutocomplete<
   renderTags,
   selectAll,
   options,
+  onChange,
   ...props
 }: HookAutocompleteProps<
   TFieldValues,
@@ -67,7 +72,7 @@ export function HookAutocomplete<
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control });
+  } = useController({ name, control, rules });
 
   // Prepara as opções do componente, incluindo a opção "Selecionar Todos" se necessário
   const componentOptions = useMemo(() => {
@@ -142,8 +147,9 @@ export function HookAutocomplete<
 
   // Função para lidar com a mudança do Autocomplete
   const handleChange = (
-    _event: SyntheticEvent<Element, Event>,
-    newValue: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
+    event: SyntheticEvent<Element, Event>,
+    newValue: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
+    reason: string
   ) => {
     if (selectAll && props.multiple && Array.isArray(newValue)) {
       const selectedOptions = newValue as T[];
@@ -202,6 +208,9 @@ export function HookAutocomplete<
     } else {
       field.onChange(newValue);
     }
+
+    // Chama onChange externo uma única vez no final
+    onChange?.(event, newValue, reason);
   };
 
   // Função auxiliar para obter o label da opção

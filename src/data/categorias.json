@@ -42,10 +42,17 @@
     "updatedAt": "2025-11-22T04:05:44.112Z"
   },
   {
-    "id": "c75f22c3-8d96-4696-a6ac-07645af92049",
-    "nome": "Teste",
+    "id": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "Pessoal",
     "userId": "2",
-    "createdAt": "2025-11-23T04:09:25.311Z",
-    "updatedAt": "2025-11-23T04:09:25.311Z"
+    "createdAt": "2025-12-07T00:26:50.977Z",
+    "updatedAt": "2025-12-07T00:26:50.977Z"
+  },
+  {
+    "id": "83ca2e9b-59b5-45e1-830b-4d5f8931d418",
+    "nome": "Casa",
+    "userId": "2",
+    "createdAt": "2025-12-07T13:34:08.895Z",
+    "updatedAt": "2025-12-07T13:34:08.895Z"
   }
 ]

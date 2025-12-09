@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -8,104 +8,148 @@ import {
   useUpdateDespesaMutation,
   useDeleteDespesaMutation,
 } from "@/services/endpoints/despesasApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { Despesa, DespesaDto } from "@/services/types";
+import { Categoria } from "@/core/categorias/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-// Interface específica para o formulário
-interface FormData {
-  categoriaId: string;
-  nome: string;
-  valorEstimado?: number;
-  diaVencimento?: number;
-  status: boolean;
-}
+// Schema de validação com YUP
+// const despesaSchema: yup.ObjectSchema<DespesaDto> = yup.object({
+//   categoriaId: yup.string().required("Categoria é obrigatória"),
+//   nome: yup.string().required("Nome é obrigatório"),
+//   valorEstimado: yup.number().optional(),
+//   diaVencimento: yup.number().optional(),
+//   status: yup.boolean().required(),
+// });
 
-// Schema de validação
-const despesaSchema = yup.object({
-  categoriaId: yup.string().required("Categoria é obrigatória"),
-  nome: yup.string().required("Nome é obrigatório"),
-  valorEstimado: yup.number().positive("Valor deve ser positivo").optional(),
-  diaVencimento: yup.number().min(1, "Dia deve ser entre 1 e 31").max(31, "Dia deve ser entre 1 e 31").optional(),
-  status: yup.boolean().required(),
-});
+// Schema de validação com Zod, tipado para refletir DespesaDto
+// Se DespesaDto mudar, o `satisfies z.ZodType<DespesaDto>` força o schema a acompanhar.
+const despesaSchemaZod = z.object({
+  categoriaId: z.string().min(1, "Categoria é obrigatória"),
+  nome: z.string().min(1, "Nome é obrigatório"),
+  valorEstimado: z.union([z.number(), z.string()]).optional(),
+  diaVencimento: z.union([z.number(), z.string()]).optional(),
+  status: z.boolean(),
+}) satisfies z.ZodType<DespesaDto>;
 
 interface DeleteDialog {
   open: boolean;
-  despesa: any;
+  despesa: Despesa | null;
 }
 
-export function useDespesas() {
-  const [editingDespesa, setEditingDespesa] = useState<any>(null);
+interface UseDespesasProps {
+  despesas?: Despesa[];
+  categorias?: Categoria[];
+}
+
+export function useDespesas({
+  despesas: despesasProps,
+  categorias: categoriasProps,
+}: UseDespesasProps = {}) {
+  // Se props existirem (não são undefined), skip as queries RTK
+  const { data: despesasQuery = [] } = useGetDespesasQuery(undefined, {
+    skip: despesasProps !== undefined,
+  });
+  const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
+    skip: categoriasProps !== undefined,
+  });
+
+  // Usa props se fornecido, senão usa resultado da query
+  const despesas = despesasProps ?? despesasQuery;
+  const categorias = categoriasProps ?? categoriasQuery;
+
+  const [editingDespesa, setEditingDespesa] = useState<Despesa | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialog>({
     open: false,
     despesa: null,
   });
 
-  // RTK Query hooks
-  const { data: despesas = [], isLoading, error } = useGetDespesasQuery();
+  // RTK Query mutations
   const [createDespesa, { isLoading: isCreating }] = useCreateDespesaMutation();
   const [updateDespesa, { isLoading: isUpdating }] = useUpdateDespesaMutation();
   const [deleteDespesa, { isLoading: isDeleting }] = useDeleteDespesaMutation();
 
-  // React Hook Form
   const {
     register,
-    handleSubmit,
+    handleSubmit: handleSubmitForm,
     reset,
     setValue,
     control,
+    watch,
+    setFocus,
     formState: { errors },
-  } = useForm<FormData>({
+  } = useForm({
+    resolver: zodResolver(despesaSchemaZod),
     defaultValues: {
       status: true,
+      categoriaId: "",
+      nome: "",
+      valorEstimado: "",
+      diaVencimento: "",
     },
   });
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      const despesaData = {
-        categoriaId: data.categoriaId,
-        nome: data.nome,
-        valorEstimado: data.valorEstimado || undefined,
-        diaVencimento: data.diaVencimento || undefined,
-        status: data.status,
-      };
-
-      if (editingDespesa) {
-        await updateDespesa({ id: editingDespesa.id, ...despesaData }).unwrap();
-        setEditingDespesa(null);
-      } else {
-        await createDespesa(despesaData).unwrap();
+  const onSubmit = useCallback(
+    async (data: DespesaDto) => {
+      try {
+        if (editingDespesa) {
+          await updateDespesa({
+            id: editingDespesa.id,
+            data,
+          }).unwrap();
+          setEditingDespesa(null);
+        } else {
+          await createDespesa(data).unwrap();
+        }
+        reset({
+          status: true,
+          categoriaId: data.categoriaId,
+          nome: "",
+          valorEstimado: "",
+          diaVencimento: "",
+        });
+        // Foca no campo nome após o cadastro
+        setTimeout(() => setFocus("nome"), 100);
+      } catch (error) {
+        console.error("Erro ao salvar despesa:", error);
       }
-      reset({ status: true });
-    } catch (error) {
-      console.error("Erro ao salvar despesa:", error);
-    }
-  };
+    },
+    [editingDespesa, updateDespesa, createDespesa, reset, setFocus]
+  );
 
-  const handleEdit = (despesa: any, scrollCallback?: () => void) => {
-    setEditingDespesa(despesa);
-    setValue("categoriaId", despesa.categoriaId);
-    setValue("nome", despesa.nome);
-    setValue("valorEstimado", despesa.valorEstimado || undefined);
-    setValue("diaVencimento", despesa.diaVencimento || undefined);
-    setValue("status", despesa.status);
-    
-    // Chama o callback de scroll se fornecido
-    if (scrollCallback) {
-      // Pequeno delay para garantir que o estado foi atualizado
-      setTimeout(() => scrollCallback(), 100);
-    }
-  };
+  const handleEdit = useCallback(
+    (despesa: Despesa, scrollCallback?: () => void) => {
+      setEditingDespesa(despesa);
+      setValue("categoriaId", despesa.categoriaId);
+      setValue("nome", despesa.nome);
+      setValue("valorEstimado", despesa.valorEstimado);
+      setValue("diaVencimento", despesa.diaVencimento);
+      setValue("status", despesa.status);
 
-  const handleCancelEdit = () => {
+      if (scrollCallback) {
+        setTimeout(() => scrollCallback(), 100);
+      }
+    },
+    [setValue]
+  );
+
+  const handleCancelEdit = useCallback(() => {
     setEditingDespesa(null);
-    reset({ status: true });
-  };
+    reset({
+      status: true,
+      categoriaId: "",
+      nome: "",
+      valorEstimado: null as any,
+      diaVencimento: null as any,
+    });
+  }, [reset]);
 
-  const handleDeleteClick = (despesa: any) => {
+  const handleDeleteClick = useCallback((despesa: Despesa) => {
     setDeleteDialog({ open: true, despesa });
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (deleteDialog.despesa) {
       try {
         await deleteDespesa(deleteDialog.despesa.id).unwrap();
@@ -114,25 +158,26 @@ export function useDespesas() {
         console.error("Erro ao excluir despesa:", error);
       }
     }
-  };
+  }, [deleteDialog.despesa, deleteDespesa]);
 
-  const handleDeleteCancel = () => {
+  const handleDeleteCancel = useCallback(() => {
     setDeleteDialog({ open: false, despesa: null });
-  };
+  }, []);
+
+  // submit é o handler que o <form> espera
+  const handleSubmit = handleSubmitForm(onSubmit);
 
   return {
     despesas,
-    isLoading,
-    error,
+    categorias,
     editingDespesa,
     register,
-    handleSubmit,
     control,
     errors,
     isCreating,
     isUpdating,
     isDeleting,
-    onSubmit,
+    handleSubmit,
     handleEdit,
     handleCancelEdit,
     handleDeleteClick,
