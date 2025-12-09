@@ -15,7 +15,6 @@ import { IconBuilding, IconCreditCard, IconWallet } from "@tabler/icons-react";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
-import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 
 // Components
 import CategoriasTab from "./components/CategoriasTab";

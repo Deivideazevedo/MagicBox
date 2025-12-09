@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
 import {
-  useGetFontesRendaQuery,
   useCreateFonteRendaMutation,
-  useUpdateFonteRendaMutation,
   useDeleteFonteRendaMutation,
+  useGetFontesRendaQuery,
+  useUpdateFonteRendaMutation,
 } from "@/services/endpoints/fontesRendaApi";
-import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
-import { FonteRenda, Receita } from "@/services/types";
+import { FonteRenda } from "@/services/types";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface FormData {
   receitaId: string;

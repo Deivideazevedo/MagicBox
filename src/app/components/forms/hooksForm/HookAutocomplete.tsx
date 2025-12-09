@@ -10,7 +10,11 @@ import {
   TextFieldProps,
 } from "@mui/material";
 import { Fragment, SyntheticEvent, useMemo } from "react";
-import { FieldValues, useController, UseControllerProps } from "react-hook-form";
+import {
+  FieldValues,
+  useController,
+  UseControllerProps,
+} from "react-hook-form";
 import CustomCheckbox from "../theme-elements/CustomCheckbox";
 import CustomTextField from "../theme-elements/CustomTextField";
 
@@ -25,20 +29,21 @@ type HookAutocompleteProps<
 > = Omit<
   AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
   "renderInput"
-> & UseControllerProps<TFieldValues> & {
-  label?: string;
-  placeholder?: string;
-  textFieldProps?: Omit<TextFieldProps, "label" | "placeholder">;
-  selectAll?: boolean;
-  getOptionLabel?: (option: T) => string;
-  getOptionValue?: (option: T) => string | number;
-  isOptionEqualToValue?: (option: T, value: T) => boolean;
-  onChange?: (
-    event: SyntheticEvent,
-    value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
-    reason: string
-  ) => void;
-};
+> &
+  UseControllerProps<TFieldValues> & {
+    label?: string;
+    placeholder?: string;
+    textFieldProps?: Omit<TextFieldProps, "label" | "placeholder">;
+    selectAll?: boolean;
+    getOptionLabel?: (option: T) => string;
+    getOptionValue?: (option: T) => string | number;
+    isOptionEqualToValue?: (option: T, value: T) => boolean;
+    onChange?: (
+      event: SyntheticEvent,
+      value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
+      reason: string
+    ) => void;
+  };
 
 export function HookAutocomplete<
   TFieldValues extends FieldValues,
@@ -69,6 +74,13 @@ export function HookAutocomplete<
   DisableClearable,
   FreeSolo
 >) {
+  type LocalAutocompleteValue = AutocompleteValue<
+    T,
+    Multiple,
+    DisableClearable,
+    FreeSolo
+  >;
+
   const {
     field,
     fieldState: { error },
@@ -83,19 +95,9 @@ export function HookAutocomplete<
   }, [selectAll, props.multiple, options]);
 
   // Função para obter o valor atual do campo
-  const getCurrentValue = (): AutocompleteValue<
-    T,
-    Multiple,
-    DisableClearable,
-    FreeSolo
-  > => {
+  const getCurrentValue = (): LocalAutocompleteValue => {
     if (!field.value) {
-      return (props.multiple ? [] : null) as AutocompleteValue<
-        T,
-        Multiple,
-        DisableClearable,
-        FreeSolo
-      >;
+      return (props.multiple ? [] : null) as LocalAutocompleteValue;
     }
 
     if (!getOptionValue || !options) {
@@ -109,7 +111,7 @@ export function HookAutocomplete<
         : [];
 
       if (values.length === 0) {
-        return [] as AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>;
+        return [] as LocalAutocompleteValue;
       }
 
       const selectedIds = new Set(values.map((v) => String(v)));
@@ -124,31 +126,21 @@ export function HookAutocomplete<
         options.length > 0 &&
         selectedOptions.length === options.length
       ) {
-        return [allOption as T, ...selectedOptions] as AutocompleteValue<
-          T,
-          Multiple,
-          DisableClearable,
-          FreeSolo
-        >;
+        return [allOption as T, ...selectedOptions] as LocalAutocompleteValue;
       }
 
-      return selectedOptions as AutocompleteValue<
-        T,
-        Multiple,
-        DisableClearable,
-        FreeSolo
-      >;
+      return selectedOptions as LocalAutocompleteValue;
     }
 
     // Se for único
     return (options.find((option) => getOptionValue(option) === field.value) ||
-      null) as AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>;
+      null) as LocalAutocompleteValue;
   };
 
   // Função para lidar com a mudança do Autocomplete
   const handleChange = (
     event: SyntheticEvent<Element, Event>,
-    newValue: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
+    newValue: LocalAutocompleteValue,
     reason: string
   ) => {
     if (selectAll && props.multiple && Array.isArray(newValue)) {

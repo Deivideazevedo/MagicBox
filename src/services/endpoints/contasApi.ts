@@ -1,5 +1,5 @@
 import { api } from '../api';
-import { Despesa, CreateDespesaDto, UpdateDespesaDto } from '../types';
+import { Despesa, DespesaDto, UpdateDespesaDto } from '../types';
 import { fnBuildSearchParams } from '../../utils/searchParams';
 
 export const contasApi = api.injectEndpoints({
@@ -18,7 +18,7 @@ export const contasApi = api.injectEndpoints({
       providesTags: ['Despesas'],
     }),
 
-    createConta: builder.mutation<Despesa, CreateDespesaDto>({
+    createConta: builder.mutation<Despesa, DespesaDto>({
       query: (newDespesa) => ({
         url: '/despesas',
         method: 'POST',
