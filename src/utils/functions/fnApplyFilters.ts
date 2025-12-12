@@ -40,7 +40,7 @@ export function fnApplyFilters<T extends Record<string, any>>(
       const valueObject = object[key as keyof T];
 
       // comparação simples
-      return valueFilter == valueObject;
+      return valueObject == valueFilter;
     });
 
     return isValid;
