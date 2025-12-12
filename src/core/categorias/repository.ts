@@ -7,6 +7,7 @@ import { fnOmitFields } from "@/utils/functions/fnOmitFields";
 import { fnPickFields } from "@/utils/functions/fnPickFields";
 import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
 import { Categoria, CategoriaPayload } from "./types";
+import { CategoriaModel } from "./model";
 
 const DATA_PATH = join(process.cwd(), "src/data/categorias.json");
 
@@ -35,12 +36,14 @@ export const categoriaRepository = {
     return categorias.filter((c) => c.userId === userId);
   },
 
-  create(categoria: Categoria) {
+  create(categoria: CategoriaPayload) {
     const categorias = fnReadFile<Categoria>(DATA_PATH);
-    categorias.push(categoria);
+    const novaCategoria = new CategoriaModel(categoria);
+    
+    categorias.push(novaCategoria);
     writeFile(categorias);
 
-    return categoria;
+    return novaCategoria;
   },
 
   remove(categoriaId: string) {

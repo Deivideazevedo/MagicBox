@@ -7,6 +7,7 @@ export interface Categoria {
   updatedAt: string;
 }
 
-export interface CategoriaPayload extends Partial<Categoria> {
-  nome: string;
+export interface CategoriaPayload {
+  nome: string; 
+  userId: string;
 }

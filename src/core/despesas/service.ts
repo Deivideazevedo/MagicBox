@@ -1,10 +1,8 @@
 // src/core/despesas/despesa.service.ts
-import { randomUUID } from "crypto";
-import { Despesa } from "./types";
-import { despesaRepository as repository } from "./repository";
-import { DespesaPayload } from "./types";
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
+import { despesaRepository as repository } from "./repository";
+import { Despesa, DespesaPayload } from "./types";
 
 export const despesaService = {
   findAll(filters: Partial<Despesa>) {
@@ -15,16 +13,8 @@ export const despesaService = {
     return repository.findByUser(userId);
   },
 
-  create(userId: string, payload: DespesaPayload) {
-    const novaDespesa: Despesa = {
-      id: randomUUID(),
-      nome: payload.nome,
-      userId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    return repository.create(novaDespesa);
+  create(payload: DespesaPayload) {
+    return repository.create(payload);
   },
 
   remove(despesaId: string) {

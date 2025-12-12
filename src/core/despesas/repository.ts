@@ -1,14 +1,11 @@
 // src/core/despesas/despesa.repository.ts
+import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
+import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 import { fnReadFile } from "@/utils/functions/fnReadFile";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { NotFoundError } from "@/lib/errors";
-import { fnOmitFields } from "@/utils/functions/fnOmitFields";
-import { fnPickFields } from "@/utils/functions/fnPickFields";
-import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
+import { DespesaModel } from "./model";
 import { Despesa, DespesaPayload } from "./types";
-import { randomUUID } from "crypto";
-import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 
 const DATA_PATH = join(process.cwd(), "src/data/desepesas.json");
 
@@ -40,17 +37,7 @@ export const despesaRepository = {
   create(payload: DespesaPayload) {
     const despesas = fnReadFile<Despesa>(DATA_PATH);
 
-    const novaDespesa: Despesa = {
-      id: randomUUID(),
-      userId: payload.userId,
-      categoriaId: payload.categoriaId,
-      nome: payload.nome,
-      status: payload.status,
-      diaVencimento: payload.diaVencimento ?? null,
-      valorEstimado: payload.valorEstimado ?? null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const novaDespesa = new DespesaModel(payload);
 
     despesas.push(novaDespesa);
     writeFile(despesas);

@@ -15,16 +15,8 @@ export const categoriaService = {
     return repository.findByUser(userId);
   },
 
-  create(userId: string, payload: CategoriaPayload) {
-    const novaCategoria: Categoria = {
-      id: randomUUID(),
-      nome: payload.nome,
-      userId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    return repository.create(novaCategoria);
+  create(payload: CategoriaPayload) {
+    return repository.create(payload);
   },
 
   remove(categoriaId: string) {

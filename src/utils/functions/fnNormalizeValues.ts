@@ -2,39 +2,42 @@ type TransformedObject<T> = {
   [K in keyof T]: any;
 };
 
-type MapValuesParams<T> = {
+type NormalizeValuesParams<T> = {
   data: T;
   transformer?: (key: keyof T, value: T[keyof T]) => any;
   toNullify?: any[];
 };
 
 /**
- * Mapeia os valores de um objeto, permitindo transformação ou anulação de valores específicos.
+ * Normaliza os valores de um objeto, aplicando transformações ou convertendo valores específicos para null.
+ *
+ * Útil para sanitizar dados antes de envio para APIs ou persistência, garantindo que
+ * valores indefinidos ou indesejados sejam padronizados (ex: undefined -> null).
  *
  * @template T Tipo do objeto de entrada.
  * @param params Objeto de configuração.
  * @param params.data O objeto a ser processado.
  * @param params.transformer Função opcional para transformar cada valor (key, value).
  * @param params.toNullify Lista de valores que devem ser convertidos para null (padrão: [undefined]).
- * @returns Um novo objeto com os valores transformados.
+ * @returns Um novo objeto com os valores normalizados.
  *
  * @example
  * // Padrão: undefined -> null
- * fnMapValues({ data: { nome: 'Ana', idade: undefined } });
+ * fnNormalizeValues({ data: { nome: 'Ana', idade: undefined } });
  * // -> { nome: 'Ana', idade: null }
  *
  * // Com transformer
- * fnMapValues({
+ * fnNormalizeValues({
  *   data: { nome: 'ana' },
  *   transformer: (key, value) => typeof value === 'string' ? value.toUpperCase() : value
  * });
  * // -> { nome: 'ANA' }
  */
-export function fnMapValues<T extends Record<string, any>>({
+export function fnNormalizeValues<T extends Record<string, any>>({
   data,
   transformer,
   toNullify = [undefined],
-}: MapValuesParams<T>): TransformedObject<T> {
+}: NormalizeValuesParams<T>): TransformedObject<T> {
   return Object.fromEntries(
     Object.entries(data).map(([key, value]) => {
       if (transformer) return [key, transformer(key as keyof T, value)];
