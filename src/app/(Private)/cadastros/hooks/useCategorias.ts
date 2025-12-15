@@ -2,31 +2,33 @@ import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import * as z from "zod";
 import {
   useGetCategoriasQuery,
   useCreateCategoriaMutation,
   useUpdateCategoriaMutation,
   useDeleteCategoriaMutation,
 } from "@/services/endpoints/categoriasApi";
-import { Categoria } from "@/core/categorias/types";
+import { Categoria, CategoriaPayload, CategoriaForm } from "@/core/categorias/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
 
 // Schema de validação
-const categoriaSchema = yup.object({
-  nome: yup
-    .string()
-    .required("obrigatório")
-    .min(2, "Mínimo 2 caracteres"),
-});
-
-type FormData = {
-  nome: string;
-};
+const categoriaSchema = z.object({
+  id: z.string().optional(),
+  nome: z.string().nonempty("Obrigatório"),
+  userId: z.string().nonempty("Obrigatório"),
+}) satisfies z.ZodType<CategoriaForm>;
 
 interface UseCategoriasProps {
   categorias?: Categoria[];
 }
 
-export const useCategorias = ({ categorias: categoriasProps }: UseCategoriasProps = {}) => {
+export const useCategorias = ({
+  categorias: categoriasProps,
+}: UseCategoriasProps = {}) => {
+  const { data: session } = useSession();
+
   // Se categoriasProps existir (não é undefined), skip a query RTK
   const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
     skip: categoriasProps !== undefined,
@@ -35,7 +37,6 @@ export const useCategorias = ({ categorias: categoriasProps }: UseCategoriasProp
   // Usa props se fornecido, senão usa resultado da query
   const categorias = categoriasProps ?? categoriasQuery;
 
-  const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     categoria: Categoria | null;
@@ -54,43 +55,64 @@ export const useCategorias = ({ categorias: categoriasProps }: UseCategoriasProp
 
   // React Hook Form
   const {
-    handleSubmit: handleSubmitForm,    
+    handleSubmit: handleSubmitForm,
     control,
     reset,
     setValue,
+    watch,
+    getValues,
     formState: { errors },
-  } = useForm<FormData>({
-    resolver: yupResolver(categoriaSchema),
+  } = useForm<CategoriaForm>({
+    defaultValues: {
+      id: "",
+      nome: "",
+      userId: session?.user.id || "",
+    },
+    resolver: zodResolver(categoriaSchema),
   });
 
-  const onSubmit = useCallback(async (data: FormData) => {
-    try {
-      if (editingCategoria) {
-        await updateCategoria({
-          id: editingCategoria.id,
-          nome: data.nome,
-        }).unwrap();
-        setEditingCategoria(null);
-      } else {
-        await createCategoria(data).unwrap();
+  const isEditing = Boolean(watch("id"));
+
+  const onSubmit = useCallback(
+    async (payload: CategoriaForm) => {
+      const { id, ...formData } = payload;
+      
+      // Converter FormData para Payload (neste caso não há conversão necessária)
+      const data: CategoriaPayload = {
+        ...formData,
+      };
+          
+      try {
+        if (id) {
+          await updateCategoria({
+            id,
+            data,
+          }).unwrap();
+        } else {
+          await createCategoria(data).unwrap();
+        }
+        reset();
+      } catch (error) {
+        console.error("Erro ao salvar categoria:", error);
       }
-      reset();
-    } catch (error) {
-      console.error("Erro ao salvar categoria:", error);
-    }
-  }, [editingCategoria, updateCategoria, createCategoria, reset]);
+    },
+    [updateCategoria, createCategoria, reset]
+  );
 
-  const handleEdit = useCallback((categoria: Categoria, scrollCallback?: () => void) => {
-    setEditingCategoria(categoria);
-    setValue("nome", categoria.nome);
+  const handleEdit = useCallback(
+    (categoria: Categoria, scrollCallback?: () => void) => {
+      setValue("id", categoria.id);
+      setValue("nome", categoria.nome);
+      setValue("userId", categoria.userId);
 
-    if (scrollCallback) {
-      setTimeout(() => scrollCallback(), 100);
-    }
-  }, [setValue]);
+      if (scrollCallback) {
+        setTimeout(() => scrollCallback(), 100);
+      }
+    },
+    [setValue]
+  );
 
   const handleCancelEdit = useCallback(() => {
-    setEditingCategoria(null);
     reset();
   }, [reset]);
 
@@ -121,7 +143,7 @@ export const useCategorias = ({ categorias: categoriasProps }: UseCategoriasProp
     categorias,
 
     // Form state
-    editingCategoria,
+    isEditing,
     control,
     errors,
 

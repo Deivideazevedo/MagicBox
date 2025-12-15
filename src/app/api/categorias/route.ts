@@ -48,6 +48,6 @@ async function create(request: NextRequest): Promise<NextResponse> {
 
   if (!body.nome) throw new ValidationError("Nome é obrigatório");
 
-  const novaCategoria = service.create(user.id, body);
+  const novaCategoria = service.create({ ...body, userId: user.id });
   return NextResponse.json(novaCategoria, { status: 201 });
 }

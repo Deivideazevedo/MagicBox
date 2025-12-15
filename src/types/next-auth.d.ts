@@ -8,10 +8,10 @@ declare module "next-auth" {
    */
   interface User extends DefaultUser {
     username: string;
-    role?: string;
+    role?: string | null;
     password?: string;
-    updatedAt?: Date;
-    createdAt?: Date;
+    updatedAt?: string;
+    createdAt?: string;
   }
 
   /**

@@ -4,7 +4,8 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-import { authenticateUser } from "./auth-utils";
+import { authService } from "@/core/auth/service";
+import { AuthPayload } from "@/core/auth/types";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -29,18 +30,9 @@ export const authOptions: AuthOptions = {
       },
       authorize: async (credentials) => {
         try {
-          const user = await authenticateUser({
-            username: credentials?.username,
-            email: credentials?.email,
-            password: credentials?.password,
-          });
+          const user = authService.authenticate(credentials as AuthPayload);
 
-          if (user) {
-            const { password, ...userWithoutPassword } = user;
-            return userWithoutPassword;
-          } else {
-            throw new Error("Ops! Credenciais Inválidas. Tente novamente");
-          }
+          return user;
         } catch (error) {
           console.error("Erro na autenticação:", error);
           throw new Error("Ops! Credenciais Inválidas. Tente novamente");
@@ -63,7 +55,7 @@ export const authOptions: AuthOptions = {
       account: Account | null;
     }) {
       // 🔹 Primeira vez que o usuário faz login
-      if (user) token.user = user;      
+      if (user) token.user = user;
 
       // 🔹 Para providers OAuth, armazenar o access_token do provider
       if (account?.access_token) {

@@ -1,38 +1,41 @@
-import { Categoria } from '@/core/categorias/types';
-import { api } from '../api';
-import { CategoriaPayload } from '@/core/categorias/types';
+import { Categoria } from "@/core/categorias/types";
+import { api } from "../api";
+import { CategoriaPayload } from "@/core/categorias/types";
 
 export const categoriasApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getCategorias: builder.query<Categoria[], void>({
-      query: () => '/categorias',
-      providesTags: ['Categorias'],
+      query: () => "/categorias",
+      providesTags: ["Categorias"],
     }),
-    
+
     createCategoria: builder.mutation<Categoria, CategoriaPayload>({
       query: (newCategoria) => ({
-        url: '/categorias',
-        method: 'POST',
+        url: "/categorias",
+        method: "POST",
         body: newCategoria,
       }),
-      invalidatesTags: ['Categorias'],
+      invalidatesTags: ["Categorias"],
     }),
-    
-    updateCategoria: builder.mutation<Categoria, CategoriaPayload>({
-      query: ({ id, ...data }) => ({
+
+    updateCategoria: builder.mutation<
+      Categoria,
+      { id: string; data: CategoriaPayload }
+    >({
+      query: ({ id, data }) => ({
         url: `/categorias/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ['Categorias'],
+      invalidatesTags: ["Categorias"],
     }),
-    
+
     deleteCategoria: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/categorias/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Categorias'],
+      invalidatesTags: ["Categorias"],
     }),
   }),
 });

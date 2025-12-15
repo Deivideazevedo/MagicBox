@@ -1,18 +1,14 @@
 import { api } from '../api';
-import { Lancamento, CreateLancamentoDto, UpdateLancamentoDto, FiltroExtrato } from '../types';
-import { fnBuildSearchParams } from '../../utils/searchParams';
+import { Lancamento, LancamentoPayload } from '@/core/lancamentos/types';
 
 export const lancamentosApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getLancamentos: builder.query<Lancamento[], FiltroExtrato | void>({
-      query: (filtros) => {
-        const queryString = fnBuildSearchParams(filtros || {});
-        return `/lancamentos${queryString ? `?${queryString}` : ''}`;
-      },
+    getLancamentos: builder.query<Lancamento[], void>({
+      query: () => '/lancamentos',
       providesTags: ['Lancamentos'],
     }),
     
-    createLancamento: builder.mutation<Lancamento[], CreateLancamentoDto>({
+    createLancamento: builder.mutation<Lancamento, LancamentoPayload>({
       query: (newLancamento) => ({
         url: '/lancamentos',
         method: 'POST',
@@ -21,8 +17,11 @@ export const lancamentosApi = api.injectEndpoints({
       invalidatesTags: ['Lancamentos'],
     }),
     
-    updateLancamento: builder.mutation<Lancamento, UpdateLancamentoDto>({
-      query: ({ id, ...data }) => ({
+    updateLancamento: builder.mutation<
+      Lancamento,
+      { id: string; data: LancamentoPayload }
+    >({
+      query: ({ id, data }) => ({
         url: `/lancamentos/${id}`,
         method: 'PATCH',
         body: data,
@@ -37,15 +36,6 @@ export const lancamentosApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Lancamentos'],
     }),
-    
-    deleteLancamentos: builder.mutation<{ success: boolean }, string[]>({
-      query: (ids) => ({
-        url: '/lancamentos/bulk-delete',
-        method: 'DELETE',
-        body: { ids },
-      }),
-      invalidatesTags: ['Lancamentos'],
-    }),
   }),
 });
 
@@ -54,5 +44,4 @@ export const {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
   useDeleteLancamentoMutation,
-  useDeleteLancamentosMutation,
 } = lancamentosApi;

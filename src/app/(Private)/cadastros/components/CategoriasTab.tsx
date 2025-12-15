@@ -45,7 +45,6 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
 
   const {
     categorias,
-    editingCategoria,
     control,
     handleSubmit,
     isCreating,
@@ -57,6 +56,7 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
     handleDeleteConfirm,
     handleDeleteCancel,
     deleteDialog,
+    isEditing,
   } = useCategorias({ categorias: categoriasProps });
 
   const scrollToForm = () => {
@@ -71,7 +71,7 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
     }
   };
 
-  const handleEditWithScroll = (categoria: any) => {
+  const handleEditWithScroll = (categoria: Categoria) => {
     handleEdit(categoria, scrollToForm);
   };
 
@@ -111,10 +111,10 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
                     fontWeight={600}
                     color="text.primary"
                   >
-                    {editingCategoria ? "Editar Categoria" : "Nova Categoria"}
+                    {isEditing ? "Editar Categoria" : "Nova Categoria"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {editingCategoria ? "Atualização" : "Cadastro"}
+                    {isEditing ? "Atualização" : "Cadastro"}
                   </Typography>
                 </Box>
               </Box>
@@ -152,10 +152,10 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
                       startIcon={<IconPlus size={16} />}
                       sx={{ flex: 1 }}
                     >
-                      {editingCategoria ? "Atualizar" : "Adicionar"}
+                      {isEditing ? "Atualizar" : "Adicionar"}
                     </LoadingButton>
                   </Grid>
-                  {editingCategoria && (
+                  {isEditing && (
                     <Grid item xs={12}>
                       <Button
                         variant="outlined"

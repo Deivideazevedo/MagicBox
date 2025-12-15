@@ -1,20 +1,25 @@
+import { FonteRenda, FonteRendaPayload, FonteRendaForm } from "@/core/fontesRenda/types";
 import {
   useCreateFonteRendaMutation,
   useDeleteFonteRendaMutation,
   useGetFontesRendaQuery,
   useUpdateFonteRendaMutation,
 } from "@/services/endpoints/fontesRendaApi";
-import { FonteRenda } from "@/services/types";
-import { useCallback, useEffect, useState } from "react";
+import { createSwalert } from "@/utils/sweetAlert";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-interface FormData {
-  receitaId: string;
-  nome: string;
-  valorEstimado?: string;
-  diaRecebimento?: string;
-  status: boolean;
-}
+const fonteRendaSchemaZod = z.object({
+  id: z.string().optional(),
+  userId: z.string().min(1, "Usuário é obrigatório"),
+  nome: z.string().min(1, "Nome é obrigatório"),
+  valorEstimado: z.union([z.string(), z.null()]),
+  diaRecebimento: z.union([z.string(), z.null()]),
+  status: z.boolean(),
+}) satisfies z.ZodType<FonteRendaForm>;
 
 interface UseFontesRendaProps {
   fontesRenda?: FonteRenda[];
@@ -23,6 +28,8 @@ interface UseFontesRendaProps {
 export const useFontesRenda = ({
   fontesRenda: fontesRendaProps,
 }: UseFontesRendaProps = {}) => {
+  const { data: session } = useSession();
+
   // Se props existirem (não são undefined), skip as queries RTK
   const { data: fontesRendaQuery = [] } = useGetFontesRendaQuery(undefined, {
     skip: fontesRendaProps !== undefined,
@@ -31,9 +38,6 @@ export const useFontesRenda = ({
   // Usa props se fornecido, senão usa resultado da query
   const fontesRenda = fontesRendaProps ?? fontesRendaQuery;
 
-  const [editingFonteRenda, setEditingFonteRenda] = useState<FonteRenda | null>(
-    null
-  );
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     fonteRenda: FonteRenda | null;
@@ -43,17 +47,20 @@ export const useFontesRenda = ({
   });
 
   const {
-    register,
     handleSubmit: handleSubmitForm,
     control,
     reset,
     setValue,
+    watch,
     formState: { errors },
-  } = useForm<FormData>({
+  } = useForm({
+    resolver: zodResolver(fonteRendaSchemaZod),
     defaultValues: {
+      id: "",
+      userId: session?.user?.id ?? "",
       nome: "",
       valorEstimado: "",
-      diaRecebimento: "",
+      diaRecebimento: null,
       status: true,
     },
   });
@@ -65,72 +72,63 @@ export const useFontesRenda = ({
   const [deleteFonteRenda, { isLoading: isDeleting }] =
     useDeleteFonteRendaMutation();
 
-  useEffect(() => {
-    if (editingFonteRenda) {
-      setValue("nome", editingFonteRenda.nome);
-      setValue(
-        "valorEstimado",
-        editingFonteRenda.valorEstimado?.toString() || ""
-      );
-      setValue(
-        "diaRecebimento",
-        editingFonteRenda.diaRecebimento?.toString() || ""
-      );
-      setValue("status", editingFonteRenda.status);
-    }
-  }, [editingFonteRenda, setValue]);
-
   const onSubmit = useCallback(
-    async (data: FormData) => {
+    async (payload: FonteRendaForm) => {
       try {
-        const fonteRendaData = {
-          receitaId: data.receitaId,
-          nome: data.nome.trim(),
-          valorEstimado: data.valorEstimado
-            ? Number(data.valorEstimado)
-            : undefined,
-          diaRecebimento: data.diaRecebimento
-            ? Number(data.diaRecebimento)
-            : undefined,
-          status: data.status,
+        const { id, ...formData } = payload;
+
+        // Converter FormData para Payload (converter string para number em diaRecebimento)
+        const data: FonteRendaPayload = {
+          ...formData,
+          diaRecebimento: formData.diaRecebimento 
+            ? parseInt(formData.diaRecebimento, 10) 
+            : null,
         };
 
-        if (editingFonteRenda) {
+        if (id) {
           await updateFonteRenda({
-            id: editingFonteRenda.id,
-            ...fonteRendaData,
+            id,
+            data,
           }).unwrap();
-          setEditingFonteRenda(null);
         } else {
-          await createFonteRenda(fonteRendaData).unwrap();
+          await createFonteRenda(data).unwrap();
         }
 
-        reset({
-          nome: "",
-          valorEstimado: "",
-          diaRecebimento: "",
-          status: true,
+        reset();
+        const Swalert = createSwalert();
+        Swalert.fire({
+          icon: "success",
+          title: "Fonte de Renda salva com sucesso!",
         });
       } catch (error) {
         console.error("Erro ao salvar fonte de renda:", error);
+        const Swalert = createSwalert();
+        Swalert.fire({
+          icon: "error",
+          title: "Erro ao salvar fonte de renda. Tente novamente.",
+        });
       }
     },
-    [editingFonteRenda, updateFonteRenda, createFonteRenda, reset]
+    [createFonteRenda, updateFonteRenda, reset]
   );
 
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
-      setEditingFonteRenda(fonteRenda);
+      setValue("id", fonteRenda.id);
+      setValue("nome", fonteRenda.nome);
+      setValue("valorEstimado", fonteRenda.valorEstimado);
+      setValue("diaRecebimento", fonteRenda.diaRecebimento ? String(fonteRenda.diaRecebimento) : null);
+      setValue("status", fonteRenda.status);
+
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    []
+    [setValue]
   );
 
   const handleCancelEdit = useCallback(() => {
-    setEditingFonteRenda(null);
-    reset({ nome: "", valorEstimado: "", diaRecebimento: "", status: true });
+    reset();
   }, [reset]);
 
   const handleDeleteClick = useCallback((fonteRenda: FonteRenda) => {
@@ -158,10 +156,11 @@ export const useFontesRenda = ({
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
+  const isEdditing = Boolean(watch("id"));
+
   return {
     fontesRenda,
-    editingFonteRenda,
-    register,
+    isEdditing,
     control,
     errors,
     isCreating,

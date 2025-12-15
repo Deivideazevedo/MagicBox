@@ -1,6 +1,7 @@
 "use client";
 
 import { HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
+import CustomToggle from "@/app/components/forms/CustomToggle";
 import { LoadingButton } from "@mui/lab";
 import {
   Box,
@@ -25,21 +26,24 @@ import {
   Typography,
   alpha,
   CircularProgress,
+  Collapse,
 } from "@mui/material";
 import {
   IconCalendar,
   IconCategory,
+  IconCheck,
   IconCreditCard,
   IconCurrencyDollar,
   IconEdit,
   IconPlus,
+  IconRepeat,
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
 import { useRef } from "react";
 import { Controller } from "react-hook-form";
 import { useDespesas } from "../hooks/useDespesas";
-import { Despesa } from "@/services/types";
+import { Despesa } from "@/core/despesas/types";
 import { Categoria } from "@/core/categorias/types";
 
 interface DespesasTabProps {
@@ -53,7 +57,8 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
   const {
     despesas,
     categorias,
-    editingDespesa,
+    isEdditing,
+    mensalmente,
     handleSubmit,
     control,
     isCreating,
@@ -119,10 +124,10 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                     fontWeight={600}
                     color="text.primary"
                   >
-                    {editingDespesa ? "Editar Despesa" : "Nova Despesa"}
+                    {isEdditing ? "Editar Despesa" : "Nova Despesa"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {editingDespesa
+                    {isEdditing
                       ? "Atualize os dados da despesa"
                       : "Adicione uma nova despesa"}
                   </Typography>
@@ -130,7 +135,8 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
               </Box>
 
               <Box component="form" onSubmit={handleSubmit}>
-                <Grid container gap={3}>
+                <Grid container spacing={2.5}>
+                  {/* Categoria */}
                   <Grid item xs={12}>
                     <HookSelect
                       name="categoriaId"
@@ -142,7 +148,6 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                       displayEmpty 
                       getValue={(obj) => obj.id}
                       getLabel={(obj) => obj.nome}
-                      // rules={{ required: "Obrigatório" }}
                       startAdornment={
                         <InputAdornment position="start">
                           <IconCategory size={20} />
@@ -156,6 +161,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                     />
                   </Grid>
 
+                  {/* Nome da Despesa */}
                   <Grid item xs={12}>
                     <HookTextField
                       label="Nome da Despesa"
@@ -182,121 +188,119 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12}>
-                    <HookTextField
-                      color="error"
-                      label="Valor Estimado"
-                      type="number"
-                      placeholder="0,00"
-                      name="valorEstimado"
-                      control={control}
-                      inputProps={{ step: "0.01", min: "0" }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <IconCurrencyDollar size={20} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      rules={{
-                        required: "Obrigatório",
-                        min: {
-                          value: 0.01,
-                          message: "Valor deve ser positivo",
-                        },
-                      }}
-                      sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
-                    />
-                  </Grid>
 
-                  <Grid item xs={12}>
-                    <HookTextField
-                      color="error"
-                      label="Dia do Vencimento"
-                      type="number"
-                      name="diaVencimento"
-                      placeholder="Ex: 5 (Opcional)"
-                      control={control}
-                      rules={{
-                        min: { value: 1, message: "Dia deve ser entre 1 e 31" },
-                        max: {
-                          value: 31,
-                          message: "Dia deve ser entre 1 e 31",
-                        },
-                      }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <IconCalendar size={20} />
-                          </InputAdornment>
-                        ),
-                      }}
-                      inputProps={{ min: "1", max: "31" }}
-                      sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Box
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            border: "1px solid",
-                            borderColor: field.value
-                              ? "success.main"
-                              : "divider", 
-                            backgroundColor: field.value
-                              ? (theme) =>
-                                  alpha(theme.palette.success.light, 0.2)
-                              : "grey.100",
-                            transition: "all 0.3s ease",
-                            cursor: "pointer", // Permite clicar na caixa inteira
-                          }}
-                          onClick={() => field.onChange(!field.value)}
-                        >
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Box sx={{ pr: 0 }}>
-                              <Typography
-                                variant="subtitle2"
-                                fontWeight={600}
-                                color={
-                                  field.value ? "success.main" : "text.primary"
-                                }
-                              >
-                                {field.value
-                                  ? "Despesa Ativa"
-                                  : "Despesa Inativa"}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {field.value
-                                  ? "Disponível para lançamentos"
-                                  : "Não será exibida em lançamentos"}
-                              </Typography>
-                            </Box>
-                            <Switch
-                              checked={field.value}
-                              color="success"
-                              inputProps={{ "aria-label": "status switch" }}
+                  {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
+                  <Grid item xs={12} sx={{  pt: "0px !important" }}>
+                    <Collapse in={mensalmente} timeout={400}>
+                      <Box sx={{ pt: 2.5 }}>
+                        <Grid container spacing={2.5}>
+                          <Grid item xs={12} >
+                            <HookTextField
+                              color="error"
+                              label="Valor Estimado"
+                              type="number"
+                              placeholder="0,00"
+                              name="valorEstimado"
+                              control={control}
+                              inputProps={{ step: "0.01", min: "0" }}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <IconCurrencyDollar size={20} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              rules={{
+                                required: "Obrigatório para despesas mensais",
+                                min: {
+                                  value: 0.01,
+                                  message: "Valor deve ser positivo",
+                                },
+                              }}
+                              sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
                             />
-                          </Stack>
-                        </Box>
-                      )}
-                    />
+                          </Grid>
+
+                          <Grid item xs={12}>
+                            <HookTextField
+                              color="error"
+                              label="Dia do Vencimento"
+                              type="number"
+                              name="diaVencimento"
+                              placeholder="Ex: 5"
+                              control={control}
+                              rules={{
+                                required: "Obrigatório para despesas mensais",
+                                min: { value: 1, message: "Dia deve ser entre 1 e 31" },
+                                max: { value: 31, message: "Dia deve ser entre 1 e 31" },
+                              }}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <IconCalendar size={20} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              inputProps={{ min: "1", max: "31" }}
+                              sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    </Collapse>
                   </Grid>
 
-                  <Grid container item xs={12} gap={1}>
-                    <Grid item xs={12}>
+                  {/* Controles - Repetir Mensalmente e Status */}
+                  <Grid item xs={12}>
+                    <Stack spacing={1.5}>
+                      {/* Toggle Repetir Mensalmente */}
+                      <CustomToggle
+                        control={control}
+                        name="mensalmente"
+                        color="error"
+                        variant="checkbox"
+                        iconActive={
+                          <IconRepeat size={12} color="white" strokeWidth={3} />
+                        }
+                        titleActive="Repetir mensalmente"
+                        titleInactive="Repetir mensalmente"
+                        descriptionActive="Despesa recorrente todo mês"
+                        descriptionInactive="Ativar para despesas mensais"
+                      />
+
+                      {/* Toggle Status */}
+                      <CustomToggle
+                        control={control}
+                        name="status"
+                        color="success"
+                        variant="switch"
+                        iconActive={
+                          <Box
+                            component="svg"
+                            viewBox="0 0 24 24"
+                            sx={{ width: 12, height: 12 }}
+                          >
+                            <path
+                              d="M20 6L9 17l-5-5"
+                              stroke="white"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
+                          </Box>
+                        }
+                        titleActive="Despesa Ativa"
+                        titleInactive="Despesa Inativa"
+                        descriptionActive="Disponível para lançamentos"
+                        descriptionInactive="Não será exibida"
+                      />
+                    </Stack>
+                  </Grid>
+
+                  {/* Botões de Ação */}
+                  <Grid item xs={12}>
+                    <Stack spacing={1.5}>
                       <LoadingButton
                         type="submit"
                         fullWidth
@@ -304,55 +308,23 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                         loading={isCreating || isUpdating}
                         color="error"
                         startIcon={<IconPlus size={16} />}
-                        // sx={{ flex: 1 }}
                       >
-                        {editingDespesa ? "Atualizar" : "Adicionar"}
+                        {isEdditing ? "Atualizar" : "Adicionar"}
                       </LoadingButton>
-                    </Grid>
 
-                    {editingDespesa && (
-                      <Grid item xs={12}>
+                      {isEdditing && (
                         <Button
                           variant="outlined"
                           fullWidth
                           onClick={handleCancelEdit}
                           startIcon={<IconX size={16} />}
-                          // sx={{ flex: 1 }}
                         >
                           Cancelar
                         </Button>
-                      </Grid>
-                    )}
+                      )}
+                    </Stack>
                   </Grid>
                 </Grid>
-
-                {/* <Stack direction="row" spacing={2}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isCreating || isUpdating}
-                    startIcon={
-                      isCreating || isUpdating ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        <IconPlus size={16} />
-                      )
-                    }
-                    sx={{ flex: 1 }}
-                  >
-                    {editingDespesa ? "Atualizar" : "Adicionar"}
-                  </Button>
-
-                  {editingDespesa && (
-                    <Button
-                      variant="outlined"
-                      onClick={handleCancelEdit}
-                      startIcon={<IconX size={16} />}
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-                </Stack> */}
               </Box>
             </CardContent>
           </Card>
@@ -451,7 +423,11 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                               mr: 2,
                             }}
                           >
-                            <IconCreditCard size={20} />
+                            {despesa.mensalmente ? (
+                              <IconRepeat size={20} />
+                            ) : (
+                              <IconCreditCard size={20} />
+                            )}
                           </Box>
 
                           <ListItemText
@@ -464,6 +440,15 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                 <Typography variant="body1" fontWeight={500}>
                                   {despesa.nome}
                                 </Typography>
+                                {despesa.mensalmente && (
+                                  <Chip
+                                    label="Mensal"
+                                    color="error"
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 600 }}
+                                  />
+                                )}
                                 <Chip
                                   label={despesa.status ? "Ativa" : "Inativa"}
                                   color={despesa.status ? "success" : "default"}
@@ -481,7 +466,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                   Categoria: {categoria?.nome || "N/A"}
                                 </Typography>
                                 <Stack direction="row" spacing={2}>
-                                  {despesa.valorEstimado && (
+                                  {despesa.mensalmente && despesa.valorEstimado && (
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
@@ -493,7 +478,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                       }).format(despesa.valorEstimado)}
                                     </Typography>
                                   )}
-                                  {despesa.diaVencimento && (
+                                  {despesa.mensalmente && despesa.diaVencimento && (
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"

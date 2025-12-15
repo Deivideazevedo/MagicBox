@@ -1,7 +1,7 @@
-import { authenticateUser } from "@/lib/auth-utils";
 import { generateAccessToken } from "@/lib/jwt-utils";
 import { NextRequest, NextResponse } from "next/server";
-
+import { authService as service } from "@/core/auth/service";
+import { AuthPayload, UserPayload } from "@/core/auth/types";
 /**
  * Rota de Login para API Externa
  *
@@ -22,7 +22,11 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, username } = body;
+    const {
+      email,
+      password,
+      username,
+    }: AuthPayload = body;
 
     // Aceita email OU username para login
     if ((!email && !username) || !password) {
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Autentica usuário (MESMA função usada pelo CredentialsProvider)
-    const user = await authenticateUser({ username, email, password });
+    const user = await service.authenticate({ username, email, password });
 
     if (!user) {
       return NextResponse.json(

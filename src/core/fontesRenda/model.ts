@@ -1,29 +1,26 @@
-import { randomUUID } from "crypto";
-import { Despesa, DespesaPayload } from "./types";
 
-export class DespesaModel implements Despesa {
+import { randomUUID } from "crypto";
+import { FonteRenda, FonteRendaPayload } from "./types";
+
+export class FonteRendaModel implements FonteRenda {
   id: string;
   userId: string;
-  categoriaId: string;
   nome: string;
-  mensalmente: boolean;
-  valorEstimado: string | null;
-  diaVencimento: number | null;
   status: boolean;
+  diaRecebimento: number | null;
+  valorEstimado: string | null;
   createdAt: string;
   updatedAt: string;
 
-  constructor(props: DespesaPayload, id?: string) {
+  constructor(props: FonteRendaPayload, id?: string) {
     this.id = id ?? randomUUID();
     this.userId = props.userId;
-    this.categoriaId = props.categoriaId;
     this.nome = props.nome;
-    this.mensalmente = props.mensalmente ?? false;
     this.status = props.status;
 
     // Garante a integridade: se undefined, vira null
+    this.diaRecebimento = props.diaRecebimento ?? null;
     this.valorEstimado = props.valorEstimado ?? null;
-    this.diaVencimento = Number(props.diaVencimento) ?? null;
 
     const now = new Date().toISOString();
     this.createdAt = now;

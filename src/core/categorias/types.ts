@@ -8,6 +8,14 @@ export interface Categoria {
 }
 
 export interface CategoriaPayload {
+  id?: string;
   nome: string; 
+  userId: string;
+}
+
+// Interface específica para formulários no frontend (todos os campos são strings)
+export interface CategoriaForm {
+  id?: string;
+  nome: string;
   userId: string;
 }

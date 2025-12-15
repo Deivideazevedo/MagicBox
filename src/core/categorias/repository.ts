@@ -1,19 +1,13 @@
 // src/core/categorias/categoria.repository.ts
-import { fnReadFile } from "@/utils/functions/fnReadFile";
+import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
+import { fnReadFile, fnWriteFile } from "@/utils/functions/fnFile";
+import { fnPickFields } from "@/utils/functions/fnPickFields";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { NotFoundError } from "@/lib/errors";
-import { fnOmitFields } from "@/utils/functions/fnOmitFields";
-import { fnPickFields } from "@/utils/functions/fnPickFields";
-import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
-import { Categoria, CategoriaPayload } from "./types";
 import { CategoriaModel } from "./model";
+import { Categoria, CategoriaPayload } from "./types";
 
 const DATA_PATH = join(process.cwd(), "src/data/categorias.json");
-
-function writeFile(data: Categoria[]) {
-  writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
-}
 
 export const categoriaRepository = {
   findAll(filters: Partial<Categoria>) {
@@ -24,9 +18,9 @@ export const categoriaRepository = {
     return fnApplyFilters(categorias, filters);
   },
 
-  findById(categoriaId: string): Categoria | null {
+  findById(id: string): Categoria | null {
     const categorias = fnReadFile<Categoria>(DATA_PATH);
-    const index = categorias.findIndex((item) => item.id === categoriaId);
+    const index = categorias.findIndex((item) => item.id === id);
 
     return index === -1 ? null : categorias[index];
   },
@@ -41,23 +35,23 @@ export const categoriaRepository = {
     const novaCategoria = new CategoriaModel(categoria);
     
     categorias.push(novaCategoria);
-    writeFile(categorias);
+    fnWriteFile<Categoria>(DATA_PATH, categorias);
 
     return novaCategoria;
   },
 
-  remove(categoriaId: string) {
+  remove(id: string) {
     let categorias = fnReadFile<Categoria>(DATA_PATH);
 
-    categorias = categorias.filter((c) => c.id !== categoriaId);
+    categorias = categorias.filter((c) => c.id !== id);
 
-    writeFile(categorias);
+    fnWriteFile<Categoria>(DATA_PATH, categorias);
     return true;
   },
 
-  update(categoriaId: string, object: CategoriaPayload) {
+  update(id: string, object: CategoriaPayload) {
     const categorias = fnReadFile<Categoria>(DATA_PATH);
-    const index = categorias.findIndex((item) => item.id === categoriaId);
+    const index = categorias.findIndex((item) => item.id === id);
 
     const updatedCategoria = {
       ...categorias[index],
@@ -68,7 +62,7 @@ export const categoriaRepository = {
     // substitui o item na posição index com novo objeto na posição encontrada
     categorias[index] = updatedCategoria;
 
-    writeFile(categorias);
+    fnWriteFile<Categoria>(DATA_PATH, categorias);
     return updatedCategoria;
   },
 };

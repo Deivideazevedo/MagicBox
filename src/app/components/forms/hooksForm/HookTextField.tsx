@@ -25,6 +25,7 @@ export function HookTextField<TFieldValues extends FieldValues>({
   return (
     <CustomTextField
       {...field}
+      value={field.value ?? ""}
       {...props}
       inputRef={field.ref}
       fullWidth

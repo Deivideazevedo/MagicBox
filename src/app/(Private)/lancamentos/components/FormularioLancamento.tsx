@@ -15,21 +15,10 @@ import {
   MenuItem,
   Card,
   CardContent,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
-  Chip,
-  Stack,
   Divider,
   InputAdornment,
-  ToggleButton,
-  ToggleButtonGroup,
-  Slider,
-  Paper,
   FormControlLabel,
   Switch,
-  Snackbar,
 } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -39,50 +28,34 @@ import {
   IconCurrencyDollar,
   IconCalendar,
   IconCreditCard,
-  IconReceipt,
-  IconTrendingUp,
-  IconTrendingDown,
-  IconChevronLeft,
-  IconChevronRight,
   IconCheck,
   IconX,
-  IconCopy,
-  IconWallet,
-  IconNotes
 } from "@tabler/icons-react";
 import { Controller } from "react-hook-form";
-import { format } from "date-fns";
+import { LoadingButton } from "@mui/lab";
 
 // Hooks
 import { useLancamentos } from "../hooks/useLancamentos";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 
-const steps = [
-  { label: 'Tipo & Conta', icon: IconCreditCard },
-  { label: 'Valor & Data', icon: IconCurrencyDollar },
-  { label: 'Confirmação', icon: IconCheck },
-];
+interface FormularioLancamentoProps {
+  onClose?: () => void;
+}
 
-export default function FormularioLancamento() {
+export default function FormularioLancamento({ onClose }: FormularioLancamentoProps) {
   const {
     register,
-    handleSubmit,
+    submitWithClose,
     control,
     errors,
     isValid,
     watchedValues,
-    step,
-    setStep,
     isParcelado,
-    setIsParcelado,
-    totalComParcelas,
-    onSubmit,
-    nextStep,
-    prevStep,
-    handleTipoChange,
     handleParceladoChange,
     isCreating,
+    handleCancelEdit,
+    isEditing,
   } = useLancamentos();
 
   const { data: despesas = [] } = useGetDespesasQuery();
@@ -90,28 +63,33 @@ export default function FormularioLancamento() {
 
   // Encontrar a despesa selecionada para mostrar detalhes
   const despesaSelecionada = despesas.find((d: any) => d.id === watchedValues.despesaId);
-  const categoriaSelecionada = categorias.find((c: any) => c.id === despesaSelecionada?.categoriaId);
+
+  // Criar handler que fecha o drawer após sucesso
+  const handleFormSubmit = submitWithClose(() => {
+    if (onClose) {
+      setTimeout(() => onClose(), 500);
+    }
+  });
+
+  const handleCancel = () => {
+    handleCancelEdit();
+    if (onClose) {
+      onClose();
+    }
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
       <Box>
-        <Typography variant="h5" gutterBottom fontWeight={600}>
-          {watchedValues.tipo === "pagamento" ? "Registrar Pagamento" : "Agendar Despesa"}
-        </Typography>
-        
-        <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
-          {watchedValues.tipo === "pagamento" 
-            ? "Registre um pagamento que já foi realizado"
-            : "Agende uma despesa para ser repetida mensalmente"
-          }
-        </Typography>
-
-        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-          <Grid container spacing={3}>
+        <Box 
+          component="form" 
+          onSubmit={handleFormSubmit}
+        >
+          <Grid container spacing={2.5}>
             {/* Tipo de Lançamento */}
             <Grid item xs={12}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent sx={{ py: 2 }}>
+              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: 'action.hover' }}>
+                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
                   <Controller
                     name="tipo"
                     control={control}
@@ -122,8 +100,6 @@ export default function FormularioLancamento() {
                             {...field}
                             checked={field.value === "agendamento"}
                             onChange={(e) => field.onChange(e.target.checked ? "agendamento" : "pagamento")}
-                            icon={<IconCreditCard />}
-                            checkedIcon={<IconCalendar />}
                           />
                         }
                         label={
@@ -147,49 +123,20 @@ export default function FormularioLancamento() {
             </Grid>
 
             {/* Categoria */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.categoriaId}>
-                <InputLabel>Categoria</InputLabel>
-                <Controller
-                  name="categoriaId"
-                  control={control}
-                  rules={{ required: "Categoria é obrigatória" }}
-                  render={({ field }) => (
-                    <Select {...field} label="Categoria">
-                      {categorias.map((cat: any) => (
-                        <MenuItem key={cat.id} value={cat.id}>
-                          {cat.nome}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-                />
-                {errors.categoriaId && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
-                    {errors.categoriaId.message}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
-
-            {/* Despesa (antes 'Conta') */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <FormControl fullWidth error={!!errors.despesaId}>
-                <InputLabel>Despesa</InputLabel>
+                <InputLabel>Categoria</InputLabel>
                 <Controller
                   name="despesaId"
                   control={control}
-                  rules={{ required: "Despesa é obrigatória" }}
                   render={({ field }) => (
-                    <Select {...field} label="Despesa">
-                      {despesas.map((desp: any) => (
-                        <MenuItem key={desp.id} value={desp.id}>
-                          {desp.nome}
-                          {desp.valorEstimado && (
-                            <Typography variant="caption" sx={{ ml: 1, opacity: 0.7 }}>
-                              (R$ {Number(desp.valorEstimado).toFixed(2)})
-                            </Typography>
-                          )}
+                    <Select {...field} label="Categoria">
+                      <MenuItem value="">
+                        <em>Selecione uma categoria</em>
+                      </MenuItem>
+                      {categorias.map((cat: any) => (
+                        <MenuItem key={cat.id} value={cat.id}>
+                          {cat.nome}
                         </MenuItem>
                       ))}
                     </Select>
@@ -203,33 +150,83 @@ export default function FormularioLancamento() {
               </FormControl>
             </Grid>
 
+            {/* Conta/Despesa */}
+            <Grid item xs={12}>
+              <FormControl fullWidth error={!!errors.contaId}>
+                <InputLabel>Conta</InputLabel>
+                <Controller
+                  name="contaId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select {...field} label="Conta">
+                      <MenuItem value="">
+                        <em>Selecione uma conta</em>
+                      </MenuItem>
+                      {despesas
+                        .filter((desp: any) => desp.categoriaId === watchedValues.despesaId)
+                        .map((desp: any) => (
+                          <MenuItem key={desp.id} value={desp.id}>
+                            {desp.nome}
+                            {desp.valorEstimado && (
+                              <Typography variant="caption" sx={{ ml: 1, opacity: 0.7 }}>
+                                (R$ {Number(desp.valorEstimado).toFixed(2)})
+                              </Typography>
+                            )}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  )}
+                />
+                {errors.contaId && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
+                    {errors.contaId.message}
+                  </Typography>
+                )}
+              </FormControl>
+            </Grid>
+
             {/* Valor */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Valor (R$)"
-                type="number"
-                {...register("valor", { 
-                  required: "Valor é obrigatório",
-                  min: { value: 0.01, message: "Valor deve ser positivo" }
-                })}
-                error={!!errors.valor}
-                helperText={errors.valor?.message}
-                inputProps={{ step: "0.01", min: "0" }}
+            <Grid item xs={12}>
+              <Controller
+                name="valor"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Valor (R$)"
+                    type="number"
+                    error={!!errors.valor}
+                    helperText={errors.valor?.message}
+                    inputProps={{ step: "0.01", min: "0" }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <IconCurrencyDollar size={20} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
               />
             </Grid>
 
             {/* Data */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Controller
                 name="data"
                 control={control}
-                rules={{ required: "Data é obrigatória" }}
                 render={({ field, fieldState }) => (
                   <DatePicker
                     label={watchedValues.tipo === "pagamento" ? "Data do Pagamento" : "Data de Início"}
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={field.value ? new Date(field.value) : null}
+                    onChange={(date) => {
+                      if (date && date instanceof Date) {
+                        field.onChange(date.toISOString().split('T')[0]);
+                      } else {
+                        field.onChange('');
+                      }
+                    }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
@@ -245,52 +242,79 @@ export default function FormularioLancamento() {
 
             {/* Parcelas (apenas para agendamento) */}
             {watchedValues.tipo === "agendamento" && (
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Número de Parcelas (meses)"
-                  type="number"
-                  {...register("parcelas", {
-                    min: { value: 1, message: "Parcelas deve ser pelo menos 1" },
-                    max: { value: 60, message: "Máximo 60 parcelas" }
-                  })}
-                  error={!!errors.parcelas}
-                  helperText={errors.parcelas?.message || "Quantos meses repetir este agendamento"}
-                  inputProps={{ min: "1", max: "60" }}
+              <Grid item xs={12}>
+                <Controller
+                  name="parcelas"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="Número de Parcelas (meses)"
+                      type="number"
+                      error={!!errors.parcelas}
+                      helperText={errors.parcelas?.message || "Quantos meses repetir este agendamento"}
+                      inputProps={{ min: "1", max: "60" }}
+                    />
+                  )}
                 />
               </Grid>
             )}
 
             {/* Descrição */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Descrição (opcional)"
-                multiline
-                rows={2}
-                {...register("descricao")}
-                placeholder="Adicione detalhes sobre este lançamento..."
+              <Controller
+                name="descricao"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Descrição"
+                    multiline
+                    rows={2}
+                    error={!!errors.descricao}
+                    helperText={errors.descricao?.message}
+                    placeholder="Adicione detalhes sobre este lançamento..."
+                  />
+                )}
               />
             </Grid>
 
-            {/* Botão Submit */}
+            {/* Botões de Ação */}
             <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={isCreating}
-                startIcon={isCreating ? <CircularProgress size={20} /> : <IconCheck />}
-                sx={{ minWidth: 200 }}
-              >
-                {isCreating 
-                  ? "Processando..." 
-                  : watchedValues.tipo === "pagamento" 
-                    ? "Registrar Pagamento" 
-                    : "Criar Agendamento"
-                }
-              </Button>
+              <Divider sx={{ my: 1.5 }} />
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <LoadingButton
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    loading={isCreating}
+                    startIcon={<IconCheck />}
+                  >
+                    {isEditing 
+                      ? "Atualizar Lançamento"
+                      : watchedValues.tipo === "pagamento" 
+                        ? "Registrar Pagamento" 
+                        : "Criar Agendamento"
+                    }
+                  </LoadingButton>
+                </Grid>
+                <Grid item xs={12}>
+                  <Button
+                    fullWidth
+                    variant="text"
+                    size="large"
+                    onClick={handleCancel}
+                    startIcon={<IconX />}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    Cancelar
+                  </Button>
+                </Grid>
+              </Grid>
             </Grid>
           </Grid>
         </Box>

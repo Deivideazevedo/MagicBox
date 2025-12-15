@@ -1,106 +1,42 @@
+import { despesaService as service } from "@/core/despesas/service";
+import { DespesaPayload } from "@/core/despesas/types";
+import { errorHandler } from "@/lib/error-handler";
+import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
-
-const DATA_PATH = join(process.cwd(), "src/data/despesas.json");
-
-function readDespesas() {
-  try {
-    const data = readFileSync(DATA_PATH, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-function writeDespesas(despesas: any[]) {
-  writeFileSync(DATA_PATH, JSON.stringify(despesas, null, 2));
-}
 
 /**
  * PATCH /api/despesas/[id]
  * Atualiza uma despesa existente
+ * Body: { nome: string }
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { categoriaId, nome, valorEstimado, diaVencimento, status } = body;
-    const { id } = params;
-
-    if (!nome) {
-      return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 });
-    }
-
-    const despesas = readDespesas();
-    const despesaIndex = despesas.findIndex(
-      (desp: any) => desp.id === id && desp.userId === session.user.id
-    );
-
-    if (despesaIndex === -1) {
-      return NextResponse.json({ error: "Despesa não encontrada" }, { status: 404 });
-    }
-
-    despesas[despesaIndex] = {
-      ...despesas[despesaIndex],
-      categoriaId: categoriaId || despesas[despesaIndex].categoriaId,
-      nome,
-      valorEstimado: valorEstimado !== undefined ? valorEstimado : despesas[despesaIndex].valorEstimado,
-      diaVencimento: diaVencimento !== undefined ? diaVencimento : despesas[despesaIndex].diaVencimento,
-      status: status !== undefined ? status : despesas[despesaIndex].status,
-      updatedAt: new Date().toISOString(),
-    };
-
-    writeDespesas(despesas);
-
-    return NextResponse.json(despesas[despesaIndex]);
-  } catch (error) {
-    console.error("Erro ao atualizar despesa:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
+export const PATCH = errorHandler(update);
 
 /**
  * DELETE /api/despesas/[id]
  * Remove uma despesa
  */
-export async function DELETE(
+export const DELETE = errorHandler(remove);
+
+
+async function remove(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const user = await getAuthUser();
+  const { id } = params;
 
-    const { id } = params;
-    const despesas = readDespesas();
-    const despesaIndex = despesas.findIndex(
-      (desp: any) => desp.id === id && desp.userId === session.user.id
-    );
+  service.remove(id);
+  return NextResponse.json({ success: true });
+}
 
-    if (despesaIndex === -1) {
-      return NextResponse.json({ error: "Despesa não encontrada" }, { status: 404 });
-    }
+async function update(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id: despesaId } = params;
+  const body: DespesaPayload = await request.json();
 
-    despesas.splice(despesaIndex, 1);
-    writeDespesas(despesas);
+  const despesaAtualizada = service.update(despesaId, body);
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Erro ao excluir despesa:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
+  return NextResponse.json(despesaAtualizada);
 }

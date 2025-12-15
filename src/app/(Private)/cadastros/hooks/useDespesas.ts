@@ -1,37 +1,28 @@
-import { useState, useCallback } from "react";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
-import {
-  useGetDespesasQuery,
-  useCreateDespesaMutation,
-  useUpdateDespesaMutation,
-  useDeleteDespesaMutation,
-} from "@/services/endpoints/despesasApi";
-import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
-import { Despesa, DespesaDto } from "@/services/types";
 import { Categoria } from "@/core/categorias/types";
+import { Despesa, DespesaPayload, DespesaForm } from "@/core/despesas/types";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import {
+  useCreateDespesaMutation,
+  useDeleteDespesaMutation,
+  useGetDespesasQuery,
+  useUpdateDespesaMutation,
+} from "@/services/endpoints/despesasApi";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react";
+import { useCallback, useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// Schema de validação com YUP
-// const despesaSchema: yup.ObjectSchema<DespesaDto> = yup.object({
-//   categoriaId: yup.string().required("Categoria é obrigatória"),
-//   nome: yup.string().required("Nome é obrigatório"),
-//   valorEstimado: yup.number().optional(),
-//   diaVencimento: yup.number().optional(),
-//   status: yup.boolean().required(),
-// });
-
-// Schema de validação com Zod, tipado para refletir DespesaDto
-// Se DespesaDto mudar, o `satisfies z.ZodType<DespesaDto>` força o schema a acompanhar.
 const despesaSchemaZod = z.object({
+  id: z.string().optional(),
+  userId: z.string().min(1, "Usuário é obrigatório"),
   categoriaId: z.string().min(1, "Categoria é obrigatória"),
   nome: z.string().min(1, "Nome é obrigatório"),
-  valorEstimado: z.union([z.number(), z.string()]).optional(),
-  diaVencimento: z.union([z.number(), z.string()]).optional(),
+  mensalmente: z.boolean(),
+  valorEstimado: z.union([z.string(), z.null()]),
+  diaVencimento: z.union([z.string(), z.null()]),
   status: z.boolean(),
-}) satisfies z.ZodType<DespesaDto>;
+}) satisfies z.ZodType<DespesaForm>;
 
 interface DeleteDialog {
   open: boolean;
@@ -46,11 +37,14 @@ interface UseDespesasProps {
 export function useDespesas({
   despesas: despesasProps,
   categorias: categoriasProps,
-}: UseDespesasProps = {}) {
+}: UseDespesasProps) {
+  const { data: session } = useSession();
+
   // Se props existirem (não são undefined), skip as queries RTK
   const { data: despesasQuery = [] } = useGetDespesasQuery(undefined, {
     skip: despesasProps !== undefined,
   });
+
   const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
     skip: categoriasProps !== undefined,
   });
@@ -59,7 +53,6 @@ export function useDespesas({
   const despesas = despesasProps ?? despesasQuery;
   const categorias = categoriasProps ?? categoriasQuery;
 
-  const [editingDespesa, setEditingDespesa] = useState<Despesa | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialog>({
     open: false,
     despesa: null,
@@ -82,23 +75,32 @@ export function useDespesas({
   } = useForm({
     resolver: zodResolver(despesaSchemaZod),
     defaultValues: {
+      id: undefined,
+      userId: session?.user.id || "",
       status: true,
       categoriaId: "",
       nome: "",
-      valorEstimado: "",
-      diaVencimento: "",
+      mensalmente: false,
+      valorEstimado: null,
+      diaVencimento: null,
     },
   });
 
   const onSubmit = useCallback(
-    async (data: DespesaDto) => {
+    async (payload: DespesaForm) => {
+      const { id, ...formData } = payload;
+      
+      // Converter FormData para Payload (sem conversão necessária pois valorEstimado e diaVencimento já são strings)
+      const data: DespesaPayload = {
+        ...formData,
+      };
+      
       try {
-        if (editingDespesa) {
+        if (id) {
           await updateDespesa({
-            id: editingDespesa.id,
+            id,
             data,
           }).unwrap();
-          setEditingDespesa(null);
         } else {
           await createDespesa(data).unwrap();
         }
@@ -106,8 +108,9 @@ export function useDespesas({
           status: true,
           categoriaId: data.categoriaId,
           nome: "",
-          valorEstimado: "",
-          diaVencimento: "",
+          mensalmente: false,
+          valorEstimado: null,
+          diaVencimento: null,
         });
         // Foca no campo nome após o cadastro
         setTimeout(() => setFocus("nome"), 100);
@@ -115,16 +118,17 @@ export function useDespesas({
         console.error("Erro ao salvar despesa:", error);
       }
     },
-    [editingDespesa, updateDespesa, createDespesa, reset, setFocus]
+    [updateDespesa, createDespesa, reset, setFocus]
   );
 
   const handleEdit = useCallback(
     (despesa: Despesa, scrollCallback?: () => void) => {
-      setEditingDespesa(despesa);
+      setValue("id", despesa.id);
       setValue("categoriaId", despesa.categoriaId);
       setValue("nome", despesa.nome);
+      setValue("mensalmente", despesa.mensalmente);
       setValue("valorEstimado", despesa.valorEstimado);
-      setValue("diaVencimento", despesa.diaVencimento);
+      setValue("diaVencimento", String(despesa.diaVencimento ?? ""));
       setValue("status", despesa.status);
 
       if (scrollCallback) {
@@ -135,14 +139,7 @@ export function useDespesas({
   );
 
   const handleCancelEdit = useCallback(() => {
-    setEditingDespesa(null);
-    reset({
-      status: true,
-      categoriaId: "",
-      nome: "",
-      valorEstimado: null as any,
-      diaVencimento: null as any,
-    });
+    reset();
   }, [reset]);
 
   const handleDeleteClick = useCallback((despesa: Despesa) => {
@@ -167,11 +164,23 @@ export function useDespesas({
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
+  const isEdditing = Boolean(watch("id"));
+  const mensalmente = watch("mensalmente");
+
+  // Limpar campos condicionais quando desmarcar "mensalmente"
+  useEffect(() => {
+    if (!mensalmente) {
+      setValue("valorEstimado", null);
+      setValue("diaVencimento", null);
+    }
+  }, [mensalmente, setValue]);
+
   return {
     despesas,
     categorias,
-    editingDespesa,
     register,
+    isEdditing,
+    mensalmente,
     control,
     errors,
     isCreating,

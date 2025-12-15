@@ -1,19 +1,19 @@
-import { categoriaService as service } from "@/core/categorias/service";
-import { CategoriaPayload } from "@/core/categorias/types";
+import { fonteRendaService as service } from "@/core/fontesRenda/service";
+import { FonteRendaPayload } from "@/core/fontesRenda/types";
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * PATCH /api/categorias/[id]
- * Atualiza uma categoria existente
+ * PATCH /api/fonteRendas/[id]
+ * Atualiza uma fonteRenda existente
  * Body: { nome: string }
  */
 export const PATCH = errorHandler(update);
 
 /**
- * DELETE /api/categorias/[id]
- * Remove uma categoria
+ * DELETE /api/fonteRendas/[id]
+ * Remove uma fonteRenda
  */
 export const DELETE = errorHandler(remove);
 
@@ -33,10 +33,10 @@ async function update(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id: categoriaId } = params;
-  const body: CategoriaPayload = await request.json();
+  const { id: fonteRendaId } = params;
+  const body: FonteRendaPayload = await request.json();
 
-  const categoriaAtualizada = service.update(categoriaId, body);
+  const fonteRendaAtualizada = service.update(fonteRendaId, body);
 
-  return NextResponse.json(categoriaAtualizada);
+  return NextResponse.json(fonteRendaAtualizada);
 }

@@ -1,93 +1,224 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   useGetLancamentosQuery,
   useCreateLancamentoMutation,
+  useUpdateLancamentoMutation,
+  useDeleteLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
-import { CreateLancamentoDto } from "@/services/types";
-
-// Interface para o formulário
-interface FormData {
-  categoriaId: string;
-  despesaId: string;
-  descricao: string;
-  valor: number;
-  data: string;
-  tipo: 'pagamento' | 'agendamento';
-  parcelas?: number;
-}
+import { Lancamento, LancamentoPayload, LancamentoForm } from "@/core/lancamentos/types";
+import { useSession } from "next-auth/react";
+import { createSwalert } from "@/utils/sweetAlert";
 
 // Schema de validação
-const lancamentoSchema: yup.ObjectSchema<FormData> = yup.object({
-  categoriaId: yup.string().required("Categoria é obrigatória"),
-  despesaId: yup.string().required("Despesa é obrigatória"),
-  descricao: yup.string().required("Descrição é obrigatória"),
-  valor: yup.number().positive("Valor deve ser positivo").required("Valor é obrigatório"),
-  data: yup.string().required("Data é obrigatória"),
-  tipo: yup.mixed<'pagamento' | 'agendamento'>().oneOf(['pagamento', 'agendamento']).required("Tipo é obrigatório"),
-  parcelas: yup.number().min(1, "Mínimo 1 parcela").max(48, "Máximo 48 parcelas").optional(),
-});
+const lancamentoSchema = z.object({
+  id: z.string().optional(),
+  userId: z.string().min(1, "Usuário é obrigatório"),
+  despesaId: z.string().min(1, "Despesa é obrigatória"),
+  contaId: z.string().min(1, "Conta é obrigatória"),
+  tipo: z.enum(["pagamento", "agendamento"]),
+  valor: z.string().min(1, "Valor é obrigatório"),
+  data: z.string().min(1, "Data é obrigatória"),
+  descricao: z.string().min(1, "Descrição é obrigatória"),
+  parcelas: z.union([z.string(), z.null()]),
+  valorPago: z.union([z.string(), z.null()]),
+  status: z.enum(["pago", "pendente"]),
+}) satisfies z.ZodType<LancamentoForm>;
 
-export function useLancamentos() {
+interface UseLancamentosProps {
+  lancamentos?: Lancamento[];
+}
+
+export function useLancamentos({
+  lancamentos: lancamentosProps,
+}: UseLancamentosProps = {}) {
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [isParcelado, setIsParcelado] = useState(false);
 
-  // RTK Query hooks
-  const { data: lancamentos = [], isLoading: isLoadingList } = useGetLancamentosQuery(undefined);
-  const [createLancamento, { isLoading: isCreating }] = useCreateLancamentoMutation();
+  // Se lancamentosProps existir (não é undefined), skip a query RTK
+  const { data: lancamentosQuery = [], isLoading: isLoadingList } =
+    useGetLancamentosQuery(undefined, {
+      skip: lancamentosProps !== undefined,
+    });
+
+  // Usa props se fornecido, senão usa resultado da query
+  const lancamentos = lancamentosProps ?? lancamentosQuery;
+
+  // RTK Query mutations
+  const [createLancamento, { isLoading: isCreating }] =
+    useCreateLancamentoMutation();
+  const [updateLancamento, { isLoading: isUpdating }] =
+    useUpdateLancamentoMutation();
+  const [deleteLancamento, { isLoading: isDeleting }] =
+    useDeleteLancamentoMutation();
 
   // React Hook Form
   const {
     register,
-    handleSubmit,
+    handleSubmit: handleSubmitForm,
     reset,
     watch,
     control,
     setValue,
     formState: { errors, isValid },
-  } = useForm<FormData>({
-    resolver: yupResolver(lancamentoSchema),
+  } = useForm<LancamentoForm>({
+    resolver: zodResolver(lancamentoSchema),
     defaultValues: {
-      tipo: 'pagamento',
-      data: new Date().toISOString().split('T')[0],
-      parcelas: 1,
+      id: "",
+      userId: session?.user?.id || "",
+      tipo: "pagamento",
+      despesaId: "",
+      contaId: "",
+      valor: "0",
+      data: new Date().toISOString().split("T")[0],
+      descricao: "",
+      parcelas: "1",
+      valorPago: null,
+      status: "pago",
     },
     mode: "onChange",
   });
 
   const watchedValues = watch();
+  const isEditing = Boolean(watch("id"));
 
   // Calcular total com parcelas
-  const totalComParcelas = isParcelado && watchedValues.parcelas 
-    ? (watchedValues.valor || 0) * (watchedValues.parcelas || 1)
-    : watchedValues.valor || 0;
+  const totalComParcelas =
+    isParcelado && watchedValues.parcelas
+      ? parseFloat(watchedValues.valor || "0") * parseInt(watchedValues.parcelas || "1", 10)
+      : parseFloat(watchedValues.valor || "0");
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      const lancamentoData: CreateLancamentoDto = {
-        categoriaId: data.categoriaId,
-        despesaId: data.despesaId,
-        descricao: data.descricao,
-        valor: data.valor,
-        data: data.data,
-        tipo: data.tipo,
-        parcelas: isParcelado ? data.parcelas : 1,
-      };
+  const onSubmit = useCallback(
+    async (payload: LancamentoForm) => {
+      const { id, ...formData } = payload;
+      const Swalert = createSwalert();
 
-      await createLancamento(lancamentoData).unwrap();
-      reset({
-        tipo: 'pagamento',
-        data: new Date().toISOString().split('T')[0],
-        parcelas: 1,
-      });
-      setStep(1);
-      setIsParcelado(false);
-    } catch (error) {
-      console.error("Erro ao criar lançamento:", error);
-    }
-  };
+      try {
+        // Converter FormData para Payload (converter strings para numbers)
+        const data: LancamentoPayload = {
+          ...formData,
+          valor: parseFloat(formData.valor),
+          parcelas: formData.parcelas ? parseInt(formData.parcelas, 10) : null,
+          valorPago: formData.valorPago ? parseFloat(formData.valorPago) : null,
+        };
+
+        const lancamentoData: LancamentoPayload = {
+          ...data,
+          parcelas: isParcelado ? data.parcelas : 1,
+          valorPago: data.tipo === "pagamento" ? data.valor : null,
+          status: data.tipo === "pagamento" ? "pago" : "pendente",
+        };
+
+        if (id) {
+          await updateLancamento({
+            id,
+            data: lancamentoData,
+          }).unwrap();
+          
+          Swalert.fire({
+            title: "Lançamento Atualizado!",
+            text: "O lançamento foi atualizado com sucesso.",
+            icon: "success",
+            showConfirmButton: false,
+            timer: 2000,
+          });
+        } else {
+          await createLancamento(lancamentoData).unwrap();
+          
+          Swalert.fire({
+            title: "Lançamento Criado!",
+            text: `${data.tipo === "pagamento" ? "Pagamento registrado" : "Agendamento criado"} com sucesso.`,
+            icon: "success",
+            showConfirmButton: false,
+            timer: 2000,
+          });
+        }
+
+        reset({
+          userId: session?.user?.id || "",
+          tipo: "pagamento",
+          despesaId: "",
+          contaId: "",
+          valor: "0",
+          data: new Date().toISOString().split("T")[0],
+          descricao: "",
+          parcelas: "1",
+          valorPago: null,
+          status: "pago",
+        });
+        setStep(1);
+        setIsParcelado(false);
+        return true; // Sucesso
+      } catch (error) {
+        console.error("Erro ao salvar lançamento:", error);
+        Swalert.fire({
+          title: "Erro!",
+          text: "Ocorreu um erro ao salvar o lançamento. Tente novamente.",
+          icon: "error",
+        });
+        return false; // Falha
+      }
+    },
+    [createLancamento, updateLancamento, reset, session, isParcelado]
+  );
+
+  const handleEdit = useCallback(
+    (lancamento: Lancamento, scrollCallback?: () => void) => {
+      setValue("id", lancamento.id);
+      setValue("userId", lancamento.userId);
+      setValue("despesaId", lancamento.despesaId);
+      setValue("contaId", lancamento.contaId);
+      setValue("tipo", lancamento.tipo);
+      setValue("valor", String(lancamento.valor));
+      setValue("data", lancamento.data);
+      setValue("descricao", lancamento.descricao);
+      setValue("parcelas", lancamento.parcelas ? String(lancamento.parcelas) : "1");
+      setValue("valorPago", lancamento.valorPago ? String(lancamento.valorPago) : null);
+      setValue("status", lancamento.status);
+
+      if (lancamento.parcelas && lancamento.parcelas > 1) {
+        setIsParcelado(true);
+      }
+
+      if (scrollCallback) {
+        setTimeout(() => scrollCallback(), 100);
+      }
+    },
+    [setValue]
+  );
+
+  const handleCancelEdit = useCallback(() => {
+    reset();
+    setIsParcelado(false);
+  }, [reset]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await deleteLancamento(id).unwrap();
+        const Swalert = createSwalert();
+        Swalert.fire({
+          title: "Excluído!",
+          text: "Lançamento excluído com sucesso.",
+          icon: "success",
+          showConfirmButton: false,
+          timer: 2000,
+        });
+      } catch (error) {
+        console.error("Erro ao excluir lançamento:", error);
+        const Swalert = createSwalert();
+        Swalert.fire({
+          title: "Erro!",
+          text: "Ocorreu um erro ao excluir o lançamento.",
+          icon: "error",
+        });
+      }
+    },
+    [deleteLancamento]
+  );
 
   const nextStep = () => {
     if (step < 3) setStep(step + 1);
@@ -98,23 +229,30 @@ export function useLancamentos() {
   };
 
   // Função para lidar com mudança de tipo
-  const handleTipoChange = (tipo: 'pagamento' | 'agendamento') => {
-    setValue('tipo', tipo);
+  const handleTipoChange = (tipo: "pagamento" | "agendamento") => {
+    setValue("tipo", tipo);
+    setValue("status", tipo === "pagamento" ? "pago" : "pendente");
   };
 
   const handleParceladoChange = (parcelado: boolean) => {
     setIsParcelado(parcelado);
     if (!parcelado) {
-      setValue('parcelas', 1);
+      setValue("parcelas", "1");
     }
   };
 
-  // Resetar parcelas quando o valor muda e não está parcelado
-  useEffect(() => {
-    if (!isParcelado) {
-      setValue('parcelas', 1);
-    }
-  }, [isParcelado, setValue]);
+  // submit é o handler que o <form> espera
+  const handleSubmit = handleSubmitForm(onSubmit);
+
+  // Função para submit com callback de sucesso (para fechar drawer, por exemplo)
+  const submitWithClose = (onSuccess?: () => void) => {
+    return handleSubmitForm(async (formData) => {
+      const success = await onSubmit(formData);
+      if (success === true && onSuccess) {
+        onSuccess();
+      }
+    });
+  };
 
   return {
     // Form state
@@ -124,27 +262,34 @@ export function useLancamentos() {
     errors,
     isValid,
     watchedValues,
-    
+    isEditing,
+
     // Component state
     step,
     setStep,
     isParcelado,
     setIsParcelado,
-    
+
     // Calculations
     totalComParcelas,
-    
+
     // Actions
-    onSubmit,
+    onSubmit, // Expor para controle manual
+    submitWithClose, // Submit com callback de sucesso
     nextStep,
     prevStep,
     handleTipoChange,
     handleParceladoChange,
-    
+    handleEdit,
+    handleCancelEdit,
+    handleDelete,
+
     // Loading states
     isCreating,
+    isUpdating,
+    isDeleting,
     isLoadingList,
-    
+
     // Data
     lancamentos,
   };

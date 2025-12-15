@@ -38,7 +38,7 @@ import { Controller } from "react-hook-form";
 import { useFontesRenda } from "../hooks/useFontesRenda";
 import { HookTextField } from "@/app/components/forms/hooksForm";
 import { LoadingButton } from "@mui/lab";
-import { FonteRenda } from "@/services/types";
+import { FonteRenda, FonteRendaPayload } from "@/core/fontesRenda/types";
 
 interface FontesRendaTabProps {
   fontesRenda: FonteRenda[];
@@ -51,11 +51,9 @@ export default function FontesRendaTab({
 
   const {
     fontesRenda,
-    editingFonteRenda,
-    register,
+    isEdditing,
     handleSubmit,
     control,
-    errors,
     isCreating,
     isUpdating,
     isDeleting,
@@ -121,12 +119,12 @@ export default function FontesRendaTab({
                     fontWeight={600}
                     color="text.primary"
                   >
-                    {editingFonteRenda
+                    {isEdditing
                       ? "Editar Fonte de Renda"
                       : "Nova Fonte de Renda"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {editingFonteRenda ? "Atualização" : "Cadastro"}
+                    {isEdditing ? "Atualização" : "Cadastro"}
                   </Typography>
                 </Box>
               </Box>
@@ -282,11 +280,11 @@ export default function FontesRendaTab({
                         startIcon={<IconPlus size={16} />}
                         // sx={{ flex: 1 }}
                       >
-                        {editingFonteRenda ? "Atualizar" : "Adicionar"}
+                        {isEdditing ? "Atualizar" : "Adicionar"}
                       </LoadingButton>
                     </Grid>
 
-                    {editingFonteRenda && (
+                    {isEdditing && (
                       <Grid item xs={12}>
                         <Button
                           variant="outlined"

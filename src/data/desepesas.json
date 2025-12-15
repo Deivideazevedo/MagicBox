@@ -1,0 +1,26 @@
+[
+  {
+    "id": "9d24568d-5335-4e64-8700-d54852176c7c",
+    "userId": "2",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "asd",
+    "status": true,
+    "valorEstimado": "989",
+    "diaVencimento": 5,
+    "createdAt": "2025-12-15T01:54:37.669Z",
+    "updatedAt": "2025-12-15T02:29:47.754Z",
+    "mensalmente": true
+  },
+  {
+    "id": "70ade2e9-e7ba-4b80-b0a1-1794c36910b6",
+    "userId": "2",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "yrdyr",
+    "mensalmente": false,
+    "status": true,
+    "valorEstimado": null,
+    "diaVencimento": 0,
+    "createdAt": "2025-12-15T02:42:31.001Z",
+    "updatedAt": "2025-12-15T02:42:31.001Z"
+  }
+]

@@ -1,6 +1,6 @@
 import { api } from "../api";
-import { Despesa, DespesaDto, UpdateDespesaDto } from "../types";
 import { fnBuildSearchParams } from "../../utils/searchParams";
+import { Despesa, DespesaPayload } from "@/core/despesas/types";
 
 export const despesasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -17,7 +17,7 @@ export const despesasApi = api.injectEndpoints({
       providesTags: ["Despesas"],
     }),
 
-    createDespesa: builder.mutation<Despesa, DespesaDto>({
+    createDespesa: builder.mutation<Despesa, DespesaPayload>({
       query: (newDespesa) => ({
         url: "/despesas",
         method: "POST",
@@ -26,7 +26,10 @@ export const despesasApi = api.injectEndpoints({
       invalidatesTags: ["Despesas"],
     }),
 
-    updateDespesa: builder.mutation<Despesa, UpdateDespesaDto>({
+    updateDespesa: builder.mutation<
+      Despesa,
+      { id: string; data: DespesaPayload }
+    >({
       query: ({ id, data }) => ({
         url: `/despesas/${id}`,
         method: "PATCH",
