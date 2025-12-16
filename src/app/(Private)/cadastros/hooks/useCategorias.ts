@@ -9,7 +9,11 @@ import {
   useUpdateCategoriaMutation,
   useDeleteCategoriaMutation,
 } from "@/services/endpoints/categoriasApi";
-import { Categoria, CategoriaPayload, CategoriaForm } from "@/core/categorias/types";
+import {
+  Categoria,
+  CategoriaPayload,
+  CategoriaForm,
+} from "@/core/categorias/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 
@@ -76,12 +80,12 @@ export const useCategorias = ({
   const onSubmit = useCallback(
     async (payload: CategoriaForm) => {
       const { id, ...formData } = payload;
-      
+
       // Converter FormData para Payload (neste caso não há conversão necessária)
       const data: CategoriaPayload = {
         ...formData,
       };
-          
+
       try {
         if (id) {
           await updateCategoria({
@@ -103,13 +107,13 @@ export const useCategorias = ({
     (categoria: Categoria, scrollCallback?: () => void) => {
       setValue("id", categoria.id);
       setValue("nome", categoria.nome);
-      setValue("userId", categoria.userId);
+      setValue("userId", session?.user?.id ?? "");
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue]
+    [setValue, session?.user?.id]
   );
 
   const handleCancelEdit = useCallback(() => {

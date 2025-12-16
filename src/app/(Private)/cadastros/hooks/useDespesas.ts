@@ -22,7 +22,29 @@ const despesaSchemaZod = z.object({
   valorEstimado: z.union([z.string(), z.null()]),
   diaVencimento: z.union([z.string(), z.null()]),
   status: z.boolean(),
-}) satisfies z.ZodType<DespesaForm>;
+}).refine(
+  (data) => {
+    if (data.mensalmente) {
+      return data.valorEstimado !== null && data.valorEstimado !== "";
+    }
+    return true;
+  },
+  {
+    message: "Obrigatório",
+    path: ["valorEstimado"],
+  }
+).refine(
+  (data) => {
+    if (data.mensalmente) {
+      return data.diaVencimento !== null && data.diaVencimento !== "";
+    }
+    return true;
+  },
+  {
+    message: "Obrigatório",
+    path: ["diaVencimento"],
+  }
+) satisfies z.ZodType<DespesaForm>;
 
 interface DeleteDialog {
   open: boolean;
@@ -70,13 +92,14 @@ export function useDespesas({
     setValue,
     control,
     watch,
+    getValues,
     setFocus,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(despesaSchemaZod),
     defaultValues: {
       id: undefined,
-      userId: session?.user.id || "",
+      userId: session?.user?.id || "",
       status: true,
       categoriaId: "",
       nome: "",
@@ -104,14 +127,7 @@ export function useDespesas({
         } else {
           await createDespesa(data).unwrap();
         }
-        reset({
-          status: true,
-          categoriaId: data.categoriaId,
-          nome: "",
-          mensalmente: false,
-          valorEstimado: null,
-          diaVencimento: null,
-        });
+        reset();
         // Foca no campo nome após o cadastro
         setTimeout(() => setFocus("nome"), 100);
       } catch (error) {
@@ -123,19 +139,20 @@ export function useDespesas({
 
   const handleEdit = useCallback(
     (despesa: Despesa, scrollCallback?: () => void) => {
-      setValue("id", despesa.id);
+      setValue("id", despesa.id);  
+      setValue("userId", session?.user?.id ?? "");
       setValue("categoriaId", despesa.categoriaId);
       setValue("nome", despesa.nome);
       setValue("mensalmente", despesa.mensalmente);
       setValue("valorEstimado", despesa.valorEstimado);
-      setValue("diaVencimento", String(despesa.diaVencimento ?? ""));
+      setValue("diaVencimento", despesa.diaVencimento ? String(despesa.diaVencimento) : "");
       setValue("status", despesa.status);
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue]
+    [setValue, session?.user?.id]
   );
 
   const handleCancelEdit = useCallback(() => {

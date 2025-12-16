@@ -210,13 +210,6 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                   </InputAdornment>
                                 ),
                               }}
-                              rules={{
-                                required: "Obrigatório para despesas mensais",
-                                min: {
-                                  value: 0.01,
-                                  message: "Valor deve ser positivo",
-                                },
-                              }}
                               sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
                             />
                           </Grid>
@@ -229,11 +222,6 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                               name="diaVencimento"
                               placeholder="Ex: 5"
                               control={control}
-                              rules={{
-                                required: "Obrigatório para despesas mensais",
-                                min: { value: 1, message: "Dia deve ser entre 1 e 31" },
-                                max: { value: 31, message: "Dia deve ser entre 1 e 31" },
-                              }}
                               InputProps={{
                                 startAdornment: (
                                   <InputAdornment position="start">

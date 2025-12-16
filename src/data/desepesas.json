@@ -22,5 +22,29 @@
     "diaVencimento": 0,
     "createdAt": "2025-12-15T02:42:31.001Z",
     "updatedAt": "2025-12-15T02:42:31.001Z"
+  },
+  {
+    "id": "e2eb1fba-0b87-48ed-bff4-3bae17346e61",
+    "userId": "2",
+    "categoriaId": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "nome": "5",
+    "mensalmente": false,
+    "status": false,
+    "valorEstimado": null,
+    "diaVencimento": 0,
+    "createdAt": "2025-12-15T21:58:58.065Z",
+    "updatedAt": "2025-12-15T22:07:09.428Z"
+  },
+  {
+    "id": "13b06894-43ff-4891-b5ea-c0ff0f1723ae",
+    "userId": "2",
+    "categoriaId": "83ca2e9b-59b5-45e1-830b-4d5f8931d418",
+    "nome": "435",
+    "mensalmente": false,
+    "status": true,
+    "valorEstimado": null,
+    "diaVencimento": 0,
+    "createdAt": "2025-12-15T22:08:35.113Z",
+    "updatedAt": "2025-12-15T22:08:35.113Z"
   }
 ]

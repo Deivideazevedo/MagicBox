@@ -114,6 +114,7 @@ export const useFontesRenda = ({
 
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
+      setValue("userId", session?.user?.id ?? "");
       setValue("id", fonteRenda.id);
       setValue("nome", fonteRenda.nome);
       setValue("valorEstimado", fonteRenda.valorEstimado);
@@ -124,7 +125,7 @@ export const useFontesRenda = ({
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue]
+    [setValue, session?.user?.id]
   );
 
   const handleCancelEdit = useCallback(() => {
