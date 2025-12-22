@@ -6,7 +6,10 @@ import { CategoriaPayload } from "./types";
 export const categoriaRepository = {
   async findAll(filters: Partial<PrismaCategoria>) {
     return await prisma.categoria.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
     });
   },
@@ -16,7 +19,10 @@ export const categoriaRepository = {
     if (isNaN(numericId)) return null;
 
     return await prisma.categoria.findUnique({
-      where: { id: numericId },
+      where: { 
+        id: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
     });
   },
 
@@ -25,7 +31,10 @@ export const categoriaRepository = {
     if (isNaN(numericId)) return [];
 
     return await prisma.categoria.findMany({
-      where: { userId: numericId },
+      where: { 
+        userId: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
     });
   },
@@ -44,8 +53,10 @@ export const categoriaRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      await prisma.categoria.delete({
+      // Soft delete: apenas marca como deletado
+      await prisma.categoria.update({
         where: { id: numericId },
+        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {

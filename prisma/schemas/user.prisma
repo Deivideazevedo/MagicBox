@@ -3,15 +3,16 @@
 // ============================================
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String?  @unique
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  email     String?   @unique
   password  String
   name      String?
   image     String?
-  role      String?  @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      String?   @default("user")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relacionamentos
   categorias  Categoria[]

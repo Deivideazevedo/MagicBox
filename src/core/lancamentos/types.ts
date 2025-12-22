@@ -1,5 +1,4 @@
-export type TipoLancamento = "pagamento" | "agendamento" | "receita";
-export type StatusLancamento = "pago" | "pendente" | "atrasado";
+export type TipoLancamento = "pagamento" | "agendamento";
 
 export interface Lancamento {
   id: number;
@@ -8,9 +7,8 @@ export interface Lancamento {
   valor: number | string;
   data: string;
   descricao: string;
-  status: StatusLancamento;
+  categoriaId?: number | null;
   despesaId?: number | null;
-  contaId?: number | null; // Alias para despesaId
   fonteRendaId?: number | null;
   parcelas?: number | null;
   valorPago?: number | string | null;
@@ -25,9 +23,8 @@ export interface LancamentoPayload {
   valor: number | string;
   data: Date | string;
   descricao: string;
-  status: StatusLancamento;
+  categoriaId: number | null;
   despesaId?: number | null;
-  contaId?: number | null;
   fonteRendaId?: number | null;
   parcelas?: number | null;
   valorPago?: number | string | null;
@@ -41,9 +38,8 @@ export interface LancamentoForm {
   valor: string;
   data: string;
   descricao: string;
-  status: StatusLancamento;
   despesaId?: string | number | null;
-  contaId?: string | number | null;
+  categoriaId?: string | number | null;
   fonteRendaId?: string | number | null;
   parcelas?: string | number | null;
   valorPago?: string | null;

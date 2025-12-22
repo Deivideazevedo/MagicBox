@@ -19,7 +19,10 @@ export const lancamentoRepository = {
   async findAll(filters: Partial<PrismaLancamento> & { statusDinamico?: string }): Promise<LancamentoEnriquecido[]> {
     const { statusDinamico, ...prismaFilters } = filters;
     
-    let whereClause: Prisma.LancamentoWhereInput = { ...prismaFilters };
+    let whereClause: Prisma.LancamentoWhereInput = { 
+      ...prismaFilters,
+      deletedAt: null, // Exclui registros deletados
+    };
     
     // ETAPA 1: Two-Step Fetch se houver filtro de status dinâmico
     if (statusDinamico && statusDinamico !== "TODOS") {
@@ -38,6 +41,7 @@ export const lancamentoRepository = {
       whereClause = {
         ...prismaFilters,
         id: { in: ids },
+        deletedAt: null, // Exclui registros deletados
       };
     }
     
@@ -63,7 +67,10 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return null;
 
     const lancamento = await prisma.lancamento.findUnique({
-      where: { id: numericId },
+      where: { 
+        id: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       include: {
         despesa: true,
         fonteRenda: true,
@@ -83,7 +90,10 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return [];
 
     const lancamentos = await prisma.lancamento.findMany({
-      where: { userId: numericId },
+      where: { 
+        userId: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { data: "desc" },
       include: {
         despesa: true,
@@ -97,19 +107,19 @@ export const lancamentoRepository = {
     }));
   },
 
-  async create(data: LancamentoPayload & { userId: number }): Promise<LancamentoEnriquecido> {
+  async create(data: LancamentoPayload): Promise<LancamentoEnriquecido> {
+
     const lancamento = await prisma.lancamento.create({
       data: {
-        userId: data.userId,
-        tipo: data.tipo as TipoLancamento,
+        userId: Number(data.userId),
+        tipo: data.tipo,
         valor: Number(data.valor),
         data: new Date(data.data),
         descricao: data.descricao,
+        categoriaId: Number(data.categoriaId),
         despesaId: data.despesaId ? Number(data.despesaId) : null,
-        contaId: data.contaId ? Number(data.contaId) : null,
         fonteRendaId: data.fonteRendaId ? Number(data.fonteRendaId) : null,
         parcelas: data.parcelas ? Number(data.parcelas) : null,
-        valorPago: data.valorPago ? Number(data.valorPago) : null,
       },
       include: {
         despesa: true,
@@ -128,8 +138,10 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      await prisma.lancamento.delete({
+      // Soft delete: apenas marca como deletado
+      await prisma.lancamento.update({
         where: { id: numericId },
+        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {
@@ -149,10 +161,8 @@ export const lancamentoRepository = {
         data: data.data ? new Date(data.data) : undefined,
         descricao: data.descricao,
         despesaId: data.despesaId ? Number(data.despesaId) : undefined,
-        contaId: data.contaId ? Number(data.contaId) : undefined,
         fonteRendaId: data.fonteRendaId ? Number(data.fonteRendaId) : undefined,
         parcelas: data.parcelas ? Number(data.parcelas) : undefined,
-        valorPago: data.valorPago ? Number(data.valorPago) : undefined,
       },
       include: {
         despesa: true,

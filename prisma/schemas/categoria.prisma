@@ -5,15 +5,17 @@
 // São macro-agrupadores que organizam as contas/despesas
 
 model Categoria {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int
   nome      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   // Relacionamentos
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  despesas Despesa[]
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  despesas    Despesa[]
+  lancamentos Lancamento[]
 
   @@index([userId])
   @@index([nome])

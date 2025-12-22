@@ -5,14 +5,15 @@
 // Representam as entradas de dinheiro do usuário
 
 model FonteRenda {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   userId         Int
   nome           String
-  valorEstimado  Decimal? @db.Decimal(10, 2)
+  valorEstimado  Decimal?  @db.Decimal(10, 2)
   diaRecebimento Int? // Dia do mês (1-31)
-  status         Boolean  @default(true) // true = ativa, false = inativa
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         Boolean   @default(true) // true = ativa, false = inativa
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   // Relacionamentos
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)

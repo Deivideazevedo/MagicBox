@@ -6,7 +6,10 @@ import { DespesaPayload } from "./types";
 export const despesaRepository = {
   async findAll(filters: Partial<PrismaDespesa>) {
     return await prisma.despesa.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
       include: { categoria: true },
     });
@@ -17,7 +20,10 @@ export const despesaRepository = {
     if (isNaN(numericId)) return null;
 
     return await prisma.despesa.findUnique({
-      where: { id: numericId },
+      where: { 
+        id: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       include: { categoria: true },
     });
   },
@@ -27,7 +33,10 @@ export const despesaRepository = {
     if (isNaN(numericId)) return [];
 
     return await prisma.despesa.findMany({
-      where: { userId: numericId },
+      where: { 
+        userId: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
       include: { categoria: true },
     });
@@ -52,8 +61,10 @@ export const despesaRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      await prisma.despesa.delete({
+      // Soft delete: apenas marca como deletado
+      await prisma.despesa.update({
         where: { id: numericId },
+        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {

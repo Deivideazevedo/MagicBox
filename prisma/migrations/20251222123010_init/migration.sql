@@ -1,8 +1,5 @@
 -- CreateEnum
-CREATE TYPE "TipoLancamento" AS ENUM ('pagamento', 'agendamento', 'receita');
-
--- CreateEnum
-CREATE TYPE "StatusLancamento" AS ENUM ('pago', 'pendente');
+CREATE TYPE "TipoLancamento" AS ENUM ('pagamento', 'agendamento');
 
 -- CreateTable
 CREATE TABLE "categorias" (
@@ -11,6 +8,7 @@ CREATE TABLE "categorias" (
     "nome" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "categorias_pkey" PRIMARY KEY ("id")
 );
@@ -27,6 +25,7 @@ CREATE TABLE "despesas" (
     "status" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "despesas_pkey" PRIMARY KEY ("id")
 );
@@ -41,6 +40,7 @@ CREATE TABLE "fontes_renda" (
     "status" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "fontes_renda_pkey" PRIMARY KEY ("id")
 );
@@ -50,17 +50,16 @@ CREATE TABLE "lancamentos" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "tipo" "TipoLancamento" NOT NULL,
-    "valor" DECIMAL(10,2) NOT NULL,
     "data" TIMESTAMP(3) NOT NULL,
-    "descricao" TEXT NOT NULL,
-    "status" "StatusLancamento" NOT NULL,
+    "descricao" VARCHAR(255),
+    "categoriaId" INTEGER NOT NULL,
     "despesaId" INTEGER,
-    "contaId" INTEGER,
     "fonteRendaId" INTEGER,
+    "valor" DECIMAL(10,2) NOT NULL,
     "parcelas" INTEGER,
-    "valorPago" DECIMAL(10,2),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "lancamentos_pkey" PRIMARY KEY ("id")
 );
@@ -76,6 +75,7 @@ CREATE TABLE "users" (
     "role" TEXT DEFAULT 'user',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -114,9 +114,6 @@ CREATE INDEX "lancamentos_fonteRendaId_idx" ON "lancamentos"("fonteRendaId");
 CREATE INDEX "lancamentos_data_idx" ON "lancamentos"("data");
 
 -- CreateIndex
-CREATE INDEX "lancamentos_tipo_status_idx" ON "lancamentos"("tipo", "status");
-
--- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
@@ -141,10 +138,13 @@ ALTER TABLE "despesas" ADD CONSTRAINT "despesas_categoriaId_fkey" FOREIGN KEY ("
 ALTER TABLE "fontes_renda" ADD CONSTRAINT "fontes_renda_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_despesaId_fkey" FOREIGN KEY ("despesaId") REFERENCES "despesas"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_fonteRendaId_fkey" FOREIGN KEY ("fonteRendaId") REFERENCES "fontes_renda"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_despesaId_fkey" FOREIGN KEY ("despesaId") REFERENCES "despesas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_fonteRendaId_fkey" FOREIGN KEY ("fonteRendaId") REFERENCES "fontes_renda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

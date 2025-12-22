@@ -6,7 +6,10 @@ import { UserPayload } from "./types";
 export const authRepository = {
   async findAll(filters: Partial<PrismaUser>) {
     return await prisma.user.findMany({
-      where: filters,
+      where: { 
+        ...filters,
+        deletedAt: null, // Exclui registros deletados
+      },
     });
   },
 
@@ -15,7 +18,10 @@ export const authRepository = {
     if (isNaN(numericId)) return null;
 
     return await prisma.user.findUnique({
-      where: { id: numericId },
+      where: { 
+        id: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
     });
   },
 
@@ -37,8 +43,10 @@ export const authRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      await prisma.user.delete({
+      // Soft delete: apenas marca como deletado
+      await prisma.user.update({
         where: { id: numericId },
+        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {
@@ -62,7 +70,10 @@ export const authRepository = {
   async findByUsernameOrEmail(payload: { username?: string; email?: string | null }) {
     if (!payload.username && !payload.email) return null;
 
-    const where: any = { OR: [] };
+    const where: any = { 
+      OR: [],
+      deletedAt: null, // Exclui registros deletados
+    };
     if (payload.username) where.OR.push({ username: payload.username });
     if (payload.email) where.OR.push({ email: payload.email });
 

@@ -990,6 +990,25 @@
   resolved "https://registry.yarnpkg.com/@prisma/studio-core/-/studio-core-0.9.0.tgz#aad8b49467adeb4100d1070a0940dc3ffce8d0ef"
   integrity sha512-xA2zoR/ADu/NCSQuriBKTh6Ps4XjU0bErkEcgMfnSGh346K1VI7iWKnoq1l2DoxUqiddPHIEWwtxJ6xCHG6W7g==
 
+"@react-input/core@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@react-input/core/-/core-2.0.2.tgz#c7094c5ab955e740d4c34777688aff54785024a1"
+  integrity sha512-xLLBueYFbant9308uv3cIJQz5NYSixeGspjP3Nt6jogRHTcHYMRmlVFUuSzQiP8Z8/5BdnPkudRSsN0/AJ1fbw==
+
+"@react-input/mask@^2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@react-input/mask/-/mask-2.0.4.tgz#0a8df2694962ac10a76a329469d91f6ed01037b8"
+  integrity sha512-NOielvQSBOlGLVuEcxtkjaGneC0GJFXjC7KOF99ed9H9XSDruWnQirjht5uSbWqLeeiOup0VD2YjM+6FH+aWBg==
+  dependencies:
+    "@react-input/core" "^2.0.2"
+
+"@react-input/number-format@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@react-input/number-format/-/number-format-2.0.3.tgz#7b7f1fef6a884b1c3f508e9fd437a5c192095de1"
+  integrity sha512-rgvp32USB+g+ZuQv+TJJHmM+2Te+hn88uMBKvLbY965gUMfYS6hONTcw0UzwUnm5IRWyEkiTyZQmd/1648fw8w==
+  dependencies:
+    "@react-input/core" "^2.0.2"
+
 "@react-spring/animated@~10.0.2":
   version "10.0.2"
   resolved "https://registry.yarnpkg.com/@react-spring/animated/-/animated-10.0.2.tgz#51be92eacf3660762e5162adf0f25d9bb1f98bd4"

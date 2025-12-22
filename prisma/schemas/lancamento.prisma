@@ -16,21 +16,21 @@ model Lancamento {
   data      DateTime // Data do lançamento/agendamento
   descricao String?        @db.VarChar(255)
 
-  categoriaId  Int 
-  despesaId    Int? 
-  fonteRendaId Int? 
+  categoriaId  Int
+  despesaId    Int?
+  fonteRendaId Int?
 
   // Campos específicos
-  parcelas      Int? // Número de parcelas (para agendamentos)
-  valorPago     Decimal? @db.Decimal(10, 2) // Valor efetivamente pago
-  valorPrevisto Decimal  @db.Decimal(10, 2)
+  valor    Decimal @db.Decimal(10, 2) // Valor efetivamente pago
+  parcelas Int? // Número de parcelas (para agendamentos)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   // Relacionamentos
   user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  categoria  Categoria?  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
   despesa    Despesa?    @relation(fields: [despesaId], references: [id], onDelete: Restrict)
   fonteRenda FonteRenda? @relation(fields: [fonteRendaId], references: [id], onDelete: Restrict)
 

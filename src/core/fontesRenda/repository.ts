@@ -6,7 +6,10 @@ import { FonteRendaPayload } from "./types";
 export const fonteRendaRepository = {
   async findAll(filters: Partial<PrismaFonteRenda>) {
     return await prisma.fonteRenda.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
     });
   },
@@ -16,7 +19,10 @@ export const fonteRendaRepository = {
     if (isNaN(numericId)) return null;
 
     return await prisma.fonteRenda.findUnique({
-      where: { id: numericId },
+      where: { 
+        id: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
     });
   },
 
@@ -25,7 +31,10 @@ export const fonteRendaRepository = {
     if (isNaN(numericId)) return [];
 
     return await prisma.fonteRenda.findMany({
-      where: { userId: numericId },
+      where: { 
+        userId: numericId,
+        deletedAt: null, // Exclui registros deletados
+      },
       orderBy: { nome: "asc" },
     });
   },
@@ -47,8 +56,10 @@ export const fonteRendaRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      await prisma.fonteRenda.delete({
+      // Soft delete: apenas marca como deletado
+      await prisma.fonteRenda.update({
         where: { id: numericId },
+        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {
