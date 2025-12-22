@@ -30,9 +30,17 @@ export const authOptions: AuthOptions = {
       },
       authorize: async (credentials) => {
         try {
-          const user = authService.authenticate(credentials as AuthPayload);
+          const user = await authService.authenticate(credentials as AuthPayload);
 
-          return user;
+          if (user) {
+            return {
+              ...user,
+              id: String(user.id),
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString(),
+            } as User;
+          }
+          return null;
         } catch (error) {
           console.error("Erro na autenticação:", error);
           throw new Error("Ops! Credenciais Inválidas. Tente novamente");
@@ -55,11 +63,37 @@ export const authOptions: AuthOptions = {
       account: Account | null;
     }) {
       // 🔹 Primeira vez que o usuário faz login
-      if (user) token.user = user;
+      if (user && account) {
+        if (account.provider !== "credentials") {
+          // OAuth login - Busca ou cria usuário no banco
+          if (user.email) {
+            try {
+              const dbUser = await authService.findOrCreateByOAuth({
+                email: user.email,
+                name: user.name || "",
+                image: user.image,
+              });
 
-      // 🔹 Para providers OAuth, armazenar o access_token do provider
-      if (account?.access_token) {
-        token.oauthAccessToken = account.access_token;
+              // Substitui o usuário do provider pelo usuário do banco
+              token.user = {
+                ...dbUser,
+                id: String(dbUser.id),
+                createdAt: dbUser.createdAt.toISOString(),
+                updatedAt: dbUser.updatedAt.toISOString(),
+              } as User;
+            } catch (error) {
+              console.error("Erro ao criar usuário OAuth:", error);
+            }
+          }
+        } else {
+          // Credentials login (user já formatado no authorize)
+          token.user = user;
+        }
+
+        // 🔹 Para providers OAuth, armazenar o access_token do provider
+        if (account?.access_token) {
+          token.oauthAccessToken = account.access_token;
+        }
       }
 
       return token;

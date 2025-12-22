@@ -1,0 +1,29 @@
+// ============================================
+// MODEL: DESPESA - Despesas/Contas do usuário
+// ============================================
+// Exemplos: Aluguel, Supermercado, Internet, Cartão de Crédito
+// São contas/despesas vinculadas a uma categoria
+// REGRA DE NEGÓCIO: Se mensalmente=true, valorEstimado e diaVencimento são obrigatórios
+
+model Despesa {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  categoriaId   Int
+  nome          String
+  mensalmente   Boolean  @default(false) // Se repete todo mês
+  valorEstimado Decimal? @db.Decimal(10, 2) // Valor previsto
+  diaVencimento Int? // Dia do mês (1-31)
+  status        Boolean  @default(true) // true = ativa, false = inativa
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamentos
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoria   Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  lancamentos Lancamento[]
+
+  @@index([userId])
+  @@index([categoriaId])
+  @@index([status])
+  @@map("despesas")
+}

@@ -1,76 +1,80 @@
-// src/core/despesas/despesa.repository.ts
-import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
-import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { fnReadFile, fnWriteFile } from "@/utils/functions/fnFile";
-import { writeFileSync } from "fs";
-import { join } from "path";
-import { DespesaModel } from "./model";
-import { Despesa, DespesaPayload } from "./types";
-
-const DATA_PATH = join(process.cwd(), "src/data/desepesas.json");
+// src/core/despesas/repository.ts
+import { prisma } from "@/lib/prisma";
+import { Despesa as PrismaDespesa } from "@prisma/client";
+import { DespesaPayload } from "./types";
 
 export const despesaRepository = {
-  findAll(filters: Partial<Despesa>) {
-    const despesas = fnReadFile<Despesa>(DATA_PATH);
-
-    if (Object.keys(filters).length === 0) return despesas;
-
-    return fnApplyFilters(despesas, filters);
-  },
-
-  findById(id: string): Despesa | null {
-    const despesas = fnReadFile<Despesa>(DATA_PATH);
-    const index = despesas.findIndex((item) => item.id === id);
-
-    return index === -1 ? null : despesas[index];
-  },
-
-  findByUser(userId: string) {
-    const despesas = fnReadFile<Despesa>(DATA_PATH);
-    return despesas.filter((c) => c.userId === userId);
-  },
-
-  create(payload: DespesaPayload) {
-    const despesas = fnReadFile<Despesa>(DATA_PATH);
-
-    const novaDespesa = new DespesaModel(payload);
-
-    despesas.push(novaDespesa);
-    fnWriteFile<Despesa>(DATA_PATH, despesas);
-
-    return novaDespesa;
-  },
-
-  remove(id: string) {
-    let despesas = fnReadFile<Despesa>(DATA_PATH);
-
-    despesas = despesas.filter((c) => c.id !== id);
-
-    fnWriteFile<Despesa>(DATA_PATH, despesas);
-    return true;
-  },
-
-  update(id: string, payload: DespesaPayload) {
-    const despesas = fnReadFile<Despesa>(DATA_PATH);
-    const index = despesas.findIndex((item) => item.id === id);
-
-    const payloadCleaned = fnCleanObject({
-      dataForm: payload,
-      keysToRemove: ["userId"],
+  async findAll(filters: Partial<PrismaDespesa>) {
+    return await prisma.despesa.findMany({
+      where: filters,
+      orderBy: { nome: "asc" },
+      include: { categoria: true },
     });
+  },
 
-    const updatedDespesa: Despesa = {
-      ...despesas[index],
-      ...payloadCleaned,
-      valorEstimado: payload.valorEstimado ?? null,
-      diaVencimento: Number(payload.diaVencimento) ?? null,
-      updatedAt: new Date().toISOString(),
-    };
+  async findById(id: string | number) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) return null;
 
-    // substitui o item na posição index com novo objeto na posição encontrada
-    despesas[index] = updatedDespesa;
+    return await prisma.despesa.findUnique({
+      where: { id: numericId },
+      include: { categoria: true },
+    });
+  },
 
-   fnWriteFile<Despesa>(DATA_PATH, despesas);
-    return updatedDespesa;
+  async findByUser(userId: string | number) {
+    const numericId = Number(userId);
+    if (isNaN(numericId)) return [];
+
+    return await prisma.despesa.findMany({
+      where: { userId: numericId },
+      orderBy: { nome: "asc" },
+      include: { categoria: true },
+    });
+  },
+
+  async create(data: DespesaPayload & { userId: number }) {
+    return await prisma.despesa.create({
+      data: {
+        nome: data.nome,
+        userId: data.userId,
+        categoriaId: Number(data.categoriaId),
+        mensalmente: data.mensalmente,
+        status: data.status,
+        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
+        diaVencimento: data.diaVencimento ? Number(data.diaVencimento) : null,
+      },
+    });
+  },
+
+  async remove(id: string | number): Promise<boolean> {
+    const numericId = Number(id);
+    if (isNaN(numericId)) return false;
+
+    try {
+      await prisma.despesa.delete({
+        where: { id: numericId },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async update(id: string | number, data: Partial<DespesaPayload>) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) throw new Error("ID inválido");
+
+    return await prisma.despesa.update({
+      where: { id: numericId },
+      data: {
+        nome: data.nome,
+        categoriaId: data.categoriaId ? Number(data.categoriaId) : undefined,
+        mensalmente: data.mensalmente,
+        status: data.status,
+        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
+        diaVencimento: data.diaVencimento ? Number(data.diaVencimento) : null,
+      },
+    });
   },
 };

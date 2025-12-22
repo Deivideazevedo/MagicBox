@@ -1,0 +1,8 @@
+// ============================================
+// ENUMS - Tipos enumerados compartilhados
+// ============================================
+
+enum TipoLancamento {
+  pagamento // Pagamento único realizado
+  agendamento // Agendamento futuro (pode ter parcelas)
+}

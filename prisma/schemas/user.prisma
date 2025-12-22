@@ -1,0 +1,25 @@
+// ============================================
+// MODEL: USER - Usuários do sistema
+// ============================================
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String?  @unique
+  password  String
+  name      String?
+  image     String?
+  role      String?  @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  categorias  Categoria[]
+  despesas    Despesa[]
+  fontesRenda FonteRenda[]
+  lancamentos Lancamento[]
+
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}

@@ -3,9 +3,7 @@ import { getAuthUser } from "@/lib/server-auth";
 import { fonteRendaService as service } from "@/core/fontesRenda/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
-import { FonteRendaPayload } from "@/core/fontesRenda/types";
-
-
+import { createFonteRendaSchema } from "@/dtos/fonte-renda.dto";
 
 export const GET = errorHandler(findAll);
 export const POST = errorHandler(create);
@@ -19,20 +17,29 @@ async function findAll(request: NextRequest): Promise<NextResponse> {
   // Se não for admin, só pode usar o próprio userId
   const userId = role === "admin" ? filters.userId || authId : authId;
 
-  const fonteRendas = service.findAll({
-    ...filters,
-    userId, // Força o userId do usuário logado
-  });
+  // Converte userId para number se necessário
+  const numericUserId = Number(userId);
+
+  const fonteRendas = await service.findByUser(numericUserId);
 
   return NextResponse.json(fonteRendas);
 }
 
 async function create(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthUser();
-  const body: FonteRendaPayload = await request.json();
+  const body = await request.json();
 
-  if (!body.nome) throw new ValidationError("Nome é obrigatório");
+  // Validação com Zod
+  const validation = createFonteRendaSchema.safeParse(body);
+  if (!validation.success) {
+    throw new ValidationError((validation.error as any).errors[0].message);
+  }
 
-  const novaFonteRenda = service.create({ ...body, userId: user.id });
+  const payload = {
+    ...validation.data,
+    userId: Number(user.id), // Garante que userId seja number
+  };
+
+  const novaFonteRenda = await service.create(payload);
   return NextResponse.json(novaFonteRenda, { status: 201 });
 }

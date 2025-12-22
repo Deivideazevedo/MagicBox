@@ -1,74 +1,73 @@
-// src/core/fonteRendas/fonteRenda.repository.ts
-import { fnApplyFilters } from "@/utils/functions/fnApplyFilters";
-import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { fnReadFile, fnWriteFile } from "@/utils/functions/fnFile";
-import { writeFileSync } from "fs";
-import { join } from "path";
-import { FonteRendaModel } from "./model";
-import { FonteRenda, FonteRendaPayload } from "./types";
-
-const DATA_PATH = join(process.cwd(), "src/data/fonteRendas.json");
+// src/core/fontesRenda/repository.ts
+import { prisma } from "@/lib/prisma";
+import { FonteRenda as PrismaFonteRenda } from "@prisma/client";
+import { FonteRendaPayload } from "./types";
 
 export const fonteRendaRepository = {
-  findAll(filters: Partial<FonteRenda>) {
-    const fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-
-    if (Object.keys(filters).length === 0) return fonteRendas;    
-
-    return fnApplyFilters(fonteRendas, filters);
-  },
-
-  findById(id: string): FonteRenda | null {
-    const fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-    const index = fonteRendas.findIndex((item) => item.id === id);
-
-    return index === -1 ? null : fonteRendas[index];
-  },
-
-  findByUser(userId: string) {
-    const fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-    return fonteRendas.filter((c) => c.userId === userId);
-  },
-
-  create(fonteRenda: FonteRendaPayload) {
-    const fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-    const novaFonteRenda = new FonteRendaModel(fonteRenda);
-    
-    fonteRendas.push(novaFonteRenda);
-    fnWriteFile<FonteRenda>(DATA_PATH, fonteRendas);
-
-    return novaFonteRenda;
-  },
-
-  remove(id: string) {
-    let fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-
-    fonteRendas = fonteRendas.filter((c) => c.id !== id);
-
-    fnWriteFile<FonteRenda>(DATA_PATH, fonteRendas);
-    return true;
-  },
-
-  update(id: string, payload: FonteRendaPayload) {
-    const fonteRendas = fnReadFile<FonteRenda>(DATA_PATH);
-    const index = fonteRendas.findIndex((item) => item.id === id);
-
-    const payloadCleaned = fnCleanObject({
-      dataForm: payload,
-      keysToRemove: ["userId"],
+  async findAll(filters: Partial<PrismaFonteRenda>) {
+    return await prisma.fonteRenda.findMany({
+      where: filters,
+      orderBy: { nome: "asc" },
     });
+  },
 
+  async findById(id: string | number) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) return null;
 
-    const updatedFonteRenda = {
-      ...fonteRendas[index],
-      ...payloadCleaned,
-      updatedAt: new Date().toISOString(),
-    };
+    return await prisma.fonteRenda.findUnique({
+      where: { id: numericId },
+    });
+  },
 
-    // substitui o item na posição index com novo objeto na posição encontrada
-    fonteRendas[index] = updatedFonteRenda;
+  async findByUser(userId: string | number) {
+    const numericId = Number(userId);
+    if (isNaN(numericId)) return [];
 
-    fnWriteFile<FonteRenda>(DATA_PATH, fonteRendas);
-    return updatedFonteRenda;
+    return await prisma.fonteRenda.findMany({
+      where: { userId: numericId },
+      orderBy: { nome: "asc" },
+    });
+  },
+
+  async create(data: FonteRendaPayload & { userId: number }) {
+    return await prisma.fonteRenda.create({
+      data: {
+        nome: data.nome,
+        userId: data.userId,
+        status: data.status,
+        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
+        diaRecebimento: data.diaRecebimento ? Number(data.diaRecebimento) : null,
+      },
+    });
+  },
+
+  async remove(id: string | number): Promise<boolean> {
+    const numericId = Number(id);
+    if (isNaN(numericId)) return false;
+
+    try {
+      await prisma.fonteRenda.delete({
+        where: { id: numericId },
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async update(id: string | number, data: Partial<FonteRendaPayload>) {
+    const numericId = Number(id);
+    if (isNaN(numericId)) throw new Error("ID inválido");
+
+    return await prisma.fonteRenda.update({
+      where: { id: numericId },
+      data: {
+        nome: data.nome,
+        status: data.status,
+        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
+        diaRecebimento: data.diaRecebimento ? Number(data.diaRecebimento) : null,
+      },
+    });
   },
 };

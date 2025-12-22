@@ -80,6 +80,7 @@ export const useFontesRenda = ({
         // Converter FormData para Payload (converter string para number em diaRecebimento)
         const data: FonteRendaPayload = {
           ...formData,
+          userId: Number(formData.userId),
           diaRecebimento: formData.diaRecebimento 
             ? parseInt(formData.diaRecebimento, 10) 
             : null,
@@ -87,7 +88,7 @@ export const useFontesRenda = ({
 
         if (id) {
           await updateFonteRenda({
-            id,
+            id: String(id),
             data,
           }).unwrap();
         } else {
@@ -115,9 +116,9 @@ export const useFontesRenda = ({
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
       setValue("userId", session?.user?.id ?? "");
-      setValue("id", fonteRenda.id);
+      setValue("id", String(fonteRenda.id));
       setValue("nome", fonteRenda.nome);
-      setValue("valorEstimado", fonteRenda.valorEstimado);
+      setValue("valorEstimado", fonteRenda.valorEstimado ? String(fonteRenda.valorEstimado) : "");
       setValue("diaRecebimento", fonteRenda.diaRecebimento ? String(fonteRenda.diaRecebimento) : null);
       setValue("status", fonteRenda.status);
 
@@ -142,7 +143,7 @@ export const useFontesRenda = ({
   const handleDeleteConfirm = useCallback(async () => {
     if (deleteDialog.fonteRenda) {
       try {
-        await deleteFonteRenda(deleteDialog.fonteRenda.id).unwrap();
+        await deleteFonteRenda(String(deleteDialog.fonteRenda.id)).unwrap();
         setDeleteDialog({ open: false, fonteRenda: null });
       } catch (error) {
         console.error("Erro ao excluir fonte de renda:", error);

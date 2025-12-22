@@ -3,8 +3,11 @@ import { Lancamento, LancamentoPayload } from '@/core/lancamentos/types';
 
 export const lancamentosApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getLancamentos: builder.query<Lancamento[], void>({
-      query: () => '/lancamentos',
+    getLancamentos: builder.query<Lancamento[], Record<string, any> | void>({
+      query: (params) => ({
+        url: '/lancamentos',
+        params: params || undefined,
+      }),
       providesTags: ['Lancamentos'],
     }),
     

@@ -1,6 +1,6 @@
 // src/app/api/categorias/route.ts
 import { categoriaService as service } from "@/core/categorias/service";
-import { CategoriaPayload } from "@/core/categorias/types";
+import { createCategoriaSchema } from "@/dtos/categoria.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { ValidationError } from "@/lib/errors";
 import { getAuthUser } from "@/lib/server-auth";
@@ -34,20 +34,30 @@ async function findAll(request: NextRequest): Promise<NextResponse> {
   // Se não for admin, só pode usar o próprio userId
   const userId = role === "admin" ? filters.userId || authId : authId;
 
-  const categorias = service.findAll({
-    ...filters,
-    userId, // Força o userId do usuário logado
-  });
+  // Converte userId para number se necessário
+  const numericUserId = Number(userId);
+
+  const categorias = await service.findByUser(numericUserId);
 
   return NextResponse.json(categorias);
 }
 
 async function create(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthUser();
-  const body: CategoriaPayload = await request.json();
+  const body = await request.json();
 
-  if (!body.nome) throw new ValidationError("Nome é obrigatório");
+  // Validação com Zod
+  const validation = createCategoriaSchema.safeParse(body);
+  if (!validation.success) {
+    throw new ValidationError((validation.error as any).errors[0].message);
+  }
 
-  const novaCategoria = service.create({ ...body, userId: user.id });
+  const payload = {
+    ...validation.data,
+    userId: Number(user.id), // Garante que userId seja number
+  };
+
+  const novaCategoria = await service.create(payload);
+
   return NextResponse.json(novaCategoria, { status: 201 });
 }

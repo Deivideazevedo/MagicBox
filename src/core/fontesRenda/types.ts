@@ -1,9 +1,8 @@
-
 export interface FonteRenda {
-  userId: string;
-  id: string;
+  userId: number;
+  id: number;
   nome: string;
-  valorEstimado: string | null;
+  valorEstimado: number | string | null;
   diaRecebimento: number | null; // 1-31
   status: boolean; // true = ativo, false = inativo
   createdAt: string;
@@ -11,18 +10,18 @@ export interface FonteRenda {
 }
 
 export interface FonteRendaPayload {
-  id?: string;
-  userId: string;
+  id?: number;
+  userId?: number;
   nome: string;
   status: boolean;
-  valorEstimado?: string | null;
-  diaRecebimento?: number | null;
+  valorEstimado?: number | string | null;
+  diaRecebimento?: number | string | null;
 }
 
-// Interface específica para formulários no frontend (todos os campos numéricos são strings)
+// Interface específica para formulários no frontend
 export interface FonteRendaForm {
-  id?: string;
-  userId: string;
+  id?: string | number;
+  userId?: string | number;
   nome: string;
   status: boolean;
   valorEstimado: string | null;

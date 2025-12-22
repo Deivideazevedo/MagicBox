@@ -1,0 +1,24 @@
+// ============================================
+// MODEL: FONTE RENDA - Fontes de renda do usuário
+// ============================================
+// Exemplos: Salário, Freelance, Investimentos, Aluguel recebido
+// Representam as entradas de dinheiro do usuário
+
+model FonteRenda {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  nome           String
+  valorEstimado  Decimal? @db.Decimal(10, 2)
+  diaRecebimento Int? // Dia do mês (1-31)
+  status         Boolean  @default(true) // true = ativa, false = inativa
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lancamentos Lancamento[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("fontes_renda")
+}

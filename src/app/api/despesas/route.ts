@@ -3,9 +3,7 @@ import { getAuthUser } from "@/lib/server-auth";
 import { despesaService as service } from "@/core/despesas/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
-import { DespesaPayload } from "@/core/despesas/types";
-
-
+import { createDespesaSchema } from "@/dtos/despesa.dto";
 
 export const GET = errorHandler(findAll);
 export const POST = errorHandler(create);
@@ -19,20 +17,31 @@ async function findAll(request: NextRequest): Promise<NextResponse> {
   // Se não for admin, só pode usar o próprio userId
   const userId = role === "admin" ? filters.userId || authId : authId;
 
-  const despesas = service.findAll({
-    ...filters,
-    userId, // Força o userId do usuário logado
-  });
+  // Converte userId para number se necessário
+  const numericUserId = Number(userId);
+
+  const despesas = await service.findByUser(numericUserId);
 
   return NextResponse.json(despesas);
 }
 
 async function create(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthUser();
-  const body: DespesaPayload = await request.json();
+  const body = await request.json();
 
-  if (!body.nome) throw new ValidationError("Nome é obrigatório");
+  // Validação com Zod
+  const validation = createDespesaSchema.safeParse(body);
+  if (!validation.success) {
+    throw new ValidationError((validation.error as any).errors[0].message);
+  }
 
-  const novaDespesa = service.create({ ...body, userId: user.id });
+  const payload = {
+    ...validation.data,
+    userId: Number(user.id), // Garante que userId seja number
+    valorEstimado: validation.data.valorEstimado ? String(validation.data.valorEstimado) : null,
+    diaVencimento: validation.data.diaVencimento ? Number(validation.data.diaVencimento) : null,
+  };
+
+  const novaDespesa = await service.create(payload);
   return NextResponse.json(novaDespesa, { status: 201 });
 }

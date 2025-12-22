@@ -1,10 +1,10 @@
 export interface Despesa {
-  id: string; // UUID agora, será ID numérico do banco depois (pode ser tratado como string)
-  userId: string; // UUID agora, será ID numérico do banco depois (pode ser tratado como string)
-  categoriaId: string; // UUID agora, será ID numérico do banco depois (pode ser tratado como string)
+  id: number;
+  userId: number;
+  categoriaId: number;
   nome: string;
-  mensalmente: boolean; // Indica se a despesa se repete mensalmente
-  valorEstimado: string | null;
+  mensalmente: boolean;
+  valorEstimado: number | string | null;
   diaVencimento: number | null;
   status: boolean;
   createdAt: string;
@@ -12,21 +12,21 @@ export interface Despesa {
 }
 
 export interface DespesaPayload {
-  id?: string;
-  userId: string; 
-  categoriaId: string;
+  id?: number;
+  userId?: number; 
+  categoriaId: number;
   nome: string;
   mensalmente: boolean;
   status: boolean;
-  valorEstimado: string | null;
-  diaVencimento: string | null;
+  valorEstimado: number | string | null;
+  diaVencimento: number | string | null;
 }
 
-// Interface específica para formulários no frontend (todos os campos numéricos são strings)
+// Interface específica para formulários no frontend
 export interface DespesaForm {
-  id?: string;
-  userId: string;
-  categoriaId: string;
+  id?: string | number;
+  userId?: string | number;
+  categoriaId: string | number;
   nome: string;
   mensalmente: boolean;
   status: boolean;

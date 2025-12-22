@@ -38,6 +38,7 @@ import { LoadingButton } from "@mui/lab";
 import { useLancamentos } from "../hooks/useLancamentos";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm";
 
 interface FormularioLancamentoProps {
   onClose?: () => void;
@@ -124,7 +125,14 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
 
             {/* Categoria */}
             <Grid item xs={12}>
-              <FormControl fullWidth error={!!errors.despesaId}>
+
+                <HookAutocomplete 
+                control={control}
+                name="despesaId"
+                label="Categoria"
+                options={categorias}
+                />
+              {/* <FormControl fullWidth error={!!errors.despesaId}>
                 <InputLabel>Categoria</InputLabel>
                 <Controller
                   name="despesaId"
@@ -147,7 +155,7 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                     {errors.despesaId.message}
                   </Typography>
                 )}
-              </FormControl>
+              </FormControl> */}
             </Grid>
 
             {/* Conta/Despesa */}

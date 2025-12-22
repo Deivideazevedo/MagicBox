@@ -1,21 +1,20 @@
-
 export interface Categoria {
-  id: string; // UUID agora, será ID numérico do banco depois (pode ser tratado como string)
-  userId: string;  // UUID agora, será ID numérico do banco depois (pode ser tratado como string)
+  id: number;
+  userId: number;
   nome: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CategoriaPayload {
-  id?: string;
+  id?: number;
   nome: string; 
-  userId: string;
+  userId?: number;
 }
 
-// Interface específica para formulários no frontend (todos os campos são strings)
+// Interface específica para formulários no frontend
 export interface CategoriaForm {
-  id?: string;
+  id?: string | number;
   nome: string;
-  userId: string;
+  userId?: string | number;
 }

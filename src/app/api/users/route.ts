@@ -1,46 +1,9 @@
+import { authService } from "@/core/auth/service";
+import { registerUserSchema } from "@/dtos/user.dto";
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { ZodError } from "zod";
 
-// Interface para User
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  password: string;
-  name: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Caminhos dos arquivos
-const usersFilePath = join(process.cwd(), "src/data/users.json");
-
-// Funções utilitárias
-function readUsers(): User[] {
-  try {
-    const data = readFileSync(usersFilePath, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    console.error("Erro ao ler users.json:", error);
-    return [];
-  }
-}
-
-function writeUsers(users: User[]): void {
-  try {
-    writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
-  } catch (error) {
-    console.error("Erro ao escrever users.json:", error);
-  }
-}
-
-function generateId(): string {
-  return Date.now().toString();
-}
-
-// GET - Buscar usuário por username/email (usado para autenticação)
+// GET - Buscar usuário por username/email
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -48,72 +11,82 @@ export async function GET(request: NextRequest) {
     const email = searchParams.get("email");
 
     if (!username && !email) {
-      return NextResponse.json({ error: "Username ou email é obrigatório" }, { status: 400 });
-    }
-
-    const users = readUsers();
-    const user = users.find(u => 
-      (username && u.username === username) || 
-      (email && u.email === email)
-    );
-
-    if (!user) {
-      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
-    }
-
-    // Retornar sem a senha por segurança
-    const { password, ...userWithoutPassword } = user;
-    return NextResponse.json(userWithoutPassword);
-  } catch (error) {
-    console.error("Erro ao buscar usuário:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
-}
-
-// POST - Criar novo usuário (registro)
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { username, email, password, name } = body;
-
-    if (!username || !email || !password || !name) {
       return NextResponse.json(
-        { error: "Username, email, password e name são obrigatórios" }, 
+        { error: "Username ou email é obrigatório" },
         { status: 400 }
       );
     }
 
-    const users = readUsers();
+    const user = await authService.findByUsernameOrEmail(
+      username || undefined,
+      email || undefined
+    );
 
-    // Verificar se usuário já existe
-    const existingUser = users.find(u => u.username === username || u.email === email);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Usuário não encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // Retorna usuário sem senha
+    const { password, ...userWithoutPassword } = user;
+    return NextResponse.json(userWithoutPassword);
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Criar novo usuário
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // Validação com Zod
+    const validatedData = registerUserSchema.parse(body);
+
+    // Verifica se usuário já existe
+    const existingUser = await authService.findByUsernameOrEmail(
+      validatedData.username,
+      validatedData.email || undefined
+    );
+
     if (existingUser) {
       return NextResponse.json(
-        { error: "Usuário ou email já existe" }, 
+        { error: "Username ou email já está em uso" },
         { status: 409 }
       );
     }
 
-    // Criar novo usuário
-    const newUser: User = {
-      id: generateId(),
-      username,
-      email,
-      password, // Em produção, hash a senha!
-      name,
-      role: "user",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Cria usuário
+    const newUser = await authService.create({
+      username: validatedData.username,
+      email: validatedData.email || null,
+      password: validatedData.password,
+      name: validatedData.name || null,
+      image: validatedData.image || null,
+      role: "user", // Default role
+    });
 
-    users.push(newUser);
-    writeUsers(users);
+    const { password, ...userWithoutPassword } = newUser;
 
-    // Retornar sem a senha
-    const { password: _, ...userWithoutPassword } = newUser;
     return NextResponse.json(userWithoutPassword, { status: 201 });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: (error as any).errors },
+        { status: 400 }
+      );
+    }
+
     console.error("Erro ao criar usuário:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
   }
 }

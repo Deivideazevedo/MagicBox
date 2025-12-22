@@ -1,0 +1,21 @@
+// ============================================
+// MODEL: CATEGORIA - Categorias para agrupar despesas
+// ============================================
+// Exemplos: Alimentação, Transporte, Saúde, Moradia
+// São macro-agrupadores que organizam as contas/despesas
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  despesas Despesa[]
+
+  @@index([userId])
+  @@index([nome])
+  @@map("categorias")
+}

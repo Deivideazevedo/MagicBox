@@ -6,7 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:format": "dotenv -e .env.local -- prisma format",
+    "db:validate": "dotenv -e .env.local -- prisma validate",
+    "db:generate": "dotenv -e .env.local -- prisma generate",
+    "db:migrate": "dotenv -e .env.local -- prisma migrate dev",    
+    "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
+    "db:studio": "dotenv -e .env.local -- prisma studio",
+    "db:reset": "dotenv -e .env.local -- prisma migrate reset",
+    "db:fresh": "yarn db:generate && rm -rf prisma/migrations && yarn db:migrate --name init && yarn db:seed"
+  },
+  "engines": {
+    "node": "^20.19.0"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
@@ -21,19 +32,24 @@
     "@mui/system": "^7.3.2",
     "@mui/x-data-grid": "^5.17.2",
     "@mui/x-date-pickers": "^5.0.15",
+    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/client": "^7.2.0",
     "@reduxjs/toolkit": "^1.9.7",
     "@tabler/icons-react": "^2.39.0",
     "apexcharts": "^5.3.5",
     "axios": "^1.5.1",
     "axios-mock-adapter": "^1.22.0",
+    "bcryptjs": "^3.0.3",
     "chance": "^1.1.11",
     "date-fns": "^2.30.0",
+    "dotenv": "^17.2.3",
     "emoji-picker-react": "^4.5.2",
     "formik": "^2.4.6",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "next": "14.2.7",
     "next-auth": "^4.24.7",
+    "pg": "^8.16.3",
     "react": "^18.3.1",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^18.3.1",
@@ -49,14 +65,19 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/chance": "^1.1.4",
     "@types/lodash": "^4.14.199",
     "@types/node": "20.2.3",
+    "@types/pg": "^8.16.0",
     "@types/react": "18.2.28",
     "@types/react-dom": "18.2.13",
     "@types/react-helmet": "^6.1.7",
     "@types/uuid": "^10.0.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.2.7"
+    "eslint-config-next": "14.2.7",
+    "prisma": "^7.2.0",
+    "tsx": "^4.21.0"
   }
 }

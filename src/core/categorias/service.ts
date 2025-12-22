@@ -1,36 +1,42 @@
-// src/core/categorias/categoria.service.ts
-import { randomUUID } from "crypto";
-import { Categoria } from "./types";
+// src/core/categorias/service.ts
+import { Categoria, CategoriaPayload } from "./types";
 import { categoriaRepository as repository } from "./repository";
-import { CategoriaPayload } from "./types";
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
 
 export const categoriaService = {
-  findAll(filters: Partial<Categoria>) {
-    return repository.findAll(filters);
+  async findAll(filters: any) {
+    return await repository.findAll(filters);
   },
 
-  findByUser(userId: string) {
-    return repository.findByUser(userId);
+  async findByUser(userId: string | number) {
+    return await repository.findByUser(userId);
   },
 
-  create(payload: CategoriaPayload) {
-    return repository.create(payload);
+  async create(payload: CategoriaPayload) {
+    if (!payload.userId) {
+      throw new ValidationError("Usuário é obrigatório");
+    }
+    // Garantir que userId seja number
+    const data = {
+      ...payload,
+      userId: Number(payload.userId)
+    };
+    return await repository.create(data);
   },
 
-  remove(categoriaId: string) {
-    const categoria = repository.findById(categoriaId);
+  async remove(categoriaId: string | number) {
+    const categoria = await repository.findById(categoriaId);
     if (!categoria) throw new NotFoundError("Categoria não encontrada");
 
-    return repository.remove(categoriaId);
+    return await repository.remove(categoriaId);
   },
 
-  update(categoriaId: string, categoria: CategoriaPayload) {
-    const hasCategoria = repository.findById(categoriaId);
+  async update(categoriaId: string | number, categoria: CategoriaPayload) {
+    const hasCategoria = await repository.findById(categoriaId);
     if (!hasCategoria) throw new NotFoundError("Categoria não encontrada");
     if (!categoria.nome) throw new ValidationError("Nome é obrigatório");
 
-    return repository.update(categoriaId, categoria);
+    return await repository.update(categoriaId, categoria);
   },
 };

@@ -1,0 +1,42 @@
+// ============================================
+// MODEL: LANÇAMENTO - Transações financeiras
+// ============================================
+// Representa pagamentos, agendamentos e receitas
+// REGRAS DE NEGÓCIO CRÍTICAS:
+// 1. Deve ter despesaId OU fonteRendaId, nunca ambos
+// 2. tipo=pagamento: registro único, valorPago preenchido
+// 3. tipo=agendamento: pode ter parcelas, cria N lançamentos futuros
+// 4. tipo=receita: vinculado a fonteRendaId
+// 5. Agendamento só para despesas com diaVencimento definido
+
+model Lancamento {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  tipo      TipoLancamento
+  data      DateTime // Data do lançamento/agendamento
+  descricao String?        @db.VarChar(255)
+
+  categoriaId  Int 
+  despesaId    Int? 
+  fonteRendaId Int? 
+
+  // Campos específicos
+  parcelas      Int? // Número de parcelas (para agendamentos)
+  valorPago     Decimal? @db.Decimal(10, 2) // Valor efetivamente pago
+  valorPrevisto Decimal  @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relacionamentos
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  despesa    Despesa?    @relation(fields: [despesaId], references: [id], onDelete: Restrict)
+  fonteRenda FonteRenda? @relation(fields: [fonteRendaId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([despesaId])
+  @@index([fonteRendaId])
+  @@index([data])
+  @@map("lancamentos")
+}

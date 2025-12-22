@@ -19,10 +19,10 @@ import { useSession } from "next-auth/react";
 
 // Schema de validação
 const categoriaSchema = z.object({
-  id: z.string().optional(),
+  id: z.union([z.string(), z.number()]).optional(),
   nome: z.string().nonempty("Obrigatório"),
-  userId: z.string().nonempty("Obrigatório"),
-}) satisfies z.ZodType<CategoriaForm>;
+  userId: z.union([z.string(), z.number()]).optional(),
+});
 
 interface UseCategoriasProps {
   categorias?: Categoria[];
@@ -81,15 +81,16 @@ export const useCategorias = ({
     async (payload: CategoriaForm) => {
       const { id, ...formData } = payload;
 
-      // Converter FormData para Payload (neste caso não há conversão necessária)
+      // Converter FormData para Payload
       const data: CategoriaPayload = {
-        ...formData,
+        nome: formData.nome,
+        userId: Number(formData.userId),
       };
 
       try {
         if (id) {
           await updateCategoria({
-            id,
+            id: String(id),
             data,
           }).unwrap();
         } else {
@@ -127,7 +128,7 @@ export const useCategorias = ({
   const handleDeleteConfirm = useCallback(async () => {
     if (deleteDialog.categoria) {
       try {
-        await deleteCategoria(deleteDialog.categoria.id).unwrap();
+        await deleteCategoria(String(deleteDialog.categoria.id)).unwrap();
         setDeleteDialog({ open: false, categoria: null });
       } catch (error) {
         console.error("Erro ao excluir categoria:", error);

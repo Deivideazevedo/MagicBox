@@ -1,17 +1,18 @@
-import { Lancamento } from "./types";
+import { Lancamento, TipoLancamento, StatusLancamento } from "./types";
 
 export class LancamentoModel implements Lancamento {
-  id: string;
-  userId: string;
-  despesaId: string;
-  contaId: string;
-  tipo: "pagamento" | "agendamento";
-  valor: number;
+  id: number;
+  userId: number;
+  despesaId?: number | null;
+  contaId?: number | null;
+  fonteRendaId?: number | null;
+  tipo: TipoLancamento;
+  valor: number | string;
   data: string;
   descricao: string;
   parcelas?: number | null;
-  valorPago?: number | null;
-  status: "pago" | "pendente";
+  valorPago?: number | string | null;
+  status: StatusLancamento;
   createdAt: string;
   updatedAt: string;
 
@@ -20,6 +21,7 @@ export class LancamentoModel implements Lancamento {
     this.userId = data.userId;
     this.despesaId = data.despesaId;
     this.contaId = data.contaId;
+    this.fonteRendaId = data.fonteRendaId;
     this.tipo = data.tipo;
     this.valor = data.valor;
     this.data = data.data;
@@ -41,6 +43,7 @@ export class LancamentoModel implements Lancamento {
       userId: this.userId,
       despesaId: this.despesaId,
       contaId: this.contaId,
+      fonteRendaId: this.fonteRendaId,
       tipo: this.tipo,
       valor: this.valor,
       data: this.data,

@@ -98,11 +98,11 @@ export default function TabelaLancamentos({
 
       if (!grupos[chave]) {
         grupos[chave] = {
-          contaId: lancamento.contaId,
+          contaId: String(lancamento.contaId),
           contaNome: despesa.nome,
-          despesaId: despesa.id,
+          despesaId: String(despesa.id),
           despesaNome: despesa.nome,
-          categoriaId: categoria?.id || "",
+          categoriaId: String(categoria?.id || ""),
           categoriaNome: categoria?.nome || "",
           data: lancamento.data,
           lancamentos: [],
@@ -113,13 +113,13 @@ export default function TabelaLancamentos({
       }
 
       grupos[chave].lancamentos.push(lancamento);
-      grupos[chave].valorTotal += lancamento.valor;
-      grupos[chave].valorPagoTotal += lancamento.valorPago || 0;
+      grupos[chave].valorTotal += Number(lancamento.valor);
+      grupos[chave].valorPagoTotal += Number(lancamento.valorPago || 0);
       
       // Criar observação formatada
       const dataLanc = format(new Date(lancamento.createdAt), "dd/MM", { locale: ptBR });
       const parcelaInfo = lancamento.parcelas ? ` (${lancamento.parcelas}x)` : "";
-      const obs = `${lancamento.descricao}${parcelaInfo} - R$ ${lancamento.valor.toFixed(2)} (${dataLanc})`;
+      const obs = `${lancamento.descricao}${parcelaInfo} - R$ ${Number(lancamento.valor).toFixed(2)} (${dataLanc})`;
       grupos[chave].observacoes.push(obs);
     });
 
@@ -150,7 +150,7 @@ export default function TabelaLancamentos({
         <br/>
         <strong>${lancamento.descricao}</strong>
         <br/>
-        <small>Valor: R$ ${lancamento.valor.toFixed(2)}</small>
+        <small>Valor: R$ ${Number(lancamento.valor).toFixed(2)}</small>
       `,
       icon: "warning",
       confirmButtonText: "Sim, excluir",
@@ -158,7 +158,7 @@ export default function TabelaLancamentos({
     });
 
     if (result.isConfirmed) {
-      onDelete(lancamento.id);
+      onDelete(String(lancamento.id));
     }
   };
 

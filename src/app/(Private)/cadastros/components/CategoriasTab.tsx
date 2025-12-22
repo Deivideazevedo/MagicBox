@@ -33,7 +33,7 @@ import {
 import { useCategorias } from "../hooks/useCategorias";
 import { HookTextField } from "@/app/components/forms/hooksForm";
 import { LoadingButton } from "@mui/lab";
-import { Categoria } from "@/core/categorias/types";
+import { Categoria, CategoriaForm } from "@/core/categorias/types";
 
 interface CategoriasTabProps {
   categorias: Categoria[];
@@ -122,7 +122,7 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
               <Box component="form" onSubmit={handleSubmit}>
                 <Grid container gap={1}>
                   <Grid item xs={12}>
-                    <HookTextField
+                    <HookTextField<CategoriaForm>
                       control={control}
                       name="nome"
                       label="Nome da Categoria"

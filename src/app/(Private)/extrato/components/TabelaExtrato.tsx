@@ -40,7 +40,7 @@ import { ptBR } from "date-fns/locale";
 import { 
   useGetLancamentosQuery,
   useDeleteLancamentoMutation,
-  useDeleteLancamentosMutation,
+  // useDeleteLancamentosMutation,
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
@@ -66,8 +66,9 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
   const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: contas = [] } = useGetContasQuery();
   const [deleteLancamento, { isLoading: isDeletingSingle }] = useDeleteLancamentoMutation();
-  const [deleteLancamentos, { isLoading: isDeletingMultiple }] = useDeleteLancamentosMutation();
+  // const [deleteLancamentos, { isLoading: isDeletingMultiple }] = useDeleteLancamentosMutation();
   const [updateLancamento, { isLoading: isUpdating }] = useUpdateLancamentoMutation();
+  const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
 
   // Função para obter status com base na data
   const getStatus = useCallback((lancamento: any) => {
@@ -119,10 +120,16 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
   // Marcar como pago
   const handleMarcarComoPago = useCallback(async (lancamento: any) => {
     try {
-      await updateLancamento({
-        id: lancamento.id,
+      const { id, createdAt, updatedAt, ...rest } = lancamento;
+      const payload = {
+        ...rest,
         status: "pago",
         valorPago: lancamento.valor,
+      };
+
+      await updateLancamento({
+        id: lancamento.id,
+        data: payload,
       }).unwrap();
     } catch (error) {
       console.error("Erro ao marcar como pago:", error);
@@ -143,12 +150,16 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
 
   // Excluir múltiplos lançamentos
   const handleDeleteMultiple = async () => {
+    setIsDeletingMultiple(true);
     try {
-      await deleteLancamentos(selectedRows as string[]).unwrap();
+      const ids = selectedRows as string[];
+      await Promise.all(ids.map(id => deleteLancamento(id).unwrap()));
       setSelectedRows([]);
       setDeleteDialog({ open: false, type: "multiple" });
     } catch (error) {
       console.error("Erro ao excluir lançamentos:", error);
+    } finally {
+      setIsDeletingMultiple(false);
     }
   };
 

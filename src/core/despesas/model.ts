@@ -1,21 +1,20 @@
-import { randomUUID } from "crypto";
 import { Despesa, DespesaPayload } from "./types";
 
 export class DespesaModel implements Despesa {
-  id: string;
-  userId: string;
-  categoriaId: string;
+  id: number;
+  userId: number;
+  categoriaId: number;
   nome: string;
   mensalmente: boolean;
-  valorEstimado: string | null;
+  valorEstimado: number | string | null;
   diaVencimento: number | null;
   status: boolean;
   createdAt: string;
   updatedAt: string;
 
-  constructor(props: DespesaPayload, id?: string) {
-    this.id = id ?? randomUUID();
-    this.userId = props.userId;
+  constructor(props: DespesaPayload, id?: number) {
+    this.id = id ?? 0;
+    this.userId = props.userId ?? 0;
     this.categoriaId = props.categoriaId;
     this.nome = props.nome;
     this.mensalmente = props.mensalmente ?? false;
@@ -23,7 +22,7 @@ export class DespesaModel implements Despesa {
 
     // Garante a integridade: se undefined, vira null
     this.valorEstimado = props.valorEstimado ?? null;
-    this.diaVencimento = Number(props.diaVencimento) ?? null;
+    this.diaVencimento = props.diaVencimento ? Number(props.diaVencimento) : null;
 
     const now = new Date().toISOString();
     this.createdAt = now;

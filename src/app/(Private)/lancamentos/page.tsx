@@ -32,8 +32,8 @@ export default function LancamentosPage() {
   const { data: categorias = [] } = useGetCategoriasQuery();
 
   // Calcular totais
-  const valorTotalPrevisto = lancamentos.reduce((acc, lanc) => acc + lanc.valor, 0);
-  const valorTotalPago = lancamentos.reduce((acc, lanc) => acc + (lanc.valorPago || 0), 0);
+  const valorTotalPrevisto = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valor), 0);
+  const valorTotalPago = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valorPago || 0), 0);
   const totalLancamentos = lancamentos.length;
 
   return (

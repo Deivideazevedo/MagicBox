@@ -1,0 +1,16 @@
+// ============================================
+// SCHEMA PRINCIPAL - MagicBox
+// ============================================
+// Prisma v7.2.0 (Latest LTS)
+// Multi-file schemas são nativos (GA) a partir da v6.7.0
+// Os models estão organizados modularmente em prisma/models/
+// Configuração do datasource está em prisma.config.ts
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

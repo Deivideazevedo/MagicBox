@@ -46,15 +46,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Remove senha antes de retornar
-    const { password: _, ...userWithoutPassword } = user;
+    // Adapta o usuário para o formato esperado pelo token (ID como string)
+    const userForToken = {
+      id: String(user.id),
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      image: user.image,
+      role: user.role,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
 
     // Gera JWT customizado para uso externo
-    const token = await generateAccessToken(userWithoutPassword);
+    const token = await generateAccessToken(userForToken);
 
     return NextResponse.json({
       token,
-      user: userWithoutPassword,
+      user: userForToken,
       expiresIn: "7d",
     });
   } catch (error) {

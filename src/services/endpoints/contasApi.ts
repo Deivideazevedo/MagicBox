@@ -1,6 +1,6 @@
 import { api } from '../api';
-import { Despesa, DespesaDto, UpdateDespesaDto } from '../types';
-import { fnBuildSearchParams } from '../../utils/searchParams';
+import { Despesa, DespesaPayload } from '@/core/despesas/types';
+import { fnBuildSearchParams } from '@/utils/searchParams';
 
 export const contasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -18,25 +18,23 @@ export const contasApi = api.injectEndpoints({
       providesTags: ['Despesas'],
     }),
 
-    createConta: builder.mutation<Despesa, DespesaDto>({
-      query: (newDespesa) => ({
+    createConta: builder.mutation<Despesa, DespesaPayload>({
+      query: (newConta) => ({
         url: '/despesas',
         method: 'POST',
-        body: newDespesa,
+        body: newConta,
       }),
       invalidatesTags: ['Despesas'],
     }),
-
-    updateConta: builder.mutation<Despesa, UpdateDespesaDto>({
-      query: ({ id, ...data }) => ({
+    
+    updateConta: builder.mutation<Despesa, { id: number; data: DespesaPayload }>({
+      query: ({ id, data }) => ({
         url: `/despesas/${id}`,
         method: 'PATCH',
         body: data,
       }),
       invalidatesTags: ['Despesas'],
-    }),
-
-    deleteConta: builder.mutation<{ success: boolean }, string>({
+    }),    deleteConta: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/despesas/${id}`,
         method: 'DELETE',

@@ -113,15 +113,20 @@ export function useDespesas({
     async (payload: DespesaForm) => {
       const { id, ...formData } = payload;
       
-      // Converter FormData para Payload (sem conversão necessária pois valorEstimado e diaVencimento já são strings)
+      // Converter FormData para Payload
+      // userId e categoriaId vêm como string do formulário, mas o backend espera number
       const data: DespesaPayload = {
         ...formData,
+        userId: Number(formData.userId),
+        categoriaId: Number(formData.categoriaId),
+        valorEstimado: formData.valorEstimado ? Number(formData.valorEstimado) : null,
+        diaVencimento: formData.diaVencimento ? Number(formData.diaVencimento) : null,
       };
       
       try {
         if (id) {
           await updateDespesa({
-            id,
+            id: String(id),
             data,
           }).unwrap();
         } else {
@@ -139,12 +144,12 @@ export function useDespesas({
 
   const handleEdit = useCallback(
     (despesa: Despesa, scrollCallback?: () => void) => {
-      setValue("id", despesa.id);  
+      setValue("id", String(despesa.id));  
       setValue("userId", session?.user?.id ?? "");
-      setValue("categoriaId", despesa.categoriaId);
+      setValue("categoriaId", String(despesa.categoriaId));
       setValue("nome", despesa.nome);
       setValue("mensalmente", despesa.mensalmente);
-      setValue("valorEstimado", despesa.valorEstimado);
+      setValue("valorEstimado", despesa.valorEstimado ? String(despesa.valorEstimado) : "");
       setValue("diaVencimento", despesa.diaVencimento ? String(despesa.diaVencimento) : "");
       setValue("status", despesa.status);
 
@@ -166,7 +171,7 @@ export function useDespesas({
   const handleDeleteConfirm = useCallback(async () => {
     if (deleteDialog.despesa) {
       try {
-        await deleteDespesa(deleteDialog.despesa.id).unwrap();
+        await deleteDespesa(String(deleteDialog.despesa.id)).unwrap();
         setDeleteDialog({ open: false, despesa: null });
       } catch (error) {
         console.error("Erro ao excluir despesa:", error);

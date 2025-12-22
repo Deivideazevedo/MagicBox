@@ -1,34 +1,41 @@
-// src/core/despesas/despesa.service.ts
+// src/core/despesas/service.ts
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
 import { despesaRepository as repository } from "./repository";
 import { Despesa, DespesaPayload } from "./types";
 
 export const despesaService = {
-  findAll(filters: Partial<Despesa>) {
-    return repository.findAll(filters);
+  async findAll(filters: any) {
+    return await repository.findAll(filters);
   },
 
-  findByUser(userId: string) {
-    return repository.findByUser(userId);
+  async findByUser(userId: string | number) {
+    return await repository.findByUser(userId);
   },
 
-  create(payload: DespesaPayload) {
-    return repository.create(payload);
+  async create(payload: DespesaPayload) {
+    if (!payload.userId) {
+      throw new ValidationError("Usuário é obrigatório");
+    }
+    const data = {
+      ...payload,
+      userId: Number(payload.userId)
+    };
+    return await repository.create(data);
   },
 
-  remove(despesaId: string) {
-    const despesa = repository.findById(despesaId);
+  async remove(despesaId: string | number) {
+    const despesa = await repository.findById(despesaId);
     if (!despesa) throw new NotFoundError("Despesa não encontrada");
 
-    return repository.remove(despesaId);
+    return await repository.remove(despesaId);
   },
 
-  update(despesaId: string, despesa: DespesaPayload) {
-    const hasDespesa = repository.findById(despesaId);
+  async update(despesaId: string | number, despesa: DespesaPayload) {
+    const hasDespesa = await repository.findById(despesaId);
     if (!hasDespesa) throw new NotFoundError("Despesa não encontrada");
     if (!despesa.nome) throw new ValidationError("Nome é obrigatório");
 
-    return repository.update(despesaId, despesa);
+    return await repository.update(despesaId, despesa);
   },
 };

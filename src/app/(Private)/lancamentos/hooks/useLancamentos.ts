@@ -14,17 +14,18 @@ import { createSwalert } from "@/utils/sweetAlert";
 
 // Schema de validação
 const lancamentoSchema = z.object({
-  id: z.string().optional(),
-  userId: z.string().min(1, "Usuário é obrigatório"),
-  despesaId: z.string().min(1, "Despesa é obrigatória"),
-  contaId: z.string().min(1, "Conta é obrigatória"),
-  tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.string().min(1, "Valor é obrigatório"),
+  id: z.union([z.string(), z.number()]).optional(),
+  userId: z.union([z.string(), z.number()]).optional(),
+  despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
+  contaId: z.union([z.string(), z.number(), z.null()]).optional(),
+  fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
+  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  valor: z.union([z.string()]),
   data: z.string().min(1, "Data é obrigatória"),
   descricao: z.string().min(1, "Descrição é obrigatória"),
-  parcelas: z.union([z.string(), z.null()]),
-  valorPago: z.union([z.string(), z.null()]),
-  status: z.enum(["pago", "pendente"]),
+  parcelas: z.union([z.string(), z.number(), z.null()]).optional(),
+  valorPago: z.union([z.string(), z.null()]).optional(),
+  status: z.enum(["pago", "pendente", "atrasado"]),
 }) satisfies z.ZodType<LancamentoForm>;
 
 interface UseLancamentosProps {
@@ -88,7 +89,7 @@ export function useLancamentos({
   // Calcular total com parcelas
   const totalComParcelas =
     isParcelado && watchedValues.parcelas
-      ? parseFloat(watchedValues.valor || "0") * parseInt(watchedValues.parcelas || "1", 10)
+      ? parseFloat(watchedValues.valor || "0") * parseInt(String(watchedValues.parcelas || "1"), 10)
       : parseFloat(watchedValues.valor || "0");
 
   const onSubmit = useCallback(
@@ -100,9 +101,13 @@ export function useLancamentos({
         // Converter FormData para Payload (converter strings para numbers)
         const data: LancamentoPayload = {
           ...formData,
-          valor: parseFloat(formData.valor),
-          parcelas: formData.parcelas ? parseInt(formData.parcelas, 10) : null,
-          valorPago: formData.valorPago ? parseFloat(formData.valorPago) : null,
+          userId: Number(formData.userId),
+          valor: Number(formData.valor),
+          parcelas: formData.parcelas ? Number(formData.parcelas) : null,
+          valorPago: formData.valorPago ? Number(formData.valorPago) : null,
+          despesaId: formData.despesaId ? Number(formData.despesaId) : null,
+          contaId: formData.contaId ? Number(formData.contaId) : null,
+          fonteRendaId: formData.fonteRendaId ? Number(formData.fonteRendaId) : null,
         };
 
         const lancamentoData: LancamentoPayload = {
@@ -114,7 +119,7 @@ export function useLancamentos({
 
         if (id) {
           await updateLancamento({
-            id,
+            id: String(id),
             data: lancamentoData,
           }).unwrap();
           

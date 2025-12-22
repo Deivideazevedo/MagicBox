@@ -47,11 +47,12 @@ export const useMonthlyChart = () => {
         let categorias = 0;
 
         monthLancamentos.forEach(lancamento => {
+          const valor = Number(lancamento.valor);
           if (lancamento.tipo === 'pagamento') {
-            if (lancamento.valor > 0) {
-              receitas += lancamento.valor;
+            if (valor > 0) {
+              receitas += valor;
             } else {
-              categorias += Math.abs(lancamento.valor);
+              categorias += Math.abs(valor);
             }
           }
         });

@@ -1,61 +1,66 @@
+// src/core/lancamentos/service.ts
 import { Lancamento, LancamentoPayload } from "./types";
-import { ILancamentoRepository } from "./repository";
+import { lancamentoRepository as repository } from "./repository";
+import { ValidationError, NotFoundError } from "@/lib/errors";
 
-export class LancamentoService {
-  constructor(private repository: ILancamentoRepository) {}
+export const lancamentoService = {
+  async findAll(filters: any) {
+    return await repository.findAll(filters);
+  },
 
-  async getAllLancamentos(): Promise<Lancamento[]> {
-    return this.repository.findAll();
-  }
+  async findById(id: string | number) {
+    return await repository.findById(id);
+  },
 
-  async getLancamentoById(id: string): Promise<Lancamento | null> {
-    return this.repository.findById(id);
-  }
+  async findByUser(userId: string | number) {
+    return await repository.findByUser(userId);
+  },
 
-  async getLancamentosByUserId(userId: string): Promise<Lancamento[]> {
-    return this.repository.findByUserId(userId);
-  }
-
-  async createLancamento(data: LancamentoPayload): Promise<Lancamento> {
+  async create(payload: LancamentoPayload) {
     // Validações de negócio
-    if (!data.userId || !data.despesaId || !data.contaId) {
-      throw new Error("Dados obrigatórios não fornecidos");
+    if (!payload.userId) {
+      throw new ValidationError("Usuário é obrigatório");
+    }
+    
+    // Regra: Deve ter despesaId OU fonteRendaId
+    if (!payload.despesaId && !payload.fonteRendaId) {
+      throw new ValidationError("Lançamento deve estar vinculado a uma despesa ou fonte de renda");
     }
 
-    if (data.valor <= 0) {
-      throw new Error("Valor deve ser maior que zero");
+    if (Number(payload.valor) <= 0) {
+      throw new ValidationError("Valor deve ser maior que zero");
     }
 
-    if (data.tipo === "agendamento" && data.parcelas && data.parcelas < 1) {
-      throw new Error("Parcelas devem ser maior ou igual a 1");
+    if (payload.tipo === "agendamento" && payload.parcelas && payload.parcelas < 1) {
+      throw new ValidationError("Parcelas devem ser maior ou igual a 1");
     }
 
-    return this.repository.create(data);
-  }
+    const data = {
+      ...payload,
+      userId: Number(payload.userId)
+    };
 
-  async updateLancamento(
-    id: string,
-    data: LancamentoPayload
-  ): Promise<Lancamento> {
-    const lancamento = await this.repository.findById(id);
+    return await repository.create(data);
+  },
+
+  async update(id: string | number, payload: LancamentoPayload) {
+    const lancamento = await repository.findById(id);
     if (!lancamento) {
-      throw new Error("Lançamento não encontrado");
+      throw new NotFoundError("Lançamento não encontrado");
     }
 
-    // Validações de negócio
-    if (data.valor && data.valor <= 0) {
-      throw new Error("Valor deve ser maior que zero");
+    if (payload.valor && Number(payload.valor) <= 0) {
+      throw new ValidationError("Valor deve ser maior que zero");
     }
 
-    return this.repository.update(id, data);
-  }
+    return await repository.update(id, payload);
+  },
 
-  async deleteLancamento(id: string): Promise<boolean> {
-    const lancamento = await this.repository.findById(id);
+  async remove(id: string | number) {
+    const lancamento = await repository.findById(id);
     if (!lancamento) {
-      throw new Error("Lançamento não encontrado");
+      throw new NotFoundError("Lançamento não encontrado");
     }
-
-    return this.repository.delete(id);
+    return await repository.remove(id);
   }
-}
+};

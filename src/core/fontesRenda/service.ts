@@ -1,34 +1,41 @@
-// src/core/fonteRendas/FonteRenda.service.ts
+// src/core/fontesRenda/service.ts
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
 import { fonteRendaRepository as repository } from "./repository";
 import { FonteRenda, FonteRendaPayload } from "./types";
 
 export const fonteRendaService = {
-  findAll(filters: Partial<FonteRenda>) {
-    return repository.findAll(filters);
+  async findAll(filters: any) {
+    return await repository.findAll(filters);
   },
 
-  findByUser(userId: string) {
-    return repository.findByUser(userId);
+  async findByUser(userId: string | number) {
+    return await repository.findByUser(userId);
   },
 
-  create(payload: FonteRendaPayload) {
-    return repository.create(payload);
+  async create(payload: FonteRendaPayload) {
+    if (!payload.userId) {
+      throw new ValidationError("Usuário é obrigatório");
+    }
+    const data = {
+      ...payload,
+      userId: Number(payload.userId)
+    };
+    return await repository.create(data);
   },
 
-  remove(fonteRendaId: string) {
-    const FonteRenda = repository.findById(fonteRendaId);
+  async remove(fonteRendaId: string | number) {
+    const FonteRenda = await repository.findById(fonteRendaId);
     if (!FonteRenda) throw new NotFoundError("FonteRenda não encontrada");
 
-    return repository.remove(fonteRendaId);
+    return await repository.remove(fonteRendaId);
   },
 
-  update(fonteRendaId: string, FonteRenda: FonteRendaPayload) {
-    const hasFonteRenda = repository.findById(fonteRendaId);
+  async update(fonteRendaId: string | number, FonteRenda: FonteRendaPayload) {
+    const hasFonteRenda = await repository.findById(fonteRendaId);
     if (!hasFonteRenda) throw new NotFoundError("FonteRenda não encontrada");
     if (!FonteRenda.nome) throw new ValidationError("Nome é obrigatório");
 
-    return repository.update(fonteRendaId, FonteRenda);
+    return await repository.update(fonteRendaId, FonteRenda);
   },
 };
