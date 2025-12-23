@@ -1,73 +1,77 @@
 // src/core/lancamentos/repository.ts
 import { prisma } from "@/lib/prisma";
-import { Lancamento as PrismaLancamento, TipoLancamento , Despesa, FonteRenda, Prisma } from "@prisma/client";
-import { LancamentoPayload } from "./types";
-import { calcularStatusDinamico, buscarIdsPorStatusDinamico } from "./utils";
-
-// Tipo enriquecido com statusDinamico (exportado para uso externo)
-export type LancamentoEnriquecido = PrismaLancamento & {
-  despesa: Despesa | null;
-  fonteRenda: FonteRenda | null;
-  statusDinamico: string;
-};
-
+import {
+  Lancamento as PrismaLancamento,
+  TipoLancamento,
+  Despesa,
+  FonteRenda,
+  Prisma,
+} from "@prisma/client";
+import { LancamentoParams, LancamentoPayload } from "./types";
+import { PaginatedResult } from "../types/global";
 export const lancamentoRepository = {
   /**
    * Busca lançamentos com suporte a filtro de status dinâmico (Two-Step Fetch)
    * Enriquece cada resultado com o campo statusDinamico
    */
-  async findAll(filters: Partial<PrismaLancamento> & { statusDinamico?: string }): Promise<LancamentoEnriquecido[]> {
-    const { statusDinamico, ...prismaFilters } = filters;
-    
-    let whereClause: Prisma.LancamentoWhereInput = { 
-      ...prismaFilters,
+  async findAll(
+    filters: LancamentoParams
+  ): Promise<PaginatedResult<PrismaLancamento>> {
+    const { page = 0, limit = 10, statusDinamico, ...filterParams } = filters;
+
+    let whereClause: Prisma.LancamentoWhereInput = {
       deletedAt: null, // Exclui registros deletados
+      ...filterParams,
     };
-    
-    // ETAPA 1: Two-Step Fetch se houver filtro de status dinâmico
-    if (statusDinamico && statusDinamico !== "TODOS") {
-      const ids = await buscarIdsPorStatusDinamico(
-        prisma,
-        statusDinamico,
-        prismaFilters.userId ? Number(prismaFilters.userId) : undefined
-      );
-      
-      // Se não houver IDs, retorna array vazio
-      if (ids.length === 0) {
-        return [];
-      }
-      
-      // Filtra pelos IDs encontrados
-      whereClause = {
-        ...prismaFilters,
-        id: { in: ids },
-        deletedAt: null, // Exclui registros deletados
-      };
-    }
-    
-    // ETAPA 2: Busca completa com relacionamentos
-    const lancamentos = await prisma.lancamento.findMany({
-      where: whereClause,
-      orderBy: { data: "desc" },
-      include: {
-        despesa: true,
-        fonteRenda: true,
+
+    const [total, data] = await prisma.$transaction([
+      prisma.lancamento.count({ where: whereClause }),
+      prisma.lancamento.findMany({
+        where: whereClause,
+        take: limit,
+        skip: page * limit,
+        orderBy: { data: "desc" },
+        include: {
+          despesa: {
+            select: {
+              id: true,
+              nome: true,
+              valorEstimado: true,
+              diaVencimento: true,
+            },
+          },
+          fonteRenda: {
+            select: {
+              id: true,
+              nome: true,
+              valorEstimado: true,
+              diaRecebimento: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data: data.map((lancamento) => ({
+        ...lancamento,
+        // statusDinamico: "", // calcularStatusDinamico(lancamento),
+      })),
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
       },
-    });
-    
-    // ETAPA 3: Enriquecimento com statusDinamico
-    return lancamentos.map((lancamento) => ({
-      ...lancamento,
-      statusDinamico: calcularStatusDinamico(lancamento),
-    }));
+    };
   },
 
-  async findById(id: string | number): Promise<LancamentoEnriquecido | null> {
+  async findById(id: string | number) {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
     const lancamento = await prisma.lancamento.findUnique({
-      where: { 
+      where: {
         id: numericId,
         deletedAt: null, // Exclui registros deletados
       },
@@ -76,21 +80,21 @@ export const lancamentoRepository = {
         fonteRenda: true,
       },
     });
-    
+
     if (!lancamento) return null;
-    
+
     return {
       ...lancamento,
-      statusDinamico: calcularStatusDinamico(lancamento),
+      // statusDinamico: calcularStatusDinamico(lancamento),
     };
   },
 
-  async findByUser(userId: string | number): Promise<LancamentoEnriquecido[]> {
+  async findByUser(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
 
     const lancamentos = await prisma.lancamento.findMany({
-      where: { 
+      where: {
         userId: numericId,
         deletedAt: null, // Exclui registros deletados
       },
@@ -100,15 +104,14 @@ export const lancamentoRepository = {
         fonteRenda: true,
       },
     });
-    
+
     return lancamentos.map((lancamento) => ({
       ...lancamento,
-      statusDinamico: calcularStatusDinamico(lancamento),
+      // statusDinamico: calcularStatusDinamico(lancamento),
     }));
   },
 
-  async create(data: LancamentoPayload): Promise<LancamentoEnriquecido> {
-
+  async create(data: LancamentoPayload) {
     const lancamento = await prisma.lancamento.create({
       data: {
         userId: Number(data.userId),
@@ -126,10 +129,10 @@ export const lancamentoRepository = {
         fonteRenda: true,
       },
     });
-    
+
     return {
       ...lancamento,
-      statusDinamico: calcularStatusDinamico(lancamento),
+      // statusDinamico: calcularStatusDinamico(lancamento),
     };
   },
 
@@ -149,7 +152,7 @@ export const lancamentoRepository = {
     }
   },
 
-  async update(id: string | number, data: Partial<LancamentoPayload>): Promise<LancamentoEnriquecido> {
+  async update(id: string | number, data: Partial<LancamentoPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 
@@ -169,10 +172,10 @@ export const lancamentoRepository = {
         fonteRenda: true,
       },
     });
-    
+
     return {
       ...lancamento,
-      statusDinamico: calcularStatusDinamico(lancamento),
+      // statusDinamico: calcularStatusDinamico(lancamento),
     };
   },
 };

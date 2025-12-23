@@ -4,7 +4,13 @@ import { Box, Switch, Typography, alpha } from "@mui/material";
 import { Control, Controller } from "react-hook-form";
 import { ReactNode } from "react";
 
-type ColorType = "primary" | "secondary" | "error" | "warning" | "info" | "success";
+type ColorType =
+  | "primary"
+  | "secondary"
+  | "error"
+  | "warning"
+  | "info"
+  | "success";
 
 interface CustomToggleProps {
   control: Control<any>;
@@ -25,7 +31,6 @@ export default function CustomToggle({
   color = "primary",
   variant = "checkbox",
   iconActive,
-  iconInactive,
   titleActive,
   titleInactive,
   descriptionActive,
@@ -37,16 +42,27 @@ export default function CustomToggle({
       control={control}
       render={({ field }) => (
         <Box
+          // AQUI ESTÁ A MÁGICA:
+          // tabIndex={0} torna o elemento focável na ordem natural
+          tabIndex={0}
+          role="button"
           onClick={() => field.onChange(!field.value)}
+          onKeyDown={(e) => {
+            // Permite ativar com Espaço ou Enter
+            if (e.key === " " || e.key === "Enter") {
+              e.preventDefault();
+              field.onChange(!field.value);
+            }
+          }}
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 1.5,
             py: 1,
             px: 1.5,
-            borderRadius: 1.5,
+            borderRadius: 1,
             cursor: "pointer",
-            transition: "all 0.2s ease",
+            transition: 'ease-in-out 0.2s ease',
             border: "1px solid",
             borderColor: field.value
               ? (theme) => alpha(theme.palette[color].main, 0.3)
@@ -54,14 +70,21 @@ export default function CustomToggle({
             backgroundColor: field.value
               ? (theme) => alpha(theme.palette[color].main, 0.04)
               : "transparent",
+            // Estilos de foco visual para acessibilidade
+            "&:focus-visible,&:focus": {
+              outline: "1.5px solid",
+              outlineColor: (theme) => theme.palette[color].main,
+              borderColor: (theme) => `${theme.palette[color].main} !important`,
+            },
+            // Mantemos o hover original
             "&:hover": {
               borderColor: (theme) => alpha(theme.palette[color].main, 0.4),
-              backgroundColor: (theme) => alpha(theme.palette[color].main, 0.02),
+              backgroundColor: (theme) =>
+                alpha(theme.palette[color].main, 0.02),
             },
           }}
         >
           {variant === "checkbox" ? (
-            // Checkbox customizado
             <Box
               sx={{
                 width: 18,
@@ -75,19 +98,27 @@ export default function CustomToggle({
                 justifyContent: "center",
                 transition: "all 0.2s ease",
                 flexShrink: 0,
+                "&:focus": {
+                  border: `2px solid  ${color}.main`,
+                },
+                "&:hover": {
+                  borderColor: (theme) => theme.palette[color].main,
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette[color].main, 0.02),
+                },
               }}
             >
               {field.value && iconActive}
             </Box>
           ) : (
-            // Switch nativo do MUI
             <Switch
               checked={field.value}
               color={color}
               size="small"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => field.onChange(e.target.checked)}
-              sx={{ ml: -0.5 }}
+              // Removemos o foco do switch interno para focar apenas no container Box
+              tabIndex={-1} 
+              readOnly 
+              sx={{ ml: -0.5, pointerEvents: 'none' }} // Deixa o clique passar para o Box pai
             />
           )}
 

@@ -1,17 +1,19 @@
 // components/form/masks/input-mask/HookCEPField.tsx
 import { TextFieldProps } from "@mui/material";
+import { unformat, useMask, MaskOptions } from "@react-input/mask";
 import {
   FieldValues,
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { useMask } from "@react-input/mask";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookCEPFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
       showMask?: boolean;
+      shrinkLabel?: boolean;
+      maskOptions?: MaskOptions; 
     };
 
 export function HookCEPField<TFieldValues extends FieldValues>({
@@ -19,8 +21,11 @@ export function HookCEPField<TFieldValues extends FieldValues>({
   control,
   rules,
   showMask = true,
+  shrinkLabel = true,
   defaultValue,
   shouldUnregister,
+  placeholder = "00000-000",
+  maskOptions = {},
   ...props
 }: HookCEPFieldProps<TFieldValues>) {
   const {
@@ -28,11 +33,22 @@ export function HookCEPField<TFieldValues extends FieldValues>({
     fieldState: { error },
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
-  const inputRef = useMask({
+  const optionsMask = {
     mask: "_____-___",
     replacement: { _: /\d/ },
     showMask,
-  });
+    ...maskOptions,
+  };
+
+  const inputRef = useMask(optionsMask);
+
+  const clearOnBlur = () => {
+    const unformattedValue = unformat(field.value, optionsMask);
+    if (!unformattedValue) {
+      field.onChange(unformattedValue);
+    }
+    field.onBlur();
+  }
 
   return (
     <CustomTextField
@@ -47,7 +63,11 @@ export function HookCEPField<TFieldValues extends FieldValues>({
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder={!showMask ? "00000-000" : undefined}
+      placeholder={placeholder}
+      onBlur={clearOnBlur}
+      InputLabelProps={{
+        shrink: shrinkLabel,
+      }}
     />
   );
 }

@@ -14,7 +14,7 @@ import {
   HookDateField,
   HookTimeField,
   HookCreditCardField,
-} from "./masks";
+} from "./";
 
 interface ExemploFormData {
   // Campos numéricos

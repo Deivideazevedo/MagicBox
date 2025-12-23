@@ -16,34 +16,13 @@ import { z } from "zod";
 const despesaSchemaZod = z.object({
   id: z.string().optional(),
   userId: z.string().min(1, "Usuário é obrigatório"),
-  categoriaId: z.string().min(1, "Categoria é obrigatória"),
+  categoriaId: z.number().min(1, "Categoria é obrigatória"),
   nome: z.string().min(1, "Nome é obrigatório"),
   mensalmente: z.boolean(),
-  valorEstimado: z.union([z.string(), z.null()]),
-  diaVencimento: z.union([z.string(), z.null()]),
+  valorEstimado: z.number().min(1, "Obrigatório").nullable(),
+  diaVencimento: z.number().min(1, "Obrigatório").nullable(),
   status: z.boolean(),
-}).refine(
-  (data) => {
-    if (data.mensalmente) {
-      return data.valorEstimado !== null && data.valorEstimado !== "";
-    }
-    return true;
-  },
-  {
-    message: "Obrigatório",
-    path: ["valorEstimado"],
-  }
-).refine(
-  (data) => {
-    if (data.mensalmente) {
-      return data.diaVencimento !== null && data.diaVencimento !== "";
-    }
-    return true;
-  },
-  {
-    message: "Obrigatório",
-    path: ["diaVencimento"],
-  }
+}
 ) satisfies z.ZodType<DespesaForm>;
 
 interface DeleteDialog {
@@ -101,7 +80,7 @@ export function useDespesas({
       id: undefined,
       userId: session?.user?.id || "",
       status: true,
-      categoriaId: "",
+      categoriaId: 0,
       nome: "",
       mensalmente: false,
       valorEstimado: null,
@@ -146,11 +125,11 @@ export function useDespesas({
     (despesa: Despesa, scrollCallback?: () => void) => {
       setValue("id", String(despesa.id));  
       setValue("userId", session?.user?.id ?? "");
-      setValue("categoriaId", String(despesa.categoriaId));
+      setValue("categoriaId", Number(despesa.categoriaId));
       setValue("nome", despesa.nome);
       setValue("mensalmente", despesa.mensalmente);
-      setValue("valorEstimado", despesa.valorEstimado ? String(despesa.valorEstimado) : "");
-      setValue("diaVencimento", despesa.diaVencimento ? String(despesa.diaVencimento) : "");
+      setValue("valorEstimado", despesa.valorEstimado);
+      setValue("diaVencimento", despesa.diaVencimento);
       setValue("status", despesa.status);
 
       if (scrollCallback) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
+import { HookCurrencyField, HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
 import CustomToggle from "@/app/components/forms/CustomToggle";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -51,7 +51,10 @@ interface DespesasTabProps {
   categorias: Categoria[];
 }
 
-export default function DespesasTab({ despesas: despesasProps, categorias: categoriasProps }: DespesasTabProps) {
+export default function DespesasTab({
+  despesas: despesasProps,
+  categorias: categoriasProps,
+}: DespesasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -102,7 +105,8 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
               // Use a cor main com baixíssima opacidade para a borda ficar elegante
               borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
               // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
-              backgroundColor: (theme) => alpha(theme.palette.error.light, 0.05),
+              backgroundColor: (theme) =>
+                alpha(theme.palette.error.light, 0.05),
             }}
           >
             <CardContent sx={{ px: 1, py: 1.5 }}>
@@ -145,7 +149,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                       options={categorias}
                       label="Categoria"
                       placeholder="Selecione"
-                      displayEmpty 
+                      displayEmpty
                       getValue={(obj) => obj.id}
                       getLabel={(obj) => obj.nome}
                       startAdornment={
@@ -190,19 +194,18 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                   </Grid>
 
                   {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
-                  <Grid item xs={12} sx={{  pt: "0px !important" }}>
+                  <Grid item xs={12} sx={{ pt: "0px !important" }}>
                     <Collapse in={mensalmente} timeout={400}>
                       <Box sx={{ pt: 2.5 }}>
                         <Grid container spacing={2.5}>
-                          <Grid item xs={12} >
-                            <HookTextField
-                              color="error"
-                              label="Valor Estimado"
-                              type="number"
-                              placeholder="0,00"
+                          <Grid item xs={12}>
+                            <HookCurrencyField
                               name="valorEstimado"
+                              color="error"
                               control={control}
-                              inputProps={{ step: "0.01", min: "0" }}
+                              label="Valor Estimado"
+                              returnAsNumber={true}
+                              placeholder="0,00"
                               InputProps={{
                                 startAdornment: (
                                   <InputAdornment position="start">
@@ -210,8 +213,11 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                   </InputAdornment>
                                 ),
                               }}
-                              sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
+                              sx={{
+                                "& .MuiOutlinedInput-input": { paddingLeft: 0 },
+                              }}
                             />
+
                           </Grid>
 
                           <Grid item xs={12}>
@@ -230,7 +236,9 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                 ),
                               }}
                               inputProps={{ min: "1", max: "31" }}
-                              sx={{ "& .MuiOutlinedInput-input": { paddingLeft: 0 } }}
+                              sx={{
+                                "& .MuiOutlinedInput-input": { paddingLeft: 0 },
+                              }}
                             />
                           </Grid>
                         </Grid>
@@ -321,7 +329,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
         {/* Lista de Despesas */}
         <Grid item xs={12} md={8}>
           <Card
-           elevation={0}
+            elevation={0}
             sx={{
               borderRadius: 3,
               border: "1px solid",
@@ -331,7 +339,7 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
           >
             <CardContent sx={{ p: 0 }}>
               <Box
-                sx={{ p:2, borderBottom: "1px solid", borderColor: "divider" }}
+                sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}
               >
                 <Stack
                   direction="row"
@@ -454,26 +462,28 @@ export default function DespesasTab({ despesas: despesasProps, categorias: categ
                                   Categoria: {categoria?.nome || "N/A"}
                                 </Typography>
                                 <Stack direction="row" spacing={2}>
-                                  {despesa.mensalmente && despesa.valorEstimado && (
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Valor:{" "}
-                                      {new Intl.NumberFormat("pt-BR", {
-                                        style: "currency",
-                                        currency: "BRL",
-                                      }).format(despesa.valorEstimado)}
-                                    </Typography>
-                                  )}
-                                  {despesa.mensalmente && despesa.diaVencimento && (
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Vence dia {despesa.diaVencimento}
-                                    </Typography>
-                                  )}
+                                  {despesa.mensalmente &&
+                                    despesa.valorEstimado && (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Valor:{" "}
+                                        {new Intl.NumberFormat("pt-BR", {
+                                          style: "currency",
+                                          currency: "BRL",
+                                        }).format(despesa.valorEstimado)}
+                                      </Typography>
+                                    )}
+                                  {despesa.mensalmente &&
+                                    despesa.diaVencimento && (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        Vence dia {despesa.diaVencimento}
+                                      </Typography>
+                                    )}
                                 </Stack>
                               </Stack>
                             }

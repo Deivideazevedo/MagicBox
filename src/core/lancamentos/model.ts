@@ -1,36 +1,35 @@
-import { Lancamento, TipoLancamento, StatusLancamento } from "./types";
+import { Lancamento, TipoLancamento } from "./types";
 
 export class LancamentoModel implements Lancamento {
   id: number;
   userId: number;
   despesaId?: number | null;
-  contaId?: number | null;
+  categoriaId: number;
   fonteRendaId?: number | null;
   tipo: TipoLancamento;
-  valor: number | string;
+  valor: number;
   data: string;
-  descricao: string;
+  descricao?: string;
   parcelas?: number | null;
   valorPago?: number | string | null;
-  status: StatusLancamento;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
 
   constructor(data: Lancamento) {
     this.id = data.id;
     this.userId = data.userId;
     this.despesaId = data.despesaId;
-    this.contaId = data.contaId;
+    this.categoriaId = data.categoriaId;
     this.fonteRendaId = data.fonteRendaId;
     this.tipo = data.tipo;
     this.valor = data.valor;
     this.data = data.data;
     this.descricao = data.descricao;
     this.parcelas = data.parcelas;
-    this.valorPago = data.valorPago;
-    this.status = data.status;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
+    this.deletedAt = data.deletedAt;
   }
 
   static fromJSON(json: any): LancamentoModel {
@@ -42,17 +41,16 @@ export class LancamentoModel implements Lancamento {
       id: this.id,
       userId: this.userId,
       despesaId: this.despesaId,
-      contaId: this.contaId,
+      categoriaId: this.categoriaId,
       fonteRendaId: this.fonteRendaId,
       tipo: this.tipo,
       valor: this.valor,
       data: this.data,
       descricao: this.descricao,
       parcelas: this.parcelas,
-      valorPago: this.valorPago,
-      status: this.status,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
     };
   }
 }

@@ -5,14 +5,19 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { useNumberFormat, unformat, InputNumberFormatProps } from "@react-input/number-format";
+import {
+  useNumberFormat,
+  unformat,
+  format,
+} from "@react-input/number-format";
 import CustomTextField from "../../../theme-elements/CustomTextField";
+import { NumberFormatOptions } from "./types";
 
 type HookDecimalFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<TextFieldProps, "name" | "value" | "onChange"> & {
       /** Opções de formatação do número */
-      formatOptions?: Omit<InputNumberFormatProps, "component">;
+      formatOptions?: NumberFormatOptions;
       /** Se true, retorna o valor como number, se false retorna como string formatada */
       returnAsNumber?: boolean;
     };
@@ -33,36 +38,40 @@ export function HookDecimalField<TFieldValues extends FieldValues>({
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
   // Defaults para formatação decimal
-  const defaultFormatOptions: Omit<InputNumberFormatProps, "component"> = {
+  const defaultFormatOptions: NumberFormatOptions = {
     locales: "pt-BR",
     format: "decimal",
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
     ...formatOptions, // Sobrescreve com as opções do usuário
   };
-
   const inputRef = useNumberFormat(defaultFormatOptions);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    
+    // remover formataçoes matematica nativamente aplicadas no input
+    const numericString = unformat(
+      e.target.value,
+      defaultFormatOptions.locales
+    );
+
     if (returnAsNumber) {
-      // Usa a função nativa unformat da biblioteca
-      const numericString = unformat(value, defaultFormatOptions.locales);
       const number = Number(numericString);
       field.onChange(isNaN(number) ? undefined : number);
     } else {
-      field.onChange(value);
+      field.onChange(numericString);
     }
   };
+
+  const visualValue = field.value
+    ? format(String(field.value), defaultFormatOptions)
+    : "";
 
   return (
     <CustomTextField
       {...textFieldProps}
-      name={field.name}
-      defaultValue={field.value ?? ""}
+      {...field}
+      value={visualValue}
       onChange={handleChange}
-      onBlur={field.onBlur}
       inputRef={(ref) => {
         if (ref) {
           inputRef.current = ref;

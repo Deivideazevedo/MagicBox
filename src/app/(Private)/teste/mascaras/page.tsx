@@ -10,8 +10,10 @@ import {
   Box, 
   Paper,
   Grid,
-  Divider 
+  Divider,
+  Chip
 } from "@mui/material";
+import { useState } from "react";
 import {
   HookCurrencyField,
   HookPercentageField,
@@ -38,26 +40,30 @@ const testFormSchema = z.object({
   cpf: z.string().transform(val => val.replace(/\D/g, '')),
   telefone: z.string().transform(val => val.replace(/\D/g, '')),
   cep: z.string().transform(val => val.replace(/\D/g, '')),
+  valorMonetario: z.union([z.string(), z.number()]),
 });
 
 type TestFormData = z.infer<typeof testFormSchema>;
 
 export default function TesteMascarasPage() {
+  const [valorMonetarioReturnAsNumber, setValorMonetarioReturnAsNumber] = useState<boolean>(false);
+  
   const { control, handleSubmit, watch, setValue } = useForm<TestFormData>({
     resolver: zodResolver(testFormSchema),
     defaultValues: {
       valorString: "",
       taxaString: "",
       quantidadeString: "",
-      valorNumber: 0,
-      taxaNumber: 0,
-      quantidadeNumber: 0,
+      // valorNumber: 0,
+      // taxaNumber: 0,
+      // quantidadeNumber: 0,
       valorMask: "",
       taxaMask: "",
       quantidadeMask: "",
       cpf: "",
       telefone: "",
       cep: "",
+      valorMonetario: "",
     },
   });
 
@@ -84,6 +90,17 @@ export default function TesteMascarasPage() {
   // Função para preencher o CPF com valor de teste
   const preencherCPFTeste = () => {
     setValue("cpf", "12345678900");
+  };
+
+  // Funções para testar o campo valorMonetario
+  const testarReturnAsNumberFalse = () => {
+    setValorMonetarioReturnAsNumber(false);
+    setValue("valorMonetario", "1234.56"); // String para returnAsNumber=false
+  };
+
+  const testarReturnAsNumberTrue = () => {
+    setValorMonetarioReturnAsNumber(true);
+    setValue("valorMonetario", 1234.56); // Number para returnAsNumber=true
   };
 
   return (
@@ -255,6 +272,73 @@ export default function TesteMascarasPage() {
                   }, null, 2)}
                 </Typography>
               </Box>
+            </Paper>
+          </Grid>
+
+          {/* Seção: Teste valorMonetario */}
+          <Grid item xs={12}>
+            <Paper elevation={3} sx={{ p: 3, bgcolor: "info.lighter" }}>
+              <Typography variant="h6" gutterBottom color="info.dark">
+                🧪 Teste valorMonetário - String vs Number
+              </Typography>
+              <Box sx={{ mb: 2 }}>
+                <Chip 
+                  label={`returnAsNumber = ${valorMonetarioReturnAsNumber ? 'true' : 'false'}`}
+                  color={valorMonetarioReturnAsNumber ? 'secondary' : 'primary'}
+                  variant="filled"
+                  size="small"
+                />
+              </Box>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                Clique nos botões para alternar a configuração e testar diferentes tipos de valor
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Stack spacing={1}>
+                    <HookCurrencyField
+                      name="valorMonetario"
+                      control={control}
+                      label="Valor Monetário (Teste)"
+                      returnAsNumber={valorMonetarioReturnAsNumber}
+                    />
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={testarReturnAsNumberFalse}
+                        color="primary"
+                        fullWidth
+                      >
+                        returnAsNumber = false
+                      </Button>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={testarReturnAsNumberTrue}
+                        color="secondary"
+                        fullWidth
+                      >
+                        returnAsNumber = true
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1, height: "100%" }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Valor Atual (valorMonetario):
+                    </Typography>
+                    <Typography variant="body2" component="pre" sx={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
+                      {JSON.stringify({
+                        valor: formValues.valorMonetario,
+                        tipo: typeof formValues.valorMonetario,
+                      }, null, 2)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
             </Paper>
           </Grid>
 

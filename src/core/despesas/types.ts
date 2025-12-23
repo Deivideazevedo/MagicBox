@@ -4,7 +4,7 @@ export interface Despesa {
   categoriaId: number;
   nome: string;
   mensalmente: boolean;
-  valorEstimado: number | string | null;
+  valorEstimado: number | null;
   diaVencimento: number | null;
   status: boolean;
   createdAt: string;
@@ -30,6 +30,6 @@ export interface DespesaForm {
   nome: string;
   mensalmente: boolean;
   status: boolean;
-  valorEstimado: string | null;
-  diaVencimento: string | null;
+  valorEstimado: number | null;
+  diaVencimento: number | null;
 }

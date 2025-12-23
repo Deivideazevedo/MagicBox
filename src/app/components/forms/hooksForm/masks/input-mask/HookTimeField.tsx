@@ -5,13 +5,15 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { useMask } from "@react-input/mask";
+import { MaskOptions, unformat, useMask } from "@react-input/mask";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookTimeFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
       showMask?: boolean;
+      shrinkLabel?: boolean;
+      maskOptions?: MaskOptions;
     };
 
 export function HookTimeField<TFieldValues extends FieldValues>({
@@ -19,8 +21,11 @@ export function HookTimeField<TFieldValues extends FieldValues>({
   control,
   rules,
   showMask = true,
+  shrinkLabel = true,
   defaultValue,
   shouldUnregister,
+  placeholder = "HH:MM",
+  maskOptions = {},
   ...props
 }: HookTimeFieldProps<TFieldValues>) {
   const {
@@ -28,11 +33,23 @@ export function HookTimeField<TFieldValues extends FieldValues>({
     fieldState: { error },
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
-  const inputRef = useMask({
+  // Configuração da máscara
+  const optionsMask = {
     mask: "__:__",
     replacement: { _: /\d/ },
     showMask,
-  });
+    ...maskOptions,
+  };
+
+  const inputRef = useMask(optionsMask);
+
+  const clearOnBlur = () => {
+    const unformattedValue = unformat(field.value, optionsMask);
+    if (!unformattedValue) {
+      field.onChange(unformattedValue);
+    }
+    field.onBlur();
+  };
 
   return (
     <CustomTextField
@@ -47,7 +64,11 @@ export function HookTimeField<TFieldValues extends FieldValues>({
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder={!showMask ? "HH:MM" : undefined}
+      placeholder={placeholder}
+      onBlur={clearOnBlur}
+      InputLabelProps={{
+        shrink: shrinkLabel,
+      }}
     />
   );
 }

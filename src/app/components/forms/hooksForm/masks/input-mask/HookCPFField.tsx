@@ -6,13 +6,15 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { useMask, format, unformat } from "@react-input/mask";
+import { useMask, format, unformat, MaskOptions } from "@react-input/mask";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookCPFFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
       showMask?: boolean;
+      shrinkLabel?: boolean;
+      maskOptions?: MaskOptions; 
     };
 
 export function HookCPFField<TFieldValues extends FieldValues>({
@@ -20,8 +22,11 @@ export function HookCPFField<TFieldValues extends FieldValues>({
   control,
   rules,
   showMask = true,
+  shrinkLabel = true,
   defaultValue,
   shouldUnregister,
+  placeholder = "000.000.000-00",
+  maskOptions = {},
   ...props
 }: HookCPFFieldProps<TFieldValues>) {
   const {
@@ -30,15 +35,16 @@ export function HookCPFField<TFieldValues extends FieldValues>({
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
   // Configuração da máscara
-  const maskOptions = {
+  const optionsMask = {
     mask: "___.___.___-__",
     replacement: { _: /\d/ },
     showMask,
+    ...maskOptions,
   };
 
-  const inputRef = useMask(maskOptions);
+  const inputRef = useMask(optionsMask);
   const previousValueRef = useRef<string>("");
-  const formattedValue = format(field.value || "", maskOptions);
+  const formattedValue = format(field.value || "", optionsMask);
 
   // Atualiza o campo quando o valor vem da API ou setValue
   useEffect(() => {
@@ -54,10 +60,20 @@ export function HookCPFField<TFieldValues extends FieldValues>({
 
   // Handler para remover caracteres não numéricos antes de salvar
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const unmaskedValue = unformat(event.target.value, maskOptions);
+    const unmaskedValue = unformat(event.target.value, optionsMask);
     previousValueRef.current = unmaskedValue;
     field.onChange(unmaskedValue);
   };
+
+  const clearOnBlur = () => {
+    const unformattedValue = unformat(field.value, optionsMask);
+    if (!unformattedValue) {
+      inputRef.current.value = unformattedValue;
+      previousValueRef.current = unformattedValue;
+      field.onChange(unformattedValue);
+    }
+    field.onBlur();
+  }
 
   return (
     <CustomTextField
@@ -70,12 +86,15 @@ export function HookCPFField<TFieldValues extends FieldValues>({
       }}
       defaultValue={formattedValue}
       onChange={handleChange}
-      onBlur={field.onBlur}
+      onBlur={clearOnBlur}
       name={field.name}
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder={showMask ? undefined : "000.000.000-00"}
+      placeholder={placeholder}
+      InputLabelProps={{
+        shrink: shrinkLabel,
+      }}
     />
   );
 }

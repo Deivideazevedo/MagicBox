@@ -2,3 +2,4 @@
 export { HookCurrencyField } from "./HookCurrencyField";
 export { HookPercentageField } from "./HookPercentageField";
 export { HookDecimalField } from "./HookDecimalField";
+export type { NumberFormatOptions } from "./types";

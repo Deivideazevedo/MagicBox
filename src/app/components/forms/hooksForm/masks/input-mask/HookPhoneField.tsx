@@ -5,14 +5,16 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { format, useMask } from "@react-input/mask";
+import { format, unformat, useMask, MaskOptions } from "@react-input/mask";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookPhoneFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "onChange"> & {
+    Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
       isMobile?: boolean;
       showMask?: boolean;
+      shrinkLabel?: boolean;
+      maskOptions?: MaskOptions; 
     };
 
 export function HookPhoneField<TFieldValues extends FieldValues>({
@@ -21,8 +23,11 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
   rules,
   isMobile = true,
   showMask = true,
+  shrinkLabel = true,
   defaultValue,
   shouldUnregister,
+  placeholder = isMobile ? "(00) 00000-0000" : "(00) 0000-0000",
+  maskOptions = {},
   ...props
 }: HookPhoneFieldProps<TFieldValues>) {
   const {
@@ -30,13 +35,22 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
     fieldState: { error },
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
-  const maskOption = {
+  const optionsMask = {
     mask: isMobile ? "(__) _____-____" : "(__) ____-____",
     replacement: { _: /\d/ },
     showMask,
+    ...maskOptions,
   };
 
-  const inputRef = useMask(maskOption);
+  const inputRef = useMask(optionsMask);
+
+  const clearOnBlur = () => {
+    const unformattedValue = unformat(field.value, optionsMask);
+    if (!unformattedValue) {
+      field.onChange(unformattedValue);
+    }
+    field.onBlur();
+  }
 
   return (
     <CustomTextField
@@ -51,7 +65,11 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder={!showMask ? (isMobile ? "(00) 00000-0000" : "(00) 0000-0000") : undefined }
+      placeholder={placeholder}
+      onBlur={clearOnBlur}
+      InputLabelProps={{
+        shrink: shrinkLabel,
+      }}
     />
   );
 }
