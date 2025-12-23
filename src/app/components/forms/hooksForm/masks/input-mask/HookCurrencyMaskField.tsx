@@ -10,22 +10,28 @@ import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookCurrencyMaskFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange">;
+    Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
+      showMask?: boolean;
+    };
 
 export function HookCurrencyMaskField<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
+  showMask = true,
+  defaultValue,
+  shouldUnregister,
   ...props
 }: HookCurrencyMaskFieldProps<TFieldValues>) {
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control, rules });
+  } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
   const inputRef = useMask({
     mask: "R$ _________,__",
     replacement: { _: /\d/ },
+    showMask,
   });
 
   return (
@@ -38,11 +44,10 @@ export function HookCurrencyMaskField<TFieldValues extends FieldValues>({
           field.ref(ref);
         }
       }}
-      value={field.value ?? ""}
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder="R$ 0,00"
+      placeholder={!showMask ? "R$ 0,00" : undefined}
     />
   );
 }

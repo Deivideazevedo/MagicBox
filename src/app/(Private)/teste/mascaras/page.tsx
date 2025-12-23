@@ -1,6 +1,8 @@
 "use client";
 
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Button, 
   Stack, 
@@ -23,34 +25,31 @@ import {
   HookDecimalMaskField,
 } from "@/app/components/forms/hooksForm";
 
-interface TestFormData {
-  // Campos numéricos como string
-  valorString: string;
-  taxaString: string;
-  quantidadeString: string;
-  
-  // Campos numéricos como number
-  valorNumber: number;
-  taxaNumber: number;
-  quantidadeNumber: number;
-  
-  // Campos de máscara (sempre string) - input-mask
-  valorMask: string;
-  taxaMask: string;
-  quantidadeMask: string;
-  
-  cpf: string;
-  telefone: string;
-  cep: string;
-}
+const testFormSchema = z.object({
+  valorString: z.string().transform(val => val.replace(/\D/g, '')),
+  taxaString: z.string().transform(val => val.replace(/\D/g, '')),
+  quantidadeString: z.string().transform(val => val.replace(/\D/g, '')),
+  valorNumber: z.number(),
+  taxaNumber: z.number(),
+  quantidadeNumber: z.number(),
+  valorMask: z.string().transform(val => val.replace(/\D/g, '')),
+  taxaMask: z.string().transform(val => val.replace(/\D/g, '')),
+  quantidadeMask: z.string().transform(val => val.replace(/\D/g, '')),
+  cpf: z.string().transform(val => val.replace(/\D/g, '')),
+  telefone: z.string().transform(val => val.replace(/\D/g, '')),
+  cep: z.string().transform(val => val.replace(/\D/g, '')),
+});
+
+type TestFormData = z.infer<typeof testFormSchema>;
 
 export default function TesteMascarasPage() {
   const { control, handleSubmit, watch, setValue } = useForm<TestFormData>({
+    resolver: zodResolver(testFormSchema),
     defaultValues: {
       valorString: "",
       taxaString: "",
       quantidadeString: "",
-    //   valorNumber: 0,
+      valorNumber: 0,
       taxaNumber: 0,
       quantidadeNumber: 0,
       valorMask: "",

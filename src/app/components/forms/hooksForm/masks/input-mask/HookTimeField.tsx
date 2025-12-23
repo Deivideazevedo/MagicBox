@@ -10,22 +10,28 @@ import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookTimeFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange">;
+    Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
+      showMask?: boolean;
+    };
 
 export function HookTimeField<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
+  showMask = true,
+  defaultValue,
+  shouldUnregister,
   ...props
 }: HookTimeFieldProps<TFieldValues>) {
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control, rules });
+  } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
   const inputRef = useMask({
     mask: "__:__",
     replacement: { _: /\d/ },
+    showMask,
   });
 
   return (
@@ -38,11 +44,10 @@ export function HookTimeField<TFieldValues extends FieldValues>({
           field.ref(ref);
         }
       }}
-      value={field.value ?? ""}
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder="HH:MM"
+      placeholder={!showMask ? "HH:MM" : undefined}
     />
   );
 }

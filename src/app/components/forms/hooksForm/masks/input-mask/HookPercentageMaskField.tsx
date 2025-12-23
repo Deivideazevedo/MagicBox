@@ -10,22 +10,28 @@ import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookPercentageMaskFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange">;
+    Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
+      showMask?: boolean;
+    };
 
 export function HookPercentageMaskField<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
+  showMask = true,
+  defaultValue,
+  shouldUnregister,
   ...props
 }: HookPercentageMaskFieldProps<TFieldValues>) {
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control, rules });
+  } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
   const inputRef = useMask({
     mask: "___,__%",
     replacement: { _: /\d/ },
+    showMask,
   });
 
   return (
@@ -38,11 +44,10 @@ export function HookPercentageMaskField<TFieldValues extends FieldValues>({
           field.ref(ref);
         }
       }}
-      value={field.value ?? ""}
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder="0,00%"
+      placeholder={!showMask ? "0,00%" : undefined}
     />
   );
 }

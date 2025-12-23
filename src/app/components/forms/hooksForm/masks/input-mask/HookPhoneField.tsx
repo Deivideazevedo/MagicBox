@@ -5,14 +5,14 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import { useMask } from "@react-input/mask";
+import { format, useMask } from "@react-input/mask";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 
 type HookPhoneFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange"> & {
-      /** Se true, usa máscara para celular (9 dígitos), se false usa telefone fixo (8 dígitos) */
+    Omit<TextFieldProps, "name" | "onChange"> & {
       isMobile?: boolean;
+      showMask?: boolean;
     };
 
 export function HookPhoneField<TFieldValues extends FieldValues>({
@@ -20,19 +20,23 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
   control,
   rules,
   isMobile = true,
+  showMask = true,
+  defaultValue,
+  shouldUnregister,
   ...props
 }: HookPhoneFieldProps<TFieldValues>) {
   const {
     field,
     fieldState: { error },
-  } = useController({ name, control, rules });
+  } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
-  // Máscara para celular: (00) 00000-0000
-  // Máscara para fixo: (00) 0000-0000
-  const inputRef = useMask({
+  const maskOption = {
     mask: isMobile ? "(__) _____-____" : "(__) ____-____",
     replacement: { _: /\d/ },
-  });
+    showMask,
+  };
+
+  const inputRef = useMask(maskOption);
 
   return (
     <CustomTextField
@@ -44,11 +48,10 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
           field.ref(ref);
         }
       }}
-      value={field.value ?? ""}
       fullWidth
       error={!!error}
       helperText={error?.message}
-      placeholder={isMobile ? "(00) 00000-0000" : "(00) 0000-0000"}
+      placeholder={!showMask ? (isMobile ? "(00) 00000-0000" : "(00) 0000-0000") : undefined }
     />
   );
 }
