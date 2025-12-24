@@ -4,6 +4,8 @@ import { authOptions } from "./authOptions";
 import { extractTokenFromHeader, verifyAccessToken } from "./jwt-utils";
 import { UnauthorizedError } from "./errors";
 import { NextRequest } from "next/server";
+import { consoleErrorLog } from "./error-handler";
+import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 
 /**
  * Autentica a requisição usando:
@@ -24,7 +26,7 @@ export async function getAuthUser(req?: NextRequest): Promise<User> {
 
   // 2. Tenta autenticar via Bearer Token (API externa)
   const headersList = headers();
-  
+
   const authHeader =
     headersList.get("authorization") || req?.headers.get("authorization") || "";
 
@@ -36,34 +38,33 @@ export async function getAuthUser(req?: NextRequest): Promise<User> {
   }
 
   // Se chegou aqui, é um erro crítico - middleware deveria ter bloqueado
-  const requestUrl =
-    headersList.get("x-url") || req?.url || "URL não disponível";
+  const requestUrl = headersList.get("x-url") || req?.url || "URL não disponível";
   const requestMethod =
     headersList.get("x-method") || req?.method || "Método não disponível";
 
-  console.error(
+  const formattedLog =
     "\n" +
-      "═══════════════════════════════════════════════════════════════════\n" +
-      "❌ ERRO CRÍTICO: Autenticação Inválida\n" +
-      "═══════════════════════════════════════════════════════════════════\n\n" +
-      "⚠️  O middleware NÃO está protegendo esta rota!\n\n" +
-      "🔍 Detalhes da Requisição:\n" +
-      `   • Método: ${requestMethod}\n` +
-      `   • URL: ${requestUrl}\n\n` +
-      "🔐 Status de Autenticação:\n" +
-      `   • Cookie de sessão: ${
-        session ? "✓ Presente (mas inválido)" : "✗ Ausente"
-      }\n` +
-      `   • Bearer Token: ${
-        bearerToken
-          ? `✓ Presente (${bearerToken.substring(0, 30)}...)`
-          : "✗ Ausente"
-      }\n\n` +
-      "🔧 Solução:\n\n" +
-      "   Verifique se o middleware está ativo e configurado corretamente.\n\n" +
-      "═══════════════════════════════════════════════════════════════════\n"
-  );
+    "═══════════════════════════════════════════════════════════════════\n" +
+    "❌ ERRO CRÍTICO: Autenticação Inválida\n" +
+    "═══════════════════════════════════════════════════════════════════\n\n" +
+    "⚠️  O middleware NÃO está protegendo esta rota!\n\n" +
+    "🔍 Detalhes da Requisição:\n" +
+    `   • Hora: ${fnFormatDateInTimeZone()}\n` +
+    `   • Método: ${requestMethod}\n` +
+    `   • URL: ${requestUrl}\n\n` +
+    "🔐 Status de Autenticação:\n" +
+    `   • Cookie de sessão: ${
+      session ? "✓ Presente (mas inválido)" : "✗ Ausente"
+    }\n` +
+    `   • Bearer Token: ${
+      bearerToken
+        ? `✓ Presente (${bearerToken.substring(0, 30)}...)`
+        : "✗ Ausente"
+    }\n\n` +
+    "🔧 Solução:\n\n" +
+    "   Verifique se o middleware está ativo e configurado corretamente.\n\n" +
+    "═══════════════════════════════════════════════════════════════════\n";
 
-  const details = `Verifique a middleware, getAuthUser chamado sem autenticação válida`;
-  throw new UnauthorizedError("Autenticação necessária", details);
+  consoleErrorLog({ formattedLog });
+  throw new UnauthorizedError("Autenticação necessária");
 }

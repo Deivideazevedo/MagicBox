@@ -1,89 +1,104 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { HttpError } from "./errors";
+import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
+
+/**
+ * Formata um log de erro de forma visual
+ */
+type ErrorResponse = {
+  error: string;
+  message: string;
+  details?: any;
+};
+
+type ErrorLogParams = {
+  url: string;
+  method: string;
+} & ErrorResponse;
+
+type ConsoleErrorLogParams = ErrorLogParams | { formattedLog: string };
+
+export function consoleErrorLog(params: ConsoleErrorLogParams) {
+  // Log apenas em desenvolvimento
+  if (process.env.NODE_ENV == "production") return;
+
+  // Verificar se é um log formatado customizado
+  if ("formattedLog" in params) {
+    console.error(params.formattedLog);
+    return;
+  }
+
+  // Caso contrário, formatar com os dados estruturados
+  const { url, method, error, message, details } = params;
+
+  const formattedLog =
+    "\n" +
+    "═══════════════════════════════════════════════════════════════════\n" +
+    `🚨 ERRO: ${error}\n` +
+    "═══════════════════════════════════════════════════════════════════\n\n" +
+    `⏰ Hora: ${fnFormatDateInTimeZone()}\n` +
+    `🧰 Metodo: ${method}\n` +
+    `🚀 Rota: ${url}\n` +
+    `💬 Mensagem: ${message}\n` +
+    (details ? `🔍 Detalhes: ${JSON.stringify(details, null, 2)}\n` : "") +
+    "\n" +
+    "═══════════════════════════════════════════════════════════════════\n";
+
+  console.error(formattedLog);
+}
 
 /**
  * Wrapper para tratar erros automaticamente em Route Handlers
- * 
+ *
  * Retorna:
  * - message: mensagem amigável em português (via zod-config.ts customErrorMap)
  * - details: detalhes técnicos dos issues para debug
  * - error: nome/tipo do erro
- * 
+ *
  * Console logs aparecem apenas em desenvolvimento
  */
-export function errorHandler<T extends (...args: any[]) => Promise<NextResponse>>(
-  handler: T
-): T {
+
+export function errorHandler<
+  T extends (...args: any[]) => Promise<NextResponse>
+>(handler: T): T {
   return (async (...args: any[]) => {
+    // Extrair informações da requisição para logs
+    const request = args[0];
+    const method = request?.method || "UNKNOWN";
+    const url = request?.url || "unknown";
+
     try {
       return await handler(...args);
     } catch (error) {
+      let status = 500;
+      let body: ErrorResponse = {
+        error: "InternalServerError",
+        message: "Ocorreu um erro inesperado. Por favor, tente novamente",
+      };
+
       // Erro de validação do Zod
       if (error instanceof ZodError) {
-        // A mensagem já vem em português graças ao customErrorMap (zod-config.ts)
-        const friendlyMessage = error.issues[0]?.message || "Erro de validação nos dados enviados";
-
-        // Log apenas em desenvolvimento
-        if (process.env.NODE_ENV !== 'production') {
-          console.error("❌ Erro de validação Zod:", { 
-            message: friendlyMessage, 
-            issues: error.issues 
-          });
-        }
-
-        return NextResponse.json(
-          { 
-            error: "ValidationError",
-            message: friendlyMessage,
-            details: error.issues // Issues completos com campos, códigos, etc
-          },
-          { status: 400 }
-        );
+        status = 400;
+        body = {
+          error: "ValidationError",
+          message: error.issues[0]?.message || "Dados inválidos",
+          details: error.issues,
+        };
       }
 
       // Erro HTTP customizado
       if (error instanceof HttpError) {
-        // Log apenas em desenvolvimento
-        if (process.env.NODE_ENV !== 'production') {
-          console.error(`❌ ${error.name}:`, { 
-            message: error.message, 
-            details: error.details,
-            statusCode: error.statusCode 
-          });
-        }
-
-        return NextResponse.json(
-          { 
-            error: error.name,
-            message: error.message,
-            ...(error.details && { details: error.details })
-          },
-          { status: error.statusCode }
-        );
+        status = error.statusCode;
+        body = {
+          error: error.name,
+          message: error.message,
+          details: error.details,
+        };
       }
 
-      // Erro desconhecido
-      // Log apenas em desenvolvimento
-      if (process.env.NODE_ENV !== 'production') {
-        console.error("❌ Erro não tratado:", error);
-      }
-      
-      const message = "Ocorreu um erro inesperado. Por favor, tente novamente";
-      const details = {
-        tipo: error instanceof Error ? error.constructor.name : typeof error,
-        mensagem: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      };
-
-      return NextResponse.json(
-        { 
-          error: "InternalServerError",
-          message,
-          details
-        },
-        { status: 500 }
-      );
+      consoleErrorLog({ url, method, ...body });
+      return NextResponse.json(body, { status, url });
     }
   }) as T;
 }

@@ -17,7 +17,6 @@ export const despesaService = {
     if (!payload.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
-    console.log('payload', payload);
     const data = {
       ...payload,
       userId: Number(payload.userId)
