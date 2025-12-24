@@ -24,7 +24,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { ptBR } from "date-fns/locale";
-import { 
+import {
   IconCurrencyDollar,
   IconCalendar,
   IconCreditCard,
@@ -44,7 +44,9 @@ interface FormularioLancamentoProps {
   onClose?: () => void;
 }
 
-export default function FormularioLancamento({ onClose }: FormularioLancamentoProps) {
+export default function FormularioLancamento({
+  onClose,
+}: FormularioLancamentoProps) {
   const {
     register,
     submitWithClose,
@@ -63,7 +65,9 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
   const { data: categorias = [] } = useGetCategoriasQuery();
 
   // Encontrar a despesa selecionada para mostrar detalhes
-  const despesaSelecionada = despesas.find((d: any) => d.id === watchedValues.despesaId);
+  const despesaSelecionada = despesas.find(
+    (d: any) => d.id === watchedValues.despesaId
+  );
 
   // Criar handler que fecha o drawer após sucesso
   const handleFormSubmit = submitWithClose(() => {
@@ -82,15 +86,17 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
       <Box>
-        <Box 
-          component="form" 
-          onSubmit={handleFormSubmit}
-        >
+        <Box component="form" onSubmit={handleFormSubmit}>
           <Grid container spacing={2.5}>
             {/* Tipo de Lançamento */}
             <Grid item xs={12}>
-              <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: 'action.hover' }}>
-                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+              <Card
+                variant="outlined"
+                sx={{ borderRadius: 2, bgcolor: "action.hover" }}
+              >
+                <CardContent
+                  sx={{ py: 1.5, px: 2, "&:last-child": { pb: 1.5 } }}
+                >
                   <Controller
                     name="tipo"
                     control={control}
@@ -100,19 +106,24 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                           <Switch
                             {...field}
                             checked={field.value === "agendamento"}
-                            onChange={(e) => field.onChange(e.target.checked ? "agendamento" : "pagamento")}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.checked ? "agendamento" : "pagamento"
+                              )
+                            }
                           />
                         }
                         label={
                           <Box sx={{ ml: 1 }}>
                             <Typography variant="subtitle1" fontWeight={600}>
-                              {field.value === "pagamento" ? "Pagamento Único" : "Agendamento Recorrente"}
+                              {field.value === "pagamento"
+                                ? "Pagamento Único"
+                                : "Agendamento Recorrente"}
                             </Typography>
                             <Typography variant="caption" color="textSecondary">
-                              {field.value === "pagamento" 
+                              {field.value === "pagamento"
                                 ? "Registrar um pagamento já realizado"
-                                : "Agendar despesa para repetir mensalmente"
-                              }
+                                : "Agendar despesa para repetir mensalmente"}
                             </Typography>
                           </Box>
                         }
@@ -125,72 +136,30 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
 
             {/* Categoria */}
             <Grid item xs={12}>
-
-                <HookAutocomplete 
+              <HookAutocomplete
                 control={control}
-                name="despesaId"
+                name="categoriaId"
                 label="Categoria"
                 options={categorias}
-                />
-              {/* <FormControl fullWidth error={!!errors.despesaId}>
-                <InputLabel>Categoria</InputLabel>
-                <Controller
-                  name="despesaId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select {...field} label="Categoria">
-                      <MenuItem value="">
-                        <em>Selecione uma categoria</em>
-                      </MenuItem>
-                      {categorias.map((cat: any) => (
-                        <MenuItem key={cat.id} value={cat.id}>
-                          {cat.nome}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  )}
-                />
-                {errors.despesaId && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
-                    {errors.despesaId.message}
-                  </Typography>
-                )}
-              </FormControl> */}
+              />
+              <HookAutocomplete
+                name="categoriaId"
+                control={control}
+                label="Categoria"
+                options={categorias}
+                getOptionLabel={(cat) => cat.nome}
+                getOptionValue={(cat) => cat.id}
+              />
             </Grid>
 
             {/* Conta/Despesa */}
             <Grid item xs={12}>
-              <FormControl fullWidth error={!!errors.contaId}>
-                <InputLabel>Conta</InputLabel>
-                <Controller
-                  name="contaId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select {...field} label="Conta">
-                      <MenuItem value="">
-                        <em>Selecione uma conta</em>
-                      </MenuItem>
-                      {despesas
-                        .filter((desp: any) => desp.categoriaId === watchedValues.despesaId)
-                        .map((desp: any) => (
-                          <MenuItem key={desp.id} value={desp.id}>
-                            {desp.nome}
-                            {desp.valorEstimado && (
-                              <Typography variant="caption" sx={{ ml: 1, opacity: 0.7 }}>
-                                (R$ {Number(desp.valorEstimado).toFixed(2)})
-                              </Typography>
-                            )}
-                          </MenuItem>
-                        ))}
-                    </Select>
-                  )}
-                />
-                {errors.contaId && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1 }}>
-                    {errors.contaId.message}
-                  </Typography>
-                )}
-              </FormControl>
+              <HookAutocomplete
+                control={control}
+                name="despesaId"
+                label="Despesa"
+                options={despesas}
+              />
             </Grid>
 
             {/* Valor */}
@@ -226,13 +195,17 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                 control={control}
                 render={({ field, fieldState }) => (
                   <DatePicker
-                    label={watchedValues.tipo === "pagamento" ? "Data do Pagamento" : "Data de Início"}
+                    label={
+                      watchedValues.tipo === "pagamento"
+                        ? "Data do Pagamento"
+                        : "Data de Início"
+                    }
                     value={field.value ? new Date(field.value) : null}
                     onChange={(date) => {
                       if (date && date instanceof Date) {
-                        field.onChange(date.toISOString().split('T')[0]);
+                        field.onChange(date.toISOString().split("T")[0]);
                       } else {
-                        field.onChange('');
+                        field.onChange("");
                       }
                     }}
                     renderInput={(params) => (
@@ -261,7 +234,10 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                       label="Número de Parcelas (meses)"
                       type="number"
                       error={!!errors.parcelas}
-                      helperText={errors.parcelas?.message || "Quantos meses repetir este agendamento"}
+                      helperText={
+                        errors.parcelas?.message ||
+                        "Quantos meses repetir este agendamento"
+                      }
                       inputProps={{ min: "1", max: "60" }}
                     />
                   )}
@@ -302,12 +278,11 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                     loading={isCreating}
                     startIcon={<IconCheck />}
                   >
-                    {isEditing 
+                    {isEditing
                       ? "Atualizar Lançamento"
-                      : watchedValues.tipo === "pagamento" 
-                        ? "Registrar Pagamento" 
-                        : "Criar Agendamento"
-                    }
+                      : watchedValues.tipo === "pagamento"
+                      ? "Registrar Pagamento"
+                      : "Criar Agendamento"}
                   </LoadingButton>
                 </Grid>
                 <Grid item xs={12}>
@@ -317,7 +292,7 @@ export default function FormularioLancamento({ onClose }: FormularioLancamentoPr
                     size="large"
                     onClick={handleCancel}
                     startIcon={<IconX />}
-                    sx={{ color: 'text.secondary' }}
+                    sx={{ color: "text.secondary" }}
                   >
                     Cancelar
                   </Button>

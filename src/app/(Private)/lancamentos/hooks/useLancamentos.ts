@@ -17,15 +17,13 @@ const lancamentoSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
   userId: z.union([z.string(), z.number()]).optional(),
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  contaId: z.union([z.string(), z.number(), z.null()]).optional(),
+  categoriaId: z.number().min(1, "Categoria é obrigatória"),
   fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.union([z.string()]),
   data: z.string().min(1, "Data é obrigatória"),
-  descricao: z.string().min(1, "Descrição é obrigatória"),
+  descricao: z.string().optional(),
   parcelas: z.union([z.string(), z.number(), z.null()]).optional(),
-  valorPago: z.union([z.string(), z.null()]).optional(),
-  status: z.enum(["pago", "pendente", "atrasado"]),
 }) satisfies z.ZodType<LancamentoForm>;
 
 interface UseLancamentosProps {
@@ -67,20 +65,6 @@ export function useLancamentos({
     formState: { errors, isValid },
   } = useForm<LancamentoForm>({
     resolver: zodResolver(lancamentoSchema),
-    defaultValues: {
-      id: "",
-      userId: session?.user?.id || "",
-      tipo: "pagamento",
-      despesaId: "",
-      contaId: "",
-      valor: "0",
-      data: new Date().toISOString().split("T")[0],
-      descricao: "",
-      parcelas: "1",
-      valorPago: null,
-      status: "pago",
-    },
-    mode: "onChange",
   });
 
   const watchedValues = watch();
@@ -104,17 +88,13 @@ export function useLancamentos({
           userId: Number(formData.userId),
           valor: Number(formData.valor),
           parcelas: formData.parcelas ? Number(formData.parcelas) : null,
-          valorPago: formData.valorPago ? Number(formData.valorPago) : null,
           despesaId: formData.despesaId ? Number(formData.despesaId) : null,
-          contaId: formData.contaId ? Number(formData.contaId) : null,
+          categoriaId: formData.categoriaId,
           fonteRendaId: formData.fonteRendaId ? Number(formData.fonteRendaId) : null,
         };
 
         const lancamentoData: LancamentoPayload = {
           ...data,
-          parcelas: isParcelado ? data.parcelas : 1,
-          valorPago: data.tipo === "pagamento" ? data.valor : null,
-          status: data.tipo === "pagamento" ? "pago" : "pendente",
         };
 
         if (id) {
@@ -146,13 +126,11 @@ export function useLancamentos({
           userId: session?.user?.id || "",
           tipo: "pagamento",
           despesaId: "",
-          contaId: "",
+          categoriaId: 0,
           valor: "0",
           data: new Date().toISOString().split("T")[0],
           descricao: "",
           parcelas: "1",
-          valorPago: null,
-          status: "pago",
         });
         setStep(1);
         setIsParcelado(false);
@@ -175,14 +153,12 @@ export function useLancamentos({
       setValue("id", lancamento.id);
       setValue("userId", lancamento.userId);
       setValue("despesaId", lancamento.despesaId);
-      setValue("contaId", lancamento.contaId);
+      setValue("categoriaId", lancamento.categoriaId);
       setValue("tipo", lancamento.tipo);
       setValue("valor", String(lancamento.valor));
       setValue("data", lancamento.data);
       setValue("descricao", lancamento.descricao);
       setValue("parcelas", lancamento.parcelas ? String(lancamento.parcelas) : "1");
-      setValue("valorPago", lancamento.valorPago ? String(lancamento.valorPago) : null);
-      setValue("status", lancamento.status);
 
       if (lancamento.parcelas && lancamento.parcelas > 1) {
         setIsParcelado(true);
@@ -236,7 +212,6 @@ export function useLancamentos({
   // Função para lidar com mudança de tipo
   const handleTipoChange = (tipo: "pagamento" | "agendamento") => {
     setValue("tipo", tipo);
-    setValue("status", tipo === "pagamento" ? "pago" : "pendente");
   };
 
   const handleParceladoChange = (parcelado: boolean) => {

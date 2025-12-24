@@ -209,13 +209,12 @@ async function main() {
       continue;
     }
 
-    // Mapear despesaId ou contaId
-    let despesaId = null;
-    if (lancamentoData.despesaId) {
-      despesaId = despesaIdMap.get(lancamentoData.despesaId) || null;
-    } else if (lancamentoData.contaId) {
-      despesaId = despesaIdMap.get(lancamentoData.contaId) || null;
-    }
+    // Mapear fonteRendaId
+    const despesaId = lancamentoData.despesaId
+      ? despesaIdMap.get(lancamentoData.despesaId) || null
+      : null;
+    // Mapear fonteRendaId
+    const categoriaId =  categoriaIdMap.get(lancamentoData.categoriaId);
 
     // Mapear fonteRendaId
     const fonteRendaId = lancamentoData.fonteRendaId
@@ -247,10 +246,9 @@ async function main() {
           data: new Date(lancamentoData.data),
           descricao: lancamentoData.descricao,
           despesaId: despesaId,
-          contaId: despesaId, // Manter contaId como alias
+          categoriaId: Number(categoriaId), // Manter contaId como alias
           fonteRendaId: fonteRendaId,
           parcelas: lancamentoData.parcelas || null,
-          valorPago: valorPago,
           createdAt: new Date(lancamentoData.createdAt),
           updatedAt: new Date(lancamentoData.updatedAt),
         },

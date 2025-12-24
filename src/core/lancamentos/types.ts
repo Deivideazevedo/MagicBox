@@ -28,7 +28,7 @@ export interface LancamentoPayload {
   tipo: TipoLancamento;
   valor: number | string;
   data: Date | string;
-  descricao: string;
+  descricao?: string;
   categoriaId: number;
   despesaId?: number | null;
   fonteRendaId?: number | null;
@@ -43,12 +43,11 @@ export interface LancamentoForm {
   tipo: TipoLancamento;
   valor: string;
   data: string;
-  descricao: string;
+  categoriaId: number;
+  descricao?: string;
   despesaId?: string | number | null;
-  categoriaId?: string | number;
   fonteRendaId?: string | number | null;
   parcelas?: string | number | null;
-  valorPago?: string | null;
 }
 
 export type LancamentoParams = Partial<

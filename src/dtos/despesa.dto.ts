@@ -12,7 +12,7 @@ export const despesaSchema = z.object({
   categoriaId: z.number().int().positive(),
   nome: z.string().min(1).max(100),
   mensalmente: z.boolean(),
-  valorEstimado: z.string().nullable(), // Decimal como string
+  valorEstimado: z.number().nullable(), // Decimal como string
   diaVencimento: z.number().int().min(1).max(31).nullable(),
   status: z.boolean(),
   createdAt: z.date(),
@@ -31,16 +31,12 @@ export const createDespesaSchema = z
     mensalmente: z.boolean().default(false),
     valorEstimado: z
       .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
-      .nullable()
-      .optional(),
+      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido"),
     diaVencimento: z
       .number()
       .int()
       .min(1, "Dia deve ser entre 1 e 31")
-      .max(31, "Dia deve ser entre 1 e 31")
-      .nullable()
-      .optional(),
+      .max(31, "Dia deve ser entre 1 e 31"),
     status: z.boolean().default(true),
   })
   .refine(

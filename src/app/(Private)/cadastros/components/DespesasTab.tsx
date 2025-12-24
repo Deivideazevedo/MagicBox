@@ -1,6 +1,6 @@
 "use client";
 
-import { HookCurrencyField, HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
+import { HookCurrencyField, HookDecimalField, HookSelect, HookTextField } from "@/app/components/forms/hooksForm";
 import CustomToggle from "@/app/components/forms/CustomToggle";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -199,11 +199,11 @@ export default function DespesasTab({
                       <Box sx={{ pt: 2.5 }}>
                         <Grid container spacing={2.5}>
                           <Grid item xs={12}>
-                            <HookCurrencyField
+                            <HookCurrencyField 
                               name="valorEstimado"
                               color="error"
                               control={control}
-                              label="Valor Estimado"
+                              label="Valor Pago"
                               returnAsNumber={true}
                               placeholder="0,00"
                               InputProps={{
@@ -217,11 +217,33 @@ export default function DespesasTab({
                                 "& .MuiOutlinedInput-input": { paddingLeft: 0 },
                               }}
                             />
-
                           </Grid>
 
                           <Grid item xs={12}>
-                            <HookTextField
+
+                            <HookDecimalField 
+                              name="diaVencimento"
+                              color="error"
+                              control={control}
+                              label="Dia do Vencimento"
+                              returnAsNumber={true}
+                              placeholder="Ex: 5"
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <IconCalendar size={20} />
+                                  </InputAdornment>
+                                ),
+                              }}
+                              inputProps={{ min: "1", max: "31" }}
+                              formatOptions={{
+                                maximumFractionDigits: 0,
+                              }}
+                              sx={{
+                                "& .MuiOutlinedInput-input": { paddingLeft: 0 },
+                              }}
+                            />
+                            {/* <HookTextField
                               color="error"
                               label="Dia do Vencimento"
                               type="number"
@@ -239,7 +261,7 @@ export default function DespesasTab({
                               sx={{
                                 "& .MuiOutlinedInput-input": { paddingLeft: 0 },
                               }}
-                            />
+                            /> */}
                           </Grid>
                         </Grid>
                       </Box>

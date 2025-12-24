@@ -20,7 +20,7 @@ const despesaSchemaZod = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   mensalmente: z.boolean(),
   valorEstimado: z.number().min(1, "Obrigatório").nullable(),
-  diaVencimento: z.number().min(1, "Obrigatório").nullable(),
+  diaVencimento: z.number().min(1, "Obrigatório").max(31, "Máximo 31").nullable(),
   status: z.boolean(),
 }
 ) satisfies z.ZodType<DespesaForm>;

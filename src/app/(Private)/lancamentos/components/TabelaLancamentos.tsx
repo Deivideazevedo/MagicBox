@@ -52,7 +52,6 @@ interface TabelaLancamentosProps {
 }
 
 interface LancamentoAgrupado {
-  contaId: string;
   contaNome: string;
   despesaId: string;
   despesaNome: string;
@@ -86,7 +85,7 @@ export default function TabelaLancamentos({
     const grupos: Record<string, LancamentoAgrupado> = {};
 
     lancamentos.forEach((lancamento) => {
-      const despesa = despesas.find((d) => d.id === lancamento.contaId);
+      const despesa = despesas.find((d) => d.id === lancamento.despesaId);
       const categoria = categorias.find((c) => c.id === despesa?.categoriaId);
       
       if (!despesa) return;
@@ -94,15 +93,14 @@ export default function TabelaLancamentos({
       // Criar chave única por conta + mês/ano
       const dataObj = new Date(lancamento.data);
       const mesAno = `${dataObj.getMonth()}-${dataObj.getFullYear()}`;
-      const chave = `${lancamento.contaId}-${mesAno}`;
+      const chave = `${lancamento.categoriaId}-${mesAno}`;
 
       if (!grupos[chave]) {
         grupos[chave] = {
-          contaId: String(lancamento.contaId),
+          categoriaId: String(lancamento.categoriaId),
           contaNome: despesa.nome,
           despesaId: String(despesa.id),
           despesaNome: despesa.nome,
-          categoriaId: String(categoria?.id || ""),
           categoriaNome: categoria?.nome || "",
           data: lancamento.data,
           lancamentos: [],
@@ -114,7 +112,6 @@ export default function TabelaLancamentos({
 
       grupos[chave].lancamentos.push(lancamento);
       grupos[chave].valorTotal += Number(lancamento.valor);
-      grupos[chave].valorPagoTotal += Number(lancamento.valorPago || 0);
       
       // Criar observação formatada
       const dataLanc = format(new Date(lancamento.createdAt), "dd/MM", { locale: ptBR });
@@ -227,7 +224,7 @@ export default function TabelaLancamentos({
             ) : (
               lancamentosAgrupados.map((grupo) => (
                 <TableRow
-                  key={`${grupo.contaId}-${grupo.data}`}
+                  key={`${grupo.categoriaId}-${grupo.data}`}
                   sx={{ "&:hover": { bgcolor: "action.hover" } }}
                 >
                   <TableCell>

@@ -31,8 +31,11 @@ async function create(request: NextRequest): Promise<NextResponse> {
 
   // Validação com Zod
   const validation = createDespesaSchema.safeParse(body);
+    console.log('validation.success', validation.success);
+    console.log('validation.error', validation.error);
+    console.log('validation', validation.data);
   if (!validation.success) {
-    throw new ValidationError((validation.error as any).errors[0].message);
+    throw new ValidationError(validation.error?.message || "Dados inválidos");
   }
 
   const payload = {
