@@ -41,7 +41,7 @@ export const categoriaService = {
     return await repository.remove(categoriaId);
   },
 
-  async update(categoriaId: string | number, categoria: CategoriaPayload) {
+  async update(categoriaId: number, categoria: CategoriaPayload) {
     const hasCategoria = await repository.findById(categoriaId);
     if (!hasCategoria) throw new NotFoundError("Categoria não encontrada");
     if (!categoria.nome) throw new ValidationError("Nome é obrigatório");

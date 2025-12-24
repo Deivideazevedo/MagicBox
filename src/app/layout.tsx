@@ -1,6 +1,8 @@
 import React from "react";
 import { Providers } from "@/store/providers";
 import MyApp from "./app";
+// 🎯 Importa configuração global do Zod (servidor + cliente)
+import "@/lib/zod-config";
 
 export const metadata = {
   title: "Modernize Demo",

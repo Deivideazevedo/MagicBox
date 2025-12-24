@@ -36,7 +36,6 @@ async function update(
   const { id: categoriaId } = params;
   const body: CategoriaPayload = await request.json();
 
-  const categoriaAtualizada = service.update(categoriaId, body);
-
+  const categoriaAtualizada = await service.update(Number(categoriaId), body);
   return NextResponse.json(categoriaAtualizada);
 }

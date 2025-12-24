@@ -15,23 +15,33 @@ export const categoriaSchema = z.object({
 });
 
 // Schema para CRIAR categoria (sem id, userId vem do token, sem timestamps)
-export const createCategoriaSchema = z.object({
-  nome: z
-    .string()
-    .min(1, "Nome é obrigatório")
-    .max(100, "Nome muito longo")
-    .trim(),
-});
+// Mensagens customizadas no schema têm prioridade sobre o errorMap global
+export const createCategoriaSchema = z
+  .object({
+    nome: z
+      .string()
+      .min(1) // Usa mensagem global: "Campo obrigatório"
+      .max(100, "O nome deve ter no máximo 100 caracteres") // Mensagem customizada
+      .trim(),
+    imaginario: z
+      .string()
+      .min(1) // Usa mensagem global: "Campo obrigatório"
+      .max(100, "O imaginário deve ter no máximo 100 caracteres") // Mensagem customizada
+      .trim(),
+  })
+  .strict(); // Detecta campos não esperados - mensagem global: "Campos não permitidos: x, y"
 
 // Schema para ATUALIZAR categoria (apenas campos editáveis)
-export const updateCategoriaSchema = z.object({
-  nome: z
-    .string()
-    .min(1, "Nome é obrigatório")
-    .max(100, "Nome muito longo")
-    .trim()
-    .optional(),
-});
+export const updateCategoriaSchema = z
+  .object({
+    nome: z
+      .string()
+      .min(1) // Usa mensagem global
+      .max(100, "O nome deve ter no máximo 100 caracteres")
+      .trim()
+      .optional(),
+  })
+  .strict(); // Detecta campos extras
 
 // Schema para buscar por ID
 export const categoriaIdSchema = z.object({

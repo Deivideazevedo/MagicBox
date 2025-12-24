@@ -1,10 +1,14 @@
 // src/app/api/categorias/route.ts
+// 🎯 IMPORTANTE: Importar zod-config ANTES de qualquer uso do Zod
+import "@/lib/zod-config";
+
 import { categoriaService as service } from "@/core/categorias/service";
 import { createCategoriaSchema } from "@/dtos/categoria.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { ValidationError } from "@/lib/errors";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
+import z from "zod";
 
 /**
  * GET /api/categorias
@@ -46,14 +50,12 @@ async function create(request: NextRequest): Promise<NextResponse> {
   const user = await getAuthUser();
   const body = await request.json();
 
-  // Validação com Zod
-  const validation = createCategoriaSchema.safeParse(body);
-  if (!validation.success) {
-    throw new ValidationError((validation.error as any).errors[0].message);
-  }
+  // Validação com Zod - parse() lança ZodError automaticamente se falhar
+  // O errorHandler vai capturar e traduzir para mensagens amigáveis
+  const validation = createCategoriaSchema.parse(body);
 
   const payload = {
-    ...validation.data,
+    ...validation,
     userId: Number(user.id), // Garante que userId seja number
   };
 

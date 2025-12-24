@@ -64,15 +64,17 @@ export const categoriaRepository = {
     }
   },
 
-  async update(id: string | number, data: Partial<CategoriaPayload>) {
+  async update(id: number, data: Partial<CategoriaPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 
-    return await prisma.categoria.update({
+    const categoria = await prisma.categoria.update({
       where: { id: numericId },
       data: {
         nome: data.nome,
       },
     });
+    console.log("categoria updated", categoria);
+    return categoria;
   },
 };
