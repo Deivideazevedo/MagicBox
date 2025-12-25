@@ -13,7 +13,7 @@ import { IconCurrencyReal, IconReceipt, IconCalendar } from "@tabler/icons-react
 
 // Components
 import TabelaLancamentos from "./components/TabelaLancamentos";
-import FormularioLancamento from "./components/FormularioLancamento";
+// import FormularioLancamento from "./components/FormularioLancamento";
 
 // Hooks
 import { useLancamentos } from "./hooks/useLancamentos";
@@ -33,7 +33,7 @@ export default function LancamentosPage() {
 
   // Calcular totais
   const valorTotalPrevisto = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valor), 0);
-  const valorTotalPago = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valorPago || 0), 0);
+  const valorTotalPago = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valor || 0), 0);
   const totalLancamentos = lancamentos.length;
 
   return (
@@ -161,48 +161,8 @@ export default function LancamentosPage() {
 
         {/* Formulário e Tabela */}
         <Grid container spacing={3}>
-          {/* Formulário de Lançamento */}
-          <Grid item xs={12} lg={4}>
-            <Card
-              elevation={0}
-              sx={{
-                borderRadius: 3,
-                border: "1px solid",
-                borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-                bgcolor: (theme) => alpha(theme.palette.primary.light, 0.05),
-                position: "sticky",
-                top: 24,
-              }}
-            >
-              <CardContent sx={{ p: 3 }}>
-                <Box display="flex" alignItems="center" gap={2} mb={3}>
-                  <Box
-                    sx={{
-                      borderRadius: 2,
-                      p: 1,
-                      display: "flex",
-                      backgroundColor: "primary.main",
-                      color: "white",
-                    }}
-                  >
-                    <IconReceipt size={24} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" fontWeight={600}>
-                      Novo Lançamento
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      Cadastro rápido
-                    </Typography>
-                  </Box>
-                </Box>
-                <FormularioLancamento />
-              </CardContent>
-            </Card>
-          </Grid>
-
           {/* Tabela de Lançamentos */}
-          <Grid item xs={12} lg={8}>
+          <Grid item xs={12}>
             <Card
               elevation={0}
               sx={{

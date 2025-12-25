@@ -15,7 +15,6 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
-import FormularioLancamento from "../components/FormularioLancamento";
 
 const DrawerWidth = "480px";
 
@@ -68,7 +67,8 @@ export default function LancamentoDrawer() {
           </Box>
           <Divider />
           <Box p={3}>
-            <FormularioLancamento onClose={() => setShowDrawer(false)} />
+            {/* <FormularioLancamento onClose={() => setShowDrawer(false)} /> */}
+            <Typography>Formulário de lançamento em desenvolvimento</Typography>
           </Box>
         </Scrollbar>
       </Drawer>

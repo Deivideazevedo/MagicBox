@@ -40,6 +40,9 @@ export const createLancamentoSchema = z
     descricao: z.string().min(1, "Descrição é obrigatória").max(255).trim(),
     status: statusLancamentoEnum.default("pendente"),
     
+    // Categoria (obrigatória)
+    categoriaId: z.number().int().positive("Categoria é obrigatória"),
+    
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
     contaId: z.number().int().positive().nullable().optional(), // Alias

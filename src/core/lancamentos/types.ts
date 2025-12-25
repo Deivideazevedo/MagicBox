@@ -1,6 +1,6 @@
 import { Categoria } from "../categorias/types";
 import { Despesa } from "../despesas/types";
-export type TipoLancamento = "pagamento" | "agendamento";
+export type TipoLancamento = "pagamento" | "agendamento" | "receita";
 
 export interface Lancamento {
   id: number;

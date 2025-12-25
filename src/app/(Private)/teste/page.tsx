@@ -1,322 +1,234 @@
 "use client";
 
-import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
-import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
 import {
   Box,
-  Button,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardActionArea,
   Typography,
-  Autocomplete,
-  TextField,
-  Chip
+  Chip,
+  Stack,
 } from "@mui/material";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import {
+  IconCalendar,
+  IconForms,
+  IconLibrary,
+  IconMask,
+} from "@tabler/icons-react";
 
-type FormData = {
-  nome: string;
-  pais: number | null;
-  genero: string;
-  aceitarTermos: boolean;
-  notificacoes: boolean;
-  preferencia: string;
-  categoriaId: number | string;
-  paisAutocomplete: number | null;
-  categoriasMultiplas: number[];
-};
+interface TestCard {
+  title: string;
+  description: string;
+  route: string;
+  icon: React.ReactNode;
+  emoji: string;
+  tags: string[];
+  color: string;
+}
 
-const paises = [
-  { id: 1, label: "Brasil" },
-  { id: 2, label: "Estados Unidos" },
-  { id: 3, label: "Canadá" },
-  { id: 4, label: "Argentina" },
-  { id: 5, label: "Chile" },
+const testCards: TestCard[] = [
+  {
+    title: "DatePicker",
+    description: "Exemplos de HookDatePicker, HookMonthPicker e HookYearPicker com validações",
+    route: "/teste/datepicker",
+    icon: <IconCalendar size={40} />,
+    emoji: "📅",
+    tags: ["Date", "Form", "Validation"],
+    color: "#4CAF50",
+  },
+  {
+    title: "Inputs Básicos",
+    description: "TextField, Select e Autocomplete integrados com React Hook Form",
+    route: "/teste/inputs-basicos",
+    icon: <IconForms size={40} />,
+    emoji: "📝",
+    tags: ["TextField", "Select", "Autocomplete"],
+    color: "#2196F3",
+  },
+  {
+    title: "Máscaras",
+    description: "Exemplos de campos com máscara (CPF, CNPJ, Telefone, CEP, etc)",
+    route: "/teste/mascaras",
+    icon: <IconMask size={40} />,
+    emoji: "🎭",
+    tags: ["Mask", "Format", "Input"],
+    color: "#FF9800",
+  },
+  {
+    title: "Comparação de Libs",
+    description: "Comparação entre diferentes bibliotecas de formatação e máscaras",
+    route: "/teste/comparacao-libs",
+    icon: <IconLibrary size={40} />,
+    emoji: "📚",
+    tags: ["Libraries", "Comparison"],
+    color: "#9C27B0",
+  },
 ];
 
-type Pais = typeof paises[number];
+export default function TestePage() {
+  const router = useRouter();
 
-const categorias = [
-  { id: 1, nome: "Alimentos" },
-  { id: 2, nome: "Vestuário" },
-  { id: 3, nome: "Serviços" },
-  { id: 4, nome: "Vestuário2" },
-  { id: 5, nome: "Serviços2" },
-  { id: 6, nome: "Vestuário6" },
-  { id: 7, nome: "Serviços7" },
-  { id: 8, nome: "Vestuário8" },
-  { id: 9, nome: "Serviços9" },
-];
-
-type Categoria = typeof categorias[number];
-
-const TestePage = () => {
-  const { control, handleSubmit, setFocus } = useForm<FormData>({
-    defaultValues: {
-      nome: "",
-      pais: null,
-      genero: "",
-      aceitarTermos: false,
-      notificacoes: false,
-      categoriaId: "",
-      preferencia: "",
-      paisAutocomplete: null,
-      categoriasMultiplas: [],
-    },
-  });
-
-  const [paisPuro, setPaisPuro] = useState<{ id: number; label: string }[]>([]);
-  const [categoriasComRenderTags, setCategoriasComRenderTags] = useState<{ id: number; nome: string }[]>([]);
-
-  useEffect(() => {
-    setFocus("nome");
-  }, [setFocus]);
-
-  const onSubmit = (data: FormData) => {
-    console.log("Dados do formulário:", data);
+  const handleCardClick = (route: string) => {
+    router.push(route);
   };
 
   return (
-    <>
-      <Box sx={{ p: 3, maxWidth: 600, mx: "auto" }}>
-        <Typography variant="h4" gutterBottom>
-          Página de Teste de Formulários MUI
+    <Container maxWidth="xl" sx={{ py: 6 }}>
+      {/* Header */}
+      <Box mb={6} textAlign="center">
+        <Typography
+          variant="h2"
+          fontWeight={800}
+          mb={2}
+          sx={{
+            background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          🧪 Área de Testes
         </Typography>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* TextField via HookTextField */}
-          <HookTextField
-            name="nome"
-            control={control}
-            label="Nome grande para testar label"
-            placeholder="Digite seu nome"
-            fullWidth
-            sx={{ mb: 2 }}
-          />
+        <Typography variant="h6" color="textSecondary" maxWidth="800px" mx="auto">
+          Explore e teste todos os componentes e funcionalidades do MagicBox.
+          Cada página contém exemplos práticos e interativos.
+        </Typography>
+      </Box>
 
-          {/* Autocomplete */}
-          {/* <Controller
-            name="pais"
-            control={control}
-            render={({ field }) => (
-              <CustomAutoComplete
-                sx={{ mb: 2 }}
-                value={paises.find((p) => p.id === field.value) || null}
-                id="autocomplete-pais"
-                options={paises}
-                getOptionLabel={(option) => option.label}
-                isOptionEqualToValue={(option, value) =>
-                  option.id === value?.id
-                }
-                renderInput={(params) => (
-                  <CustomTextField {...params} label="País" />
-                )}
-                onChange={(_, value) => field.onChange(value?.id || null)}
-              />
-            )}
-          /> */}
+      {/* Test Cards Grid */}
+      <Grid container spacing={4}>
+        {testCards.map((test, index) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
+            <Card
+              sx={{
+                height: "100%",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-8px)",
+                  // boxShadow: 6,
+                },
+              }}
+            >
+              <CardActionArea
+                onClick={() => handleCardClick(test.route)}
+                sx={{ height: "100%", p: 0 }}
+              >
+                {/* <CardContent sx={{ height: "100%", display: "flex", flexDirection: "column" }}> */}
+                  {/* Icon and Emoji */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: 100,
+                      mb: 2,
+                      borderRadius: 2,
+                      bgcolor: `${test.color}15`,
+                      color: test.color,
+                      position: "relative",
+                    }}
+                  >
+                    {test.icon}
+                  </Box>
 
-          {/* Select */}
-          {/* <Controller
-            name="genero"
-            control={control}
-            render={({ field }) => (
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Gênero</InputLabel>
-                <Select {...field} id="select-genero" label="Gênero">
-                  <MenuItem key="" value="" disabled>
-                    Selecione
-                  </MenuItem>
-                  <MenuItem key="masculino" value="masculino">
-                    Masculino
-                  </MenuItem>
-                  <MenuItem key="feminino" value="feminino">
-                    Feminino
-                  </MenuItem>
-                  <MenuItem key="outro" value="outro">
-                    Outro
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            )}
-          /> */}
+                  {/* Title */}
+                  <Typography variant="h5" fontWeight={700} mb={1}>
+                    {test.title}
+                  </Typography>
 
-          {/* Checkbox */}
-          {/* <Controller
-            name="aceitarTermos"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Checkbox {...field} checked={field.value} />}
-                label="Aceitar termos e condições"
-                sx={{ mb: 2 }}
-              />
-            )}
-          /> */}
+                  {/* Description */}
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    mb={2}
+                    sx={{ flexGrow: 1 }}
+                  >
+                    {test.description}
+                  </Typography>
 
-          {/* Switch */}
-          {/* <Controller
-            name="notificacoes"
-            control={control}
-            render={({ field }) => (
-              <FormControlLabel
-                control={<Switch {...field} checked={field.value} />}
-                label="Receber notificações"
-                sx={{ mb: 2 }}
-              />
-            )}
-          /> */}
+                  {/* Tags */}
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" gap={0.5}>
+                    {test.tags.map((tag, tagIndex) => (
+                      <Chip
+                        key={tagIndex}
+                        label={tag}
+                        size="small"
+                        sx={{
+                          bgcolor: `${test.color}20`,
+                          color: test.color,
+                          fontWeight: 600,
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                {/* </CardContent> */}
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-          {/* Radio Group */}
-          {/* <Controller
-            name="preferencia"
-            control={control}
-            render={({ field }) => (
-              <FormControl component="fieldset" sx={{ mb: 2 }}>
-                <Typography variant="body1" gutterBottom>
-                  Preferência de contato
+      {/* Quick Stats */}
+      <Box mt={8} mb={4}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "primary.main", color: "white" }}>
+              <CardContent sx={{ textAlign: "center" }}>
+                <Typography variant="h3" fontWeight={700}>
+                  {testCards.length}
                 </Typography>
-                <RadioGroup {...field} row>
-                  <FormControlLabel
-                    value="email"
-                    control={<Radio />}
-                    label="Email"
-                  />
-                  <FormControlLabel
-                    value="telefone"
-                    control={<Radio />}
-                    label="Telefone"
-                  />
-                  <FormControlLabel
-                    value="sms"
-                    control={<Radio />}
-                    label="SMS"
-                  />
-                </RadioGroup>
-              </FormControl>
-            )}
-          /> */}
-
-          <Button type="submit" variant="contained" fullWidth>
-            Enviar
-          </Button>
-        </form>
+                <Typography variant="body2">Páginas de Teste</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "success.main", color: "white" }}>
+              <CardContent sx={{ textAlign: "center" }}>
+                <Typography variant="h3" fontWeight={700}>
+                  15+
+                </Typography>
+                <Typography variant="body2">Componentes</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "warning.main", color: "white" }}>
+              <CardContent sx={{ textAlign: "center" }}>
+                <Typography variant="h3" fontWeight={700}>
+                  50+
+                </Typography>
+                <Typography variant="body2">Exemplos</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ bgcolor: "info.main", color: "white" }}>
+              <CardContent sx={{ textAlign: "center" }}>
+                <Typography variant="h3" fontWeight={700}>
+                  100%
+                </Typography>
+                <Typography variant="body2">TypeScript</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       </Box>
 
-      <Box sx={{ p: 3, maxWidth: 600, mx: "auto", mt: 5 }}>
-        <Typography variant="h4" gutterBottom>
-          Página de Teste de Formulários HOOKSFORM
+      {/* Footer Info */}
+      <Box mt={6} p={4} bgcolor="grey.100" borderRadius={2}>
+        <Typography variant="h6" fontWeight={600} mb={2}>
+          💡 Sobre esta área
         </Typography>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* TextField via HookTextField */}
-          <HookSelect
-            sx={{ mb: 2 }}
-            name="categoriaId"
-            control={control}
-            options={categorias}
-            label="Categoria"
-            placeholder="Selecione"
-            disableEmpty
-            getValue={(c) => c.id}
-            getLabel={(c) => c.nome}
-          />
-
-          {/* Autocomplete Simples */}
-          <HookAutocomplete
-            name="paisAutocomplete"
-            control={control}
-            label="País (Autocomplete)"
-            options={paises}
-            getOptionLabel={(p: Pais) => p.label}
-            getOptionValue={(p: Pais) => p.id}
-            placeholder="Digite para buscar..."
-            multiple
-            selectAll
-            limitTags={1}
-            textFieldProps={{ sx: { mb: 2 } }}
-          />
-          {/* Autocomplete Múltiplo */}
-          <HookAutocomplete
-            name="categoriasMultiplas"
-            control={control}
-            label="Categorias (Múltiplas)"
-            multiple
-            options={categorias}
-            getOptionLabel={(c: Categoria) => c.nome}
-            getOptionValue={(c: Categoria) => c.id}
-            placeholder="Selecione múltiplas categorias"
-            limitTags={1}
-            disableCloseOnSelect
-            textFieldProps={{ sx: { mb: 2 } }}
-          />
-
-          {/* Autocomplete Puro (sem HookForm) */}
-          <Autocomplete
-            multiple
-            value={paisPuro}
-            onChange={(_, newValue) => setPaisPuro(newValue)}
-            options={paises}
-            getOptionLabel={(option) => option.label}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="País (Autocomplete Puro - Múltiplo)"
-                placeholder="Selecione países..."
-              />
-            )}
-            sx={{ mb: 2 }}
-          />
-
-          {/* Autocomplete Puro com renderTags customizado */}
-          <Autocomplete
-            multiple
-            value={categoriasComRenderTags}
-            onChange={(_, newValue) => setCategoriasComRenderTags(newValue)}
-            options={categorias}
-            getOptionLabel={(option) => option.nome}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            limitTags={2}
-            disableCloseOnSelect
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Categorias com renderTags"
-                placeholder="Selecione categorias..."
-              />
-            )}
-            renderTags={(tagValue, getTagProps) => {
-              const limit = 1;
-              const contador =
-                tagValue.length > limit ? (
-                  <span style={{ marginLeft: 8 }}>
-                    +{tagValue.length - limit}
-                  </span>
-                ) : null;
-
-              return (
-                <>
-                  {tagValue.slice(0, limit).map((option, index) => (
-                    <Chip
-                      size="small"
-                      label={option.nome}
-                      {...getTagProps({ index })}
-                      key={option.id}
-                    />
-                  ))}
-                  {contador}
-                </>
-              );
-            }}
-            sx={{ mb: 2 }}
-          />
-
-          <Button type="submit" variant="contained" fullWidth>
-            Enviar
-          </Button>
-        </form>
+        <Typography variant="body2" color="textSecondary" mb={2}>
+          Esta é uma área dedicada a testes e demonstrações de componentes do MagicBox.
+          Todos os exemplos são interativos e podem ser testados em tempo real.
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          <strong>Dica:</strong> Abra o console do navegador (F12) para ver os logs de dados dos formulários.
+        </Typography>
       </Box>
-    </>
+    </Container>
   );
-};
-
-export default TestePage;
+}

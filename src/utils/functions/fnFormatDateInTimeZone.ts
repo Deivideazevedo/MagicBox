@@ -4,6 +4,7 @@ import { formatInTimeZone } from "date-fns-tz";
 
 const FORMAT_MAP = {
   iso: "yyyy-MM-dd'T'HH:mm:ssXXX",
+  "datetime-local": "yyyy-MM-dd'T'HH:mm",
   datetime: "yyyy-MM-dd'T'HH:mm",
   date: "yyyy-MM-dd",
   time: "HH:mm",

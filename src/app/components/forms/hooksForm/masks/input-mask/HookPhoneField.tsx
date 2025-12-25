@@ -22,7 +22,7 @@ export function HookPhoneField<TFieldValues extends FieldValues>({
   control,
   rules,
   isMobile = true,
-  showMask = true,
+  showMask = false,
   shrinkLabel = true,
   defaultValue,
   shouldUnregister,

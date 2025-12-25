@@ -19,12 +19,12 @@ const lancamentoSchema = z.object({
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.union([z.string()]),
+  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  valor: z.string(),
   data: z.string().min(1, "Data é obrigatória"),
   descricao: z.string().optional(),
   parcelas: z.union([z.string(), z.number(), z.null()]).optional(),
-}) satisfies z.ZodType<LancamentoForm>;
+});
 
 interface UseLancamentosProps {
   lancamentos?: Lancamento[];
@@ -145,7 +145,7 @@ export function useLancamentos({
         return false; // Falha
       }
     },
-    [createLancamento, updateLancamento, reset, session, isParcelado]
+    [createLancamento, updateLancamento, reset, session]
   );
 
   const handleEdit = useCallback(

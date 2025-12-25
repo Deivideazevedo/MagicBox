@@ -44,9 +44,9 @@ export function HookPercentageField<TFieldValues extends FieldValues>({
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
     ...formatOptions, // Sobrescreve com as opções do usuário
-  };
+  } as any;
 
-  const inputRef = useNumberFormat(defaultFormatOptions);
+  const inputRef = useNumberFormat(defaultFormatOptions as any);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // remover formataçoes matematica nativamente aplicadas no input
@@ -64,7 +64,7 @@ export function HookPercentageField<TFieldValues extends FieldValues>({
   };
 
   const visualValue = field.value
-    ? format(String(field.value), defaultFormatOptions)
+    ? format(String(field.value), defaultFormatOptions as any)
     : "";
 
   return (

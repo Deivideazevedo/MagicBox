@@ -21,7 +21,7 @@ export const createCategoriaSchema = z
     nome: z
       .string()
       .min(1) // Usa mensagem global: "Campo obrigatório"
-      .max(100, "O nome deve ter no máximo 100 caracteres") // Mensagem customizada
+      .max(100, "O nome deve ter no máximo 100 caracteres")
       .trim(),
     imaginario: z
       .string()

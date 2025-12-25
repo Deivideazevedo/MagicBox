@@ -6,7 +6,7 @@ export class DespesaModel implements Despesa {
   categoriaId: number;
   nome: string;
   mensalmente: boolean;
-  valorEstimado: number | string | null;
+  valorEstimado: number | null;
   diaVencimento: number | null;
   status: boolean;
   createdAt: string;
@@ -21,7 +21,7 @@ export class DespesaModel implements Despesa {
     this.status = props.status;
 
     // Garante a integridade: se undefined, vira null
-    this.valorEstimado = props.valorEstimado ?? null;
+    this.valorEstimado = typeof props.valorEstimado === 'string' ? parseFloat(props.valorEstimado) : props.valorEstimado ?? null;
     this.diaVencimento = props.diaVencimento ? Number(props.diaVencimento) : null;
 
     const now = new Date().toISOString();

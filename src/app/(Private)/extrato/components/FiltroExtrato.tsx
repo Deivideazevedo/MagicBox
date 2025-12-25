@@ -21,12 +21,12 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ptBR } from "date-fns/locale";
-import { 
-  IconFilter, 
-  IconFilterOff, 
-  IconChevronDown, 
+import {
+  IconFilter,
+  IconFilterOff,
+  IconChevronDown,
   IconChevronUp,
-  IconSearch 
+  IconSearch,
 } from "@tabler/icons-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 
@@ -55,7 +55,7 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
   const { data: contas = [] } = useGetContasQuery();
 
   // Filtrar contas pela despesa selecionada
-  const contasFiltradas = filtros.despesaId 
+  const contasFiltradas = filtros.despesaId
     ? contas.filter((conta: any) => conta.despesaId === filtros.despesaId)
     : contas;
 
@@ -74,14 +74,14 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
   }, [filtros, onFiltrosChange]);
 
   const handleFiltroChange = (campo: string, valor: any) => {
-    setFiltros(prev => {
+    setFiltros((prev) => {
       const novosFiltros = { ...prev, [campo]: valor };
-      
+
       // Se mudar a despesa, limpar a conta
       if (campo === "despesaId") {
         novosFiltros.contaId = "";
       }
-      
+
       return novosFiltros;
     });
   };
@@ -99,7 +99,8 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
   };
 
   const filtrosAtivos = [
-    filtros.despesaId && categorias.find((d: any) => d.id === filtros.despesaId)?.nome,
+    filtros.despesaId &&
+      categorias.find((d: any) => d.id === filtros.despesaId)?.nome,
     filtros.contaId && contas.find((c: any) => c.id === filtros.contaId)?.nome,
     filtros.status !== "todos" && `Status: ${filtros.status}`,
   ].filter(Boolean);
@@ -108,7 +109,14 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+            }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               <IconFilter size={20} />
               <Typography variant="h6" fontWeight={600}>
@@ -116,11 +124,12 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
               </Typography>
               {filtrosAtivos.length > 0 && (
                 <Typography variant="caption" color="textSecondary">
-                  ({filtrosAtivos.length} ativo{filtrosAtivos.length > 1 ? "s" : ""})
+                  ({filtrosAtivos.length} ativo
+                  {filtrosAtivos.length > 1 ? "s" : ""})
                 </Typography>
               )}
             </Box>
-            
+
             <Box sx={{ display: "flex", gap: 1 }}>
               <Button
                 variant="outlined"
@@ -131,10 +140,7 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
               >
                 Limpar
               </Button>
-              <IconButton
-                onClick={() => setExpanded(!expanded)}
-                size="small"
-              >
+              <IconButton onClick={() => setExpanded(!expanded)} size="small">
                 {expanded ? <IconChevronUp /> : <IconChevronDown />}
               </IconButton>
             </Box>
@@ -161,28 +167,33 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
               <DatePicker
                 label="Data Início"
                 value={filtros.periodo.inicio}
-                onChange={(date) => date && handleFiltroChange("periodo", { ...filtros.periodo, inicio: date })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    size="small"
-                    fullWidth
-                  />
-                )}
+                onChange={(date) =>
+                  date &&
+                  handleFiltroChange("periodo", {
+                    ...filtros.periodo,
+                    inicio: date,
+                  })
+                }
+                renderInput={(params) => <TextField {...params} />}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
               <DatePicker
                 label="Data Fim"
                 value={filtros.periodo.fim}
-                onChange={(date) => date && handleFiltroChange("periodo", { ...filtros.periodo, fim: date })}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    size="small"
-                    fullWidth
-                  />
-                )}
+                onChange={(date) =>
+                  date &&
+                  handleFiltroChange("periodo", {
+                    ...filtros.periodo,
+                    fim: date,
+                  })
+                }
+                renderInput={(params) => <TextField {...params} />}
+                componentsProps={{
+                  actionBar: {
+                    actions: ["today", "clear", "cancel", "accept"],
+                  },
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -211,7 +222,9 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
                   <Select
                     value={filtros.despesaId}
                     label="Despesa"
-                    onChange={(e) => handleFiltroChange("despesaId", e.target.value)}
+                    onChange={(e) =>
+                      handleFiltroChange("despesaId", e.target.value)
+                    }
                   >
                     <MenuItem value="">Todas</MenuItem>
                     {categorias.map((despesa: any) => (
@@ -223,12 +236,18 @@ export default function FiltroExtrato({ onFiltrosChange }: FiltroExtratoProps) {
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth size="small" disabled={!filtros.despesaId}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  disabled={!filtros.despesaId}
+                >
                   <InputLabel>Conta</InputLabel>
                   <Select
                     value={filtros.contaId}
                     label="Conta"
-                    onChange={(e) => handleFiltroChange("contaId", e.target.value)}
+                    onChange={(e) =>
+                      handleFiltroChange("contaId", e.target.value)
+                    }
                   >
                     <MenuItem value="">Todas</MenuItem>
                     {contasFiltradas.map((conta: any) => (

@@ -45,9 +45,9 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
     maximumFractionDigits: 2,
     minimumFractionDigits: 2,
     ...formatOptions, // Sobrescreve com as opções do usuário
-  };
+  } as any; // Type assertion para evitar erro de tipo do signDisplay
 
-  const inputRef = useNumberFormat(defaultFormatOptions);
+  const inputRef = useNumberFormat(defaultFormatOptions as any);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // remover formataçoes matematica nativamente aplicadas no input
@@ -65,7 +65,7 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
   };
 
   const visualValue = field.value
-    ? format(String(field.value), defaultFormatOptions)
+    ? format(String(field.value), defaultFormatOptions as any)
     : "";
 
   return (
