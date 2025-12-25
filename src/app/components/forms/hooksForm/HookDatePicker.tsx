@@ -1,11 +1,12 @@
 import { DatePicker, DatePickerProps } from "@mui/x-date-pickers/DatePicker";
-import { TextField } from "@mui/material";
+import { Badge, TextField } from "@mui/material";
 import {
   FieldValues,
   useController,
   UseControllerProps,
 } from "react-hook-form";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
+import { PickersDay } from "@mui/x-date-pickers";
 
 type HookDatePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
@@ -58,15 +59,29 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
         sx: {
           "& .MuiPaper-root": {
             marginTop: "4px", // Um pequeno espaço visual
-            marginRight: '-45px' // Use isso SÓ SE precisar empurrar mais para a direita
+            marginRight: "-45px", // Use isso SÓ SE precisar empurrar mais para a direita
           },
         },
       }}
       componentsProps={{
         actionBar: {
-          actions: ["today", "clear"],
+          actions: (variant) =>
+            variant === "mobile"
+              ? ["today", "clear", "accept"]
+              : ["today", "clear"],
         },
       }}
+    //   renderDay={(day, _value, DayComponentProps) => {
+    //     return (
+    //       <Badge
+    //         key={day.toString()}
+    //         overlap="circular"
+    //         badgeContent={day.getDate() === 25 ? `💸` : undefined}
+    //       >
+    //         <PickersDay {...DayComponentProps} />
+    //       </Badge>
+    //     );
+    //   }}
       {...datePickerProps}
     />
   );

@@ -90,7 +90,7 @@ export function HookTimePicker<TFieldValues extends FieldValues>({
       }}
       componentsProps={{
         actionBar: {
-          actions: ["today", "clear"],
+          actions: ["today", "clear", "accept"],
         },
       }}
       {...timePickerProps}

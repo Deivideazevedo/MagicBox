@@ -81,7 +81,7 @@ export function HookMonthPicker<TFieldValues extends FieldValues>({
       }}
       componentsProps={{
         actionBar: {
-          actions: ["today", "clear"],
+          actions: ["today", "clear", "accept"],
         },
       }}
       {...datePickerProps}
