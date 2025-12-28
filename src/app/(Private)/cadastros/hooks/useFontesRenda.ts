@@ -1,11 +1,15 @@
-import { FonteRenda, FonteRendaPayload, FonteRendaForm } from "@/core/fontesRenda/types";
+import {
+  FonteRenda,
+  FonteRendaPayload,
+  FonteRendaForm,
+} from "@/core/fontesRenda/types";
 import {
   useCreateFonteRendaMutation,
   useDeleteFonteRendaMutation,
   useGetFontesRendaQuery,
   useUpdateFonteRendaMutation,
 } from "@/services/endpoints/fontesRendaApi";
-import { createSwalert } from "@/utils/sweetAlert";
+import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
@@ -81,8 +85,8 @@ export const useFontesRenda = ({
         const data: FonteRendaPayload = {
           ...formData,
           userId: Number(formData.userId),
-          diaRecebimento: formData.diaRecebimento 
-            ? parseInt(formData.diaRecebimento, 10) 
+          diaRecebimento: formData.diaRecebimento
+            ? parseInt(formData.diaRecebimento, 10)
             : null,
         };
 
@@ -96,19 +100,11 @@ export const useFontesRenda = ({
         }
 
         reset();
-        const Swalert = createSwalert();
-        Swalert.fire({
+        SwalToast.fire({
           icon: "success",
           title: "Fonte de Renda salva com sucesso!",
         });
-      } catch (error) {
-        console.error("Erro ao salvar fonte de renda:", error);
-        const Swalert = createSwalert();
-        Swalert.fire({
-          icon: "error",
-          title: "Erro ao salvar fonte de renda. Tente novamente.",
-        });
-      }
+      } catch {}
     },
     [createFonteRenda, updateFonteRenda, reset]
   );
@@ -118,8 +114,14 @@ export const useFontesRenda = ({
       setValue("userId", session?.user?.id ?? "");
       setValue("id", String(fonteRenda.id));
       setValue("nome", fonteRenda.nome);
-      setValue("valorEstimado", fonteRenda.valorEstimado ? String(fonteRenda.valorEstimado) : "");
-      setValue("diaRecebimento", fonteRenda.diaRecebimento ? String(fonteRenda.diaRecebimento) : null);
+      setValue(
+        "valorEstimado",
+        fonteRenda.valorEstimado ? String(fonteRenda.valorEstimado) : ""
+      );
+      setValue(
+        "diaRecebimento",
+        fonteRenda.diaRecebimento ? String(fonteRenda.diaRecebimento) : null
+      );
       setValue("status", fonteRenda.status);
 
       if (scrollCallback) {

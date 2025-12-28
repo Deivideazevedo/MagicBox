@@ -149,7 +149,7 @@ const baseDarkTheme = {
       main: '#F87171', // Red claro
       light: '#ffd9d9f5',
       dark: '#EF4444',
-      contrastText: '#000000',
+      contrastText: '#ffffff',
     },
     warning: {
       main: '#FBBF24', // Amber claro

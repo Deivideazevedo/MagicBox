@@ -63,7 +63,7 @@ export function HookDecimalField<TFieldValues extends FieldValues>({
   };
 
   const visualValue = field.value
-    ? format(String(field.value), defaultFormatOptions as any)
+    ? format(String(field.value), defaultFormatOptions)
     : "";
 
   return (

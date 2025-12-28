@@ -38,7 +38,7 @@ export const despesasApi = api.injectEndpoints({
       invalidatesTags: ["Despesas"],
     }),
 
-    deleteDespesa: builder.mutation<{ success: boolean }, string>({
+    deleteDespesa: builder.mutation<{ success: boolean }, number>({
       query: (id) => ({
         url: `/despesas/${id}`,
         method: "DELETE",

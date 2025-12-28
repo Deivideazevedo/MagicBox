@@ -29,14 +29,15 @@ export const createDespesaSchema = z
       .max(100, "Nome muito longo")
       .trim(),
     mensalmente: z.boolean().default(false),
-    valorEstimado: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido"),
+    valorEstimado: z.number().int().nullable()
+      .optional(),
     diaVencimento: z
       .number()
       .int()
-      .min(1, "Dia deve ser entre 1 e 31")
-      .max(31, "Dia deve ser entre 1 e 31"),
+      .min(1)
+      .max(31)
+      .nullable()
+      .optional(),
     status: z.boolean().default(true),
   })
   .refine(
@@ -57,13 +58,10 @@ export const createDespesaSchema = z
 // Schema para ATUALIZAR despesa
 export const updateDespesaSchema = z
   .object({
-    categoriaId: z.number().int().positive().optional(),
-    nome: z.string().min(1).max(100).trim().optional(),
-    mensalmente: z.boolean().optional(),
-    valorEstimado: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
-      .nullable()
+    categoriaId: z.number().int().positive(),
+    nome: z.string().min(1).max(100).trim(),
+    mensalmente: z.boolean(),
+    valorEstimado: z.number().int().nullable()
       .optional(),
     diaVencimento: z
       .number()
@@ -72,7 +70,8 @@ export const updateDespesaSchema = z
       .max(31)
       .nullable()
       .optional(),
-    status: z.boolean().optional(),
+    status: z.boolean(),
+    userId: z.number().int().positive().optional(), 
   })
   .refine(
     (data) => {

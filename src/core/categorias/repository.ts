@@ -74,7 +74,6 @@ export const categoriaRepository = {
         nome: data.nome,
       },
     });
-    console.log("categoria updated", categoria);
     return categoria;
   },
 };

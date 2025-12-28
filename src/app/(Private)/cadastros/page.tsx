@@ -18,7 +18,7 @@ import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 
 // Components
 import CategoriasTab from "./components/CategoriasTab";
-import DespesasTab from "./components/DespesasTab";
+import DespesasTab from "./components/Despesa/DespesasTab";
 import FontesRendaTab from "./components/FontesRendaTab";
 import { IconCategory } from "@tabler/icons-react";
 

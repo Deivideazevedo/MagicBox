@@ -1,3 +1,5 @@
+import { Categoria } from "../categorias/types";
+
 export interface Despesa {
   id: number;
   userId: number;
@@ -9,6 +11,8 @@ export interface Despesa {
   status: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
+  categoria: Categoria;
 }
 
 export interface DespesaPayload {
@@ -18,15 +22,15 @@ export interface DespesaPayload {
   nome: string;
   mensalmente: boolean;
   status: boolean;
-  valorEstimado: number | string | null;
-  diaVencimento: number | string | null;
-}
+  valorEstimado?: number | null;
+  diaVencimento?: number | null;
+} 
 
 // Interface específica para formulários no frontend
 export interface DespesaForm {
-  id?: string | number;
-  userId?: string | number;
-  categoriaId: string | number;
+  id?: number;
+  userId?: number;
+  categoriaId: number;
   nome: string;
   mensalmente: boolean;
   status: boolean;

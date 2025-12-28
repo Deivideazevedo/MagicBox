@@ -1,5 +1,5 @@
 import { RootState } from "@/store/store";
-import { SwalToast } from "@/utils/sweetAlert";
+import { SwalToast } from "@/utils/swalert";
 import {
   BaseQueryFn,
   createApi,

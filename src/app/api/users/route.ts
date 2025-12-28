@@ -1,5 +1,5 @@
 import { authService } from "@/core/auth/service";
-import { registerUserSchema } from "@/dtos/user.dto";
+import { registerUserSchema } from "@/core/auth/user.dto";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 

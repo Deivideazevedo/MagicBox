@@ -4,8 +4,8 @@ import { authOptions } from "./authOptions";
 import { extractTokenFromHeader, verifyAccessToken } from "./jwt-utils";
 import { UnauthorizedError } from "./errors";
 import { NextRequest } from "next/server";
-import { consoleErrorLog } from "./error-handler";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
+import { consoleErrorLogger } from "@/utils/formatterLogs/consoleErrorLogger";
 
 /**
  * Autentica a requisição usando:
@@ -65,6 +65,6 @@ export async function getAuthUser(req?: NextRequest): Promise<User> {
     "   Verifique se o middleware está ativo e configurado corretamente.\n\n" +
     "═══════════════════════════════════════════════════════════════════\n";
 
-  consoleErrorLog({ formattedLog });
+  consoleErrorLogger({ formattedLog });
   throw new UnauthorizedError("Autenticação necessária");
 }

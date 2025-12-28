@@ -1,5 +1,6 @@
 import { despesaService as service } from "@/core/despesas/service";
 import { DespesaPayload } from "@/core/despesas/types";
+import { updateDespesaSchema } from "@/dtos";
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -35,8 +36,17 @@ async function update(
 ) {
   const { id: despesaId } = params;
   const body: DespesaPayload = await request.json();
+  const user = await getAuthUser();
 
-  const despesaAtualizada = service.update(despesaId, body);
+
+  const validation = updateDespesaSchema.parse(body);
+
+  const payload = {
+    ...validation,
+    userId: validation.userId ?? Number(user.id), // Garante que userId seja number
+  };
+
+  const despesaAtualizada = service.update(Number(despesaId), payload);
 
   return NextResponse.json(despesaAtualizada);
 }

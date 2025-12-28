@@ -4,10 +4,10 @@ export interface Categoria {
   nome: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface CategoriaPayload {
-  id?: number;
   nome: string; 
   userId?: number;
 }

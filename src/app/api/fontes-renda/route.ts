@@ -3,7 +3,7 @@ import { getAuthUser } from "@/lib/server-auth";
 import { fonteRendaService as service } from "@/core/fontesRenda/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
-import { createFonteRendaSchema } from "@/dtos/fonte-renda.dto";
+import { createFonteRendaSchema } from "@/core/fontesRenda/fonte-renda.dto";
 
 export const GET = errorHandler(findAll);
 export const POST = errorHandler(create);

@@ -1,21 +1,20 @@
-import { useState, useCallback } from "react";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
-import * as z from "zod";
-import {
-  useGetCategoriasQuery,
-  useCreateCategoriaMutation,
-  useUpdateCategoriaMutation,
-  useDeleteCategoriaMutation,
-} from "@/services/endpoints/categoriasApi";
 import {
   Categoria,
-  CategoriaPayload,
   CategoriaForm,
+  CategoriaPayload,
 } from "@/core/categorias/types";
+import {
+  useCreateCategoriaMutation,
+  useDeleteCategoriaMutation,
+  useGetCategoriasQuery,
+  useUpdateCategoriaMutation,
+} from "@/services/endpoints/categoriasApi";
+import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 // Schema de validação
 const categoriaSchema = z.object({
@@ -70,7 +69,6 @@ export const useCategorias = ({
     defaultValues: {
       id: "",
       nome: "",
-      userId: session?.user.id || "",
     },
     resolver: zodResolver(categoriaSchema),
   });
@@ -79,27 +77,27 @@ export const useCategorias = ({
 
   const onSubmit = useCallback(
     async (payload: CategoriaForm) => {
-      const { id, ...formData } = payload;
-
       // Converter FormData para Payload
       const data: CategoriaPayload = {
-        nome: formData.nome,
-        userId: Number(formData.userId),
+        nome: payload.nome,
       };
 
       try {
-        if (id) {
+        if (payload.id) {
           await updateCategoria({
-            id: String(id),
+            id: Number(payload.id),
             data,
           }).unwrap();
         } else {
           await createCategoria(data).unwrap();
         }
         reset();
-      } catch (error) {
-        console.error("Erro ao salvar categoria:", error);
-      }
+
+        SwalToast.fire({
+          icon: "success",
+          title: "Categoria salva com sucesso!",
+        });
+      } catch {}
     },
     [updateCategoria, createCategoria, reset]
   );
@@ -108,13 +106,12 @@ export const useCategorias = ({
     (categoria: Categoria, scrollCallback?: () => void) => {
       setValue("id", categoria.id);
       setValue("nome", categoria.nome);
-      setValue("userId", session?.user?.id ?? "");
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue, session?.user?.id]
+    [setValue]
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -129,10 +126,9 @@ export const useCategorias = ({
     if (deleteDialog.categoria) {
       try {
         await deleteCategoria(String(deleteDialog.categoria.id)).unwrap();
+
         setDeleteDialog({ open: false, categoria: null });
-      } catch (error) {
-        console.error("Erro ao excluir categoria:", error);
-      }
+      } catch {}
     }
   }, [deleteDialog.categoria, deleteCategoria]);
 

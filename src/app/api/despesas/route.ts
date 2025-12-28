@@ -3,7 +3,7 @@ import { getAuthUser } from "@/lib/server-auth";
 import { despesaService as service } from "@/core/despesas/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
-import { createDespesaSchema } from "@/dtos/despesa.dto";
+import { createDespesaSchema } from "@/core/despesas/despesa.dto";
 
 export const GET = errorHandler(findAll);
 export const POST = errorHandler(create);
@@ -30,19 +30,13 @@ async function create(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
 
   // Validação com Zod
-  const validation = createDespesaSchema.safeParse(body);
-    console.log('validation.success', validation.success);
-    console.log('validation.error', validation.error);
-    console.log('validation', validation.data);
-  if (!validation.success) {
-    throw new ValidationError(validation.error?.message || "Dados inválidos");
-  }
+  const validation = createDespesaSchema.parse(body);
 
   const payload = {
-    ...validation.data,
+    ...validation,
     userId: Number(user.id), // Garante que userId seja number
-    valorEstimado: validation.data.valorEstimado ? String(validation.data.valorEstimado) : null,
-    diaVencimento: validation.data.diaVencimento ? Number(validation.data.diaVencimento) : null,
+    valorEstimado: validation.valorEstimado ? Number(validation.valorEstimado) : null,
+    diaVencimento: validation.diaVencimento ? Number(validation.diaVencimento) : null,
   };
 
   const novaDespesa = await service.create(payload);

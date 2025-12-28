@@ -6,10 +6,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -28,20 +24,22 @@ import {
   IconEdit,
   IconPlus,
   IconTrash,
-  IconX,
 } from "@tabler/icons-react";
 import { useCategorias } from "../hooks/useCategorias";
 import { HookTextField } from "@/app/components/forms/hooksForm";
 import { LoadingButton } from "@mui/lab";
 import { Categoria, CategoriaForm } from "@/core/categorias/types";
+import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
+import { IconX } from "@tabler/icons-react";
 
 interface CategoriasTabProps {
   categorias: Categoria[];
 }
 
-export default function CategoriasTab({ categorias: categoriasProps }: CategoriasTabProps) {
+export default function CategoriasTab({
+  categorias: categoriasProps,
+}: CategoriasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
-  const theme = useTheme();
 
   const {
     categorias,
@@ -89,7 +87,8 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
               // Use a cor main com baixíssima opacidade para a borda ficar elegante
               borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
               // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
-              backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.4),
+              backgroundColor: (theme) =>
+                alpha(theme.palette.primary.light, 0.4),
             }}
           >
             <CardContent sx={{ px: 1, py: 1.5 }}>
@@ -177,7 +176,7 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
         {/* Lista de Categorias */}
         <Grid item xs={12} md={8}>
           <Card
-           elevation={0}
+            elevation={0}
             sx={{
               borderRadius: 3,
               border: "1px solid",
@@ -309,72 +308,30 @@ export default function CategoriasTab({ categorias: categoriasProps }: Categoria
       </Grid>
 
       {/* Dialog de Confirmação de Exclusão */}
-      <Dialog
+      <DeleteConfirmationDialog
         open={deleteDialog.open}
         onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 },
-        }}
+        title="Excluir Categoria?"
+        itemName={deleteDialog.categoria?.nome || ""}
+        icon={IconTrash}
+        onConfirm={handleDeleteConfirm}
+        loading={isDeleting}
+        color="error"
       >
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                backgroundColor: "error.light",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "error.main",
-              }}
-            >
-              <IconTrash size={20} />
-            </Box>
-            <Box>
-              <Typography variant="h6" fontWeight={600}>
-                Confirmar Exclusão
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Esta ação não pode ser desfeita
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Tem certeza que deseja excluir a categoria{" "}
-            <strong>"{deleteDialog.categoria?.nome}"</strong>?
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button
-            onClick={handleDeleteCancel}
-            variant="outlined"
-            startIcon={<IconX size={16} />}
-            sx={{
-              fontWeight: 600,
-            }}
+        <Typography variant="body1" color="text.secondary">
+          Você está prestes a remover{" "}
+          <Box
+            component="span"
+            fontWeight="bold"
+            fontSize={15}
+            color="text.primary"
           >
-            Cancelar
-          </Button>
-          <LoadingButton
-            onClick={handleDeleteConfirm}
-            color="error"
-            variant="contained"
-            loading={isDeleting}
-            startIcon={<IconTrash size={16} />}
-            sx={{
-              fontWeight: 600,
-            }}
-          >
-            Excluir
-          </LoadingButton>
-        </DialogActions>
-      </Dialog>
+            "{deleteDialog.categoria?.nome}"
+          </Box>
+          .<br /> Essa ação não poderá ser desfeita.
+        </Typography>
+      </DeleteConfirmationDialog>
     </Box>
   );
 }
+

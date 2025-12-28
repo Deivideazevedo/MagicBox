@@ -3,7 +3,7 @@
 import "@/lib/zod-config";
 
 import { categoriaService as service } from "@/core/categorias/service";
-import { createCategoriaSchema } from "@/dtos/categoria.dto";
+import { createCategoriaSchema } from "@/core/categorias/categoria.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { ValidationError } from "@/lib/errors";
 import { getAuthUser } from "@/lib/server-auth";

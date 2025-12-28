@@ -3,8 +3,8 @@
 // ============================================
 // Exports centralizados de todos os DTOs do sistema
 
-export * from "./categoria.dto";
-export * from "./despesa.dto";
-export * from "./fonte-renda.dto";
-export * from "./lancamento.dto";
-export * from "./user.dto";
+export * from "../core/categorias/categoria.dto";
+export * from "../core/despesas/despesa.dto";
+export * from "../core/fontesRenda/fonte-renda.dto";
+export * from "../core/lancamentos/lancamento.dto";
+export * from "../core/auth/user.dto";

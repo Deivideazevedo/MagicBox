@@ -99,6 +99,9 @@ const components: any = (theme: Theme) => {
       styleOverrides: {
         root: {
           boxShadow: "none",
+          "&:hover": {
+            boxShadow: "none", // Garante que não apareça no hover
+          },
         },
       },
     },
@@ -188,6 +191,12 @@ const components: any = (theme: Theme) => {
         root: {
           textTransform: "none",
           boxShadow: "none",
+        },
+        contained: {
+          boxShadow: "none",
+          "&:hover": {
+            boxShadow: "none",
+          },
         },
         text: {
           padding: "5px 15px",

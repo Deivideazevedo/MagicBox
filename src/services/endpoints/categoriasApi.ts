@@ -20,7 +20,7 @@ export const categoriasApi = api.injectEndpoints({
 
     updateCategoria: builder.mutation<
       Categoria,
-      { id: string; data: CategoriaPayload }
+      { id: number; data: CategoriaPayload }
     >({
       query: ({ id, data }) => ({
         url: `/categorias/${id}`,

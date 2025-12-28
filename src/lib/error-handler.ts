@@ -1,52 +1,10 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { HttpError } from "./errors";
-import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
+import { consoleErrorLogger, ErrorResponse } from "@/utils/formatterLogs/consoleErrorLogger";
+// 🎯 Importa configuração global do Zod para mensagens em português
+import "@/lib/zod-config";
 
-/**
- * Formata um log de erro de forma visual
- */
-type ErrorResponse = {
-  error: string;
-  message: string;
-  details?: any;
-};
-
-type ErrorLogParams = {
-  url: string;
-  method: string;
-} & ErrorResponse;
-
-type ConsoleErrorLogParams = ErrorLogParams | { formattedLog: string };
-
-export function consoleErrorLog(params: ConsoleErrorLogParams) {
-  // Log apenas em desenvolvimento
-  if (process.env.NODE_ENV == "production") return;
-
-  // Verificar se é um log formatado customizado
-  if ("formattedLog" in params) {
-    console.error(params.formattedLog);
-    return;
-  }
-
-  // Caso contrário, formatar com os dados estruturados
-  const { url, method, error, message, details } = params;
-
-  const formattedLog =
-    "\n" +
-    "═══════════════════════════════════════════════════════════════════\n" +
-    `🚨 ERRO: ${error}\n` +
-    "═══════════════════════════════════════════════════════════════════\n\n" +
-    `⏰ Hora: ${fnFormatDateInTimeZone()}\n` +
-    `🧰 Metodo: ${method}\n` +
-    `🚀 Rota: ${url}\n` +
-    `💬 Mensagem: ${message}\n` +
-    (details ? `🔍 Detalhes: ${JSON.stringify(details, null, 2)}\n` : "") +
-    "\n" +
-    "═══════════════════════════════════════════════════════════════════\n";
-
-  console.error(formattedLog);
-}
 
 /**
  * Wrapper para tratar erros automaticamente em Route Handlers
@@ -97,7 +55,7 @@ export function errorHandler<
         };
       }
 
-      consoleErrorLog({ url, method, ...body });
+      consoleErrorLogger({ url, method, ...body });
       return NextResponse.json(body, { status, url });
     }
   }) as T;

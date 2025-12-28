@@ -3,7 +3,7 @@ import { getAuthUser } from "@/lib/server-auth";
 import { lancamentoService as service } from "@/core/lancamentos/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
-import { createLancamentoSchema } from "@/dtos/lancamento.dto";
+import { createLancamentoSchema } from "@/core/lancamentos/lancamento.dto";
 
 export const GET = errorHandler(findAll);
 export const POST = errorHandler(create);
