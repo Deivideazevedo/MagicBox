@@ -38,6 +38,7 @@ export const authOptions: AuthOptions = {
               id: String(user.id),
               createdAt: user.createdAt.toISOString(),
               updatedAt: user.updatedAt.toISOString(),
+              deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
             } as User;
           }
           return null;
