@@ -1,42 +1,33 @@
 "use client";
 
-import { 
-  Grid, 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
+// export const dynamic = 'force-dynamic';
+
+import PageContainer from "@/app/components/container/PageContainer";
+import {
+  Box,
   Button,
-  IconButton,
-  Fab,
-  Stack,
-  Chip,
-  LinearProgress,
-  Avatar,
-  Paper,
   Container,
+  Fab,
+  Grid,
+  IconButton,
+  Paper,
+  Stack,
+  Typography
 } from "@mui/material";
-import { 
-  IconPlus, 
-  IconTrendingUp, 
-  IconTrendingDown, 
-  IconWallet, 
+import {
   IconCreditCard,
-  IconTarget,
-  IconCalendar,
-  IconArrowRight,
-  IconPigMoney,
-  IconAlertTriangle,
+  IconPlus,
+  IconTrendingUp,
+  IconWallet
 } from "@tabler/icons-react";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-import PageContainer from "@/app/components/container/PageContainer";
 import FinancialSummaryCards from "./components/FinancialSummaryCards";
-import MonthlyChart from "./components/MonthlyChart";
 import GoalsProgress from "./components/GoalsProgress";
+import MonthlyChart from "./components/MonthlyChart";
+import QuickActionModal from "./components/QuickActionModal";
 import RecentTransactions from "./components/RecentTransactions";
 import UpcomingBills from "./components/UpcomingBills";
-import QuickActionModal from "./components/QuickActionModal";
 
 // Componentes locais (serão criados)
 

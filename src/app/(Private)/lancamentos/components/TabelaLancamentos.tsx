@@ -40,7 +40,7 @@ import { ptBR } from "date-fns/locale";
 import { Lancamento } from "@/core/lancamentos/types";
 import { Despesa } from "@/core/despesas/types";
 import { Categoria } from "@/core/categorias/types";
-import { createSwalert } from "@/utils/sweetAlert";
+import { Swalert } from "@/utils/swalert";
 
 interface TabelaLancamentosProps {
   lancamentos: Lancamento[];
@@ -138,9 +138,8 @@ export default function TabelaLancamentos({
   };
 
   const handleDeleteLancamento = async (lancamento: Lancamento) => {
-    const Swalert = createSwalert();
-    
-    const result = await Swalert.fire({
+
+    const result = await Swalert({
       title: "Confirmar Exclusão",
       html: `
         <p>Deseja realmente excluir este lançamento?</p>

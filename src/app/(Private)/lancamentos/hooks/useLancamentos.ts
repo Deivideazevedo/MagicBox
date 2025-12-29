@@ -10,7 +10,7 @@ import {
 } from "@/services/endpoints/lancamentosApi";
 import { Lancamento, LancamentoPayload, LancamentoForm } from "@/core/lancamentos/types";
 import { useSession } from "next-auth/react";
-import { createSwalert } from "@/utils/sweetAlert";
+import { Swalert } from "@/utils/swalert";
 
 // Schema de validação
 const lancamentoSchema = z.object({
@@ -79,7 +79,6 @@ export function useLancamentos({
   const onSubmit = useCallback(
     async (payload: LancamentoForm) => {
       const { id, ...formData } = payload;
-      const Swalert = createSwalert();
 
       try {
         // Converter FormData para Payload (converter strings para numbers)
@@ -103,7 +102,7 @@ export function useLancamentos({
             data: lancamentoData,
           }).unwrap();
           
-          Swalert.fire({
+          Swalert({
             title: "Lançamento Atualizado!",
             text: "O lançamento foi atualizado com sucesso.",
             icon: "success",
@@ -113,7 +112,7 @@ export function useLancamentos({
         } else {
           await createLancamento(lancamentoData).unwrap();
           
-          Swalert.fire({
+          Swalert({
             title: "Lançamento Criado!",
             text: `${data.tipo === "pagamento" ? "Pagamento registrado" : "Agendamento criado"} com sucesso.`,
             icon: "success",
@@ -137,7 +136,7 @@ export function useLancamentos({
         return true; // Sucesso
       } catch (error) {
         console.error("Erro ao salvar lançamento:", error);
-        Swalert.fire({
+        Swalert({
           title: "Erro!",
           text: "Ocorreu um erro ao salvar o lançamento. Tente novamente.",
           icon: "error",
@@ -180,8 +179,7 @@ export function useLancamentos({
     async (id: string) => {
       try {
         await deleteLancamento(id).unwrap();
-        const Swalert = createSwalert();
-        Swalert.fire({
+        Swalert({
           title: "Excluído!",
           text: "Lançamento excluído com sucesso.",
           icon: "success",
@@ -190,8 +188,7 @@ export function useLancamentos({
         });
       } catch (error) {
         console.error("Erro ao excluir lançamento:", error);
-        const Swalert = createSwalert();
-        Swalert.fire({
+        Swalert({
           title: "Erro!",
           text: "Ocorreu um erro ao excluir o lançamento.",
           icon: "error",

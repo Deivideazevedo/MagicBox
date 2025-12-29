@@ -7,6 +7,7 @@ export class CategoriaModel implements Categoria {
   nome: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 
   constructor(props: CategoriaPayload, id?: number) {
     this.id = id ?? 0;
@@ -16,5 +17,6 @@ export class CategoriaModel implements Categoria {
     const now = new Date().toISOString();
     this.createdAt = now;
     this.updatedAt = now;
+    this.deletedAt = null;
   }
 }

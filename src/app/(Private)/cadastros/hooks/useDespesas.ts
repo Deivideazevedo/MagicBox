@@ -80,10 +80,7 @@ export function useDespesas(params?: UseDespesasProps) {
   const despesasList = despesasProps ?? despesasQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [deleteDialog, setDeleteDialog] = useState<DeleteDialog>({
-    open: false,
-    despesa: null,
-  });
+  const [row, setRow] = useState<Despesa | null>(null);
 
   // RTK Query mutations
   const [createDespesa, { isLoading: isCreating }] = useCreateDespesaMutation();
@@ -141,15 +138,13 @@ export function useDespesas(params?: UseDespesasProps) {
         reset();
         // Foca no campo nome após o cadastro
         setTimeout(() => setFocus("nome"), 100);
-      } catch (error) {
-        console.error("Erro ao salvar despesa:", error);
-      }
+      } catch {}
     },
     [updateDespesa, createDespesa, reset, setFocus]
   );
 
   const handleEdit = useCallback(
-    (despesa: Despesa, scrollCallback?: () => void) => {
+    (despesa: Despesa) => {
       setValue("id", Number(despesa.id));
       setValue("userId", userId);
       setValue("categoriaId", Number(despesa.categoriaId));
@@ -159,39 +154,37 @@ export function useDespesas(params?: UseDespesasProps) {
       setValue("diaVencimento", despesa.diaVencimento);
       setValue("status", despesa.status);
 
-      if (scrollCallback) {
-        setTimeout(() => scrollCallback(), 100);
-      }
+      // Foca no campo nome
+      setTimeout(() => setFocus("nome"), 100);
     },
-    [setValue, userId]
+    [setValue, userId, setFocus]
   );
 
   const handleCancelEdit = useCallback(() => {
     reset();
   }, [reset]);
 
-  const handleDeleteClick = useCallback((despesa: Despesa) => {
-    setDeleteDialog({ open: true, despesa });
+  const handleOpenDialog = useCallback((despesa: Despesa) => {
+    setRow(despesa);
   }, []);
 
+  const handleCloseDialog = useCallback(() => {
+    setRow(null);
+  }, []);
 
-  const handleDelete = async (selectedRow: Despesa) => {
-    await Swalert({
-      icon: "question",
-      title: "Você tem certeza?",
-      text: "Essa ação não poderá ser desfeita!",
-      confirmButtonText: "Sim, Remover",
-      preConfirm: async () => {
-        try {
-          await deleteDespesa(selectedRow.id).unwrap();
-          SwalToast.fire({
-            title: "Despesa deletada com sucesso!",
-            icon: "success",
-          });
-        } catch {}
-      },
-    });
-  };
+  const handleDelete = useCallback(async () => {
+    if (!row) return;
+    try {
+      await deleteDespesa(row.id).unwrap();
+      setValue("id", undefined);
+      setRow(null);
+
+      SwalToast.fire({
+        icon: "success",
+        title: "Despesa excluída com sucesso!",
+      });
+    } catch {}
+  }, [deleteDespesa, row,setValue]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
@@ -212,22 +205,26 @@ export function useDespesas(params?: UseDespesasProps) {
   };
 
   const listProps = {
-    categorias: categoriasList,
     despesas: despesasList,
-    handleDeleteClick,
+    handleOpenDialog,
     handleEdit,
   };
 
+  const deleteProps = {
+    open: row,
+    onConfirm: handleDelete,
+    onClose: handleCloseDialog,
+    isLoading: isDeleting,
+  };
+
   return {
-    categoriasList,
-    despesasList,
     isDeleting,
     handleEdit,
-    handleDeleteClick,
+    handleOpenDialog,
     handleDelete,
-    handleDeleteConfirm : (algo: Despesa) => {},
-    handleDeleteCancel : (algo: Despesa) => {},
-    deleteDialog,
+    row,
     formProps,
+    listProps,
+    deleteProps,
   };
 }

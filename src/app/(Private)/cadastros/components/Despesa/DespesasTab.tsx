@@ -2,39 +2,13 @@
 
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import {
-  alpha,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  Grid,
-  IconButton,
-  List,
-  ListItem,
-  ListItemSecondaryAction,
-  ListItemText,
-  Stack,
-  Typography,
-} from "@mui/material";
-import {
-  IconCreditCard,
-  IconEdit,
-  IconRepeat,
-  IconTrash,
-  IconX,
-} from "@tabler/icons-react";
+import { Box, Grid, Typography } from "@mui/material";
 import { useRef } from "react";
 import { useDespesas } from "../../hooks/useDespesas";
 import { Formulario } from "./Formulario";
 import { Listagem } from "./Listagem";
+import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
+import { IconTrash } from "@tabler/icons-react";
 
 interface DespesasTabProps {
   despesas: Despesa[];
@@ -45,16 +19,10 @@ export default function DespesasTab({
   despesas,
   categorias,
 }: DespesasTabProps) {
-  const {
-    isDeleting,
-    handleEdit,
-    handleDeleteClick,
-    handleDeleteConfirm,
-    handleDeleteCancel,
-    deleteDialog,
-    handleDelete,
-    formProps,
-  } = useDespesas({ despesas, categorias });
+  const { handleEdit, formProps, listProps, deleteProps } = useDespesas({
+    despesas,
+    categorias,
+  });
 
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +39,7 @@ export default function DespesasTab({
   };
 
   const handleEditWithScroll = (despesa: Despesa) => {
-    handleEdit(despesa, scrollToForm);
+    handleEdit(despesa);
   };
 
   return (
@@ -84,81 +52,30 @@ export default function DespesasTab({
 
         {/* Lista de Despesas */}
         <Grid item xs={12} md={8}>
-          <Listagem
-            despesas={despesas}
-            handleEdit={handleEditWithScroll}
-            handleDelete={handleDelete}
-          />
+          <Listagem {...listProps} />
         </Grid>
       </Grid>
 
       {/* Dialog de Confirmação de Exclusão */}
-      {/* <Dialog
-        open={deleteDialog.open}
-        onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 },
-        }}
+      <DeleteConfirmationDialog
+        {...deleteProps}
+        title="Excluir Despesa?"
+        icon={IconTrash}
+        color="error"
       >
-        <DialogTitle>
-          <Stack direction="row" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 2,
-                backgroundColor: "error.light",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "error.main",
-              }}
-            >
-              <IconTrash size={20} />
-            </Box>
-            <Box>
-              <Typography variant="h6" fontWeight={600}>
-                Confirmar Exclusão
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Esta ação não pode ser desfeita
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Tem certeza que deseja excluir a despesa{" "}
-            <strong>"{deleteDialog.despesa?.nome}"</strong>?
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button
-            onClick={handleDeleteCancel}
-            variant="outlined"
-            startIcon={<IconX size={16} />}
+        <Typography variant="body1" color="text.secondary">
+          Você está prestes a remover{" "}
+          <Box
+            component="span"
+            fontWeight="bold"
+            fontSize={15}
+            color="text.primary"
           >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            color="error"
-            variant="contained"
-            disabled={isDeleting}
-            startIcon={
-              isDeleting ? (
-                <CircularProgress size={16} />
-              ) : (
-                <IconTrash size={16} />
-              )
-            }
-          >
-            Excluir
-          </Button>
-        </DialogActions>
-      </Dialog> */}
+            "{deleteProps.open?.nome}"
+          </Box>
+          .<br /> Essa ação não poderá ser desfeita.
+        </Typography>
+      </DeleteConfirmationDialog>
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -7,14 +7,14 @@ import {
   DialogContent,
   Grid,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-interface DeleteConfirmationDialogProps {
-  open: boolean;
+interface DeleteConfirmationDialogProps<T> {
+  open: T | null;
   onClose: () => void;
   title: string;
-  itemName: string;
   icon: React.ComponentType<any>;
   confirmButtonText?: string;
   cancelButtonText?: string;
@@ -24,25 +24,38 @@ interface DeleteConfirmationDialogProps {
   children: React.ReactNode;
 }
 
-export default function DeleteConfirmationDialog({
+export default function DeleteConfirmationDialog<T>({
   open,
   onClose,
   title,
   children,
-  itemName,
   icon: Icon,
   confirmButtonText = "Excluir",
   cancelButtonText = "Cancelar",
   onConfirm,
   loading = false,
   color = "error",
-}: DeleteConfirmationDialogProps) {
+}: DeleteConfirmationDialogProps<T>) {
+  const theme = useTheme();
+  const [visible, setVisible] = useState(true);
+
+  const handleConfirm = () => {
+    setVisible(false);
+    onConfirm();
+  };
+
   return (
     <Dialog
-      open={open}
+      open={Boolean(open)}
       onClose={onClose}
       maxWidth="xs"
       fullWidth
+      disableRestoreFocus={true}
+      keepMounted={false}
+      disableEscapeKeyDown={loading}
+      TransitionProps={{
+        onExited: () => setVisible(true),
+      }}
       PaperProps={{
         sx: {
           borderRadius: 4,
@@ -77,17 +90,24 @@ export default function DeleteConfirmationDialog({
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Grid container spacing={2} justifyContent="center">
-          {open && !loading && (
+          {visible && (
             <Grid item xs={6}>
               <Button
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
                 size="large"
+                autoFocus
+                disableFocusRipple
                 sx={{
                   fontWeight: 600,
                   borderRadius: 2,
                   px: 4,
+                  "&:focus": {
+                    outline: `2px solid ${theme.palette.primary.main}`,
+                    outlineOffset: "2px",
+                    boxShadow: "none", // Remove o "círculo branco" do tema atual
+                  },
                 }}
               >
                 {cancelButtonText}
@@ -96,18 +116,24 @@ export default function DeleteConfirmationDialog({
           )}
           <Grid item xs={6}>
             <LoadingButton
-              onClick={onConfirm}
+              onClick={handleConfirm}
               color={color}
               variant="text"
-              loading={loading}
+              loading={!visible || loading}
               fullWidth
               size="large"
               startIcon={<Icon size={18} />}
+              disableFocusRipple
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
                 px: 4,
                 py: 1,
+                "&:focus": {
+                  outline: `2px solid ${theme.palette[color].main}`,
+                  outlineOffset: "2px",
+                  boxShadow: "none", // Remove o "círculo branco" do tema atual
+                },
               }}
             >
               {confirmButtonText}

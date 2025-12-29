@@ -1,3 +1,4 @@
+import { Categoria } from "../categorias/types";
 import { Despesa, DespesaPayload } from "./types";
 
 export class DespesaModel implements Despesa {
@@ -11,6 +12,8 @@ export class DespesaModel implements Despesa {
   status: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null; 
+  categoria: Categoria | null;
 
   constructor(props: DespesaPayload, id?: number) {
     this.id = id ?? 0;
@@ -27,5 +30,8 @@ export class DespesaModel implements Despesa {
     const now = new Date().toISOString();
     this.createdAt = now;
     this.updatedAt = now;
+    this.deletedAt = null;
+
+    this.categoria = props.categoria ?? null;
   }
 }

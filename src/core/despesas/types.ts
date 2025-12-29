@@ -12,7 +12,7 @@ export interface Despesa {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  categoria: Categoria;
+  categoria: Categoria | null;
 }
 
 export interface DespesaPayload {
@@ -24,6 +24,7 @@ export interface DespesaPayload {
   status: boolean;
   valorEstimado?: number | null;
   diaVencimento?: number | null;
+  categoria?: Categoria;
 } 
 
 // Interface específica para formulários no frontend

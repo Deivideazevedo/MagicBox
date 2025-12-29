@@ -30,23 +30,15 @@ interface UseCategoriasProps {
 export const useCategorias = ({
   categorias: categoriasProps,
 }: UseCategoriasProps = {}) => {
-  const { data: session } = useSession();
-
   // Se categoriasProps existir (não é undefined), skip a query RTK
   const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
     skip: categoriasProps !== undefined,
   });
 
   // Usa props se fornecido, senão usa resultado da query
-  const categorias = categoriasProps ?? categoriasQuery;
+  const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    categoria: Categoria | null;
-  }>({
-    open: false,
-    categoria: null,
-  });
+  const [row, setRow] = useState<Categoria | null>(null);
 
   // RTK Query mutations
   const [createCategoria, { isLoading: isCreating }] =
@@ -63,8 +55,7 @@ export const useCategorias = ({
     reset,
     setValue,
     watch,
-    getValues,
-    formState: { errors },
+    setFocus,
   } = useForm<CategoriaForm>({
     defaultValues: {
       id: "",
@@ -93,75 +84,88 @@ export const useCategorias = ({
         }
         reset();
 
+        setTimeout(() => setFocus("nome"), 100);
+
         SwalToast.fire({
           icon: "success",
           title: "Categoria salva com sucesso!",
         });
       } catch {}
     },
-    [updateCategoria, createCategoria, reset]
+    [updateCategoria, createCategoria, reset, setFocus]
   );
 
   const handleEdit = useCallback(
-    (categoria: Categoria, scrollCallback?: () => void) => {
+    (categoria: Categoria) => {
       setValue("id", categoria.id);
       setValue("nome", categoria.nome);
 
-      if (scrollCallback) {
-        setTimeout(() => scrollCallback(), 100);
-      }
+      // Foca no campo nome
+      setTimeout(() => setFocus("nome"), 100);
     },
-    [setValue]
+    [setValue, setFocus]
   );
 
   const handleCancelEdit = useCallback(() => {
     reset();
   }, [reset]);
 
-  const handleDeleteClick = useCallback((categoria: Categoria) => {
-    setDeleteDialog({ open: true, categoria });
+  const handleOpenDialog = useCallback((categoria: Categoria) => {
+    setRow(categoria);
   }, []);
 
-  const handleDeleteConfirm = useCallback(async () => {
-    if (deleteDialog.categoria) {
-      try {
-        await deleteCategoria(String(deleteDialog.categoria.id)).unwrap();
-
-        setDeleteDialog({ open: false, categoria: null });
-      } catch {}
-    }
-  }, [deleteDialog.categoria, deleteCategoria]);
-
-  const handleDeleteCancel = useCallback(() => {
-    setDeleteDialog({ open: false, categoria: null });
+  const handleCloseDialog = useCallback(() => {
+    setRow(null);
   }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!row) return;
+    try {
+      await deleteCategoria(String(row.id)).unwrap();
+      setValue("id", undefined);
+      setRow(null);
+
+      SwalToast.fire({
+        icon: "success",
+        title: "Categoria excluída com sucesso!",
+      });
+    } catch {}
+  }, [deleteCategoria, row, setValue]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
-  return {
-    // Data
-    categorias,
-
-    // Form state
+  const formProps = {
     isEditing,
+    handleSubmit,
+    handleCancelEdit,
     control,
-    errors,
-
-    // Loading states
     isCreating,
     isUpdating,
-    isDeleting,
+    categorias: categoriasList,
+  };
 
-    // Actions
-    handleSubmit,
+  const listProps = {
+    categorias: categoriasList,
+    handleOpenDialog,
     handleEdit,
-    handleCancelEdit,
-    handleDeleteClick,
-    handleDeleteConfirm,
-    handleDeleteCancel,
+  };
 
-    // Dialog state
-    deleteDialog,
+  const deleteProps = {
+    open: row,
+    onConfirm: handleDelete,
+    onClose: handleCloseDialog,
+    isLoading: isDeleting,
+  };
+
+  return {
+    isDeleting,
+    handleEdit,
+    handleOpenDialog,
+    handleDelete,
+    row,
+    formProps,
+    listProps,
+    deleteProps,
   };
 };

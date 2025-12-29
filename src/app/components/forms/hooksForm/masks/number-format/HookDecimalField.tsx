@@ -5,11 +5,7 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import {
-  useNumberFormat,
-  unformat,
-  format,
-} from "@react-input/number-format";
+import { useNumberFormat, unformat, format } from "@react-input/number-format";
 import CustomTextField from "../../../theme-elements/CustomTextField";
 import { NumberFormatOptions } from "./types";
 
@@ -43,8 +39,10 @@ export function HookDecimalField<TFieldValues extends FieldValues>({
     format: "decimal",
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-    ...formatOptions, // Sobrescreve com as opções do usuário
-  } as any;
+    ...formatOptions,
+  };
+
+  // CORREÇÃO AQUI: Cast para 'any' para evitar o erro de tipagem restritiva da biblioteca
   const inputRef = useNumberFormat(defaultFormatOptions as any);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +61,7 @@ export function HookDecimalField<TFieldValues extends FieldValues>({
   };
 
   const visualValue = field.value
-    ? format(String(field.value), defaultFormatOptions)
+    ? format(String(field.value), defaultFormatOptions as any)
     : "";
 
   return (

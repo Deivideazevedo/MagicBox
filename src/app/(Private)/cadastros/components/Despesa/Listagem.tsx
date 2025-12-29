@@ -24,12 +24,12 @@ import {
 
 interface ListProps {
   despesas: Despesa[];
-  handleDelete: (despesa: Despesa) => void;
+  handleOpenDialog: (despesa: Despesa) => void;
   handleEdit: (despesa: Despesa) => void;
 }
 
 export const Listagem = (formProps: ListProps) => {
-  const { despesas, handleDelete, handleEdit } = formProps;
+  const { despesas, handleOpenDialog, handleEdit } = formProps;
 
   return (
     <Card
@@ -123,7 +123,12 @@ export const Listagem = (formProps: ListProps) => {
 
                     <ListItemText
                       primary={
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
+                          component="div"
+                        >
                           <Typography variant="body1" fontWeight={500}>
                             {despesa.nome}
                           </Typography>
@@ -173,6 +178,7 @@ export const Listagem = (formProps: ListProps) => {
                           </Stack>
                         </Stack>
                       }
+                      secondaryTypographyProps={{ component: "div" }}
                     />
 
                     <ListItemSecondaryAction>
@@ -191,7 +197,7 @@ export const Listagem = (formProps: ListProps) => {
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(despesa)}
+                          onClick={() => handleOpenDialog(despesa)}
                           sx={{
                             color: "error.main",
                             "&:hover": { backgroundColor: "error.light" },
