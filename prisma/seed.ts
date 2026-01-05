@@ -1,301 +1,262 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg"; // <--- Novo
-import { Pool } from "pg"; // <--- Novo
+import { PrismaClient, TipoLancamento } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import * as bcrypt from "bcryptjs";
 import * as fs from "fs";
 import * as path from "path";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
+import "@/lib/zod-config";
 
 const connectionString = process.env.DATABASE_URL;
 
+if (!connectionString) {
+  console.error("❌ DATABASE_URL não está definida");
+  process.exit(1);
+}
+
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
-
-// Passa o adaptador para o PrismaClient0
 const prisma = new PrismaClient({ adapter });
 
-// Ler arquivos JSON
-const dataPath = path.join(process.cwd(), "src", "data");
-const usersData = JSON.parse(
-  fs.readFileSync(path.join(dataPath, "users.json"), "utf-8")
-);
-const categoriasData = JSON.parse(
-  fs.readFileSync(path.join(dataPath, "categorias.json"), "utf-8")
-);
-const despesasData = JSON.parse(
-  fs.readFileSync(path.join(dataPath, "despesas.json"), "utf-8")
-);
-const fontesRendaData = JSON.parse(
-  fs.readFileSync(path.join(dataPath, "fonteRendas.json"), "utf-8")
-);
-const lancamentosData = JSON.parse(
-  fs.readFileSync(path.join(dataPath, "lancamentos.json"), "utf-8")
-);
+// ============================================
+// SCHEMAS DE VALIDAÇÃO ZOD
+// ============================================
 
-// Mapear IDs antigos (string) para novos (number)
-const userIdMap = new Map<string, number>();
-const categoriaIdMap = new Map<string, number>();
-const despesaIdMap = new Map<string, number>();
-const fonteRendaIdMap = new Map<string, number>();
+const UserSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  email: z.string().nullable(),
+  password: z.string(),
+  name: z.string().nullable(),
+  image: z.string().nullable(),
+  role: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const CategoriaSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  nome: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const DespesaSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  categoriaId: z.number(),
+  nome: z.string(),
+  mensalmente: z.boolean(),
+  valorEstimado: z.string().nullable(),
+  diaVencimento: z.number().nullable(),
+  status: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const FonteRendaSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  nome: z.string(),
+  valorEstimado: z.string().nullable(),
+  diaRecebimento: z.number().nullable(),
+  mensalmente: z.boolean(),
+  categoriaId: z.number(),
+  status: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const LancamentoSchema = z.object({
+  id: z.number(),
+  userId: z.number(),
+  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  valor: z.string(),
+  data: z.string(),
+  descricao: z.string().nullable(),
+  despesaId: z.number().nullable(),
+  categoriaId: z.number(),
+  fonteRendaId: z.number().nullable(),
+  parcelas: z.number().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+// ============================================
+// FUNÇÕES AUXILIARES
+// ============================================
+
+function readJSON<T>(filename: string, schema: z.ZodSchema<T>): T[] {
+  const dataPath = path.join(process.cwd(), "src", "data", filename);
+  const rawData = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+  return schema.array().parse(rawData);
+}
+
+async function seedUsers() {
+  console.log("👤 Importando usuários...");
+  const users = readJSON("users.json", UserSchema);
+
+  // Hash senhas que não estão hashadas
+  const usersData = await Promise.all(
+    users.map(async (user) => ({
+      username: user.username,
+      email: user.email,
+      password: user.password.startsWith("$2")
+        ? user.password
+        : await bcrypt.hash(user.password, 10),
+      name: user.name,
+      image: user.image,
+      role: user.role || "user",
+      createdAt: new Date(user.createdAt),
+      updatedAt: new Date(user.updatedAt),
+    }))
+  );
+
+  await prisma.user.createMany({ data: usersData, skipDuplicates: true });
+  console.log(`✅ ${usersData.length} usuários importados\n`);
+}
+
+async function seedCategorias() {
+  console.log("📁 Importando categorias...");
+  const categorias = readJSON("categorias.json", CategoriaSchema);
+
+  const categoriasData = categorias.map((cat) => ({
+    userId: cat.userId,
+    nome: cat.nome,
+    createdAt: new Date(cat.createdAt),
+    updatedAt: new Date(cat.updatedAt),
+  }));
+
+  await prisma.categoria.createMany({
+    data: categoriasData,
+    skipDuplicates: true,
+  });
+  console.log(`✅ ${categoriasData.length} categorias importadas\n`);
+}
+
+async function seedDespesas() {
+  console.log("💰 Importando despesas...");
+  const despesas = readJSON("despesas.json", DespesaSchema);
+
+  const despesasData = despesas.map((desp) => ({
+    userId: desp.userId,
+    categoriaId: desp.categoriaId,
+    nome: desp.nome,
+    mensalmente: desp.mensalmente,
+    valorEstimado: desp.valorEstimado,
+    diaVencimento: desp.diaVencimento,
+    status: desp.status,
+    createdAt: new Date(desp.createdAt),
+    updatedAt: new Date(desp.updatedAt),
+  }));
+
+  await prisma.despesa.createMany({ data: despesasData, skipDuplicates: true });
+  console.log(`✅ ${despesasData.length} despesas importadas\n`);
+}
+
+async function seedFontesRenda() {
+  console.log("💵 Importando fontes de renda...");
+  const fontes = readJSON("fonteRendas.json", FonteRendaSchema);
+
+  const fontesData = fontes.map((fonte) => ({
+    userId: fonte.userId,
+    nome: fonte.nome,
+    valorEstimado: fonte.valorEstimado,
+    diaRecebimento: fonte.diaRecebimento,
+    mensalmente: fonte.mensalmente,
+    categoriaId: fonte.categoriaId,
+    status: fonte.status,
+    createdAt: new Date(fonte.createdAt),
+    updatedAt: new Date(fonte.updatedAt),
+  }));
+
+  await prisma.fonteRenda.createMany({
+    data: fontesData,
+    skipDuplicates: true,
+  });
+  console.log(`✅ ${fontesData.length} fontes de renda importadas\n`);
+}
+
+async function seedLancamentos() {
+  console.log("📝 Importando lançamentos...");
+  const lancamentos = readJSON("lancamentos.json", LancamentoSchema);
+
+  const lancamentosData = lancamentos.map((lanc) => ({
+    userId: lanc.userId,
+    tipo: lanc.tipo as TipoLancamento,
+    valor: lanc.valor,
+    data: new Date(lanc.data),
+    descricao: lanc.descricao,
+    despesaId: lanc.despesaId,
+    categoriaId: lanc.categoriaId,
+    fonteRendaId: lanc.fonteRendaId,
+    parcelas: lanc.parcelas,
+    createdAt: new Date(lanc.createdAt),
+    updatedAt: new Date(lanc.updatedAt),
+  }));
+
+  await prisma.lancamento.createMany({
+    data: lancamentosData,
+    skipDuplicates: true,
+  });
+  console.log(`✅ ${lancamentosData.length} lançamentos importados\n`);
+}
+
+// ============================================
+// MAIN
+// ============================================
 
 async function main() {
-  console.log("🌱 Iniciando migração dos dados JSON para PostgreSQL...\n");
+  console.log("🌱 Iniciando seed do banco de dados...\n");
 
-  // ============================================
-  // 1. LIMPAR DADOS EXISTENTES
-  // ============================================
-  console.log("🗑️  Limpando dados existentes...");
-  await prisma.lancamento.deleteMany();
-  await prisma.despesa.deleteMany();
-  await prisma.categoria.deleteMany();
-  await prisma.fonteRenda.deleteMany();
-  await prisma.user.deleteMany();
-  console.log("✅ Dados limpos\n");
+  try {
+    // Limpar dados existentes
+    console.log("🗑️  Limpando dados existentes...");
+    await prisma.$transaction([
+      prisma.lancamento.deleteMany(),
+      prisma.despesa.deleteMany(),
+      prisma.categoria.deleteMany(),
+      prisma.fonteRenda.deleteMany(),
+      prisma.user.deleteMany(),
+    ]);
+    console.log("✅ Dados limpos\n");
 
-  // ============================================
-  // 2. MIGRAR USUÁRIOS
-  // ============================================
-  console.log("👤 Migrando usuários...");
-  for (const userData of usersData) {
-    // Se a senha não está hashada, fazer hash
-    let password = userData.password;
-    if (!password.startsWith("$2")) {
-      password = await bcrypt.hash(password, 10);
+    // Importar dados
+    await seedUsers();
+    await seedCategorias();
+    await seedDespesas();
+    await seedFontesRenda();
+    await seedLancamentos();
+
+    console.log("✨ Seed concluído com sucesso!\n");
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error("❌ Erro de validação Zod:");
+      console.error(JSON.stringify(error.issues, null, 2));
+    } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("❌ Erro do Prisma:");
+      console.error(`Código: ${error.code}`);
+      console.error(`Mensagem: ${error.message}`);
+      console.error(`Meta: ${JSON.stringify(error.meta, null, 2)}`);
+    } else if (error instanceof Prisma.PrismaClientValidationError) {
+      console.error("❌ Erro de validação do Prisma:");
+      console.error(error.message);
+    } else {
+      console.error("❌ Erro ao executar seed:");
+      console.error(error);
     }
-
-    const user = await prisma.user.create({
-      data: {
-        username: userData.username,
-        email: userData.email || null,
-        password: password,
-        name: userData.name || null,
-        image: userData.image || null,
-        role: userData.role || "user",
-        createdAt: new Date(userData.createdAt),
-        updatedAt: new Date(userData.updatedAt),
-      },
-    });
-
-    userIdMap.set(userData.id, user.id);
-    console.log(`   ✓ ${user.username} (${userData.id} → ${user.id})`);
+    throw error;
   }
-  console.log(`✅ ${usersData.length} usuários migrados\n`);
-
-  // ============================================
-  // 3. MIGRAR CATEGORIAS
-  // ============================================
-  console.log("📁 Migrando categorias...");
-  for (const categoriaData of categoriasData) {
-    const userId = userIdMap.get(categoriaData.userId);
-
-    if (!userId) {
-      console.log(
-        `   ⚠️  Categoria "${categoriaData.nome}" ignorada (userId ${categoriaData.userId} não encontrado)`
-      );
-      continue;
-    }
-
-    const categoria = await prisma.categoria.create({
-      data: {
-        userId: userId,
-        nome: categoriaData.nome,
-        createdAt: new Date(categoriaData.createdAt),
-        updatedAt: new Date(categoriaData.updatedAt),
-      },
-    });
-
-    categoriaIdMap.set(categoriaData.id, categoria.id);
-    console.log(
-      `   ✓ ${categoria.nome} (${categoriaData.id} → ${categoria.id})`
-    );
-  }
-  console.log(`✅ ${categoriaIdMap.size} categorias migradas\n`);
-
-  // ============================================
-  // 4. MIGRAR DESPESAS
-  // ============================================
-  console.log("💰 Migrando despesas...");
-  for (const despesaData of despesasData) {
-    const userId = userIdMap.get(despesaData.userId);
-    const categoriaId = categoriaIdMap.get(despesaData.categoriaId);
-
-    if (!userId || !categoriaId) {
-      console.log(
-        `   ⚠️  Despesa "${despesaData.nome}" ignorada (referências inválidas)`
-      );
-      continue;
-    }
-
-    // Converter valorEstimado para string Decimal
-    let valorEstimado = null;
-    if (
-      despesaData.valorEstimado !== null &&
-      despesaData.valorEstimado !== undefined &&
-      despesaData.valorEstimado !== ""
-    ) {
-      valorEstimado = String(despesaData.valorEstimado);
-    }
-
-    const despesa = await prisma.despesa.create({
-      data: {
-        userId: userId,
-        categoriaId: categoriaId,
-        nome: despesaData.nome,
-        mensalmente: despesaData.mensalmente || false,
-        valorEstimado: valorEstimado,
-        diaVencimento: despesaData.diaVencimento || null,
-        status: despesaData.status !== undefined ? despesaData.status : true,
-        createdAt: new Date(despesaData.createdAt),
-        updatedAt: new Date(despesaData.updatedAt),
-      },
-    });
-
-    despesaIdMap.set(despesaData.id, despesa.id);
-    console.log(`   ✓ ${despesa.nome} (${despesaData.id} → ${despesa.id})`);
-  }
-  console.log(`✅ ${despesaIdMap.size} despesas migradas\n`);
-
-  // ============================================
-  // 5. MIGRAR FONTES DE RENDA
-  // ============================================
-  console.log("💵 Migrando fontes de renda...");
-  for (const fonteData of fontesRendaData) {
-    const userId = userIdMap.get(fonteData.userId);
-
-    if (!userId) {
-      console.log(
-        `   ⚠️  Fonte de renda "${fonteData.nome}" ignorada (userId inválido)`
-      );
-      continue;
-    }
-
-    // Converter valorEstimado para string Decimal
-    let valorEstimado = null;
-    if (
-      fonteData.valorEstimado !== null &&
-      fonteData.valorEstimado !== undefined &&
-      fonteData.valorEstimado !== ""
-    ) {
-      valorEstimado = String(fonteData.valorEstimado);
-    }
-
-    const fonteRenda = await prisma.fonteRenda.create({
-      data: {
-        userId: userId,
-        nome: fonteData.nome,
-        valorEstimado: valorEstimado,
-        diaRecebimento: fonteData.diaRecebimento || null,
-        status: fonteData.status !== undefined ? fonteData.status : true,
-        createdAt: new Date(fonteData.createdAt),
-        updatedAt: new Date(fonteData.updatedAt),
-      },
-    });
-
-    fonteRendaIdMap.set(fonteData.id, fonteRenda.id);
-    console.log(`   ✓ ${fonteRenda.nome} (${fonteData.id} → ${fonteRenda.id})`);
-  }
-  console.log(`✅ ${fonteRendaIdMap.size} fontes de renda migradas\n`);
-
-  // ============================================
-  // 6. MIGRAR LANÇAMENTOS
-  // ============================================
-  console.log("📝 Migrando lançamentos...");
-  let lancamentosMigrados = 0;
-
-  for (const lancamentoData of lancamentosData) {
-    const userId = userIdMap.get(lancamentoData.userId);
-
-    if (!userId) {
-      console.log(`   ⚠️  Lançamento ignorado (userId inválido)`);
-      continue;
-    }
-
-    // Mapear fonteRendaId
-    const despesaId = lancamentoData.despesaId
-      ? despesaIdMap.get(lancamentoData.despesaId) || null
-      : null;
-    // Mapear fonteRendaId
-    const categoriaId =  categoriaIdMap.get(lancamentoData.categoriaId);
-
-    // Mapear fonteRendaId
-    const fonteRendaId = lancamentoData.fonteRendaId
-      ? fonteRendaIdMap.get(lancamentoData.fonteRendaId) || null
-      : null;
-
-    // Validar que tem despesa OU fonte de renda
-    if (!despesaId && !fonteRendaId) {
-      console.log(
-        `   ⚠️  Lançamento ignorado (sem despesa ou fonte de renda válida)`
-      );
-      continue;
-    }
-
-    // Converter valores para string Decimal
-    const valor = String(lancamentoData.valor);
-    const valorPago =
-      lancamentoData.valorPago !== null &&
-      lancamentoData.valorPago !== undefined
-        ? String(lancamentoData.valorPago)
-        : null;
-
-    try {
-      const lancamento = await prisma.lancamento.create({
-        data: {
-          userId: userId,
-          tipo: lancamentoData.tipo as any,
-          valor: valor,
-          data: new Date(lancamentoData.data),
-          descricao: lancamentoData.descricao,
-          despesaId: despesaId,
-          categoriaId: Number(categoriaId), // Manter contaId como alias
-          fonteRendaId: fonteRendaId,
-          parcelas: lancamentoData.parcelas || null,
-          createdAt: new Date(lancamentoData.createdAt),
-          updatedAt: new Date(lancamentoData.updatedAt),
-        },
-      });
-
-      lancamentosMigrados++;
-      console.log(
-        `   ✓ ${lancamento.tipo} - ${lancamento?.descricao?.substring(0, 30)}...`
-      );
-    } catch (error: any) {
-      console.log(`   ⚠️  Erro ao migrar lançamento: ${error.message}`);
-    }
-  }
-  console.log(`✅ ${lancamentosMigrados} lançamentos migrados\n`);
-
-  // ============================================
-  // RESUMO FINAL
-  // ============================================
-  console.log("📊 RESUMO DA MIGRAÇÃO:");
-  console.log(`   - ${userIdMap.size} usuários`);
-  console.log(`   - ${categoriaIdMap.size} categorias`);
-  console.log(`   - ${despesaIdMap.size} despesas`);
-  console.log(`   - ${fonteRendaIdMap.size} fontes de renda`);
-  console.log(`   - ${lancamentosMigrados} lançamentos`);
-  console.log("\n✨ Migração concluída com sucesso!\n");
-
-  // Salvar mapeamento de IDs para referência futura
-  const mapping = {
-    users: Object.fromEntries(userIdMap),
-    categorias: Object.fromEntries(categoriaIdMap),
-    despesas: Object.fromEntries(despesaIdMap),
-    fontesRenda: Object.fromEntries(fonteRendaIdMap),
-  };
-
-  fs.writeFileSync(
-    path.join(dataPath, "id-mapping.json"),
-    JSON.stringify(mapping, null, 2)
-  );
-  console.log("💾 Mapeamento de IDs salvo em src/data/id-mapping.json\n");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Erro ao executar migração:");
-    console.error(e);
+    console.error("❌ Seed falhou:", e.message);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

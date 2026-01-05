@@ -1,8 +1,7 @@
 // src/core/categorias/service.ts
 import { Categoria, CategoriaPayload } from "./types";
 import { categoriaRepository as repository } from "./repository";
-import { NotFoundError } from "@/lib/errors";
-import { ValidationError } from "yup";
+import { NotFoundError, ValidationError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 export const categoriaService = {
@@ -15,7 +14,6 @@ export const categoriaService = {
   },
 
   async create(payload: CategoriaPayload) {
-    console.log('payload', payload);
     if (!payload.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
@@ -24,14 +22,10 @@ export const categoriaService = {
       where: { id: Number(payload.userId) },
     });
     if (!userExists) {
-      throw new ValidationError("Usuário não encontrado");
+      throw new NotFoundError("Usuário não encontrado");
     }
-    // Garantir que userId seja number
-    const data = {
-      ...payload,
-      userId: Number(payload.userId)
-    };
-    return await repository.create(data);
+
+    return await repository.create(payload);
   },
 
   async remove(categoriaId: string | number) {

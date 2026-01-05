@@ -30,13 +30,10 @@ async function create(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
 
   // Validação com Zod
-  const validation = createFonteRendaSchema.safeParse(body);
-  if (!validation.success) {
-    throw new ValidationError((validation.error as any).errors[0].message);
-  }
+  const validation = createFonteRendaSchema.parse(body);
 
   const payload = {
-    ...validation.data,
+    ...validation,
     userId: Number(user.id), // Garante que userId seja number
   };
 

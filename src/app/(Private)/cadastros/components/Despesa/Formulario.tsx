@@ -128,13 +128,6 @@ export const Formulario = (formProps: FormProps) => {
                 color="error"
                 control={control}
                 placeholder="Ex: Conta de Luz, Gasolina..."
-                rules={{
-                  required: "Obrigatório",
-                  minLength: {
-                    value: 2,
-                    message: "Mín. 2 caracteres",
-                  },
-                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">

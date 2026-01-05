@@ -1,7 +1,9 @@
 "use client";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import CustomCheckbox from "@/app/components/forms/theme-elements/Checkbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
+import { useRegisterUserMutation } from "@/services/endpoints/usersApi";
 import { yupResolver } from "@hookform/resolvers/yup";
 import LoadingButton from '@mui/lab/LoadingButton';
 import { Alert } from "@mui/material";
@@ -11,13 +13,14 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import Swal from "sweetalert2";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
 interface RegisterType {
   title?: string;
@@ -39,8 +42,40 @@ const validationSchema = yup.object({
 
 const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [registerUser, { isLoading }] = useRegisterUserMutation();
+
+  // --- Tratamento de erros OAuth (mesmo padrão do AuthLogin) ---
+  useEffect(() => {
+    const errorType = searchParams.get("callbackError");
+    
+    if (errorType) {
+      if (errorType === "AccessDenied") {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "info",
+          title: "Autenticação cancelada",
+          showConfirmButton: false,
+          timer: 5000,
+        });
+      } else if (errorType === "NetworkError") {
+        Swal.fire({
+          toast: true,
+          position: "top-end",
+          icon: "error",
+          title: "Falha na Conexão",
+          text: "Verifique sua internet e tente novamente.",
+          showConfirmButton: false,
+          timer: 5000,
+        });
+      }
+
+      // Limpa os parâmetros da URL após exibir o toast
+      router.replace("/auth/auth1/register", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const {
     control,
@@ -52,37 +87,48 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
   });
 
   const onSubmit = async (data: any) => {
-    setIsLoading(true);
     setError("");
 
     try {
-      // Fazer chamada para API de registro
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          username: data.username,
-          email: data.email,
-          password: data.password
-        })
+      // Chamar API de registro via RTK Query
+      const result = await registerUser({
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      }).unwrap();
+
+      // Sucesso - fazer login automático
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "success",
+        title: "Conta criada com sucesso!",
+        text: "Redirecionando...",
+        showConfirmButton: false,
+        timer: 2000,
       });
 
-      const result = await response.json();
+      // Login automático com as credenciais recém-criadas
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        username: data.username,
+        password: data.password,
+      });
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao criar conta');
+      if (signInResult?.ok) {
+        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+        router.push(callbackUrl);
+      } else {
+        // Se falhar o login automático, redireciona para página de login
+        router.push("/auth/auth1/login?message=Conta criada! Faça login para continuar.");
       }
       
-      console.log("Usuário criado:", result);
-      
-      // Sucesso - redirecionar para login com mensagem
-      router.push("/auth/auth1/login?message=Conta criada com sucesso! Faça login para continuar.");
-      
     } catch (err: any) {
-      setError(err.message || "Erro ao criar conta. Tente novamente.");
-    } finally {
-      setIsLoading(false);
+      // Erros já são tratados pelo interceptor do RTK Query
+      // Mas podemos capturar erros específicos aqui se necessário
+      const errorMessage = err?.data?.message || err?.message || "Erro ao criar conta. Tente novamente.";
+      setError(errorMessage);
     }
   };
 

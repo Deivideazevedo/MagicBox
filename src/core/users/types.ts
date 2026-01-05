@@ -20,7 +20,7 @@ export interface UserPayload {
 }
 
 export interface AuthPayload {
-  email: string | null;
-  username: string;
+  email?: string;
+  username?: string;
   password: string;
 }

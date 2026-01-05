@@ -14,7 +14,8 @@
     "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
     "db:studio": "dotenv -e .env.local -- prisma studio",
     "db:reset": "dotenv -e .env.local -- prisma migrate reset",
-    "db:fresh": "yarn db:generate && rm -rf prisma/migrations && yarn db:migrate --name init && yarn db:seed"
+    "db:fresh": "yarn db:generate && rm -rf prisma/migrations && yarn db:migrate --name init && yarn db:seed",
+    "db:export": "dotenv -e .env.local -- tsx scripts/export-db-to-json.ts"
   },
   "engines": {
     "node": "^20.19.0"

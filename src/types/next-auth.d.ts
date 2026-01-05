@@ -5,8 +5,12 @@ declare module "next-auth" {
   /**
    * Extensão da interface User
    * Adiciona propriedades customizadas ao objeto user
+   * 
+   * ⚠️ IMPORTANTE: id é number porque usamos Prisma com autoincrement
+   * OAuth providers retornam string, mas convertemos para number no callback
    */
   interface User extends DefaultUser {
+    id: number; // ✅ Sobrescreve string do DefaultUser
     username: string;
     role?: string | null;
     password?: string;

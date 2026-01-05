@@ -15,6 +15,7 @@ model Categoria {
   // Relacionamentos
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   despesas    Despesa[]
+  fonteRenda  FonteRenda[]
   lancamentos Lancamento[]
 
   @@index([userId])

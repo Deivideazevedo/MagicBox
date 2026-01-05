@@ -4,8 +4,8 @@ import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-import { authService } from "@/core/auth/service";
-import { AuthPayload } from "@/core/auth/types";
+import { authService } from "@/core/users/service";
+import { AuthPayload } from "@/core/users/types";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -35,7 +35,7 @@ export const authOptions: AuthOptions = {
           if (user) {
             return {
               ...user,
-              id: String(user.id),
+              id: user.id, // ✅ Já é number do Prisma
               createdAt: user.createdAt.toISOString(),
               updatedAt: user.updatedAt.toISOString(),
               deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
@@ -54,15 +54,7 @@ export const authOptions: AuthOptions = {
     signOut: "/",
   },
   callbacks: {
-    async jwt({
-      token,
-      user,
-      account,
-    }: {
-      token: JWT;
-      user: User;
-      account: Account | null;
-    }) {
+    async jwt({ token, user, account }) {
       // 🔹 Primeira vez que o usuário faz login
       if (user && account) {
         if (account.provider !== "credentials") {
@@ -72,13 +64,13 @@ export const authOptions: AuthOptions = {
               const dbUser = await authService.findOrCreateByOAuth({
                 email: user.email,
                 name: user.name || "",
-                image: user.image,
+                image: user.image || undefined,
               });
 
               // Substitui o usuário do provider pelo usuário do banco
               token.user = {
                 ...dbUser,
-                id: String(dbUser.id),
+                id: dbUser.id, // ✅ Já é number do Prisma
                 createdAt: dbUser.createdAt.toISOString(),
                 updatedAt: dbUser.updatedAt.toISOString(),
               } as User;
@@ -88,7 +80,8 @@ export const authOptions: AuthOptions = {
           }
         } else {
           // Credentials login (user já formatado no authorize)
-          token.user = user;
+          // user aqui já é User (não AdapterUser) pois vem do authorize
+          token.user = user as User;
         }
 
         // 🔹 Para providers OAuth, armazenar o access_token do provider

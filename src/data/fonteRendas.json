@@ -1,12 +1,14 @@
 [
   {
-    "id": "642c8bdf-565e-4283-9fba-8c79ced18650",
-    "userId": "2",
-    "nome": "9853",
+    "id": 1,
+    "userId": 1,
+    "nome": "Salário",
+    "valorEstimado": "1512",
+    "diaRecebimento": 8,
+    "mensalmente": true,
+    "categoriaId": 1,
     "status": true,
-    "diaRecebimento": null,
-    "valorEstimado": "",
-    "createdAt": "2025-12-15T01:55:07.796Z",
-    "updatedAt": "2025-12-15T02:02:01.159Z"
+    "createdAt": "2026-01-05T03:08:00.623Z",
+    "updatedAt": "2026-01-05T03:09:03.346Z"
   }
 ]

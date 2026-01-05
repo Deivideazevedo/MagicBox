@@ -5,7 +5,8 @@ import {
   HookSelect,
   HookTextField,
 } from "@/app/components/forms/hooksForm";
-import { DespesaForm, DespesaPayload } from "@/core/despesas/types";
+import { Categoria } from "@/core/categorias/types";
+import { FonteRendaForm } from "@/core/fontesRenda/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -19,13 +20,15 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Categoria } from "@/core/categorias/types";
-import { IconCalendar, IconRepeat } from "@tabler/icons-react";
-import { IconPlus } from "@tabler/icons-react";
-import { IconX } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconCategory,
+  IconPlus,
+  IconRepeat,
+  IconX,
+} from "@tabler/icons-react";
 import { IconCurrencyDollar } from "@tabler/icons-react";
-import { IconCategory } from "@tabler/icons-react";
-import { IconCreditCard } from "@tabler/icons-react";
+import { IconWallet } from "@tabler/icons-react";
 import { RefObject } from "react";
 import { Control } from "react-hook-form";
 
@@ -33,24 +36,23 @@ interface FormProps {
   isEdditing: boolean;
   mensalmente: boolean;
   handleCancelEdit: () => void;
-  handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>; // Tipo do handler de submit do React Hook Form
-  control: Control<DespesaForm>; // Controle tipado com o schema do formulário
+  handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+  control: Control<FonteRendaForm>;
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
   formRef: RefObject<HTMLDivElement>;
 }
 
-
 export const Formulario = (formProps: FormProps) => {
   const {
     isEdditing,
+    categorias,
     mensalmente,
     handleSubmit,
     control,
     isCreating,
     isUpdating,
-    categorias,
     handleCancelEdit,
     formRef,
   } = formProps;
@@ -58,14 +60,12 @@ export const Formulario = (formProps: FormProps) => {
   return (
     <Card
       ref={formRef}
-      elevation={0} // Fica mais moderno sem sombra se tiver borda
+      elevation={0}
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        // Use a cor main com baixíssima opacidade para a borda ficar elegante
-        borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
-        // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
-        backgroundColor: (theme) => alpha(theme.palette.error.light, 0.05),
+        borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
+        backgroundColor: (theme) => alpha(theme.palette.success.light, 0.05),
       }}
     >
       <CardContent sx={{ px: 1, py: 1.5 }}>
@@ -75,20 +75,20 @@ export const Formulario = (formProps: FormProps) => {
               borderRadius: 2,
               p: 1,
               display: "flex",
-              backgroundColor: "error.main",
+              backgroundColor: "success.main",
               color: "white",
             }}
           >
-            <IconCreditCard size={24} />
+            <IconWallet size={24} />
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEdditing ? "Editar Despesa" : "Nova Despesa"}
+              {isEdditing ? "Editar Fonte de Renda" : "Nova Fonte de Renda"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {isEdditing
-                ? "Atualize os dados da despesa"
-                : "Adicione uma nova despesa"}
+                ? "Atualize os dados da fonte"
+                : "Adicione uma nova fonte de renda"}
             </Typography>
           </Box>
         </Box>
@@ -120,25 +120,18 @@ export const Formulario = (formProps: FormProps) => {
               />
             </Grid>
 
-            {/* Nome da Despesa */}
+            {/* Nome da Fonte de Renda */}
             <Grid item xs={12}>
               <HookTextField
-                label="Nome da Despesa"
+                label="Nome da Fonte de Renda"
                 name="nome"
-                color="error"
+                color="success"
                 control={control}
-                placeholder="Ex: Conta de Luz, Gasolina..."
-                rules={{
-                  required: "Obrigatório",
-                  minLength: {
-                    value: 2,
-                    message: "Mín. 2 caracteres",
-                  },
-                }}
+                placeholder="Ex: Salário, Freelance, Investimentos..."
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <IconCreditCard size={20} />
+                      <IconWallet size={20} />
                     </InputAdornment>
                   ),
                 }}
@@ -149,6 +142,7 @@ export const Formulario = (formProps: FormProps) => {
             </Grid>
 
             {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
+
             <Grid item xs={12} sx={{ pt: "0px !important" }}>
               <Collapse in={mensalmente} timeout={400}>
                 <Box sx={{ pt: 2.5 }}>
@@ -156,7 +150,7 @@ export const Formulario = (formProps: FormProps) => {
                     <Grid item xs={12}>
                       <HookCurrencyField
                         name="valorEstimado"
-                        color="error"
+                        color="success"
                         control={control}
                         label="Valor Estimado"
                         returnAsNumber={true}
@@ -176,10 +170,10 @@ export const Formulario = (formProps: FormProps) => {
 
                     <Grid item xs={12}>
                       <HookDecimalField
-                        name="diaVencimento"
-                        color="error"
+                        name="diaRecebimento"
+                        color="success"
                         control={control}
-                        label="Dia do Vencimento"
+                        label="Dia do Recebimento"
                         returnAsNumber={true}
                         placeholder="Ex: 5"
                         InputProps={{
@@ -210,15 +204,15 @@ export const Formulario = (formProps: FormProps) => {
                 <CustomToggle
                   control={control}
                   name="mensalmente"
-                  color="error"
+                  color="success"
                   variant="checkbox"
                   iconActive={
                     <IconRepeat size={12} color="white" strokeWidth={3} />
                   }
                   titleActive="Repetir mensalmente"
                   titleInactive="Repetir mensalmente"
-                  descriptionActive="Despesa recorrente todo mês"
-                  descriptionInactive="Ativar para despesas mensais"
+                  descriptionActive="Fonte recorrente todo mês"
+                  descriptionInactive="Ativar para fontes mensais"
                 />
 
                 {/* Toggle Status */}
@@ -259,7 +253,7 @@ export const Formulario = (formProps: FormProps) => {
                   fullWidth
                   variant="contained"
                   loading={isCreating || isUpdating}
-                  color="error"
+                  color="success"
                   startIcon={<IconPlus size={16} />}
                 >
                   {isEdditing ? "Atualizar" : "Adicionar"}

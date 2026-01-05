@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
 
     // Obter sessão para dados do usuário
     const session = await getServerSession(authOptions);
-    console.log('getServerSession', session);
 
     return NextResponse.json({
       success: true,

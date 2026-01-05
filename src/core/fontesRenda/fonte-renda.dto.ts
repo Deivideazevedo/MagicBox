@@ -24,36 +24,18 @@ export const createFonteRendaSchema = z.object({
     .min(1, "Nome é obrigatório")
     .max(100, "Nome muito longo")
     .trim(),
-  valorEstimado: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
-    .nullable()
-    .optional(),
-  diaRecebimento: z
-    .number()
-    .int()
-    .min(1, "Dia deve ser entre 1 e 31")
-    .max(31, "Dia deve ser entre 1 e 31")
-    .nullable()
-    .optional(),
+  valorEstimado: z.number().nullable(),
+  diaRecebimento: z.number().int().min(1).max(31).nullable(),
   status: z.boolean().default(true),
+  mensalmente: z.boolean().default(false),
+  categoriaId: z.number().int().nonnegative().default(0),
 });
 
 // Schema para ATUALIZAR fonte de renda
 export const updateFonteRendaSchema = z.object({
   nome: z.string().min(1).max(100).trim().optional(),
-  valorEstimado: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
-    .nullable()
-    .optional(),
-  diaRecebimento: z
-    .number()
-    .int()
-    .min(1)
-    .max(31)
-    .nullable()
-    .optional(),
+  valorEstimado:  z.number().nullable(),
+  diaRecebimento: z.number().int().min(1).max(31).nullable(),
   status: z.boolean().optional(),
 });
 

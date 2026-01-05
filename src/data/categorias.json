@@ -1,65 +1,9 @@
 [
   {
-    "id": "0",
-    "nome": "Alimentação2",
-    "userId": "12",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
-  },
-  {
-    "id": "1",
-    "nome": "Alimentaçãos",
-    "userId": "1",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
-  },
-  {
-    "id": "2",
-    "nome": "Transporte",
-    "userId": "1",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
-  },
-  {
-    "id": "4",
-    "nome": "Saúde",
-    "userId": "1",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
-  },
-  {
-    "id": "5",
-    "nome": "Lazeres",
-    "userId": "1",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-11-21T05:09:56.756Z"
-  },
-  {
-    "id": "7bcbf04a-1db9-45a8-b161-cc2418473fa0",
-    "nome": "Testes",
-    "userId": "1",
-    "createdAt": "2025-11-22T04:05:35.919Z",
-    "updatedAt": "2025-11-22T04:05:44.112Z"
-  },
-  {
-    "id": "1d3e2734-bc54-404b-b5a8-d62368c8cf9e",
+    "id": 1,
+    "userId": 1,
     "nome": "Pessoal",
-    "userId": "2",
-    "createdAt": "2025-12-07T00:26:50.977Z",
-    "updatedAt": "2025-12-07T00:26:50.977Z"
-  },
-  {
-    "id": "83ca2e9b-59b5-45e1-830b-4d5f8931d418",
-    "nome": "Casa",
-    "userId": "2",
-    "createdAt": "2025-12-07T13:34:08.895Z",
-    "updatedAt": "2025-12-07T13:34:08.895Z"
-  },
-  {
-    "id": "6aaa65cc-2385-495f-9426-bf6d3e59f1cf",
-    "userId": "2",
-    "nome": "teste3",
-    "createdAt": "2025-12-15T02:02:22.371Z",
-    "updatedAt": "2025-12-15T02:02:26.890Z"
+    "createdAt": "2026-01-05T00:37:49.104Z",
+    "updatedAt": "2026-01-05T00:37:49.104Z"
   }
 ]

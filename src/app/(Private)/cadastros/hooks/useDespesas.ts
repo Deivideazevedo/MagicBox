@@ -19,8 +19,8 @@ const despesaSchemaZod = z
     id: z.number().optional(),
     userId: z.number().optional(),
     categoriaId: z.number().min(1, "Categoria é obrigatória"),
-    nome: z.string().min(1, "Nome é obrigatório"),
     mensalmente: z.boolean(),
+    nome: z.string().min(1, "Nome é obrigatório"),
     valorEstimado: z.number().nullable(),
     diaVencimento: z.number().nullable(),
     status: z.boolean(),
@@ -194,12 +194,12 @@ export function useDespesas(params?: UseDespesasProps) {
 
   const formProps = {
     isEdditing,
-    mensalmente,
     handleSubmit,
     handleCancelEdit,
     control,
     isCreating,
     isUpdating,
+    mensalmente,
     categorias: categoriasList,
     despesas: despesasList,
   };

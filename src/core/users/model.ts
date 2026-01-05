@@ -1,9 +1,8 @@
-import { randomUUID } from "crypto";
 import { User } from "next-auth";
 import { UserPayload } from "./types";
 
 export class UserModel implements User {
-  id: string;
+  id: number;
   email: string | null;
   name: string | null;
   username: string;
@@ -14,8 +13,8 @@ export class UserModel implements User {
   createdAt?: string;
 
 
-  constructor(props: UserPayload, id?: string) {
-    this.id = id ?? randomUUID();
+  constructor(props: UserPayload, id?: number) {
+    this.id = id ?? 0;
     this.name = props.name;
     this.email = props.email;
     this.username = props.username;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 import { HttpError } from "./errors";
 import { consoleErrorLogger, ErrorResponse } from "@/utils/formatterLogs/consoleErrorLogger";
 // 🎯 Importa configuração global do Zod para mensagens em português
@@ -46,7 +47,7 @@ export function errorHandler<
       }
 
       // Erro HTTP customizado
-      if (error instanceof HttpError) {
+      else if (error instanceof HttpError) {
         status = error.statusCode;
         body = {
           error: error.name,
@@ -55,8 +56,46 @@ export function errorHandler<
         };
       }
 
+      // Error instance
+      else if (error instanceof Error) {
+        body = {
+          error: error.name,
+          message: error.message,
+        };
+      }
+
+      // Erros do Prisma
+      else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        status = 400;
+        
+        // Mapeamento de códigos de erro do Prisma
+        const errorMessages: Record<string, string> = {
+          P2002: "Já existe um registro com estes dados",
+          P2003: "Referência inválida ou não encontrada",
+          P2025: "Registro não encontrado",
+          P2014: "A operação viola uma restrição de integridade",
+        };
+
+        body = {
+          error: "DatabaseError",
+          message: errorMessages[error.code] || "Erro no banco de dados",
+          details: {
+            code: error.code,
+            meta: error.meta,
+          },
+        };
+      }
+
+      else if (error instanceof Prisma.PrismaClientValidationError) {
+        status = 400;
+        body = {
+          error: "ValidationError",
+          message: "Dados inválidos para o banco de dados",
+        };
+      }
+
       consoleErrorLogger({ url, method, ...body });
-      return NextResponse.json(body, { status, url });
+      return NextResponse.json(body, { status });
     }
   }) as T;
 }

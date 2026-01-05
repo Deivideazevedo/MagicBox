@@ -30,44 +30,46 @@ const baseQueryInterceptor: BaseQueryFn<
     let message = "Ocorreu um erro na requisição.";
     let icon: "error" | "warning" | "info" = "error";
 
-    // Tratamento específico por status code
-    switch (result.error.status) {
-      case 401:
-        message = "Usuário não autenticado. Redirecionando para login...";
-        // Aqui você pode despachar uma ação para logout
-        // api.dispatch(logout());
-        break;
-      case 403:
-        message = "Acesso negado. Você não tem permissão para esta ação.";
-        break;
-      case 404:
-        message = "Recurso não encontrado.";
-        break;
-      case 500:
-        message = "Erro interno do servidor. Tente novamente mais tarde.";
-        break;
-      case "FETCH_ERROR":
-        message = "Erro de conexão. Verifique sua internet e tente novamente.";
-        break;
-      case "PARSING_ERROR":
-        message = "Erro ao processar resposta do servidor.";
-        break;
-      case "TIMEOUT_ERROR":
-        message = "Tempo limite excedido. Tente novamente.";
-        break;
-      default:
-        // Tentar extrair mensagem do servidor
-        if (result.error.data && typeof result.error.data === "object") {
-          const errorData = result.error.data as any;
-          if (Array.isArray(errorData.message)) {
-            message = errorData.message[0];
-          } else if (errorData.message) {
-            message = errorData.message;
-          } else if (errorData.error) {
-            message = errorData.error;
-          }
-        }
-        break;
+    // Tentar extrair mensagem do backend primeiro
+    if (result.error.data) {
+      const errorData = result?.error?.data as any;
+      
+      // Backend já envia mensagem tratada
+      if (errorData.message) {
+        message = Array.isArray(errorData.message) 
+          ? errorData.message[0] 
+          : errorData.message;
+      } else if (errorData.error) {
+        message = errorData.error;
+      }
+    }
+
+    // Mensagens genéricas apenas para erros sem mensagem do backend
+    if (message === "Ocorreu um erro na requisição.") {
+      switch (result.error.status) {
+        case 401:
+          message = "Usuário não autenticado. Redirecionando para login...";
+          // api.dispatch(logout());
+          break;
+        case 403:
+          message = "Acesso negado. Você não tem permissão para esta ação.";
+          break;
+        case 404:
+          message = "Recurso não encontrado.";
+          break;
+        case 500:
+          message = "Erro interno do servidor. Tente novamente mais tarde.";
+          break;
+        case "FETCH_ERROR":
+          message = "Erro de conexão. Verifique sua internet e tente novamente.";
+          break;
+        case "PARSING_ERROR":
+          message = "Erro ao processar resposta do servidor.";
+          break;
+        case "TIMEOUT_ERROR":
+          message = "Tempo limite excedido. Tente novamente.";
+          break;
+      }
     }
 
     // Mostrar notificação para o usuário

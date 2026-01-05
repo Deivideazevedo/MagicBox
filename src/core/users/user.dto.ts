@@ -47,8 +47,12 @@ export const registerUserSchema = z.object({
 
 // Schema para LOGIN
 export const loginUserSchema = z.object({
-  username: z.string().min(1, "Username ou email é obrigatório"),
+  username: z.string().optional(),
+  email: z.email().optional(),
   password: z.string().min(1, "Senha é obrigatória"),
+}).refine((data) => data.username || data.email, {
+  message: "Username ou email é obrigatório",
+  path: ["username"],
 });
 
 // Schema para ATUALIZAR usuário

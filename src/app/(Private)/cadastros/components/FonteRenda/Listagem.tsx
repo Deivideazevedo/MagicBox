@@ -1,5 +1,4 @@
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
+import { FonteRenda } from "@/core/fontesRenda/types";
 import {
   alpha,
   Box,
@@ -15,21 +14,21 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { IconRepeat } from "@tabler/icons-react";
 import {
-  IconCreditCard,
   IconEdit,
-  IconRepeat,
   IconTrash,
+  IconWallet,
 } from "@tabler/icons-react";
 
 interface ListProps {
-  despesas: Despesa[];
-  handleOpenDialog: (despesa: Despesa) => void;
-  handleEdit: (despesa: Despesa) => void;
+  fontesRenda: FonteRenda[];
+  handleOpenDialog: (fonteRenda: FonteRenda) => void;
+  handleEdit: (fonteRenda: FonteRenda) => void;
 }
 
 export const Listagem = (formProps: ListProps) => {
-  const { despesas, handleOpenDialog, handleEdit } = formProps;
+  const { fontesRenda, handleOpenDialog, handleEdit } = formProps;
 
   return (
     <Card
@@ -37,8 +36,7 @@ export const Listagem = (formProps: ListProps) => {
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
-        // backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
+        borderColor: (theme) => alpha(theme.palette.success.main, 0.2),
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -50,23 +48,23 @@ export const Listagem = (formProps: ListProps) => {
           >
             <Box>
               <Typography variant="h6" fontWeight={600} color="text.primary">
-                Despesas
+                Fontes de Renda
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {despesas.length} despesa
-                {despesas.length !== 1 ? "s" : ""} cadastrada
-                {despesas.length !== 1 ? "s" : ""}
+                {fontesRenda.length} fonte
+                {fontesRenda.length !== 1 ? "s" : ""} cadastrada
+                {fontesRenda.length !== 1 ? "s" : ""}
               </Typography>
             </Box>
             <Chip
-              label={`${despesas.length} despesas`}
-              color="error"
+              label={`${fontesRenda.length} fontes`}
+              color="success"
               variant="outlined"
             />
           </Stack>
         </Box>
 
-        {despesas.length === 0 ? (
+        {fontesRenda.length === 0 ? (
           <Box
             sx={{
               textAlign: "center",
@@ -74,22 +72,22 @@ export const Listagem = (formProps: ListProps) => {
               color: "text.secondary",
             }}
           >
-            <IconCreditCard
+            <IconWallet
               size={64}
               style={{ opacity: 0.3, marginBottom: 16 }}
             />
             <Typography variant="h6" gutterBottom>
-              Nenhuma despesa cadastrada
+              Nenhuma fonte de renda cadastrada
             </Typography>
             <Typography variant="body2">
-              Comece adicionando suas primeiras despesas
+              Comece adicionando suas primeiras fontes de renda
             </Typography>
           </Box>
         ) : (
           <List disablePadding>
-            {despesas.map((despesa: Despesa, index: number) => {
+            {fontesRenda.map((fonte: FonteRenda, index: number) => {
               return (
-                <Box key={despesa.id}>
+                <Box key={fonte.id}>
                   <ListItem
                     sx={{
                       py: 2,
@@ -104,21 +102,22 @@ export const Listagem = (formProps: ListProps) => {
                         width: 40,
                         height: 40,
                         borderRadius: 2,
-                        backgroundColor: despesa.status
-                          ? "error.light"
+                        backgroundColor: fonte.status
+                          ? "success.light"
                           : "grey.300",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: despesa.status ? "error.main" : "grey.600",
+                        color: fonte.status ? "success.main" : "grey.600",
                         mr: 2,
                       }}
                     >
-                      {despesa.mensalmente ? (
+                      {fonte.mensalmente ? (
                         <IconRepeat size={20} />
                       ) : (
-                        <IconCreditCard size={20} />
+                        <IconWallet size={20} />
                       )}
+                      
                     </Box>
 
                     <ListItemText
@@ -130,32 +129,32 @@ export const Listagem = (formProps: ListProps) => {
                           component="div"
                         >
                           <Typography variant="body1" fontWeight={500}>
-                            {despesa.nome}
+                            {fonte.nome}
                           </Typography>
-                          {despesa.mensalmente && (
+                          {fonte.mensalmente && (
                             <Chip
                               label="Mensal"
-                              color="error"
+                              color="success"
                               size="small"
                               variant="outlined"
                               sx={{ fontWeight: 600 }}
                             />
                           )}
                           <Chip
-                            label={despesa.status ? "Ativa" : "Inativa"}
-                            color={despesa.status ? "success" : "default"}
+                            label={fonte.status ? "Ativa" : "Inativa"}
+                            color={fonte.status ? "success" : "default"}
                             size="small"
                             variant="filled"
                           />
                         </Stack>
                       }
                       secondary={
-                        <Stack spacing={0.5}>
+                        <Stack spacing={0}>
                           <Typography variant="caption" color="text.secondary">
-                            Categoria: {despesa.categoria?.nome || "N/A"}
+                            Categoria: {fonte.categoria?.nome || "N/A"}
                           </Typography>
-                          <Stack direction="row" spacing={2}>
-                            {despesa.mensalmente && despesa.valorEstimado && (
+                          <Stack direction="row" spacing={2} >
+                            {fonte.valorEstimado && (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
@@ -164,15 +163,15 @@ export const Listagem = (formProps: ListProps) => {
                                 {new Intl.NumberFormat("pt-BR", {
                                   style: "currency",
                                   currency: "BRL",
-                                }).format(despesa.valorEstimado)}
+                                }).format(Number(fonte.valorEstimado))}
                               </Typography>
                             )}
-                            {despesa.mensalmente && despesa.diaVencimento && (
+                            {fonte.diaRecebimento && (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                Vence dia {despesa.diaVencimento}
+                                Recebe dia {fonte.diaRecebimento}
                               </Typography>
                             )}
                           </Stack>
@@ -185,7 +184,7 @@ export const Listagem = (formProps: ListProps) => {
                       <Stack direction="row" spacing={1}>
                         <IconButton
                           size="small"
-                          onClick={() => handleEdit(despesa)}
+                          onClick={() => handleEdit(fonte)}
                           sx={{
                             color: "primary.main",
                             "&:hover": {
@@ -197,7 +196,7 @@ export const Listagem = (formProps: ListProps) => {
                         </IconButton>
                         <IconButton
                           size="small"
-                          onClick={() => handleOpenDialog(despesa)}
+                          onClick={() => handleOpenDialog(fonte)}
                           sx={{
                             color: "error.main",
                             "&:hover": { backgroundColor: "error.light" },
@@ -208,7 +207,7 @@ export const Listagem = (formProps: ListProps) => {
                       </Stack>
                     </ListItemSecondaryAction>
                   </ListItem>
-                  {index < despesas.length - 1 && <Divider />}
+                  {index < fontesRenda.length - 1 && <Divider />}
                 </Box>
               );
             })}

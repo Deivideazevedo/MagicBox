@@ -36,6 +36,7 @@ export const fonteRendaRepository = {
         deletedAt: null, // Exclui registros deletados
       },
       orderBy: { nome: "asc" },
+      include: { categoria: true },
     });
   },
 
@@ -47,6 +48,8 @@ export const fonteRendaRepository = {
         status: data.status,
         valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
         diaRecebimento: data.diaRecebimento ? Number(data.diaRecebimento) : null,
+        mensalmente: data.mensalmente,
+        categoriaId: data.categoriaId,
       },
     });
   },

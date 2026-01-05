@@ -1,8 +1,10 @@
+import { Categoria } from "@/core/categorias/types";
 import {
   FonteRenda,
   FonteRendaPayload,
   FonteRendaForm,
 } from "@/core/fontesRenda/types";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import {
   useCreateFonteRendaMutation,
   useDeleteFonteRendaMutation,
@@ -17,20 +19,24 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const fonteRendaSchemaZod = z.object({
-  id: z.string().optional(),
-  userId: z.string().min(1, "Usuário é obrigatório"),
+  id: z.union([z.string(), z.number()]).optional(),
+  userId: z.number().optional(),
   nome: z.string().min(1, "Nome é obrigatório"),
-  valorEstimado: z.union([z.string(), z.null()]),
-  diaRecebimento: z.union([z.string(), z.null()]),
+  valorEstimado: z.number().nullable(),
+  diaRecebimento: z.number().nullable(),
   status: z.boolean(),
+  categoriaId: z.number().min(1, "Categoria é obrigatória"),
+  mensalmente: z.boolean(),
 }) satisfies z.ZodType<FonteRendaForm>;
 
 interface UseFontesRendaProps {
   fontesRenda?: FonteRenda[];
+  categorias?: Categoria[];
 }
 
 export const useFontesRenda = ({
   fontesRenda: fontesRendaProps,
+  categorias: categoriasProps,
 }: UseFontesRendaProps = {}) => {
   const { data: session } = useSession();
 
@@ -39,8 +45,13 @@ export const useFontesRenda = ({
     skip: fontesRendaProps !== undefined,
   });
 
+  const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
+    skip: categoriasProps !== undefined,
+  });
+
   // Usa props se fornecido, senão usa resultado da query
   const fontesRenda = fontesRendaProps ?? fontesRendaQuery;
+  const categoriasList = categoriasProps ?? categoriasQuery;
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -56,14 +67,14 @@ export const useFontesRenda = ({
     reset,
     setValue,
     watch,
-    formState: { errors },
-  } = useForm({
+  } = useForm<FonteRendaForm>({
     resolver: zodResolver(fonteRendaSchemaZod),
     defaultValues: {
-      id: "",
-      userId: session?.user?.id ?? "",
+      id: undefined,
+      userId: Number(session?.user?.id),
       nome: "",
-      valorEstimado: "",
+      categoriaId: 0,
+      valorEstimado: null,
       diaRecebimento: null,
       status: true,
     },
@@ -85,8 +96,11 @@ export const useFontesRenda = ({
         const data: FonteRendaPayload = {
           ...formData,
           userId: Number(formData.userId),
+          valorEstimado: formData.valorEstimado
+            ? Number(formData.valorEstimado)
+            : null,
           diaRecebimento: formData.diaRecebimento
-            ? parseInt(formData.diaRecebimento, 10)
+            ? Number(formData.diaRecebimento)
             : null,
         };
 
@@ -111,17 +125,19 @@ export const useFontesRenda = ({
 
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
-      setValue("userId", session?.user?.id ?? "");
       setValue("id", String(fonteRenda.id));
+      setValue("userId", session?.user?.id);
+      setValue("categoriaId", fonteRenda.categoria?.id || 0);
       setValue("nome", fonteRenda.nome);
       setValue(
         "valorEstimado",
-        fonteRenda.valorEstimado ? String(fonteRenda.valorEstimado) : ""
+        fonteRenda.valorEstimado ? Number(fonteRenda.valorEstimado) : null
       );
       setValue(
         "diaRecebimento",
-        fonteRenda.diaRecebimento ? String(fonteRenda.diaRecebimento) : null
+        fonteRenda.diaRecebimento ? Number(fonteRenda.diaRecebimento) : null
       );
+      setValue("mensalmente", fonteRenda.mensalmente);
       setValue("status", fonteRenda.status);
 
       if (scrollCallback) {
@@ -142,40 +158,57 @@ export const useFontesRenda = ({
     });
   }, []);
 
-  const handleDeleteConfirm = useCallback(async () => {
-    if (deleteDialog.fonteRenda) {
-      try {
-        await deleteFonteRenda(String(deleteDialog.fonteRenda.id)).unwrap();
-        setDeleteDialog({ open: false, fonteRenda: null });
-      } catch (error) {
-        console.error("Erro ao excluir fonte de renda:", error);
-      }
-    }
-  }, [deleteDialog.fonteRenda, deleteFonteRenda]);
-
   const handleDeleteCancel = useCallback(() => {
     setDeleteDialog({ open: false, fonteRenda: null });
   }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteDialog.fonteRenda) return;
+    try {
+      await deleteFonteRenda(String(deleteDialog.fonteRenda.id)).unwrap();
+      setDeleteDialog({ open: false, fonteRenda: null });
+
+      SwalToast.fire({
+        icon: "success",
+        title: "Fonte de Renda excluída com sucesso!",
+      });
+    } catch {}
+  }, [deleteDialog.fonteRenda, deleteFonteRenda]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
   const isEdditing = Boolean(watch("id"));
+  const mensalmente = watch("mensalmente");
 
-  return {
-    fontesRenda,
+  const formProps = {
     isEdditing,
+    handleSubmit,
+    handleCancelEdit,
     control,
-    errors,
     isCreating,
     isUpdating,
-    isDeleting,
-    handleSubmit,
+    mensalmente,
+    categorias: categoriasList,
+  };
+
+  const listProps = {
+    fontesRenda,
+    handleOpenDialog: handleDeleteClick,
     handleEdit,
-    handleCancelEdit,
-    handleDeleteClick,
-    handleDeleteConfirm,
-    handleDeleteCancel,
-    deleteDialog,
+  };
+
+  const deleteProps = {
+    open: deleteDialog.fonteRenda,
+    onConfirm: handleDelete,
+    onClose: handleDeleteCancel,
+    isLoading: isDeleting,
+  };
+
+  return {
+    handleEdit,
+    formProps,
+    listProps,
+    deleteProps,
   };
 };

@@ -39,11 +39,11 @@ export const categoriaRepository = {
     });
   },
 
-  async create(data: CategoriaPayload & { userId: number }) {
+  async create(data: CategoriaPayload) {
     return await prisma.categoria.create({
       data: {
         nome: data.nome,
-        userId: data.userId,
+        userId: data.userId as number,
       },
     });
   },

@@ -12,7 +12,7 @@ export const despesaSchema = z.object({
   categoriaId: z.number().int().positive(),
   nome: z.string().min(1).max(100),
   mensalmente: z.boolean(),
-  valorEstimado: z.number().nullable(), // Decimal como string
+  valorEstimado: z.number().nullable(),
   diaVencimento: z.number().int().min(1).max(31).nullable(),
   status: z.boolean(),
   createdAt: z.date(),
@@ -29,15 +29,8 @@ export const createDespesaSchema = z
       .max(100, "Nome muito longo")
       .trim(),
     mensalmente: z.boolean().default(false),
-    valorEstimado: z.number().int().nullable()
-      .optional(),
-    diaVencimento: z
-      .number()
-      .int()
-      .min(1)
-      .max(31)
-      .nullable()
-      .optional(),
+    valorEstimado: z.number().nullable(),
+    diaVencimento: z.number().int().min(1).max(31).nullable(),
     status: z.boolean().default(true),
   })
   .refine(
@@ -61,17 +54,10 @@ export const updateDespesaSchema = z
     categoriaId: z.number().int().positive(),
     nome: z.string().min(1).max(100).trim(),
     mensalmente: z.boolean(),
-    valorEstimado: z.number().int().nullable()
-      .optional(),
-    diaVencimento: z
-      .number()
-      .int()
-      .min(1)
-      .max(31)
-      .nullable()
-      .optional(),
+    valorEstimado: z.number().int().nullable().optional(),
+    diaVencimento: z.number().int().min(1).max(31).nullable().optional(),
     status: z.boolean(),
-    userId: z.number().int().positive().optional(), 
+    userId: z.number().int().positive().optional(),
   })
   .refine(
     (data) => {
@@ -81,8 +67,7 @@ export const updateDespesaSchema = z
       return true;
     },
     {
-      message:
-        "Despesas mensais devem ter valor estimado e dia de vencimento",
+      message: "Despesas mensais devem ter valor estimado e dia de vencimento",
       path: ["mensalmente"],
     }
   );

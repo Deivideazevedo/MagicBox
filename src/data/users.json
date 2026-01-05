@@ -1,12 +1,13 @@
 [
   {
-    "id": "2",
-    "username": "admin",
-    "email": "admin@magicbox.com",
-    "password": "wise951",
-    "name": "Administrador",
-    "role": "admin",
-    "createdAt": "2025-01-01T10:00:00.000Z",
-    "updatedAt": "2025-01-01T10:00:00.000Z"
+    "id": 1,
+    "username": "wisebo",
+    "email": "deivide.azevedo@gmail.com",
+    "password": "$2b$10$Dr.dn/HmMV/9NK3CA.kpiOEltoHFIQiLqdtZrmYIVPa9KeG93Q4HO",
+    "name": "Deivide Azevedo  Rodrigues",
+    "image": null,
+    "role": "user",
+    "createdAt": "2026-01-05T00:26:53.266Z",
+    "updatedAt": "2026-01-05T00:26:53.266Z"
   }
 ]

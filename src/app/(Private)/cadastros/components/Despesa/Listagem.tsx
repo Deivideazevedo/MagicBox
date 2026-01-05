@@ -150,7 +150,7 @@ export const Listagem = (formProps: ListProps) => {
                         </Stack>
                       }
                       secondary={
-                        <Stack spacing={0.5}>
+                        <Stack spacing={0}>
                           <Typography variant="caption" color="text.secondary">
                             Categoria: {despesa.categoria?.nome || "N/A"}
                           </Typography>

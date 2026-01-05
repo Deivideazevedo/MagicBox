@@ -20,7 +20,7 @@ export async function generateAccessToken(user: Omit<User, 'password'>) {
     user,  // Dados completos do usuário (sem senha)
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject(user.id)           // Subject: ID do usuário
+    .setSubject(String(user.id))   // Subject: ID do usuário (convertido para string no JWT)
     .setIssuedAt(iat)              // Emitido em
     .setExpirationTime(exp)        // Expira em 7 dias
     .setIssuer("magicbox-api")     // Emissor
