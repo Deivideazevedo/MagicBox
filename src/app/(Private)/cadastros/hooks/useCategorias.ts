@@ -97,13 +97,15 @@ export const useCategorias = ({
 
   const handleEdit = useCallback(
     (categoria: Categoria) => {
-      setValue("id", categoria.id);
-      setValue("nome", categoria.nome);
+      reset({
+        id: categoria.id,
+        nome: categoria.nome,
+      });
 
       // Foca no campo nome
       setTimeout(() => setFocus("nome"), 100);
     },
-    [setValue, setFocus]
+    [reset, setFocus]
   );
 
   const handleCancelEdit = useCallback(() => {

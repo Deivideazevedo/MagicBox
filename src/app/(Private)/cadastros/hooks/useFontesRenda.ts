@@ -53,19 +53,13 @@ export const useFontesRenda = ({
   const fontesRenda = fontesRendaProps ?? fontesRendaQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    fonteRenda: FonteRenda | null;
-  }>({
-    open: false,
-    fonteRenda: null,
-  });
+  const [openDelete, setDeleteDialog] = useState(false);
+  const [row, setRow] = useState<FonteRenda | null>(null);
 
   const {
     handleSubmit: handleSubmitForm,
     control,
     reset,
-    setValue,
     watch,
   } = useForm<FonteRendaForm>({
     resolver: zodResolver(fonteRendaSchemaZod),
@@ -125,26 +119,27 @@ export const useFontesRenda = ({
 
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
-      setValue("id", String(fonteRenda.id));
-      setValue("userId", session?.user?.id);
-      setValue("categoriaId", fonteRenda.categoria?.id || 0);
-      setValue("nome", fonteRenda.nome);
-      setValue(
-        "valorEstimado",
-        fonteRenda.valorEstimado ? Number(fonteRenda.valorEstimado) : null
-      );
-      setValue(
-        "diaRecebimento",
-        fonteRenda.diaRecebimento ? Number(fonteRenda.diaRecebimento) : null
-      );
-      setValue("mensalmente", fonteRenda.mensalmente);
-      setValue("status", fonteRenda.status);
+      setRow(fonteRenda);
+      reset({
+        id: String(fonteRenda.id),
+        userId: session?.user?.id,
+        categoriaId: fonteRenda.categoria?.id || 0,
+        nome: fonteRenda.nome,
+        valorEstimado: fonteRenda.valorEstimado
+          ? Number(fonteRenda.valorEstimado)
+          : null,
+        diaRecebimento: fonteRenda.diaRecebimento
+          ? Number(fonteRenda.diaRecebimento)
+          : null,
+        mensalmente: fonteRenda.mensalmente,
+        status: fonteRenda.status,
+      });
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue, session?.user?.id]
+    [reset, session?.user?.id, setRow]
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -152,34 +147,34 @@ export const useFontesRenda = ({
   }, [reset]);
 
   const handleDeleteClick = useCallback((fonteRenda: FonteRenda) => {
-    setDeleteDialog({
-      open: true,
-      fonteRenda,
-    });
+    setRow(fonteRenda);
+    setDeleteDialog(true);
   }, []);
 
   const handleDeleteCancel = useCallback(() => {
-    setDeleteDialog({ open: false, fonteRenda: null });
+    setDeleteDialog(false);
+    setRow(null);
   }, []);
 
   const handleDelete = useCallback(async () => {
-    if (!deleteDialog.fonteRenda) return;
+    if (!row) return;
     try {
-      await deleteFonteRenda(String(deleteDialog.fonteRenda.id)).unwrap();
-      setDeleteDialog({ open: false, fonteRenda: null });
+      await deleteFonteRenda(String(row.id)).unwrap();
+      setDeleteDialog(false);
+      setRow(null);
 
       SwalToast.fire({
         icon: "success",
         title: "Fonte de Renda excluída com sucesso!",
       });
     } catch {}
-  }, [deleteDialog.fonteRenda, deleteFonteRenda]);
+  }, [row, deleteFonteRenda]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
   const isEdditing = Boolean(watch("id"));
-  const mensalmente = watch("mensalmente");
+  const isCollapsed = watch("nome");
 
   const formProps = {
     isEdditing,
@@ -188,7 +183,8 @@ export const useFontesRenda = ({
     control,
     isCreating,
     isUpdating,
-    mensalmente,
+    row,
+    isCollapsed,
     categorias: categoriasList,
   };
 
@@ -199,7 +195,7 @@ export const useFontesRenda = ({
   };
 
   const deleteProps = {
-    open: deleteDialog.fonteRenda,
+    open: openDelete,
     onConfirm: handleDelete,
     onClose: handleDeleteCancel,
     isLoading: isDeleting,

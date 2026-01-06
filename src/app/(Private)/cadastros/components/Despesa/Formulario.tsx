@@ -5,7 +5,7 @@ import {
   HookSelect,
   HookTextField,
 } from "@/app/components/forms/hooksForm";
-import { DespesaForm, DespesaPayload } from "@/core/despesas/types";
+import { Despesa, DespesaForm, DespesaPayload } from "@/core/despesas/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -31,7 +31,8 @@ import { Control } from "react-hook-form";
 
 interface FormProps {
   isEdditing: boolean;
-  mensalmente: boolean;
+  isCollapsed: boolean;
+  row: Despesa | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>; // Tipo do handler de submit do React Hook Form
   control: Control<DespesaForm>; // Controle tipado com o schema do formulário
@@ -41,11 +42,11 @@ interface FormProps {
   formRef: RefObject<HTMLDivElement>;
 }
 
-
 export const Formulario = (formProps: FormProps) => {
   const {
     isEdditing,
-    mensalmente,
+    isCollapsed,
+    row,
     handleSubmit,
     control,
     isCreating,
@@ -83,7 +84,7 @@ export const Formulario = (formProps: FormProps) => {
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEdditing ? "Editar Despesa" : "Nova Despesa"}
+              {isEdditing ? `Editando: ${row?.nome}` : "Nova Despesa"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {isEdditing
@@ -143,7 +144,7 @@ export const Formulario = (formProps: FormProps) => {
 
             {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
             <Grid item xs={12} sx={{ pt: "0px !important" }}>
-              <Collapse in={mensalmente} timeout={400}>
+              <Collapse in={!!isCollapsed || isEdditing} timeout={400}>
                 <Box sx={{ pt: 2.5 }}>
                   <Grid container spacing={2.5}>
                     <Grid item xs={12}>
@@ -151,9 +152,9 @@ export const Formulario = (formProps: FormProps) => {
                         name="valorEstimado"
                         color="error"
                         control={control}
-                        label="Valor Estimado"
+                        label="Valor Estimado "
                         returnAsNumber={true}
-                        placeholder="0,00"
+                        placeholder="(opcional)"
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">

@@ -6,7 +6,7 @@ import {
   HookTextField,
 } from "@/app/components/forms/hooksForm";
 import { Categoria } from "@/core/categorias/types";
-import { FonteRendaForm } from "@/core/fontesRenda/types";
+import { FonteRenda, FonteRendaForm } from "@/core/fontesRenda/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -34,7 +34,8 @@ import { Control } from "react-hook-form";
 
 interface FormProps {
   isEdditing: boolean;
-  mensalmente: boolean;
+  row: FonteRenda | null;
+  isCollapsed: boolean;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   control: Control<FonteRendaForm>;
@@ -47,8 +48,9 @@ interface FormProps {
 export const Formulario = (formProps: FormProps) => {
   const {
     isEdditing,
+    isCollapsed,
     categorias,
-    mensalmente,
+    row,
     handleSubmit,
     control,
     isCreating,
@@ -83,7 +85,7 @@ export const Formulario = (formProps: FormProps) => {
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEdditing ? "Editar Fonte de Renda" : "Nova Fonte de Renda"}
+              {isEdditing ? `Editando: ${row?.nome}` : "Nova Fonte de Renda"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {isEdditing
@@ -144,7 +146,7 @@ export const Formulario = (formProps: FormProps) => {
             {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
 
             <Grid item xs={12} sx={{ pt: "0px !important" }}>
-              <Collapse in={mensalmente} timeout={400}>
+              <Collapse in={isCollapsed || isEdditing} timeout={400}>
                 <Box sx={{ pt: 2.5 }}>
                   <Grid container spacing={2.5}>
                     <Grid item xs={12}>

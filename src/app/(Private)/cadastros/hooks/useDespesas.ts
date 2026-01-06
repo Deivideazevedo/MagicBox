@@ -80,6 +80,7 @@ export function useDespesas(params?: UseDespesasProps) {
   const despesasList = despesasProps ?? despesasQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
+  const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Despesa | null>(null);
 
   // RTK Query mutations
@@ -87,25 +88,29 @@ export function useDespesas(params?: UseDespesasProps) {
   const [updateDespesa, { isLoading: isUpdating }] = useUpdateDespesaMutation();
   const [deleteDespesa, { isLoading: isDeleting }] = useDeleteDespesaMutation();
 
+  // Extrair defaultValues para reutilizar no reset
+  const defaultValues: DespesaForm = {
+    id: undefined,
+    userId: userId,
+    status: true,
+    categoriaId: 0,
+    nome: "",
+    mensalmente: false,
+    valorEstimado: null,
+    diaVencimento: null,
+  };
+
   const {
     handleSubmit: handleSubmitForm,
     reset,
+    getValues,
     setValue,
     control,
     watch,
     setFocus,
   } = useForm<DespesaForm>({
     resolver: zodResolver(despesaSchemaZod),
-    defaultValues: {
-      id: undefined,
-      userId: userId,
-      status: true,
-      categoriaId: 0,
-      nome: "",
-      mensalmente: false,
-      valorEstimado: null,
-      diaVencimento: null,
-    },
+    defaultValues,
   });
 
   const onSubmit = useCallback(
@@ -135,41 +140,48 @@ export function useDespesas(params?: UseDespesasProps) {
         } else {
           await createDespesa(data).unwrap();
         }
-        reset();
+        reset(defaultValues);
         // Foca no campo nome após o cadastro
-        setTimeout(() => setFocus("nome"), 100);
+        setTimeout(() => setFocus("categoriaId"), 100);
       } catch {}
     },
-    [updateDespesa, createDespesa, reset, setFocus]
+    [updateDespesa, createDespesa, reset, setFocus, defaultValues]
   );
 
   const handleEdit = useCallback(
     (despesa: Despesa) => {
-      setValue("id", Number(despesa.id));
-      setValue("userId", userId);
-      setValue("categoriaId", Number(despesa.categoriaId));
-      setValue("nome", despesa.nome);
-      setValue("mensalmente", despesa.mensalmente);
-      setValue("valorEstimado", despesa.valorEstimado);
-      setValue("diaVencimento", despesa.diaVencimento);
-      setValue("status", despesa.status);
+      const data = {
+        id: Number(despesa.id),
+        userId,
+        categoriaId: Number(despesa.categoriaId),
+        nome: despesa.nome,
+        mensalmente: despesa.mensalmente,
+        valorEstimado: despesa.valorEstimado ? Number(despesa.valorEstimado) : null,
+        diaVencimento: despesa.diaVencimento ? Number(despesa.diaVencimento) : null,
+        status: despesa.status,
+      };
+
+      setRow({...despesa, ...data});
+      reset(data);
 
       // Foca no campo nome
       setTimeout(() => setFocus("nome"), 100);
     },
-    [setValue, userId, setFocus]
+    [userId, setFocus, reset, setRow]
   );
 
   const handleCancelEdit = useCallback(() => {
-    reset();
-  }, [reset]);
+    reset(defaultValues);
+  }, [reset, defaultValues]);
 
   const handleOpenDialog = useCallback((despesa: Despesa) => {
     setRow(despesa);
+    setDeleteDialog(true);
   }, []);
 
   const handleCloseDialog = useCallback(() => {
     setRow(null);
+    setDeleteDialog(false);
   }, []);
 
   const handleDelete = useCallback(async () => {
@@ -178,28 +190,32 @@ export function useDespesas(params?: UseDespesasProps) {
       await deleteDespesa(row.id).unwrap();
       setValue("id", undefined);
       setRow(null);
+      setDeleteDialog(false);
 
       SwalToast.fire({
         icon: "success",
         title: "Despesa excluída com sucesso!",
       });
     } catch {}
-  }, [deleteDespesa, row,setValue]);
+  }, [deleteDespesa, row, setValue]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
   const isEdditing = Boolean(watch("id"));
-  const mensalmente = watch("mensalmente");
+  const isCollapsed = !!watch("nome");
+
+  console.log('row', row);
 
   const formProps = {
     isEdditing,
     handleSubmit,
     handleCancelEdit,
     control,
+    row,
     isCreating,
     isUpdating,
-    mensalmente,
+    isCollapsed,
     categorias: categoriasList,
     despesas: despesasList,
   };
@@ -211,7 +227,7 @@ export function useDespesas(params?: UseDespesasProps) {
   };
 
   const deleteProps = {
-    open: row,
+    open: openDelete,
     onConfirm: handleDelete,
     onClose: handleCloseDialog,
     isLoading: isDeleting,
