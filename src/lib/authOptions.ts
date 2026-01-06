@@ -6,6 +6,8 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { authService } from "@/core/users/service";
 import { AuthPayload } from "@/core/users/types";
+import { parseError } from "@/lib/error-handler";
+import { consoleErrorLogger } from "@/utils/formatterLogs/consoleErrorLogger";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -43,8 +45,18 @@ export const authOptions: AuthOptions = {
           }
           return null;
         } catch (error) {
-          console.error("Erro na autenticação:", error);
-          throw new Error("Ops! Credenciais Inválidas. Tente novamente");
+          // 🎯 Usa a mesma lógica de tratamento de erros do error-handler
+          const { status, body } = parseError(error);
+          
+          // 🎨 Usa o formatador visual de logs
+          consoleErrorLogger({
+            url: "/api/auth/callback/credentials",
+            method: "POST",
+            ...body,
+          });
+          
+          // NextAuth espera um Error com message string
+          throw new Error(body.message);
         }
       },
     }),
@@ -75,7 +87,12 @@ export const authOptions: AuthOptions = {
                 updatedAt: dbUser.updatedAt.toISOString(),
               } as User;
             } catch (error) {
-              console.error("Erro ao criar usuário OAuth:", error);
+              const { body } = parseError(error);
+              consoleErrorLogger({
+                url: "/api/auth/oauth",
+                method: "POST",
+                ...body,
+              });
             }
           }
         } else {

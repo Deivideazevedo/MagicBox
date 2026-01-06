@@ -8,7 +8,7 @@ import { api } from "../services/api";
 const persistConfig = {
   key: "root",
   storage,
-  // whitelist: ["customizer"],
+  whitelist: ["customizer"],
 };
 
 const rootReducer = combineReducers({

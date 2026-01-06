@@ -14,7 +14,7 @@ export interface CategoriaPayload {
 
 // Interface específica para formulários no frontend
 export interface CategoriaForm {
-  id?: string | number;
+  id?: number;
   nome: string;
-  userId?: string | number;
+  userId?: number;
 }

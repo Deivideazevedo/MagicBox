@@ -22,6 +22,9 @@ import {
   IconStar,
 } from '@tabler/icons-react';
 
+// Desabilita SSR para esta página (necessário devido ao Redux e MUI theme)
+export const dynamic = 'force-dynamic';
+
 export default function Login() {
   const { theme, isDarkMode } = useCustomTheme();
 

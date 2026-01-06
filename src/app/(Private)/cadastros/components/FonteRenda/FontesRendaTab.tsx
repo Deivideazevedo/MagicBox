@@ -67,7 +67,7 @@ export default function FontesRendaTab({
             fontSize={15}
             color="text.primary"
           >
-            "{deleteProps.open?.nome}"
+            "{deleteProps.name}"
           </Box>
           .<br /> Essa ação não poderá ser desfeita.
         </Typography>

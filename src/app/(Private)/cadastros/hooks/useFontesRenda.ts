@@ -14,7 +14,7 @@ import {
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -56,14 +56,8 @@ export const useFontesRenda = ({
   const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<FonteRenda | null>(null);
 
-  const {
-    handleSubmit: handleSubmitForm,
-    control,
-    reset,
-    watch,
-  } = useForm<FonteRendaForm>({
-    resolver: zodResolver(fonteRendaSchemaZod),
-    defaultValues: {
+  const defaultValues: FonteRendaForm = useMemo(
+    () => ({
       id: undefined,
       userId: Number(session?.user?.id),
       nome: "",
@@ -71,7 +65,19 @@ export const useFontesRenda = ({
       valorEstimado: null,
       diaRecebimento: null,
       status: true,
-    },
+      mensalmente: false,
+    }),
+    [session?.user?.id]
+  );
+
+  const {
+    handleSubmit: handleSubmitForm,
+    control,
+    reset,
+    watch,
+  } = useForm<FonteRendaForm>({
+    resolver: zodResolver(fonteRendaSchemaZod),
+    defaultValues,
   });
 
   const [createFonteRenda, { isLoading: isCreating }] =
@@ -103,26 +109,26 @@ export const useFontesRenda = ({
             id: String(id),
             data,
           }).unwrap();
+          reset(defaultValues);
         } else {
           await createFonteRenda(data).unwrap();
+          reset({ ...defaultValues, categoriaId: data.categoriaId });
         }
 
-        reset();
         SwalToast.fire({
           icon: "success",
           title: "Fonte de Renda salva com sucesso!",
         });
       } catch {}
     },
-    [createFonteRenda, updateFonteRenda, reset]
+    [createFonteRenda, updateFonteRenda, reset, defaultValues]
   );
 
   const handleEdit = useCallback(
     (fonteRenda: FonteRenda, scrollCallback?: () => void) => {
-      setRow(fonteRenda);
-      reset({
-        id: String(fonteRenda.id),
-        userId: session?.user?.id,
+      const data = {
+        id: Number(fonteRenda.id),
+        userId: Number(session?.user?.id ?? fonteRenda.userId),
         categoriaId: fonteRenda.categoria?.id || 0,
         nome: fonteRenda.nome,
         valorEstimado: fonteRenda.valorEstimado
@@ -133,7 +139,10 @@ export const useFontesRenda = ({
           : null,
         mensalmente: fonteRenda.mensalmente,
         status: fonteRenda.status,
-      });
+      };
+
+      reset(data);
+      setRow({ ...fonteRenda, ...data });
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
@@ -143,8 +152,8 @@ export const useFontesRenda = ({
   );
 
   const handleCancelEdit = useCallback(() => {
-    reset();
-  }, [reset]);
+    reset(defaultValues);
+  }, [reset, defaultValues]);
 
   const handleDeleteClick = useCallback((fonteRenda: FonteRenda) => {
     setRow(fonteRenda);
@@ -174,7 +183,7 @@ export const useFontesRenda = ({
   const handleSubmit = handleSubmitForm(onSubmit);
 
   const isEdditing = Boolean(watch("id"));
-  const isCollapsed = watch("nome");
+  const isCollapsed = !!watch("nome") || !!watch("mensalmente");
 
   const formProps = {
     isEdditing,
@@ -196,6 +205,7 @@ export const useFontesRenda = ({
 
   const deleteProps = {
     open: openDelete,
+    name: row?.nome,
     onConfirm: handleDelete,
     onClose: handleDeleteCancel,
     isLoading: isDeleting,

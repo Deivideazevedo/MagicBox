@@ -83,13 +83,19 @@ export const Formulario = (formProps: FormProps) => {
             <IconCreditCard size={24} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEdditing ? `Editando: ${row?.nome}` : "Nova Despesa"}
+            <Typography
+              variant="subtitle2"
+              fontWeight={600}
+              color="text.primary"
+            >
+              {isEdditing ? `Editando Despesa:` : "Nova Despesa"}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {isEdditing
-                ? "Atualize os dados da despesa"
-                : "Adicione uma nova despesa"}
+            <Typography
+              variant="body2"
+              fontWeight={isEdditing ? 600 : 400}
+              color={isEdditing ? "error.main" : "text.secondary"}
+            >
+              {isEdditing ? `${row?.nome}` : "Adicione uma nova despesa"}
             </Typography>
           </Box>
         </Box>

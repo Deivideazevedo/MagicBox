@@ -1,11 +1,5 @@
-import CustomToggle from "@/app/components/forms/CustomToggle";
-import {
-  HookCurrencyField,
-  HookDecimalField,
-  HookSelect,
-  HookTextField,
-} from "@/app/components/forms/hooksForm";
-import { DespesaForm, DespesaPayload } from "@/core/despesas/types";
+import { HookTextField } from "@/app/components/forms/hooksForm";
+import { Categoria, CategoriaForm } from "@/core/categorias/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -13,24 +7,17 @@ import {
   Button,
   Card,
   CardContent,
-  Collapse,
   Grid,
   InputAdornment,
-  Stack,
   Typography,
 } from "@mui/material";
-import { Categoria, CategoriaForm } from "@/core/categorias/types";
-import { IconCalendar, IconRepeat } from "@tabler/icons-react";
-import { IconPlus } from "@tabler/icons-react";
-import { IconX } from "@tabler/icons-react";
-import { IconCurrencyDollar } from "@tabler/icons-react";
-import { IconCategory } from "@tabler/icons-react";
-import { IconCreditCard } from "@tabler/icons-react";
+import { IconCategory, IconPlus, IconX } from "@tabler/icons-react";
 import { RefObject } from "react";
 import { Control } from "react-hook-form";
 
 interface FormProps {
   isEditing: boolean;
+  row: Categoria | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>; // Tipo do handler de submit do React Hook Form
   control: Control<CategoriaForm>; // Controle tipado com o schema do formulário
@@ -49,6 +36,7 @@ export const Formulario = (formProps: FormProps) => {
     isUpdating,
     handleCancelEdit,
     formRef,
+    row,
   } = formProps;
 
   return (
@@ -78,11 +66,20 @@ export const Formulario = (formProps: FormProps) => {
             <IconCategory size={24} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEditing ? "Editar Categoria" : "Nova Categoria"}
+            <Typography
+              variant="subtitle2"
+              fontWeight={600}
+              color="text.primary"
+            >
+              {isEditing ? "Editando Categoria:" : "Nova Categoria"}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {isEditing ? "Atualização" : "Cadastro"}
+
+            <Typography
+              variant="body2"
+              fontWeight={isEditing ? 600 : 400}
+              color={isEditing ? "primary.main" : "text.secondary"}
+            >
+              {isEditing ? `${row?.nome}` : "Cadastro"}
             </Typography>
           </Box>
         </Box>

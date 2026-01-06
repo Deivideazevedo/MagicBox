@@ -12,15 +12,15 @@ import {
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 // Schema de validação
 const categoriaSchema = z.object({
-  id: z.union([z.string(), z.number()]).optional(),
+  id: z.number().optional(),
   nome: z.string().nonempty("Obrigatório"),
-  userId: z.union([z.string(), z.number()]).optional(),
+  userId: z.number().optional(),
 });
 
 interface UseCategoriasProps {
@@ -38,6 +38,7 @@ export const useCategorias = ({
   // Usa props se fornecido, senão usa resultado da query
   const categoriasList = categoriasProps ?? categoriasQuery;
 
+  const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Categoria | null>(null);
 
   // RTK Query mutations
@@ -48,6 +49,14 @@ export const useCategorias = ({
   const [deleteCategoria, { isLoading: isDeleting }] =
     useDeleteCategoriaMutation();
 
+  const defaultValues: CategoriaForm = useMemo(
+    () => ({
+      id: undefined,
+      nome: "",
+    }),
+    []
+  );
+
   // React Hook Form
   const {
     handleSubmit: handleSubmitForm,
@@ -57,10 +66,7 @@ export const useCategorias = ({
     watch,
     setFocus,
   } = useForm<CategoriaForm>({
-    defaultValues: {
-      id: "",
-      nome: "",
-    },
+    defaultValues,
     resolver: zodResolver(categoriaSchema),
   });
 
@@ -82,7 +88,7 @@ export const useCategorias = ({
         } else {
           await createCategoria(data).unwrap();
         }
-        reset();
+        reset(defaultValues);
 
         setTimeout(() => setFocus("nome"), 100);
 
@@ -92,15 +98,17 @@ export const useCategorias = ({
         });
       } catch {}
     },
-    [updateCategoria, createCategoria, reset, setFocus]
+    [updateCategoria, createCategoria, reset, setFocus, defaultValues]
   );
 
   const handleEdit = useCallback(
     (categoria: Categoria) => {
-      reset({
+      const data = {
         id: categoria.id,
         nome: categoria.nome,
-      });
+      };
+      setRow({ ...categoria, ...data });
+      reset(data);
 
       // Foca no campo nome
       setTimeout(() => setFocus("nome"), 100);
@@ -109,15 +117,18 @@ export const useCategorias = ({
   );
 
   const handleCancelEdit = useCallback(() => {
-    reset();
-  }, [reset]);
+    reset(defaultValues);
+    setTimeout(() => setFocus("nome"), 100);
+  }, [reset, defaultValues, setFocus]);
 
   const handleOpenDialog = useCallback((categoria: Categoria) => {
     setRow(categoria);
+    setDeleteDialog(true);
   }, []);
 
   const handleCloseDialog = useCallback(() => {
     setRow(null);
+    setDeleteDialog(false);
   }, []);
 
   const handleDelete = useCallback(async () => {
@@ -125,7 +136,8 @@ export const useCategorias = ({
     try {
       await deleteCategoria(String(row.id)).unwrap();
       setValue("id", undefined);
-      setRow(null);
+      setRow(null); 
+      setDeleteDialog(false);
 
       SwalToast.fire({
         icon: "success",
@@ -145,6 +157,7 @@ export const useCategorias = ({
     isCreating,
     isUpdating,
     categorias: categoriasList,
+    row,
   };
 
   const listProps = {
@@ -154,7 +167,8 @@ export const useCategorias = ({
   };
 
   const deleteProps = {
-    open: row,
+    open: openDelete,
+    name: row?.nome,
     onConfirm: handleDelete,
     onClose: handleCloseDialog,
     isLoading: isDeleting,

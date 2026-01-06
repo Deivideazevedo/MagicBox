@@ -10,7 +10,7 @@ import {
 import { Swalert, SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -89,16 +89,19 @@ export function useDespesas(params?: UseDespesasProps) {
   const [deleteDespesa, { isLoading: isDeleting }] = useDeleteDespesaMutation();
 
   // Extrair defaultValues para reutilizar no reset
-  const defaultValues: DespesaForm = {
-    id: undefined,
-    userId: userId,
-    status: true,
-    categoriaId: 0,
-    nome: "",
-    mensalmente: false,
-    valorEstimado: null,
-    diaVencimento: null,
-  };
+  const defaultValues: DespesaForm = useMemo(
+    () => ({
+      id: undefined,
+      userId: userId,
+      status: true,
+      categoriaId: 0,
+      nome: "",
+      mensalmente: false,
+      valorEstimado: null,
+      diaVencimento: null,
+    }),
+    [userId]
+  );
 
   const {
     handleSubmit: handleSubmitForm,
@@ -137,10 +140,11 @@ export function useDespesas(params?: UseDespesasProps) {
             id: String(id),
             data,
           }).unwrap();
+          reset(defaultValues);
         } else {
           await createDespesa(data).unwrap();
+          reset({ ...defaultValues, categoriaId: data.categoriaId });
         }
-        reset(defaultValues);
         // Foca no campo nome após o cadastro
         setTimeout(() => setFocus("categoriaId"), 100);
       } catch {}
@@ -156,12 +160,16 @@ export function useDespesas(params?: UseDespesasProps) {
         categoriaId: Number(despesa.categoriaId),
         nome: despesa.nome,
         mensalmente: despesa.mensalmente,
-        valorEstimado: despesa.valorEstimado ? Number(despesa.valorEstimado) : null,
-        diaVencimento: despesa.diaVencimento ? Number(despesa.diaVencimento) : null,
+        valorEstimado: despesa.valorEstimado
+          ? Number(despesa.valorEstimado)
+          : null,
+        diaVencimento: despesa.diaVencimento
+          ? Number(despesa.diaVencimento)
+          : null,
         status: despesa.status,
       };
 
-      setRow({...despesa, ...data});
+      setRow({ ...despesa, ...data });
       reset(data);
 
       // Foca no campo nome
@@ -203,9 +211,9 @@ export function useDespesas(params?: UseDespesasProps) {
   const handleSubmit = handleSubmitForm(onSubmit);
 
   const isEdditing = Boolean(watch("id"));
-  const isCollapsed = !!watch("nome");
+  const isCollapsed = !!watch("nome") || !!watch("mensalmente");
 
-  console.log('row', row);
+  console.log("row", row);
 
   const formProps = {
     isEdditing,
@@ -228,6 +236,7 @@ export function useDespesas(params?: UseDespesasProps) {
 
   const deleteProps = {
     open: openDelete,
+    name: row?.nome,
     onConfirm: handleDelete,
     onClose: handleCloseDialog,
     isLoading: isDeleting,

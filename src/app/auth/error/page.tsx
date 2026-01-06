@@ -76,14 +76,14 @@ const AuthErrorPage = () => {
           <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
             <Stack spacing={2} alignItems="center" textAlign="center">
               {/* Renderiza o componente do ícone diretamente */}
-              {details.icon}
+              {details?.icon}
               
               <Typography variant="h4" component="h1" fontWeight="600">
-                {details.title}
+                {details?.title}
               </Typography>
               
               <Typography color="text.secondary">
-                {details.message}
+                {details?.message}
               </Typography>
               
               <Button
@@ -93,7 +93,7 @@ const AuthErrorPage = () => {
                 size="large"
                 sx={{ mt: 2 }}
               >
-                {details.buttonText}
+                {details?.buttonText}
               </Button>
             </Stack>
           </Paper>

@@ -84,13 +84,16 @@ export const Formulario = (formProps: FormProps) => {
             <IconWallet size={24} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="text.primary">
-              {isEdditing ? `Editando: ${row?.nome}` : "Nova Fonte de Renda"}
+            <Typography variant="subtitle2" fontWeight={600} color="text.primary">
+              {isEdditing ? `Editando Fonte:` : "Nova Fonte de Renda"}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {isEdditing
-                ? "Atualize os dados da fonte"
-                : "Adicione uma nova fonte de renda"}
+
+            <Typography
+              variant="body2"
+              fontWeight={isEdditing ? 600 : 400}
+              color={isEdditing ? "success.main" : "text.secondary"}
+            >
+              {isEdditing ? `${row?.nome}` : "Adicione uma nova fonte"}
             </Typography>
           </Box>
         </Box>
@@ -239,8 +242,8 @@ export const Formulario = (formProps: FormProps) => {
                       />
                     </Box>
                   }
-                  titleActive="Despesa Ativa"
-                  titleInactive="Despesa Inativa"
+                  titleActive="Fonte Ativa"
+                  titleInactive="Fonte Inativa"
                   descriptionActive="Disponível para lançamentos"
                   descriptionInactive="Não será exibida"
                 />
