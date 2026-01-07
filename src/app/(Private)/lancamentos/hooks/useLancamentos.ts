@@ -19,7 +19,7 @@ const lancamentoSchema = z.object({
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.string(),
   data: z.string().min(1, "Data é obrigatória"),
   descricao: z.string().optional(),
@@ -157,11 +157,7 @@ export function useLancamentos({
       setValue("valor", String(lancamento.valor));
       setValue("data", lancamento.data);
       setValue("descricao", lancamento.descricao);
-      setValue("parcelas", lancamento.parcelas ? String(lancamento.parcelas) : "1");
-
-      if (lancamento.parcelas && lancamento.parcelas > 1) {
-        setIsParcelado(true);
-      }
+      setValue("parcelas", "1");
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);

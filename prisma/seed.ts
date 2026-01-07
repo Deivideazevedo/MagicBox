@@ -72,14 +72,13 @@ const FonteRendaSchema = z.object({
 const LancamentoSchema = z.object({
   id: z.number(),
   userId: z.number(),
-  tipo: z.enum(["pagamento", "agendamento", "receita"]),
+  tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.string(),
   data: z.string(),
   descricao: z.string().nullable(),
   despesaId: z.number().nullable(),
   categoriaId: z.number(),
   fonteRendaId: z.number().nullable(),
-  parcelas: z.number().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -184,17 +183,17 @@ async function seedLancamentos() {
   const lancamentos = readJSON("lancamentos.json", LancamentoSchema);
 
   const lancamentosData = lancamentos.map((lanc) => ({
-    userId: lanc.userId,
+    user_id: lanc.userId,
     tipo: lanc.tipo as TipoLancamento,
     valor: lanc.valor,
     data: new Date(lanc.data),
     descricao: lanc.descricao,
-    despesaId: lanc.despesaId,
-    categoriaId: lanc.categoriaId,
-    fonteRendaId: lanc.fonteRendaId,
-    parcelas: lanc.parcelas,
-    createdAt: new Date(lanc.createdAt),
-    updatedAt: new Date(lanc.updatedAt),
+    observacao_automatica: null, // Será gerado automaticamente se necessário
+    despesa_id: lanc.despesaId,
+    categoria_id: lanc.categoriaId,
+    fonte_renda_id: lanc.fonteRendaId,
+    created_at: new Date(lanc.createdAt),
+    updated_at: new Date(lanc.updatedAt),
   }));
 
   await prisma.lancamento.createMany({

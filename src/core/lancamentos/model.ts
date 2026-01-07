@@ -10,11 +10,9 @@ export class LancamentoModel implements Lancamento {
   valor: number;
   data: string;
   descricao?: string;
-  parcelas?: number | null;
-  valorPago?: number | string | null;
+  observacaoAutomatica?: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string | null;
 
   constructor(data: Lancamento) {
     this.id = data.id;
@@ -26,10 +24,9 @@ export class LancamentoModel implements Lancamento {
     this.valor = data.valor;
     this.data = data.data;
     this.descricao = data.descricao;
-    this.parcelas = data.parcelas;
+    this.observacaoAutomatica = data.observacaoAutomatica;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
-    this.deletedAt = data.deletedAt;
   }
 
   static fromJSON(json: any): LancamentoModel {
@@ -47,10 +44,9 @@ export class LancamentoModel implements Lancamento {
       valor: this.valor,
       data: this.data,
       descricao: this.descricao,
-      parcelas: this.parcelas,
+      observacaoAutomatica: this.observacaoAutomatica,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
-      deletedAt: this.deletedAt,
     };
   }
 }

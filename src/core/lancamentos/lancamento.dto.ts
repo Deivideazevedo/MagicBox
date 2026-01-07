@@ -7,8 +7,7 @@ import { z } from "zod";
 // REGRAS DE NEGÓCIO implementadas aqui
 
 // Enums
-export const tipoLancamentoEnum = z.enum(["pagamento", "agendamento", "receita"]);
-export const statusLancamentoEnum = z.enum(["pago", "pendente"]);
+export const tipoLancamentoEnum = z.enum(["pagamento", "agendamento"]);
 
 // Schema base do Lançamento
 export const lancamentoSchema = z.object({
@@ -17,13 +16,11 @@ export const lancamentoSchema = z.object({
   tipo: tipoLancamentoEnum,
   valor: z.string(), // Decimal como string
   data: z.date(),
-  descricao: z.string(),
-  status: statusLancamentoEnum,
+  descricao: z.string().nullable(),
+  observacaoAutomatica: z.string().nullable(),
+  categoriaId: z.number().int().positive(),
   despesaId: z.number().int().positive().nullable(),
-  contaId: z.number().int().positive().nullable(), // Alias para despesaId
   fonteRendaId: z.number().int().positive().nullable(),
-  parcelas: z.number().int().positive().nullable(),
-  valorPago: z.string().nullable(), // Decimal como string
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -37,36 +34,29 @@ export const createLancamentoSchema = z
       .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
       .refine((val) => parseFloat(val) > 0, "Valor deve ser maior que zero"),
     data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
-    descricao: z.string().min(1, "Descrição é obrigatória").max(255).trim(),
-    status: statusLancamentoEnum.default("pendente"),
+    descricao: z.string().max(255).trim().optional(),
     
     // Categoria (obrigatória)
     categoriaId: z.number().int().positive("Categoria é obrigatória"),
     
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
-    contaId: z.number().int().positive().nullable().optional(), // Alias
     fonteRendaId: z.number().int().positive().nullable().optional(),
     
-    // Campos específicos
+    // Parcelas (usado para criar múltiplos registros)
     parcelas: z
       .number()
       .int()
-      .min(2, "Parcelamento deve ter no mínimo 2 parcelas")
+      .min(1, "Parcelas deve ser no mínimo 1")
       .max(120, "Máximo de 120 parcelas")
-      .nullable()
-      .optional(),
-    valorPago: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor pago inválido")
       .nullable()
       .optional(),
   })
   .refine(
     (data) => {
-      // REGRA 1: Deve ter despesaId/contaId OU fonteRendaId, nunca ambos ou nenhum
-      const temDespesa = data.despesaId || data.contaId;
-      const temFonteRenda = data.fonteRendaId;
+      // REGRA 1: Deve ter despesaId OU fonteRendaId, nunca ambos ou nenhum
+      const temDespesa = !!data.despesaId;
+      const temFonteRenda = !!data.fonteRendaId;
       
       // XOR: um ou outro, não ambos, não nenhum
       return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
@@ -78,22 +68,9 @@ export const createLancamentoSchema = z
   )
   .refine(
     (data) => {
-      // REGRA 2: tipo=pagamento → valorPago obrigatório, sem parcelas
-      if (data.tipo === "pagamento") {
-        return data.valorPago && !data.parcelas;
-      }
-      return true;
-    },
-    {
-      message: "Pagamentos devem ter valorPago e não podem ter parcelas",
-      path: ["tipo"],
-    }
-  )
-  .refine(
-    (data) => {
-      // REGRA 3: tipo=agendamento → pode ter parcelas, despesaId obrigatório
+      // REGRA 2: tipo=agendamento → despesaId obrigatório
       if (data.tipo === "agendamento") {
-        return data.despesaId || data.contaId;
+        return !!data.despesaId;
       }
       return true;
     },
@@ -104,14 +81,12 @@ export const createLancamentoSchema = z
   )
   .refine(
     (data) => {
-      // REGRA 4: tipo=receita → fonteRendaId obrigatório
-      if (data.tipo === "receita") {
-        return data.fonteRendaId;
-      }
+      // REGRA 3: tipo=pagamento → pode ser despesa ou fonte de renda
+      // Sem validação extra, já validado na REGRA 1
       return true;
     },
     {
-      message: "Receitas devem estar vinculadas a uma fonte de renda",
+      message: "Pagamentos devem estar vinculados a uma despesa ou fonte de renda",
       path: ["tipo"],
     }
   );
@@ -129,27 +104,18 @@ export const updateLancamentoSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
       .optional(),
     descricao: z.string().min(1).max(255).trim().optional(),
-    status: statusLancamentoEnum.optional(),
     despesaId: z.number().int().positive().nullable().optional(),
-    contaId: z.number().int().positive().nullable().optional(),
     fonteRendaId: z.number().int().positive().nullable().optional(),
-    parcelas: z.number().int().min(2).max(120).nullable().optional(),
-    valorPago: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor pago inválido")
-      .nullable()
-      .optional(),
   })
   .refine(
     (data) => {
       // Se estiver alterando relacionamentos, validar XOR
       if (
         data.despesaId !== undefined ||
-        data.contaId !== undefined ||
         data.fonteRendaId !== undefined
       ) {
-        const temDespesa = data.despesaId || data.contaId;
-        const temFonteRenda = data.fonteRendaId;
+        const temDespesa = !!data.despesaId;
+        const temFonteRenda = !!data.fonteRendaId;
         return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
       }
       return true;
@@ -168,7 +134,6 @@ export const lancamentoIdSchema = z.object({
 // Schema para filtros de query
 export const lancamentoQuerySchema = z.object({
   tipo: tipoLancamentoEnum.optional(),
-  status: statusLancamentoEnum.optional(),
   despesaId: z.coerce.number().int().positive().optional(),
   fonteRendaId: z.coerce.number().int().positive().optional(),
   dataInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -182,4 +147,3 @@ export type UpdateLancamentoDTO = z.infer<typeof updateLancamentoSchema>;
 export type LancamentoIdDTO = z.infer<typeof lancamentoIdSchema>;
 export type LancamentoQueryDTO = z.infer<typeof lancamentoQuerySchema>;
 export type TipoLancamento = z.infer<typeof tipoLancamentoEnum>;
-export type StatusLancamento = z.infer<typeof statusLancamentoEnum>;

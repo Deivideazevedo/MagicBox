@@ -1,6 +1,8 @@
 import { Categoria } from "../categorias/types";
 import { Despesa } from "../despesas/types";
-export type TipoLancamento = "pagamento" | "agendamento" | "receita";
+import { FonteRenda } from "../fontesRenda/types";
+
+export type TipoLancamento = "pagamento" | "agendamento";
 
 export interface Lancamento {
   id: number;
@@ -8,17 +10,17 @@ export interface Lancamento {
   tipo: TipoLancamento;
   data: string;
   descricao?: string;
+  observacaoAutomatica?: string;
   categoriaId: number;
   despesaId?: number | null;
   fonteRendaId?: number | null;
   valor: number;
-  parcelas?: number | null;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string | null;
 
   categoria?: Categoria;
   despesa?: Despesa;
+  fonteRenda?: FonteRenda;
   statusDinamico?: string;
 }
 
@@ -32,8 +34,7 @@ export interface LancamentoPayload {
   categoriaId: number;
   despesaId?: number | null;
   fonteRendaId?: number | null;
-  parcelas?: number | null;
-  valorPago?: number | string | null;
+  parcelas?: number | null; // Usado apenas no payload para gerar múltiplos registros
 }
 
 // Interface específica para formulários no frontend
@@ -47,11 +48,11 @@ export interface LancamentoForm {
   descricao?: string;
   despesaId?: string | number | null;
   fonteRendaId?: string | number | null;
-  parcelas?: string | number | null;
+  parcelas?: string | number | null; // Para formulários com parcelamento
 }
 
 export type LancamentoParams = Partial<
-  Omit<Lancamento, "categoria" | "despesa"> & {
+  Omit<Lancamento, "categoria" | "despesa" | "fonteRenda"> & {
     page: number;
     limit: number;
   }

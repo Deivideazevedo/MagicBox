@@ -132,23 +132,21 @@ async function exportDatabaseToJSON() {
     // ============================================
     console.log("📝 Exportando lançamentos...");
     const lancamentos = await prisma.lancamento.findMany({
-      where: { deletedAt: null },
       orderBy: { id: "asc" },
     });
 
     const lancamentosData = lancamentos.map((lancamento) => ({
       id: lancamento.id,
-      userId: lancamento.userId,
+      userId: lancamento.user_id,
       tipo: lancamento.tipo,
       valor: lancamento.valor,
       data: lancamento.data.toISOString(),
       descricao: lancamento.descricao,
-      despesaId: lancamento.despesaId,
-      categoriaId: lancamento.categoriaId,
-      fonteRendaId: lancamento.fonteRendaId,
-      parcelas: lancamento.parcelas,
-      createdAt: lancamento.createdAt.toISOString(),
-      updatedAt: lancamento.updatedAt.toISOString(),
+      despesaId: lancamento.despesa_id,
+      categoriaId: lancamento.categoria_id,
+      fonteRendaId: lancamento.fonte_renda_id,
+      createdAt: lancamento.created_at.toISOString(),
+      updatedAt: lancamento.updated_at.toISOString(),
     }));
 
     fs.writeFileSync(

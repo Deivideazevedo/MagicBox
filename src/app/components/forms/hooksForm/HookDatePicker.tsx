@@ -13,12 +13,15 @@ type HookDatePickerProps<TFieldValues extends FieldValues> =
     Omit<
       DatePickerProps<Date | null, Date>,
       "value" | "onChange" | "renderInput"
-    >;
+    > & {
+      shrinkLabel?: boolean; // 👈 NOVA PROP
+    };
 
 export function HookDatePicker<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
+  shrinkLabel,
   ...datePickerProps
 }: HookDatePickerProps<TFieldValues>) {
   const {
@@ -46,6 +49,10 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           fullWidth
           error={!!error}
           helperText={error?.message}
+          InputLabelProps={{
+            ...params.InputLabelProps,
+            shrink: shrinkLabel, 
+          }}
         />
       )}
       PaperProps={{

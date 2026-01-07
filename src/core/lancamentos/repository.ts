@@ -20,7 +20,6 @@ export const lancamentoRepository = {
     const { page = 0, limit = 10, statusDinamico, ...filterParams } = filters;
 
     let whereClause: Prisma.LancamentoWhereInput = {
-      deletedAt: null, // Exclui registros deletados
       ...filterParams,
     };
 
@@ -73,7 +72,6 @@ export const lancamentoRepository = {
     const lancamento = await prisma.lancamento.findUnique({
       where: {
         id: numericId,
-        deletedAt: null, // Exclui registros deletados
       },
       include: {
         despesa: true,
@@ -95,8 +93,7 @@ export const lancamentoRepository = {
 
     const lancamentos = await prisma.lancamento.findMany({
       where: {
-        userId: numericId,
-        deletedAt: null, // Exclui registros deletados
+        user_id: numericId,
       },
       orderBy: { data: "desc" },
       include: {
@@ -111,18 +108,18 @@ export const lancamentoRepository = {
     }));
   },
 
-  async create(data: LancamentoPayload) {
+  async create(data: any) {
     const lancamento = await prisma.lancamento.create({
       data: {
-        userId: Number(data.userId),
+        user_id: Number(data.userId),
         tipo: data.tipo,
         valor: Number(data.valor),
         data: new Date(data.data),
         descricao: data.descricao,
-        categoriaId: Number(data.categoriaId),
-        despesaId: data.despesaId ? Number(data.despesaId) : null,
-        fonteRendaId: data.fonteRendaId ? Number(data.fonteRendaId) : null,
-        parcelas: data.parcelas ? Number(data.parcelas) : null,
+        observacao_automatica: data.observacaoAutomatica,
+        categoria_id: Number(data.categoriaId),
+        despesa_id: data.despesaId ? Number(data.despesaId) : null,
+        fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : null,
       },
       include: {
         despesa: true,
@@ -141,10 +138,9 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      // Soft delete: apenas marca como deletado
-      await prisma.lancamento.update({
+      // Delete permanente (sem soft delete)
+      await prisma.lancamento.delete({
         where: { id: numericId },
-        data: { deletedAt: new Date() },
       });
       return true;
     } catch (error) {
@@ -163,9 +159,8 @@ export const lancamentoRepository = {
         valor: data.valor ? Number(data.valor) : undefined,
         data: data.data ? new Date(data.data) : undefined,
         descricao: data.descricao,
-        despesaId: data.despesaId ? Number(data.despesaId) : undefined,
-        fonteRendaId: data.fonteRendaId ? Number(data.fonteRendaId) : undefined,
-        parcelas: data.parcelas ? Number(data.parcelas) : undefined,
+        despesa_id: data.despesaId ? Number(data.despesaId) : undefined,
+        fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : undefined,
       },
       include: {
         despesa: true,

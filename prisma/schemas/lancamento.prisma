@@ -1,42 +1,34 @@
 // ============================================
 // MODEL: LANÇAMENTO - Transações financeiras
 // ============================================
-// Representa pagamentos, agendamentos e receitas
-// REGRAS DE NEGÓCIO CRÍTICAS:
-// 1. Deve ter despesaId OU fonteRendaId, nunca ambos
-// 2. tipo=pagamento: registro único, valorPago preenchido
-// 3. tipo=agendamento: pode ter parcelas, cria N lançamentos futuros
-// 4. tipo=receita: vinculado a fonteRendaId
-// 5. Agendamento só para despesas com diaVencimento definido
 
 model Lancamento {
-  id        Int            @id @default(autoincrement())
-  userId    Int
-  tipo      TipoLancamento
-  data      DateTime // Data do lançamento/agendamento
-  descricao String?        @db.VarChar(255)
+  id                    Int            @id @default(autoincrement())
+  user_id               Int
+  tipo                  TipoLancamento
+  data                  DateTime // Data do lançamento/agendamento
+  descricao             String?        @db.VarChar(255)
+  observacao_automatica String?        @db.VarChar(500) // Descrição automática para parcelamentos
 
-  categoriaId  Int
-  despesaId    Int?
-  fonteRendaId Int?
+  categoria_id   Int
+  despesa_id     Int?
+  fonte_renda_id Int?
 
-  // Campos específicos
-  valor    Decimal @db.Decimal(10, 2) // Valor efetivamente pago
-  parcelas Int? // Número de parcelas (para agendamentos)
+  // Campo de valor
+  valor Decimal @db.Decimal(10, 2) // Valor do lançamento
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relacionamentos
-  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  categoria  Categoria?  @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
-  despesa    Despesa?    @relation(fields: [despesaId], references: [id], onDelete: Restrict)
-  fonteRenda FonteRenda? @relation(fields: [fonteRendaId], references: [id], onDelete: Restrict)
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  categoria  Categoria?  @relation(fields: [categoria_id], references: [id], onDelete: Restrict)
+  despesa    Despesa?    @relation(fields: [despesa_id], references: [id], onDelete: Restrict)
+  fonteRenda FonteRenda? @relation(fields: [fonte_renda_id], references: [id], onDelete: Restrict)
 
-  @@index([userId])
-  @@index([despesaId])
-  @@index([fonteRendaId])
+  @@index([user_id])
+  @@index([despesa_id])
+  @@index([fonte_renda_id])
   @@index([data])
   @@map("lancamentos")
 }

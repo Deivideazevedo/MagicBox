@@ -113,10 +113,10 @@ export default function TabelaLancamentos({
       grupos[chave].lancamentos.push(lancamento);
       grupos[chave].valorTotal += Number(lancamento.valor);
       
-      // Criar observação formatada
+      // Usar observação automática se existir, senão criar observação formatada
       const dataLanc = format(new Date(lancamento.createdAt), "dd/MM", { locale: ptBR });
-      const parcelaInfo = lancamento.parcelas ? ` (${lancamento.parcelas}x)` : "";
-      const obs = `${lancamento.descricao}${parcelaInfo} - R$ ${Number(lancamento.valor).toFixed(2)} (${dataLanc})`;
+      const obs = lancamento.observacaoAutomatica || 
+        `${lancamento.descricao} - R$ ${Number(lancamento.valor).toFixed(2)} (${dataLanc})`;
       grupos[chave].observacoes.push(obs);
     });
 

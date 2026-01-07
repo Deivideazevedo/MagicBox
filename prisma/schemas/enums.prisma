@@ -5,5 +5,4 @@
 enum TipoLancamento {
   pagamento // Pagamento único realizado
   agendamento // Agendamento futuro (pode ter parcelas)
-  receita // Lançamento de receita
 }

@@ -46,9 +46,7 @@ export const Formulario = (formProps: FormProps) => {
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        // Use a cor main com baixíssima opacidade para a borda ficar elegante
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
         backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.4),
       }}
     >
