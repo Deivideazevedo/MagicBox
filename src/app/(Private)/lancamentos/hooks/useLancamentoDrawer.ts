@@ -40,10 +40,14 @@ export function useLancamentoDrawer({
   const { data: session } = useSession();
   const [showDrawer, setShowDrawer] = useState(false);
   const [origem, setOrigem] = useState<TipoLancamentoOrigem>("despesa");
+  const [shouldFocusItem, setShouldFocusItem] = useState(false);
 
   const categoriasList = categoriasProps || [];
-  const despesasList = despesasProps || [];
-  const fontesRendaList = fontesRendaProps || [];
+  const despesasList = useMemo(() => despesasProps || [], [despesasProps]);
+  const fontesRendaList = useMemo(
+    () => fontesRendaProps || [],
+    [fontesRendaProps]
+  );
 
   const [createLancamento, { isLoading: isCreating }] =
     useCreateLancamentoMutation();
@@ -92,6 +96,14 @@ export function useLancamentoDrawer({
     setValue("itemId", 0);
   }, [origem, categoriaId, setValue]);
 
+  // Foca no itemId quando shouldFocusItem é true e o campo não está disabled
+  useEffect(() => {
+    if (shouldFocusItem && categoriaId && categoriaId > 0) {
+      setFocus("itemId");
+      setShouldFocusItem(false);
+    }
+  }, [shouldFocusItem, categoriaId, setFocus]);
+
   // Filtrar itens pela categoria selecionada
   const itensFiltrados = useMemo(() => {
     if (!categoriaId) return [];
@@ -134,19 +146,18 @@ export function useLancamentoDrawer({
 
         SwalToast.fire({
           icon: "success",
-          title: "Lançamento criado com sucesso!",
+          title: `${origem === "fonteRenda" ? "Renda" : "Despesa"} Lançado com sucesso`,
         });
 
+        // Reset mantendo categoria e tipo
         reset({
           ...defaultValues,
           categoriaId: payload.categoriaId,
           tipo: payload.tipo,
         });
 
-        // Aguarda o reset do formulário antes de focar
-        setTimeout(() => {
-          setFocus("itemId");
-        }, 500);
+        // Sinaliza que deve focar no itemId assim que o campo estiver pronto
+        setShouldFocusItem(true);
         // handleCloseDrawer();
       } catch (error) {
         SwalToast.fire({
@@ -155,15 +166,7 @@ export function useLancamentoDrawer({
         });
       }
     },
-    [
-      session,
-      origem,
-      parcelar,
-      createLancamento,
-      reset,
-      defaultValues,
-      setFocus,
-    ]
+    [session, origem, parcelar, createLancamento, reset, defaultValues]
   );
 
   const handleOpenDrawer = useCallback(() => {
@@ -217,6 +220,7 @@ export function useLancamentoDrawer({
     itens: itensFiltrados,
     reset,
     defaultValues,
+    setFocus,
   };
 
   return {

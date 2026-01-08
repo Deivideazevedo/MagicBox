@@ -22,13 +22,23 @@ model Lancamento {
 
   // Relacionamentos
   user       User        @relation(fields: [user_id], references: [id], onDelete: Restrict)
-  categoria  Categoria?  @relation(fields: [categoria_id], references: [id], onDelete: Restrict)
+  categoria  Categoria   @relation(fields: [categoria_id], references: [id], onDelete: Restrict)
   despesa    Despesa?    @relation(fields: [despesa_id], references: [id], onDelete: Restrict)
   fonteRenda FonteRenda? @relation(fields: [fonte_renda_id], references: [id], onDelete: Restrict)
 
+  // Índices simples
   @@index([user_id])
   @@index([despesa_id])
   @@index([fonte_renda_id])
   @@index([data])
+  @@index([categoria_id])
+  @@index([tipo])
+  
+  // Índices compostos para otimização de queries comuns
+  @@index([user_id, data(sort: Desc)]) // Listagem de lançamentos por usuário ordenado por data
+  @@index([user_id, tipo]) // Filtro por tipo de lançamento
+  @@index([user_id, categoria_id, data]) // Filtro por categoria
+  @@index([user_id, despesa_id, data]) // Filtro por despesa
+  
   @@map("lancamentos")
 }

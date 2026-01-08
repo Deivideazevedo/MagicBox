@@ -109,6 +109,7 @@ export const lancamentoRepository = {
   },
 
   async create(data: any) {
+    // Cria o lançamento sem buscar as relações (economiza 2 queries desnecessárias)
     const lancamento = await prisma.lancamento.create({
       data: {
         user_id: Number(data.userId),
@@ -121,14 +122,14 @@ export const lancamentoRepository = {
         despesa_id: data.despesaId ? Number(data.despesaId) : null,
         fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : null,
       },
-      include: {
-        despesa: true,
-        fonteRenda: true,
-      },
+      // REMOVIDO include para otimização de performance
+      // Se precisar das relações, faça um findById logo após
     });
 
     return {
       ...lancamento,
+      despesa: null, // Mantém compatibilidade com o tipo esperado
+      fonteRenda: null,
       // statusDinamico: calcularStatusDinamico(lancamento),
     };
   },
@@ -159,17 +160,21 @@ export const lancamentoRepository = {
         valor: data.valor ? Number(data.valor) : undefined,
         data: data.data ? new Date(data.data) : undefined,
         descricao: data.descricao,
-        despesa_id: data.despesaId ? Number(data.despesaId) : undefined,
-        fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : undefined,
+        despesa_id: data.despesaId !== undefined 
+          ? (data.despesaId ? Number(data.despesaId) : null) 
+          : undefined,
+        fonte_renda_id: data.fonteRendaId !== undefined 
+          ? (data.fonteRendaId ? Number(data.fonteRendaId) : null) 
+          : undefined,
       },
-      include: {
-        despesa: true,
-        fonteRenda: true,
-      },
+      // REMOVIDO include para otimização de performance
+      // Se precisar das relações, faça um findById logo após
     });
 
     return {
       ...lancamento,
+      despesa: null, // Mantém compatibilidade com o tipo esperado
+      fonteRenda: null,
       // statusDinamico: calcularStatusDinamico(lancamento),
     };
   },

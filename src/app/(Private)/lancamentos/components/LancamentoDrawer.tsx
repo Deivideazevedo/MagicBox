@@ -91,6 +91,7 @@ export default function LancamentoDrawer() {
     itens,
     reset,
     defaultValues,
+    setFocus,
   } = formProps;
 
   return (
@@ -129,6 +130,9 @@ export default function LancamentoDrawer() {
             maxWidth: "100vw",
             background: theme.palette.grey[100],
           },
+        }}
+        SlideProps={{
+          onEntered: () => setFocus('categoriaId'),
         }}
       >
         <Scrollbar
@@ -326,8 +330,9 @@ export default function LancamentoDrawer() {
                       label="Categoria"
                       placeholder="Selecione"
                       displayEmpty
-                      getValue={(obj: any) => obj.id}
-                      getLabel={(obj: any) => obj.nome}
+                      getValue={(obj: Categoria) => obj.id}
+                      getLabel={(obj: Categoria) => obj.nome}
+                      onChange={() => setFocus("itemId")}
                     />
                   </Grid>
 
@@ -343,6 +348,7 @@ export default function LancamentoDrawer() {
                       disabled={!formProps.categoriaId}
                       getValue={(obj: Categoria | FonteRenda) => obj.id}
                       getLabel={(obj: Categoria | FonteRenda) => obj.nome}
+                      onChange={() => setFocus("valor")}
                     />
                   </Grid>
 

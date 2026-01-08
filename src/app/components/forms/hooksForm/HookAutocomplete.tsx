@@ -82,7 +82,7 @@ export function HookAutocomplete<
   >;
 
   const {
-    field,
+    field: { ref, ...fieldWithoutRef },
     fieldState: { error },
   } = useController({ name, control, rules });
 
@@ -96,18 +96,18 @@ export function HookAutocomplete<
 
   // Função para obter o valor atual do campo
   const getCurrentValue = (): LocalAutocompleteValue => {
-    if (!field.value) {
+    if (!fieldWithoutRef.value) {
       return (props.multiple ? [] : null) as LocalAutocompleteValue;
     }
 
     if (!getOptionValue || !options) {
-      return field.value;
+      return fieldWithoutRef.value;
     }
 
     // Se for múltiplo
     if (props.multiple) {
-      const values: (string | number)[] = Array.isArray(field.value)
-        ? field.value
+      const values: (string | number)[] = Array.isArray(fieldWithoutRef.value)
+        ? fieldWithoutRef.value
         : [];
 
       if (values.length === 0) {
@@ -133,7 +133,7 @@ export function HookAutocomplete<
     }
 
     // Se for único
-    return (options.find((option) => getOptionValue(option) === field.value) ||
+    return (options.find((option) => getOptionValue(option) === fieldWithoutRef.value) ||
       null) as LocalAutocompleteValue;
   };
 
@@ -188,17 +188,17 @@ export function HookAutocomplete<
           );
       }
 
-      field.onChange(finalValues);
+      fieldWithoutRef.onChange(finalValues);
     } else if (getOptionValue && newValue !== null && newValue !== undefined) {
       // Lógica original
       if (Array.isArray(newValue)) {
         const mappedValues = newValue.map((item) => getOptionValue(item as T));
-        field.onChange(mappedValues);
+        fieldWithoutRef.onChange(mappedValues);
       } else {
-        field.onChange(getOptionValue(newValue as T));
+        fieldWithoutRef.onChange(getOptionValue(newValue as T));
       }
     } else {
-      field.onChange(newValue);
+      fieldWithoutRef.onChange(newValue);
     }
 
     // Chama onChange externo uma única vez no final
@@ -342,7 +342,7 @@ export function HookAutocomplete<
       value={getCurrentValue()}
       options={componentOptions}
       onChange={handleChange}
-      onBlur={field.onBlur}
+      onBlur={fieldWithoutRef.onBlur}
       getOptionLabel={getOptionLabel || getDefaultOptionLabel}
       isOptionEqualToValue={
         isOptionEqualToValue || getDefaultIsOptionEqualToValue
@@ -355,6 +355,7 @@ export function HookAutocomplete<
       renderInput={(params) => (
         <CustomTextField
           {...params}
+          inputRef={ref}
           label={label}
           placeholder={placeholder}
           error={!!error}

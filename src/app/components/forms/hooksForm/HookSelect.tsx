@@ -22,6 +22,7 @@ type HookSelectProps<TFieldValues extends FieldValues, T> = UseControllerProps<T
   getLabel?: (obj: T) => React.ReactNode;
   children?: React.ReactNode;
   disableEmpty?: boolean;
+  onChange?: (value: string | number) => void;
 };
 
 export function HookSelect<TFieldValues extends FieldValues, T>({
@@ -35,10 +36,11 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   children,
   disableEmpty,
   returnAsNumber = true,
+  onChange,
   ...props
 }: HookSelectProps<TFieldValues, T>) {
   const {
-    field,
+    field: { ref, ...fieldWithoutRef },
     fieldState: { error },
   } = useController({ name, control, rules });
 
@@ -46,21 +48,21 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   const handleChange = (event: SelectChangeEvent<string>) => {
     const rawValue = event.target.value;
     const processedValue = returnAsNumber ? Number(rawValue) : rawValue;
-    field.onChange(processedValue);
+    onChange?.(processedValue);
+    fieldWithoutRef.onChange(processedValue);
   };
-
-  // Determina se a label deve ter shrink ativo
-  // Quando displayEmpty está ativo e não há valor, a label deve subir para não sobrepor o placeholder
-  //const shouldShrink = props.displayEmpty ? true : undefined;
-
-  
 
   return (
     <FormControl fullWidth error={!!error}>
       <InputLabel shrink={props.displayEmpty} color={props.color}>
         {props.label}
       </InputLabel>
-      <Select {...field} {...props} inputRef={field.ref} onChange={handleChange}>
+      <Select 
+        {...fieldWithoutRef} 
+        {...props} 
+        inputRef={ref}
+        onChange={handleChange}
+      >
         {/* Caso o pai queira criar todas as opções manualmente */}
         {children}
 

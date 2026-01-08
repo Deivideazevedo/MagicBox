@@ -213,7 +213,6 @@ export function useDespesas(params?: UseDespesasProps) {
   const isEdditing = Boolean(watch("id"));
   const isCollapsed = !!watch("nome") || !!watch("mensalmente");
 
-  console.log("row", row);
 
   const formProps = {
     isEdditing,
