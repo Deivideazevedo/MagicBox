@@ -26,6 +26,7 @@ import {
   Fab,
   Grid,
   IconButton,
+  Paper,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -35,13 +36,19 @@ import {
 } from "@mui/material";
 import {
   IconCreditCard,
+  IconDeviceFloppy,
+  IconEraser,
   IconPlus,
   IconSwitchHorizontal,
   IconWallet,
   IconX,
 } from "@tabler/icons-react";
+import { IconCoin } from "@tabler/icons-react";
+import { IconCalendarEvent } from "@tabler/icons-react";
+import { Categoria } from "@/core/categorias/types";
+import { FonteRenda } from "@/core/fontesRenda/types";
 
-const DrawerWidth = "470px";
+const DrawerWidth = "420px";
 
 export default function LancamentoDrawer() {
   const theme = useTheme();
@@ -109,10 +116,17 @@ export default function LancamentoDrawer() {
         anchor="right"
         open={showDrawer}
         onClose={handleCloseDrawer}
+        sx={{
+          zIndex: 999,
+        }}
         PaperProps={{
           sx: {
-            width: DrawerWidth,
-
+            width: {
+              xs: "100%",
+              sm: "400px",
+              md: DrawerWidth,
+            },
+            maxWidth: "100vw",
             background: theme.palette.grey[100],
           },
         }}
@@ -150,12 +164,19 @@ export default function LancamentoDrawer() {
               elevation={1}
               sx={{
                 borderRadius: 3,
-                border: "1px solid",
+                // border: "1px solid",
                 borderColor: alpha(theme.palette.primary.main, 0.2),
                 // backgroundColor: alpha(theme.palette.primary.light, 0.4),
+                pb: `0px !important`,
               }}
             >
-              <CardContent sx={{ px: 2, py: 2 }}>
+              <CardContent
+                sx={{
+                  px: 1.5,
+                  py: 1.5,
+                  pb: `${tipo === "agendamento" ? 27 : 7}px !important`,
+                }}
+              >
                 {/* Header com Switch de Origem */}
                 <Box display="flex" alignItems="center" gap={2} mb={3}>
                   <Box
@@ -196,7 +217,9 @@ export default function LancamentoDrawer() {
                             width: 24,
                             height: 24,
                             transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                            transform: isDespesa ? "rotateY(0deg)" : "rotateY(180deg)",
+                            transform: isDespesa
+                              ? "rotateY(0deg)"
+                              : "rotateY(180deg)",
                             "&:hover": {
                               color: "white",
                               backgroundColor: "primary.dark",
@@ -221,27 +244,75 @@ export default function LancamentoDrawer() {
                 </Box>
 
                 <Grid container spacing={2.5}>
-                  {/* Tipo de Lançamento */}
+                  {/* Tipo de Lançamento - Estilo Floating Segmented Control */}
                   <Grid item xs={12}>
-                    <Typography variant="body2" fontWeight={600} mb={1}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      mb={1.5}
+                      color="text.secondary"
+                    >
                       Tipo de Lançamento
                     </Typography>
+
                     <ToggleButtonGroup
                       value={tipo}
                       exclusive
                       onChange={handleTipoChange}
                       fullWidth
                       sx={{
+                        backgroundColor: (theme) =>
+                          alpha(theme.palette.grey[200], 0.6),
+                        padding: "4px",
+                        borderRadius: "12px", // Arredondado moderno
+                        border: "1px solid",
+                        borderColor: "divider",
+                        display: "grid", // Garante 50% para cada
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "4px", // Espaço entre os botões
+
                         "& .MuiToggleButton-root": {
-                          py: 1.5,
+                          border: "1px solid transparent",
+                          borderRadius: "8px !important", // Borda interna menor
                           textTransform: "none",
-                          fontWeight: 500,
+                          fontWeight: 600,
+                          color: "text.secondary",
+                          transition: "all 0.2s ease-in-out",
+                          py: 1.2,
+
+                          "&:hover": {
+                            borderColor: (theme) =>
+                              alpha(theme.palette.divider, 0.1),
+                            backgroundColor: (theme) =>
+                              alpha(theme.palette.background.paper, 0.6),
+                          },
+
+                          "&.Mui-selected": {
+                            backgroundColor: "background.paper",
+                            color: "primary.main",
+                            border: "1px solid",
+                            borderColor: (theme) =>
+                              alpha(theme.palette.primary.main, 0.4),
+                            boxShadow: "0px 2px 5px rgba(0,0,0,0.08)", // Sombra suave (o efeito "lift")
+                            "&:hover": {
+                              backgroundColor: "background.paper",
+                            },
+                          },
                         },
                       }}
                     >
-                      <ToggleButton value="pagamento">Pagamento</ToggleButton>
-                      <ToggleButton value="agendamento">
-                        Agendamento
+                      <ToggleButton value="pagamento" disableRipple>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <IconCoin size={18} />
+                          <span>Pagamento</span>
+                        </Box>
+                      </ToggleButton>
+
+                      <ToggleButton value="agendamento" disableRipple>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <IconCalendarEvent size={18} />
+                          <span>Agendamento</span>
+                        </Box>
                       </ToggleButton>
                     </ToggleButtonGroup>
                   </Grid>
@@ -270,8 +341,8 @@ export default function LancamentoDrawer() {
                       placeholder="Selecione"
                       displayEmpty
                       disabled={!formProps.categoriaId}
-                      getValue={(obj: any) => obj.id}
-                      getLabel={(obj: any) => obj.nome}
+                      getValue={(obj: Categoria | FonteRenda) => obj.id}
+                      getLabel={(obj: Categoria | FonteRenda) => obj.nome}
                     />
                   </Grid>
 
@@ -382,32 +453,96 @@ export default function LancamentoDrawer() {
                     </Collapse>
                   </Grid>
                 </Grid>
+              </CardContent>
+            </Card>
 
-                {/* Botões */}
-                <Stack direction="row" spacing={2} mt={3}>
+            {/* Floating Action Buttons */}
+            <Box
+              sx={{
+                position: "sticky",
+                zIndex: 10,
+                bottom: 16,
+                mt: 3,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                bgcolor: "transparent",
+              }}
+            >
+              {/* Botão Salvar - Lado Esquerdo */}
+              <Paper
+                elevation={1}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 3,
+                  // border: 1,
+                  borderColor: "divider",
+                  alignItems: "center",
+                }}
+              >
+                <Stack direction="row" spacing={1.5}>
                   <Button
                     variant="outlined"
-                    fullWidth
-                    onClick={() => {
-                      reset(defaultValues);
-                      handleCloseDrawer();
+                    startIcon={<IconEraser size={18} />}
+                    sx={{
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      textTransform: "none",
                     }}
-                    startIcon={<IconX />}
+                    color="error"
+                    disabled={isCreating}
+                    onClick={() => reset(defaultValues)}
                   >
-                    Cancelar
+                    Resetar
                   </Button>
+
                   <LoadingButton
-                    type="submit"
                     variant="contained"
-                    fullWidth
+                    color="primary"
+                    startIcon={<IconDeviceFloppy size={18} />}
                     loading={isCreating}
+                    type="submit"
+                    sx={{
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      "&:focus-visible": {
+                        boxShadow: "none",
+                      },
+                    }}
                   >
                     Salvar
                   </LoadingButton>
                 </Stack>
-              </CardContent>
-            </Card>
-            {/* </Box> */}
+              </Paper>
+
+              {/* Botão Limpar - Lado Direito */}
+              {/* <Paper
+                elevation={1}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 3,
+                  // border: 1,
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  startIcon={<IconEraser size={18} />}
+                  sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    textTransform: "none",
+                  }}
+                  color="error"
+                  disabled={isCreating}
+                  onClick={() => reset(defaultValues)}
+                >
+                  Limpar
+                </Button>
+              </Paper> */}
+            </Box>
           </Box>
         </Scrollbar>
       </Drawer>

@@ -74,6 +74,12 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
       {...field}
       value={visualValue}
       onChange={handleChange}
+      type="text"
+      // ADIÇÃO: inputMode="decimal" abre o teclado numérico no celular (com vírgula/ponto)
+      inputProps={{
+        inputMode: "decimal",
+        ...textFieldProps.inputProps, // Mantém outros props se passados
+      }}
       inputRef={(ref) => {
         if (ref) {
           inputRef.current = ref;

@@ -68,6 +68,7 @@ export function useLancamentoDrawer({
     reset,
     watch,
     setValue,
+    setFocus,
   } = useForm<LancamentoFormData>({
     resolver: zodResolver(lancamentoSchema),
     defaultValues,
@@ -136,8 +137,17 @@ export function useLancamentoDrawer({
           title: "Lançamento criado com sucesso!",
         });
 
-        reset(defaultValues);
-        handleCloseDrawer();
+        reset({
+          ...defaultValues,
+          categoriaId: payload.categoriaId,
+          tipo: payload.tipo,
+        });
+
+        // Aguarda o reset do formulário antes de focar
+        setTimeout(() => {
+          setFocus("itemId");
+        }, 500);
+        // handleCloseDrawer();
       } catch (error) {
         SwalToast.fire({
           icon: "error",
@@ -145,7 +155,15 @@ export function useLancamentoDrawer({
         });
       }
     },
-    [session, origem, parcelar, createLancamento, reset, defaultValues, handleCloseDrawer]
+    [
+      session,
+      origem,
+      parcelar,
+      createLancamento,
+      reset,
+      defaultValues,
+      setFocus,
+    ]
   );
 
   const handleOpenDrawer = useCallback(() => {
