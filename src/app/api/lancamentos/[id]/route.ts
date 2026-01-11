@@ -1,97 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { errorHandler } from "@/lib/error-handler";
+import { getAuthUser } from "@/lib/server-auth";
+import { lancamentoService as service } from "@/core/lancamentos/service";
+import { ValidationError } from "@/lib/errors";
+import { updateLancamentoSchema } from "@/core/lancamentos/lancamento.dto";
+import type { LancamentoPayload } from "@/core/lancamentos/types";
 
-const DATA_PATH = join(process.cwd(), "src/data/lancamentos.json");
+export const GET = errorHandler(findById);
+export const PATCH = errorHandler(update);
+export const DELETE = errorHandler(remove);
 
-function readLancamentos() {
-  try {
-    const data = readFileSync(DATA_PATH, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-function writeLancamentos(lancamentos: any[]) {
-  writeFileSync(DATA_PATH, JSON.stringify(lancamentos, null, 2));
-}
-
-/**
- * PATCH /api/lancamentos/[id]
- * Atualiza um lançamento existente
- */
-export async function PATCH(
+async function findById(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { id } = params;
-
-    const lancamentos = readLancamentos();
-    const lancamentoIndex = lancamentos.findIndex(
-      (lancamento: any) => lancamento.id === id && lancamento.userId === session.user.id
-    );
-
-    if (lancamentoIndex === -1) {
-      return NextResponse.json({ error: "Lançamento não encontrado" }, { status: 404 });
-    }
-
-    lancamentos[lancamentoIndex] = {
-      ...lancamentos[lancamentoIndex],
-      ...body,
-      updatedAt: new Date().toISOString(),
-    };
-
-    writeLancamentos(lancamentos);
-
-    return NextResponse.json(lancamentos[lancamentoIndex]);
-  } catch (error) {
-    console.error("Erro ao atualizar lançamento:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+): Promise<NextResponse> {
+  const { id } = params;
+  const lancamento = await service.findById(id);
+  
+  if (!lancamento) {
+    throw new ValidationError("Lançamento não encontrado");
   }
+
+  return NextResponse.json(lancamento);
 }
 
-/**
- * DELETE /api/lancamentos/[id]
- * Remove um lançamento
- */
-export async function DELETE(
+async function update(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+): Promise<NextResponse> {
+  const { id } = params;
+  const body = await request.json();
 
-    const { id } = params;
-    const lancamentos = readLancamentos();
-    const lancamentoIndex = lancamentos.findIndex(
-      (lancamento: any) => lancamento.id === id && lancamento.userId === session.user.id
-    );
-
-    if (lancamentoIndex === -1) {
-      return NextResponse.json({ error: "Lançamento não encontrado" }, { status: 404 });
-    }
-
-    lancamentos.splice(lancamentoIndex, 1);
-    writeLancamentos(lancamentos);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Erro ao excluir lançamento:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  // Validação com Zod
+  const validation = updateLancamentoSchema.safeParse(body);
+  if (!validation.success) {
+    throw new ValidationError((validation.error as any).errors[0].message);
   }
+
+  const lancamentoAtualizado = await service.update(id, validation.data as LancamentoPayload);
+  return NextResponse.json(lancamentoAtualizado);
+}
+
+async function remove(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
+  const { id } = params;
+  const success = await service.remove(id);
+  
+  if (!success) {
+    throw new ValidationError("Lançamento não encontrado");
+  }
+
+  return NextResponse.json({ success: true });
 }

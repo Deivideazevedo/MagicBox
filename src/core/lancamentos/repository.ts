@@ -11,17 +11,65 @@ import { LancamentoParams, LancamentoPayload } from "./types";
 import { PaginatedResult } from "../types/global";
 export const lancamentoRepository = {
   /**
-   * Busca lançamentos com suporte a filtro de status dinâmico (Two-Step Fetch)
-   * Enriquece cada resultado com o campo statusDinamico
+   * Busca lançamentos com suporte a filtros dinâmicos
    */
   async findAll(
     filters: LancamentoParams
   ): Promise<PaginatedResult<PrismaLancamento>> {
-    const { page = 0, limit = 10, statusDinamico, ...filterParams } = filters;
+    const { 
+      page = 0, 
+      limit = 10, 
+      statusDinamico, 
+      dataInicio,
+      dataFim,
+      tipo,
+      busca,
+      userId,
+      categoriaId,
+      despesaId,
+      fonteRendaId,
+      ...otherFilters 
+    } = filters;
 
-    let whereClause: Prisma.LancamentoWhereInput = {
-      ...filterParams,
-    };
+    let whereClause: Prisma.LancamentoWhereInput = {};
+
+    // Adicionar filtros válidos manualmente
+    if (userId) {
+      whereClause.user_id = Number(userId);
+    }
+    if (categoriaId) {
+      whereClause.categoria_id = Number(categoriaId);
+    }
+    if (despesaId) {
+      whereClause.despesa_id = Number(despesaId);
+    }
+    if (fonteRendaId) {
+      whereClause.fonte_renda_id = Number(fonteRendaId);
+    }
+
+    // Filtro por período
+    if (dataInicio || dataFim) {
+      whereClause.data = {};
+      if (dataInicio) {
+        whereClause.data.gte = new Date(dataInicio);
+      }
+      if (dataFim) {
+        whereClause.data.lte = new Date(dataFim);
+      }
+    }
+
+    // Filtro por tipo
+    if (tipo) {
+      whereClause.tipo = tipo as TipoLancamento;
+    }
+
+    // Filtro por busca (descrição)
+    if (busca) {
+      whereClause.descricao = {
+        contains: busca,
+        mode: 'insensitive',
+      };
+    }
 
     const [total, data] = await prisma.$transaction([
       prisma.lancamento.count({ where: whereClause }),
@@ -31,6 +79,12 @@ export const lancamentoRepository = {
         skip: page * limit,
         orderBy: { data: "desc" },
         include: {
+          categoria: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
           despesa: {
             select: {
               id: true,
@@ -74,17 +128,34 @@ export const lancamentoRepository = {
         id: numericId,
       },
       include: {
-        despesa: true,
-        fonteRenda: true,
+        categoria: {
+          select: {
+            id: true,
+            nome: true,
+          },
+        },
+        despesa: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaVencimento: true,
+          },
+        },
+        fonteRenda: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaRecebimento: true,
+          },
+        },
       },
     });
 
     if (!lancamento) return null;
 
-    return {
-      ...lancamento,
-      // statusDinamico: calcularStatusDinamico(lancamento),
-    };
+    return lancamento;
   },
 
   async findByUser(userId: string | number) {
@@ -97,15 +168,32 @@ export const lancamentoRepository = {
       },
       orderBy: { data: "desc" },
       include: {
-        despesa: true,
-        fonteRenda: true,
+        categoria: {
+          select: {
+            id: true,
+            nome: true,
+          },
+        },
+        despesa: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaVencimento: true,
+          },
+        },
+        fonteRenda: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaRecebimento: true,
+          },
+        },
       },
     });
 
-    return lancamentos.map((lancamento) => ({
-      ...lancamento,
-      // statusDinamico: calcularStatusDinamico(lancamento),
-    }));
+    return lancamentos;
   },
 
   async create(data: any) {

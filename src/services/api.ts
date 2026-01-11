@@ -1,4 +1,3 @@
-import { RootState } from "@/store/store";
 import { SwalToast } from "@/utils/swalert";
 import {
   BaseQueryFn,
@@ -33,11 +32,11 @@ const baseQueryInterceptor: BaseQueryFn<
     // Tentar extrair mensagem do backend primeiro
     if (result.error.data) {
       const errorData = result?.error?.data as any;
-      
+
       // Backend já envia mensagem tratada
       if (errorData.message) {
-        message = Array.isArray(errorData.message) 
-          ? errorData.message[0] 
+        message = Array.isArray(errorData.message)
+          ? errorData.message[0]
           : errorData.message;
       } else if (errorData.error) {
         message = errorData.error;
@@ -61,7 +60,8 @@ const baseQueryInterceptor: BaseQueryFn<
           message = "Erro interno do servidor. Tente novamente mais tarde.";
           break;
         case "FETCH_ERROR":
-          message = "Erro de conexão. Verifique sua internet e tente novamente.";
+          message =
+            "Erro de conexão. Verifique sua internet e tente novamente.";
           break;
         case "PARSING_ERROR":
           message = "Erro ao processar resposta do servidor.";

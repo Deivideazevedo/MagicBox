@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useGetLancamentosQuery } from "@/services/endpoints/lancamentosApi";
 import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import type { Lancamento } from "@/core/lancamentos/types";
 
 interface MonthData {
   month: string;
@@ -19,10 +20,15 @@ export const useMonthlyChart = () => {
   const dataInicio = format(startOfMonth(subMonths(today, 5)), "yyyy-MM-dd");
   const dataFim = format(endOfMonth(today), "yyyy-MM-dd");
 
-  const { data: lancamentos = [], isLoading } = useGetLancamentosQuery({
+  const queryParams = new URLSearchParams({
     dataInicio,
     dataFim
-  });
+  }).toString();
+
+  const { data: response, isLoading } = useGetLancamentosQuery(queryParams);
+
+  // Extrair array de lancamentos da resposta paginada
+  const lancamentos = Array.isArray(response) ? response : response?.data || [];
 
   useEffect(() => {
     if (!isLoading && lancamentos) {
@@ -37,7 +43,7 @@ export const useMonthlyChart = () => {
         const monthName = format(monthDate, "MMM", { locale: ptBR });
         
         // Filtrar lançamentos do mês
-        const monthLancamentos = lancamentos.filter(lancamento => {
+        const monthLancamentos = lancamentos.filter((lancamento: Lancamento) => {
           const lancamentoDate = new Date(lancamento.data);
           return isWithinInterval(lancamentoDate, { start: monthStart, end: monthEnd });
         });
@@ -46,7 +52,7 @@ export const useMonthlyChart = () => {
         let receitas = 0;
         let categorias = 0;
 
-        monthLancamentos.forEach(lancamento => {
+        monthLancamentos.forEach((lancamento: Lancamento) => {
           const valor = Number(lancamento.valor);
           if (lancamento.tipo === 'pagamento') {
             if (valor > 0) {

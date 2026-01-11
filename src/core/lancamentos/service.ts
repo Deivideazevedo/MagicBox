@@ -28,6 +28,7 @@ function gerarObservacaoAutomatica(
 
 export const lancamentoService = {
   async findAll(filters: any) {
+    // Sempre usa findAll com paginação
     return await repository.findAll(filters);
   },
 

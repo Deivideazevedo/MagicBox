@@ -11,24 +11,55 @@ export const POST = errorHandler(create);
 async function findAll(request: NextRequest): Promise<NextResponse> {
   const { id: authId, role } = await getAuthUser();
   const { searchParams } = new URL(request.url);
-  const filters = Object.fromEntries(searchParams.entries());
-
+  
   // Se for admin, pode usar userId do filtro caso exista
   // Se não for admin, só pode usar o próprio userId
-  const userId = role === "admin" ? filters.userId || authId : authId;
+  const userId = role === "admin" ? searchParams.get('userId') || authId : authId;
 
-  // Converte userId para number se necessário
-  const numericUserId = Number(userId);
+  // Construir filtros
+  const filters: any = {
+    userId: Number(userId),
+    page: Number(searchParams.get('page')) || 0,
+    limit: Number(searchParams.get('limit')) || 10,
+  };
 
-  // TODO: Implementar filtros avançados no service/repository se necessário
-  // Por enquanto, retorna todos do usuário e filtra no frontend ou implementa filtros básicos
-  const lancamentos = await service.findByUser(numericUserId);
+  // Filtros de data
+  if (searchParams.get('dataInicio')) {
+    filters.dataInicio = searchParams.get('dataInicio');
+  }
+  if (searchParams.get('dataFim')) {
+    filters.dataFim = searchParams.get('dataFim');
+  }
 
-  // Filtragem básica em memória se o repository não suportar todos os filtros ainda
-  // Idealmente, passar filtros para o repository
-  // const filtered = lancamentos.filter(...) 
+  // Filtro por categoria
+  if (searchParams.get('categoriaId')) {
+    filters.categoriaId = Number(searchParams.get('categoriaId'));
+  }
 
-  return NextResponse.json(lancamentos);
+  // Filtro por despesa
+  if (searchParams.get('despesaId')) {
+    filters.despesaId = Number(searchParams.get('despesaId'));
+  }
+
+  // Filtro por fonte de renda
+  if (searchParams.get('fonteRendaId')) {
+    filters.fonteRendaId = Number(searchParams.get('fonteRendaId'));
+  }
+
+  // Filtro por tipo
+  if (searchParams.get('tipo')) {
+    filters.tipo = searchParams.get('tipo');
+  }
+
+  // Filtro por busca
+  if (searchParams.get('busca')) {
+    filters.busca = searchParams.get('busca');
+  }
+
+  const result = await service.findAll(filters);
+  
+  // Sempre retorna resposta paginada
+  return NextResponse.json(result);
 }
 
 async function create(request: NextRequest): Promise<NextResponse> {

@@ -55,6 +55,9 @@ export type LancamentoParams = Partial<
   Omit<Lancamento, "categoria" | "despesa" | "fonteRenda"> & {
     page: number;
     limit: number;
+    dataInicio?: string;
+    dataFim?: string;
+    busca?: string;
   }
 >;
 

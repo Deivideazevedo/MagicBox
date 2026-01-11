@@ -37,11 +37,17 @@ export function useLancamentos({
   const [step, setStep] = useState(1);
   const [isParcelado, setIsParcelado] = useState(false);
 
+  // Montar query params vazio para pegar todos os lançamentos do usuário
+  const queryParams = new URLSearchParams();
+  
   // Se lancamentosProps existir (não é undefined), skip a query RTK
-  const { data: lancamentosQuery = [], isLoading: isLoadingList } =
-    useGetLancamentosQuery(undefined, {
+  const { data: response = [], isLoading: isLoadingList } =
+    useGetLancamentosQuery(queryParams.toString(), {
       skip: lancamentosProps !== undefined,
     });
+
+  // Extrair array de lancamentos da resposta
+  const lancamentosQuery = Array.isArray(response) ? response : response?.data || [];
 
   // Usa props se fornecido, senão usa resultado da query
   const lancamentos = lancamentosProps ?? lancamentosQuery;

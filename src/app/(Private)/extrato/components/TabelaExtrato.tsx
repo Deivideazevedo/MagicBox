@@ -271,8 +271,11 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
     },
   ];
 
+  // Garantir que lancamentos é um array antes de mapear
+  const lancamentosArray = Array.isArray(lancamentos) ? lancamentos : lancamentos?.data || [];
+
   // Dados processados com status calculado
-  const dadosProcessados = lancamentos.map((lancamento: any) => ({
+  const dadosProcessados = lancamentosArray.map((lancamento: any) => ({
     ...lancamento,
     statusCalculado: getStatus(lancamento),
   }));

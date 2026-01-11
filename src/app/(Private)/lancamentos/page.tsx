@@ -1,40 +1,57 @@
 "use client";
 
-import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  alpha,
-} from "@mui/material";
-import { IconCurrencyReal, IconReceipt, IconCalendar } from "@tabler/icons-react";
+import { Box, Container, Typography, Grid, Card, Button } from "@mui/material";
+import { IconTrash } from "@tabler/icons-react";
 
 // Components
-import TabelaLancamentos from "./components/TabelaLancamentos";
-// import FormularioLancamento from "./components/FormularioLancamento";
+import LancamentoDrawer from "./components/LancamentoDrawer";
+import MiniCardsResumo from "./components/MiniCardsResumo";
+import FiltrosAvancados from "./components/FiltrosAvancados";
+import DataGridLancamentos from "./components/DataGridLancamentos";
+import ModalVisualizacao from "./components/ModalVisualizacao";
+import ModalEdicao from "./components/ModalEdicao";
+import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
 // Hooks
-import { useLancamentos } from "./hooks/useLancamentos";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useLancamentosList } from "./hooks/useLancamentosList";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 
 export default function LancamentosPage() {
+  const { data: categorias = [] } = useGetCategoriasQuery();
+  const { data: despesas = [] } = useGetDespesasQuery();
+  const { data: fontesRenda = [] } = useGetFontesRendaQuery();
+
   const {
     lancamentos,
-    handleEdit,
-    handleDelete,
+    totais,
+    isLoading,
+    page,
+    pageSize,
+    totalRows,
+    handlePageChange,
+    handlePageSizeChange,
+    filtros,
+    handleAplicarFiltros,
+    handleLimparFiltros,
+    lancamentoParaVisualizar,
+    handleVisualizarLancamento,
+    handleFecharVisualizacao,
+    lancamentoParaEditar,
+    handleEditarLancamento,
+    handleFecharEdicao,
+    lancamentoParaExcluir,
+    lancamentoParaExcluirNome,
+    handleAbrirDialogExclusao,
+    handleFecharDialogExclusao,
+    handleConfirmarExclusao,
     isDeleting,
-  } = useLancamentos();
-
-  const { data: despesas = [] } = useGetDespesasQuery();
-  const { data: categorias = [] } = useGetCategoriasQuery();
-
-  // Calcular totais
-  const valorTotalPrevisto = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valor), 0);
-  const valorTotalPago = lancamentos.reduce((acc, lanc) => acc + Number(lanc.valor || 0), 0);
-  const totalLancamentos = lancamentos.length;
+    selectedIds,
+    handleSelectionChange,
+    handleBulkDelete,
+    isBulkDeleting,
+  } = useLancamentosList();
 
   return (
     <>
@@ -44,157 +61,137 @@ export default function LancamentosPage() {
             Lançamentos
           </Typography>
           <Typography variant="h6" color="textSecondary">
-            Registre pagamentos e agende despesas futuras
+            Gerencie seus pagamentos e agendamentos financeiros
           </Typography>
         </Box>
 
-        {/* Cards de Resumo */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={4}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: "primary.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                    }}
-                  >
-                    <IconReceipt size={24} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Total de Lançamentos
-                    </Typography>
-                    <Typography variant="h5" fontWeight={600}>
-                      {totalLancamentos}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08),
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: "warning.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                    }}
-                  >
-                    <IconCalendar size={24} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Valor Previsto
-                    </Typography>
-                    <Typography variant="h5" fontWeight={600}>
-                      R$ {valorTotalPrevisto.toFixed(2)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                bgcolor: (theme) => alpha(theme.palette.success.main, 0.08),
-              }}
-            >
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 2,
-                      bgcolor: "success.main",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                    }}
-                  >
-                    <IconCurrencyReal size={24} />
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="textSecondary">
-                      Valor Pago
-                    </Typography>
-                    <Typography variant="h5" fontWeight={600}>
-                      R$ {valorTotalPago.toFixed(2)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+        {/* Cards no topo */}
+        <Grid container spacing={3} mb={3}>
+          <Grid item xs={12}>
+            <MiniCardsResumo
+              totalLancamentos={totais.totalLancamentos}
+              valorTotal={totais.valorTotal}
+              valorPagamentos={totais.valorPagamentos}
+              valorAgendamentos={totais.valorAgendamentos}
+            />
           </Grid>
         </Grid>
 
-        {/* Formulário e Tabela */}
-        <Grid container spacing={3}>
-          {/* Tabela de Lançamentos */}
+        {/* Filtros abaixo */}
+        <Grid container spacing={3} mb={3}>
           <Grid item xs={12}>
+            <FiltrosAvancados
+              filtros={filtros}
+              categorias={categorias}
+              despesas={despesas}
+              fontesRenda={fontesRenda}
+              onAplicarFiltros={handleAplicarFiltros}
+              onLimparFiltros={handleLimparFiltros}
+            />
+          </Grid>
+        </Grid>
+
+        {/* DataGrid */}
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+
             <Card
-              elevation={0}
               sx={{
                 borderRadius: 3,
-                border: "1px solid",
-                borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+                p: 3,
               }}
             >
-              <CardContent sx={{ p: 0 }}>
-                <Box sx={{ p: 3, borderBottom: "1px solid", borderColor: "divider" }}>
-                  <Typography variant="h6" fontWeight={600}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
                     Extrato de Lançamentos
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
                     Visualize, edite ou exclua seus lançamentos
                   </Typography>
                 </Box>
-                <Box sx={{ p: 3 }}>
-                  <TabelaLancamentos
-                    lancamentos={lancamentos}
-                    despesas={despesas}
-                    categorias={categorias}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    isDeleting={isDeleting}
-                  />
-                </Box>
-              </CardContent>
+                
+                {selectedIds.length > 0 && (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<IconTrash size={18} />}
+                    onClick={handleBulkDelete}
+                    disabled={isBulkDeleting}
+                    sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                  >
+                    Excluir {selectedIds.length} selecionado(s)
+                  </Button>
+                )}
+              </Box>
+              
+              <DataGridLancamentos
+                lancamentos={lancamentos}
+                categorias={categorias}
+                despesas={despesas}
+                fontesRenda={fontesRenda}
+                onVisualizar={handleVisualizarLancamento}
+                onEditar={handleEditarLancamento}
+                onExcluir={handleAbrirDialogExclusao}
+                onSelectionChange={handleSelectionChange}
+                loading={isLoading}
+                totalRows={totalRows}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+              />
             </Card>
           </Grid>
         </Grid>
       </Container>
+
+      {/* Drawer para novo lançamento */}
+      <LancamentoDrawer />
+
+      {/* Modal de Visualização */}
+      <ModalVisualizacao
+        open={Boolean(lancamentoParaVisualizar)}
+        lancamento={lancamentoParaVisualizar}
+        categorias={categorias}
+        despesas={despesas}
+        fontesRenda={fontesRenda}
+        onClose={handleFecharVisualizacao}
+      />
+
+      {/* Modal de Edição */}
+      <ModalEdicao
+        open={Boolean(lancamentoParaEditar)}
+        lancamento={lancamentoParaEditar}
+        categorias={categorias}
+        despesas={despesas}
+        fontesRenda={fontesRenda}
+        onClose={handleFecharEdicao}
+      />
+
+      {/* Dialog de Exclusão */}
+      <DeleteConfirmationDialog
+        open={lancamentoParaExcluir}
+        onClose={handleFecharDialogExclusao}
+        onConfirm={handleConfirmarExclusao}
+        loading={isDeleting}
+        title="Excluir Lançamento?"
+        icon={IconTrash}
+        color="error"
+      >
+        <Typography variant="body1" color="text.secondary">
+          Você está prestes a remover{" "}
+          <Box component="span" fontWeight="bold" fontSize={15} color="text.primary">
+            "{lancamentoParaExcluirNome}"
+          </Box>
+          <br />
+          <Typography variant="body2" color="textSecondary" mt={1}>
+            Valor: R$ {Number(lancamentoParaExcluir?.valor || 0).toFixed(2)}
+          </Typography>
+          <br />
+          Essa ação não poderá ser desfeita.
+        </Typography>
+      </DeleteConfirmationDialog>
     </>
   );
 }

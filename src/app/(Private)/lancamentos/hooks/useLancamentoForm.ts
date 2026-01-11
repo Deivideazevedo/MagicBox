@@ -1,8 +1,11 @@
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
-import { LancamentoPayload } from "@/core/lancamentos/types";
-import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
+import { Lancamento, LancamentoPayload } from "@/core/lancamentos/types";
+import {
+  useCreateLancamentoMutation,
+  useUpdateLancamentoMutation,
+} from "@/services/endpoints/lancamentosApi";
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -14,6 +17,7 @@ type TipoLancamentoOrigem = "despesa" | "fonteRenda";
 type TipoLancamento = "pagamento" | "agendamento";
 
 const lancamentoSchema = z.object({
+  id: z.number().optional(),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   itemId: z.number().min(1, "Selecione uma despesa ou fonte de renda"),
   tipo: z.enum(["pagamento", "agendamento"]),
@@ -24,21 +28,24 @@ const lancamentoSchema = z.object({
   parcelar: z.boolean(),
 });
 
-type LancamentoFormData = z.infer<typeof lancamentoSchema>;
+export type LancamentoFormData = z.infer<typeof lancamentoSchema>;
 
-interface UseLancamentoDrawerProps {
+interface UseLancamentoFormProps {
   categorias?: Categoria[];
   despesas?: Despesa[];
   fontesRenda?: FonteRenda[];
+  lancamentoParaEditar?: Lancamento | null;
+  onSuccess?: () => void;
 }
 
-export function useLancamentoDrawer({
+export function useLancamentoForm({
   categorias: categoriasProps,
   despesas: despesasProps,
   fontesRenda: fontesRendaProps,
-}: UseLancamentoDrawerProps = {}) {
+  lancamentoParaEditar,
+  onSuccess,
+}: UseLancamentoFormProps) {
   const { data: session } = useSession();
-  const [showDrawer, setShowDrawer] = useState(false);
   const [origem, setOrigem] = useState<TipoLancamentoOrigem>("despesa");
   const [shouldFocusItem, setShouldFocusItem] = useState(false);
 
@@ -51,9 +58,12 @@ export function useLancamentoDrawer({
 
   const [createLancamento, { isLoading: isCreating }] =
     useCreateLancamentoMutation();
+  const [updateLancamento, { isLoading: isUpdating }] =
+    useUpdateLancamentoMutation();
 
   const defaultValues: LancamentoFormData = useMemo(
     () => ({
+      id: undefined,
       categoriaId: 0,
       itemId: 0,
       tipo: "pagamento",
@@ -83,6 +93,37 @@ export function useLancamentoDrawer({
   const parcelar = watch("parcelar");
   const parcelas = watch("parcelas");
   const valor = watch("valor");
+  const id = watch("id");
+
+  // Popular form quando houver lançamento para editar
+  useEffect(() => {
+    if (lancamentoParaEditar) {
+      // Determinar origem (despesa ou fonteRenda) - considerar snake_case do Prisma
+      const despesaId = (lancamentoParaEditar as any).despesa_id || lancamentoParaEditar.despesaId;
+      const fonteRendaId = (lancamentoParaEditar as any).fonte_renda_id || lancamentoParaEditar.fonteRendaId;
+      const categoriaId = (lancamentoParaEditar as any).categoria_id || lancamentoParaEditar.categoriaId;
+      
+      const novaOrigem = despesaId ? "despesa" : "fonteRenda";
+      setOrigem(novaOrigem);
+
+      // Popular campos
+      setValue("id", lancamentoParaEditar.id);
+      setValue("categoriaId", categoriaId);
+      setValue("itemId", despesaId || fonteRendaId || 0);
+      setValue("tipo", lancamentoParaEditar.tipo);
+      setValue("valor", String(lancamentoParaEditar.valor));
+      
+      // Formatar data corretamente
+      const dataLancamento = typeof lancamentoParaEditar.data === 'string' 
+        ? lancamentoParaEditar.data.split('T')[0]
+        : new Date(lancamentoParaEditar.data).toISOString().split('T')[0];
+      setValue("data", dataLancamento);
+      
+      setValue("descricao", lancamentoParaEditar.descricao || "");
+      setValue("parcelar", false); // Edição não permite parcelamento
+      setValue("parcelas", null);
+    }
+  }, [lancamentoParaEditar, setValue]);
 
   // Limpar parcelas quando toggle for desligado
   useEffect(() => {
@@ -119,14 +160,6 @@ export function useLancamentoDrawer({
     return parseFloat(valor) * parcelas;
   }, [parcelar, parcelas, valor]);
 
-  const handleCloseDrawer = useCallback(() => {
-    setShowDrawer(false);
-    setTimeout(() => {
-      setOrigem("despesa");
-      reset(defaultValues);
-    }, 300);
-  }, [reset, defaultValues]);
-
   const onSubmit = useCallback(
     async (payload: LancamentoFormData) => {
       try {
@@ -142,12 +175,25 @@ export function useLancamentoDrawer({
           parcelas: parcelar && payload.parcelas ? payload.parcelas : null,
         };
 
-        await createLancamento(data).unwrap();
-
-        SwalToast.fire({
-          icon: "success",
-          title: `${origem === "fonteRenda" ? "Renda" : "Despesa"} Lançado com sucesso`,
-        });
+        if (payload.id) {
+          // Update
+          await updateLancamento({ id: String(payload.id), data }).unwrap();
+          SwalToast.fire({
+            icon: "success",
+            title: `${
+              origem === "fonteRenda" ? "Renda" : "Despesa"
+            } atualizado com sucesso`,
+          });
+        } else {
+          // Create
+          await createLancamento(data).unwrap();
+          SwalToast.fire({
+            icon: "success",
+            title: `${
+              origem === "fonteRenda" ? "Renda" : "Despesa"
+            } lançado com sucesso`,
+          });
+        }
 
         // Reset mantendo categoria e tipo
         reset({
@@ -158,20 +204,28 @@ export function useLancamentoDrawer({
 
         // Sinaliza que deve focar no itemId assim que o campo estiver pronto
         setShouldFocusItem(true);
-        // handleCloseDrawer();
+
+        // Callback de sucesso
+        onSuccess?.();
       } catch (error) {
         SwalToast.fire({
           icon: "error",
-          title: "Erro ao criar lançamento",
+          title: `Erro ao ${id ? "atualizar" : "criar"} lançamento`,
         });
       }
     },
-    [session, origem, parcelar, createLancamento, reset, defaultValues]
+    [
+      session,
+      origem,
+      parcelar,
+      id,
+      createLancamento,
+      updateLancamento,
+      reset,
+      defaultValues,
+      onSuccess,
+    ]
   );
-
-  const handleOpenDrawer = useCallback(() => {
-    setShowDrawer(true);
-  }, []);
 
   const handleTipoChange = useCallback(
     (event: React.MouseEvent<HTMLElement>, newTipo: TipoLancamento | null) => {
@@ -195,17 +249,7 @@ export function useLancamentoDrawer({
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
-  const drawerProps = {
-    showDrawer,
-    handleOpenDrawer,
-    handleCloseDrawer,
-    origem,
-    isDespesa,
-    corTema,
-    toggleOrigem,
-  };
-
-  const formProps = {
+  return {
     handleSubmit,
     control,
     categoriaId,
@@ -215,16 +259,15 @@ export function useLancamentoDrawer({
     valor,
     valorTotal,
     handleTipoChange,
-    isCreating,
+    isCreating: isCreating || isUpdating,
     categorias: categoriasList,
     itens: itensFiltrados,
     reset,
     defaultValues,
     setFocus,
-  };
-
-  return {
-    drawerProps,
-    formProps,
+    isDespesa,
+    corTema,
+    toggleOrigem,
+    setOrigem,
   };
 }

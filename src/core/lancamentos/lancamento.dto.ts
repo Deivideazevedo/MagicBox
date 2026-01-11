@@ -30,9 +30,7 @@ export const createLancamentoSchema = z
   .object({
     tipo: tipoLancamentoEnum,
     valor: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
-      .refine((val) => parseFloat(val) > 0, "Valor deve ser maior que zero"),
+      .number().positive("Valor deve ser positivo"),
     data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
     descricao: z.string().max(255).trim().optional(),
     
@@ -65,30 +63,6 @@ export const createLancamentoSchema = z
       message: "Lançamento deve ter uma despesa OU uma fonte de renda, nunca ambos ou nenhum",
       path: ["despesaId"],
     }
-  )
-  .refine(
-    (data) => {
-      // REGRA 2: tipo=agendamento → despesaId obrigatório
-      if (data.tipo === "agendamento") {
-        return !!data.despesaId;
-      }
-      return true;
-    },
-    {
-      message: "Agendamentos devem estar vinculados a uma despesa",
-      path: ["tipo"],
-    }
-  )
-  .refine(
-    (data) => {
-      // REGRA 3: tipo=pagamento → pode ser despesa ou fonte de renda
-      // Sem validação extra, já validado na REGRA 1
-      return true;
-    },
-    {
-      message: "Pagamentos devem estar vinculados a uma despesa ou fonte de renda",
-      path: ["tipo"],
-    }
   );
 
 // Schema para ATUALIZAR lançamento
@@ -96,8 +70,7 @@ export const updateLancamentoSchema = z
   .object({
     tipo: tipoLancamentoEnum.optional(),
     valor: z
-      .string()
-      .regex(/^\d+(\.\d{1,2})?$/, "Valor inválido")
+      .number().positive("Valor deve ser positivo")
       .optional(),
     data: z
       .string()
