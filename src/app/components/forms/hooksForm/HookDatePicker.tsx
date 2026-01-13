@@ -1,5 +1,5 @@
 import { DatePicker, DatePickerProps } from "@mui/x-date-pickers/DatePicker";
-import { Badge, TextField } from "@mui/material";
+import { Badge, TextField, TextFieldProps } from "@mui/material";
 import {
   FieldValues,
   useController,
@@ -14,7 +14,8 @@ type HookDatePickerProps<TFieldValues extends FieldValues> =
       DatePickerProps<Date | null, Date>,
       "value" | "onChange" | "renderInput"
     > & {
-      shrinkLabel?: boolean; // 👈 NOVA PROP
+      shrinkLabel?: boolean;
+      size?: TextFieldProps["size"];
     };
 
 export function HookDatePicker<TFieldValues extends FieldValues>({
@@ -22,6 +23,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   control,
   rules,
   shrinkLabel,
+  size = "medium",
   ...datePickerProps
 }: HookDatePickerProps<TFieldValues>) {
   const {
@@ -47,6 +49,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
         <TextField
           {...params}
           fullWidth
+          size={size}
           error={!!error}
           helperText={error?.message}
           InputLabelProps={{

@@ -22,7 +22,7 @@ type HookSelectProps<TFieldValues extends FieldValues, T> = UseControllerProps<T
   getLabel?: (obj: T) => React.ReactNode;
   children?: React.ReactNode;
   disableEmpty?: boolean;
-  onChange?: (value: string | number) => void;
+  onChange?: (value: string | number, option?: T) => void;
 };
 
 export function HookSelect<TFieldValues extends FieldValues, T>({
@@ -48,8 +48,18 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   const handleChange = (event: SelectChangeEvent<string>) => {
     const rawValue = event.target.value;
     const processedValue = returnAsNumber ? Number(rawValue) : rawValue;
-    onChange?.(processedValue);
+    
+    // Encontrar o objeto completo para passar no onChange externo
+    const selectedOption = options?.find((item) => {
+      const itemValue = getValue ? getValue(item) : (item as any)?.id;
+      return String(itemValue) === String(rawValue);
+    });
+    
+    // Sempre armazena o ID no field
     fieldWithoutRef.onChange(processedValue);
+    
+    // onChange externo recebe ID e objeto completo
+    onChange?.(processedValue, selectedOption);
   };
 
   return (
@@ -58,7 +68,8 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
         {props.label}
       </InputLabel>
       <Select 
-        {...fieldWithoutRef} 
+        {...fieldWithoutRef}
+        value={fieldWithoutRef.value ?? ""}
         {...props} 
         inputRef={ref}
         onChange={handleChange}

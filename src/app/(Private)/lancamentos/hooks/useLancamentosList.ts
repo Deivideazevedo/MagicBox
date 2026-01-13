@@ -1,19 +1,27 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   useGetLancamentosQuery,
   useDeleteLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { Lancamento } from "@/core/lancamentos/types";
+import { Despesa } from "@/core/despesas/types";
+import { FonteRenda } from "@/core/fontesRenda/types";
 import { SwalToast } from "@/utils/swalert";
 import axios from "axios";
+
+// Tipo para item com origem e ID único
+type ItemComOrigem = (Despesa | FonteRenda) & { 
+  origem: "despesa" | "renda";
+  uniqueId: string; // Composto: "despesa-{id}" ou "renda-{id}"
+};
 
 export interface FiltrosLancamentos {
   dataInicio?: string;
   dataFim?: string;
-  categoriaId?: number;
-  despesaId?: number;
-  fonteRendaId?: number;
-  tipo?: "pagamento" | "agendamento" | "";
+  categoriaId?: number | "" | null;
+  origem?: "despesa" | "renda" | "" | null;
+  item?: ItemComOrigem | null;
+  tipo?: "pagamento" | "agendamento" | "" | null;
   busca?: string;
 }
 
@@ -21,13 +29,31 @@ interface UseLancamentosListProps {
   lancamentos?: Lancamento[];
 }
 
+// Função para obter primeiro e último dia do mês atual
+const getDefaultDates = () => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
+  return {
+    dataInicio: firstDay.toISOString().split('T')[0],
+    dataFim: lastDay.toISOString().split('T')[0],
+  };
+};
+
 export function useLancamentosList({ lancamentos: lancamentosProps }: UseLancamentosListProps = {}) {
-  const [filtros, setFiltros] = useState<FiltrosLancamentos>({});
-  const [lancamentoParaVisualizar, setLancamentoParaVisualizar] = useState<Lancamento | null>(null);
-  const [lancamentoParaEditar, setLancamentoParaEditar] = useState<Lancamento | null>(null);
-  const [lancamentoParaExcluir, setLancamentoParaExcluir] = useState<Lancamento | null>(null);
+  const defaultDates = useMemo(() => getDefaultDates(), []);
+  
+  const [filtros, setFiltros] = useState<FiltrosLancamentos>({
+    dataInicio: defaultDates.dataInicio,
+    dataFim: defaultDates.dataFim,
+    categoriaId: "",
+    origem: "",
+    item: null,
+    tipo: "",
+    busca: "",
+  });
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
@@ -36,13 +62,28 @@ export function useLancamentosList({ lancamentos: lancamentosProps }: UseLancame
     const params = new URLSearchParams();
     params.append('page', String(page));
     params.append('limit', String(pageSize));
+    
     if (filtros.dataInicio) params.append('dataInicio', filtros.dataInicio);
     if (filtros.dataFim) params.append('dataFim', filtros.dataFim);
-    if (filtros.categoriaId) params.append('categoriaId', String(filtros.categoriaId));
-    if (filtros.despesaId) params.append('despesaId', String(filtros.despesaId));
-    if (filtros.fonteRendaId) params.append('fonteRendaId', String(filtros.fonteRendaId));
-    if (filtros.tipo) params.append('tipo', filtros.tipo);
+    if (filtros.categoriaId && typeof filtros.categoriaId === 'number') params.append('categoriaId', String(filtros.categoriaId));
+    if (filtros.tipo && filtros.tipo !== null) params.append('tipo', filtros.tipo);
     if (filtros.busca) params.append('busca', filtros.busca);
+    
+    // Se item foi selecionado, extrair ID original do uniqueId e usar origem para determinar o parâmetro
+    if (filtros.item && filtros.item.uniqueId) {
+      // uniqueId formato: "despesa-123" ou "renda-456"
+      const [origem, idStr] = filtros.item.uniqueId.split('-');
+      const id = Number(idStr);
+      
+      if (!isNaN(id)) {
+        if (origem === "despesa") {
+          params.append('despesaId', String(id));
+        } else if (origem === "renda") {
+          params.append('fonteRendaId', String(id));
+        }
+      }
+    }
+    
     return params.toString();
   }, [filtros, page, pageSize]);
 
@@ -52,13 +93,22 @@ export function useLancamentosList({ lancamentos: lancamentosProps }: UseLancame
   });
 
   // Extrair dados e meta da resposta paginada
-  const lancamentosFromQuery = Array.isArray(responseData) ? responseData : (responseData as { data: Lancamento[]; meta: { total: number; page: number; lastPage: number; limit: number } })?.data || [];
-  const totalRows = Array.isArray(responseData) ? 0 : (responseData as { data: Lancamento[]; meta: { total: number; page: number; lastPage: number; limit: number } })?.meta?.total || 0;
+  const isArrayResponse = Array.isArray(responseData);
+  const lancamentosFromQuery = isArrayResponse ? responseData : (responseData as any)?.data || [];
+  const meta = isArrayResponse ? { total: 0, page: 0, lastPage: 0, limit: pageSize } : (responseData as any)?.meta || { total: 0, page: 0, lastPage: 0, limit: pageSize };
+  const totalRows = meta.total;
 
   // Usa props se fornecido, senão usa resultado da query
   const lancamentos = lancamentosProps ?? lancamentosFromQuery;
 
-  const [deleteLancamento, { isLoading: isDeleting }] = useDeleteLancamentoMutation();
+  // Estados de modais agrupados
+  const [modals, setModals] = useState({
+    visualizar: null as Lancamento | null,
+    editar: null as Lancamento | null,
+    excluir: null as Lancamento | null,
+  });
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Calcular totais com base nos dados do backend (já filtrados)
   const totais = useMemo(() => {
@@ -82,97 +132,114 @@ export function useLancamentosList({ lancamentos: lancamentosProps }: UseLancame
     };
   }, [lancamentos]);
 
-  // Handlers
-  const handleAplicarFiltros = useCallback((novosFiltros: FiltrosLancamentos) => {
-    setFiltros(novosFiltros);
-  }, []);
-
-  const handleLimparFiltros = useCallback(() => {
-    setFiltros({});
-  }, []);
-
-  const handleVisualizarLancamento = useCallback((lancamento: Lancamento) => {
-    setLancamentoParaVisualizar(lancamento);
-  }, []);
-
-  const handleFecharVisualizacao = useCallback(() => {
-    setLancamentoParaVisualizar(null);
-  }, []);
-
-  const handleEditarLancamento = useCallback((lancamento: Lancamento) => {
-    setLancamentoParaEditar(lancamento);
-  }, []);
-
-  const handleFecharEdicao = useCallback(() => {
-    setLancamentoParaEditar(null);
-  }, []);
-
-  const handleAbrirDialogExclusao = useCallback((lancamento: Lancamento) => {
-    setLancamentoParaExcluir(lancamento);
-  }, []);
-
-  const handleFecharDialogExclusao = useCallback(() => {
-    setLancamentoParaExcluir(null);
-  }, []);
-
-  const handleConfirmarExclusao = useCallback(async () => {
-    if (!lancamentoParaExcluir) return;
-
-    try {
-      await deleteLancamento(String(lancamentoParaExcluir.id)).unwrap();
-      SwalToast.fire({
-        icon: "success",
-        title: "Lançamento excluído com sucesso",
-      });
-      handleFecharDialogExclusao();
-    } catch (error) {
-      SwalToast.fire({
-        icon: "error",
-        title: "Erro ao excluir lançamento",
-      });
-    }
-  }, [lancamentoParaExcluir, deleteLancamento, handleFecharDialogExclusao]);
-
-  const handleSelectionChange = useCallback((ids: number[]) => {
-    setSelectedIds(ids);
-  }, []);
-
-  const handleBulkDelete = useCallback(async () => {
-    if (selectedIds.length === 0) return;
-
-    setIsBulkDeleting(true);
-    try {
-      await axios.delete('/api/lancamentos/bulk-delete', {
-        data: { ids: selectedIds }
-      });
-      
-      SwalToast.fire({
-        icon: "success",
-        title: `${selectedIds.length} lançamento(s) excluído(s) com sucesso`,
-      });
-      
+  // Handlers de Filtros
+  const filtrosHandlers = useMemo(() => ({
+    aplicar: (novosFiltros: FiltrosLancamentos) => {
+      setFiltros(novosFiltros);
+      setPage(0);
       setSelectedIds([]);
-      refetch();
-    } catch (error) {
-      SwalToast.fire({
-        icon: "error",
-        title: "Erro ao excluir lançamentos",
+    },
+    limpar: () => {
+      const defaultDates = getDefaultDates();
+      setFiltros({
+        dataInicio: defaultDates.dataInicio,
+        dataFim: defaultDates.dataFim,
+        categoriaId: "",
+        origem: "",
+        item: null,
+        tipo: "",
+        busca: "",
       });
-    } finally {
-      setIsBulkDeleting(false);
-    }
-  }, [selectedIds, refetch]);
+      setPage(0);
+      setSelectedIds([]);
+    },
+  }), []);
 
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-    setSelectedIds([]); // Limpar seleção ao mudar de página
-  }, []);
+  // Handlers de Modais
+  const modalHandlers = useMemo(() => ({
+    visualizar: {
+      abrir: (lancamento: Lancamento) => setModals(prev => ({ ...prev, visualizar: lancamento })),
+      fechar: () => setModals(prev => ({ ...prev, visualizar: null })),
+    },
+    editar: {
+      abrir: (lancamento: Lancamento) => setModals(prev => ({ ...prev, editar: lancamento })),
+      fechar: () => setModals(prev => ({ ...prev, editar: null })),
+    },
+    excluir: {
+      abrir: (lancamento: Lancamento) => setModals(prev => ({ ...prev, excluir: lancamento })),
+      fechar: () => setModals(prev => ({ ...prev, excluir: null })),
+    },
+  }), []);
 
-  const handlePageSizeChange = useCallback((newPageSize: number) => {
-    setPageSize(newPageSize);
-    setPage(0); // Voltar para primeira página ao mudar o tamanho
-    setSelectedIds([]); // Limpar seleção
-  }, []);
+  // Handler de Exclusão (sempre array de IDs)
+  const excluirHandlers = useMemo(() => ({
+    confirmar: async () => {
+      const idsParaExcluir = modals.excluir ? [modals.excluir.id] : selectedIds;
+      
+      if (idsParaExcluir.length === 0) return;
+
+      setIsDeleting(true);
+      try {
+        await axios.delete('/api/lancamentos/bulk-delete', {
+          data: { ids: idsParaExcluir }
+        });
+        
+        SwalToast.fire({
+          icon: "success",
+          title: `${idsParaExcluir.length} lançamento(s) excluído(s) com sucesso`,
+        });
+        
+        modalHandlers.excluir.fechar();
+        setSelectedIds([]);
+        refetch();
+      } catch (error) {
+        SwalToast.fire({
+          icon: "error",
+          title: "Erro ao excluir lançamento(s)",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    bulk: async () => {
+      if (selectedIds.length === 0) return;
+
+      setIsDeleting(true);
+      try {
+        await axios.delete('/api/lancamentos/bulk-delete', {
+          data: { ids: selectedIds }
+        });
+        
+        SwalToast.fire({
+          icon: "success",
+          title: `${selectedIds.length} lançamento(s) excluído(s) com sucesso`,
+        });
+        
+        setSelectedIds([]);
+        refetch();
+      } catch (error) {
+        SwalToast.fire({
+          icon: "error",
+          title: "Erro ao excluir lançamentos",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+  }), [modals.excluir, selectedIds, modalHandlers.excluir, refetch]);
+
+  // Handlers de Paginação
+  const paginacaoHandlers = useMemo(() => ({
+    mudarPagina: (newPage: number) => {
+      setPage(newPage);
+      setSelectedIds([]);
+    },
+    mudarTamanho: (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setPage(0);
+      setSelectedIds([]);
+    },
+  }), []);
 
   return {
     // Dados
@@ -184,36 +251,24 @@ export function useLancamentosList({ lancamentos: lancamentosProps }: UseLancame
     page,
     pageSize,
     totalRows,
-    handlePageChange,
-    handlePageSizeChange,
+    lastPage: meta.lastPage,
+    paginacao: paginacaoHandlers,
 
     // Filtros
     filtros,
-    handleAplicarFiltros,
-    handleLimparFiltros,
+    filtrosHandlers,
 
-    // Visualização
-    lancamentoParaVisualizar,
-    handleVisualizarLancamento,
-    handleFecharVisualizacao,
-
-    // Edição
-    lancamentoParaEditar,
-    handleEditarLancamento,
-    handleFecharEdicao,
+    // Modais
+    modais: modals,
+    modalHandlers,
 
     // Exclusão
-    lancamentoParaExcluir,
-    lancamentoParaExcluirNome: lancamentoParaExcluir?.descricao || `Lançamento #${lancamentoParaExcluir?.id}`,
-    handleAbrirDialogExclusao,
-    handleFecharDialogExclusao,
-    handleConfirmarExclusao,
     isDeleting,
+    excluirHandlers,
+    lancamentoParaExcluirNome: modals.excluir?.descricao || `Lançamento #${modals.excluir?.id}`,
 
-    // Seleção e Bulk Delete
+    // Seleção
     selectedIds,
-    handleSelectionChange,
-    handleBulkDelete,
-    isBulkDeleting,
+    onSelectionChange: (ids: number[]) => setSelectedIds(ids),
   };
 }

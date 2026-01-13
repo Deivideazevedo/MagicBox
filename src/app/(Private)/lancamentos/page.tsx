@@ -30,27 +30,16 @@ export default function LancamentosPage() {
     page,
     pageSize,
     totalRows,
-    handlePageChange,
-    handlePageSizeChange,
+    paginacao,
     filtros,
-    handleAplicarFiltros,
-    handleLimparFiltros,
-    lancamentoParaVisualizar,
-    handleVisualizarLancamento,
-    handleFecharVisualizacao,
-    lancamentoParaEditar,
-    handleEditarLancamento,
-    handleFecharEdicao,
-    lancamentoParaExcluir,
-    lancamentoParaExcluirNome,
-    handleAbrirDialogExclusao,
-    handleFecharDialogExclusao,
-    handleConfirmarExclusao,
+    filtrosHandlers,
+    modais,
+    modalHandlers,
     isDeleting,
+    excluirHandlers,
+    lancamentoParaExcluirNome,
     selectedIds,
-    handleSelectionChange,
-    handleBulkDelete,
-    isBulkDeleting,
+    onSelectionChange,
   } = useLancamentosList();
 
   return (
@@ -66,7 +55,7 @@ export default function LancamentosPage() {
         </Box>
 
         {/* Cards no topo */}
-        <Grid container spacing={3} mb={3}>
+        {/* <Grid container spacing={3} mb={3}>
           <Grid item xs={12}>
             <MiniCardsResumo
               totalLancamentos={totais.totalLancamentos}
@@ -75,21 +64,17 @@ export default function LancamentosPage() {
               valorAgendamentos={totais.valorAgendamentos}
             />
           </Grid>
-        </Grid>
+        </Grid> */}
 
-        {/* Filtros abaixo */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12}>
-            <FiltrosAvancados
-              filtros={filtros}
-              categorias={categorias}
-              despesas={despesas}
-              fontesRenda={fontesRenda}
-              onAplicarFiltros={handleAplicarFiltros}
-              onLimparFiltros={handleLimparFiltros}
-            />
-          </Grid>
-        </Grid>
+        {/* Filtros avançados */}
+        <FiltrosAvancados
+          filtros={filtros}
+          categorias={categorias}
+          despesas={despesas}
+          fontesRenda={fontesRenda}
+          onAplicarFiltros={filtrosHandlers.aplicar}
+          onLimparFiltros={filtrosHandlers.limpar}
+        />
 
         {/* DataGrid */}
         <Grid container spacing={3}>
@@ -116,8 +101,8 @@ export default function LancamentosPage() {
                     variant="contained"
                     color="error"
                     startIcon={<IconTrash size={18} />}
-                    onClick={handleBulkDelete}
-                    disabled={isBulkDeleting}
+                    onClick={excluirHandlers.bulk}
+                    disabled={isDeleting}
                     sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
                   >
                     Excluir {selectedIds.length} selecionado(s)
@@ -130,16 +115,16 @@ export default function LancamentosPage() {
                 categorias={categorias}
                 despesas={despesas}
                 fontesRenda={fontesRenda}
-                onVisualizar={handleVisualizarLancamento}
-                onEditar={handleEditarLancamento}
-                onExcluir={handleAbrirDialogExclusao}
-                onSelectionChange={handleSelectionChange}
+                onVisualizar={modalHandlers.visualizar.abrir}
+                onEditar={modalHandlers.editar.abrir}
+                onExcluir={modalHandlers.excluir.abrir}
+                onSelectionChange={onSelectionChange}
                 loading={isLoading}
                 totalRows={totalRows}
                 page={page}
                 pageSize={pageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
+                onPageChange={paginacao.mudarPagina}
+                onPageSizeChange={paginacao.mudarTamanho}
               />
             </Card>
           </Grid>
@@ -151,29 +136,29 @@ export default function LancamentosPage() {
 
       {/* Modal de Visualização */}
       <ModalVisualizacao
-        open={Boolean(lancamentoParaVisualizar)}
-        lancamento={lancamentoParaVisualizar}
+        open={Boolean(modais.visualizar)}
+        lancamento={modais.visualizar}
         categorias={categorias}
         despesas={despesas}
         fontesRenda={fontesRenda}
-        onClose={handleFecharVisualizacao}
+        onClose={modalHandlers.visualizar.fechar}
       />
 
       {/* Modal de Edição */}
       <ModalEdicao
-        open={Boolean(lancamentoParaEditar)}
-        lancamento={lancamentoParaEditar}
+        open={Boolean(modais.editar)}
+        lancamento={modais.editar}
         categorias={categorias}
         despesas={despesas}
         fontesRenda={fontesRenda}
-        onClose={handleFecharEdicao}
+        onClose={modalHandlers.editar.fechar}
       />
 
       {/* Dialog de Exclusão */}
       <DeleteConfirmationDialog
-        open={lancamentoParaExcluir}
-        onClose={handleFecharDialogExclusao}
-        onConfirm={handleConfirmarExclusao}
+        open={Boolean(modais.excluir)}
+        onClose={modalHandlers.excluir.fechar}
+        onConfirm={excluirHandlers.confirmar}
         loading={isDeleting}
         title="Excluir Lançamento?"
         icon={IconTrash}
@@ -186,7 +171,7 @@ export default function LancamentosPage() {
           </Box>
           <br />
           <Typography variant="body2" color="textSecondary" mt={1}>
-            Valor: R$ {Number(lancamentoParaExcluir?.valor || 0).toFixed(2)}
+            Valor: R$ {Number(modais.excluir?.valor || 0).toFixed(2)}
           </Typography>
           <br />
           Essa ação não poderá ser desfeita.

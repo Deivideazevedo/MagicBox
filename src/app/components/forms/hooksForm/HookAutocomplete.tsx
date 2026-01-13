@@ -41,7 +41,8 @@ type HookAutocompleteProps<
     onChange?: (
       event: SyntheticEvent,
       value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
-      reason: string
+      reason: string,
+      option?: T
     ) => void;
   };
 
@@ -143,6 +144,8 @@ export function HookAutocomplete<
     newValue: LocalAutocompleteValue,
     reason: string
   ) => {
+    let selectedOption: T | T[] | undefined;
+    
     if (selectAll && props.multiple && Array.isArray(newValue)) {
       const selectedOptions = newValue as T[];
       const currentOptions = getCurrentValue() as T[];
@@ -161,48 +164,62 @@ export function HookAutocomplete<
           : (opt as any)?.id === allOption.id
       );
 
-      let finalValues: (string | number)[] = [];
+      let finalIds: (string | number)[] = [];
+      let finalObjects: T[] = [];
 
       if (isAllSelected && !wasAllSelected) {
         // CASO 1: "Todos" está presente AGORA mas NÃO estava antes → Usuário clicou em "Selecionar Todos"
-        // Ação: Seleciona TODAS as opções reais (exclui a opção "Todos" artificial)
-        finalValues = (options || []).map((o) =>
+        finalObjects = [...(options || [])];
+        finalIds = finalObjects.map((o) =>
           getOptionValue ? getOptionValue(o) : (o as any).id
         );
       } else if (!isAllSelected && wasAllSelected) {
         // CASO 2: "Todos" NÃO está presente AGORA mas estava antes → Usuário desmarcou "Selecionar Todos"
-        // Ação: Limpa todas as seleções
-        finalValues = [];
+        finalIds = [];
+        finalObjects = [];
       } else {
         // CASO 3: Mudança normal (usuário clicou em um item específico, não em "Todos")
-        // Ação: Remove a opção artificial "Todos" e mantém apenas os IDs das opções reais selecionadas
-        finalValues = selectedOptions
-          .filter((opt) => {
-            const optId = getOptionValue
-              ? getOptionValue(opt)
-              : (opt as any)?.id;
-            return optId !== allOption.id;
-          })
-          .map((opt) =>
-            getOptionValue ? getOptionValue(opt) : (opt as any).id
-          );
+        finalObjects = selectedOptions.filter((opt) => {
+          const optId = getOptionValue
+            ? getOptionValue(opt)
+            : (opt as any)?.id;
+          return optId !== allOption.id;
+        });
+        
+        finalIds = finalObjects.map((opt) =>
+          getOptionValue ? getOptionValue(opt) : (opt as any).id
+        );
       }
 
-      fieldWithoutRef.onChange(finalValues);
+      // Sempre armazena IDs
+      fieldWithoutRef.onChange(finalIds);
+      // Guarda objetos para onChange externo
+      selectedOption = finalObjects;
+      
     } else if (getOptionValue && newValue !== null && newValue !== undefined) {
-      // Lógica original
+      // Lógica para seleção única ou múltipla sem selectAll
       if (Array.isArray(newValue)) {
-        const mappedValues = newValue.map((item) => getOptionValue(item as T));
-        fieldWithoutRef.onChange(mappedValues);
+        const items = newValue as T[];
+        const mappedIds = items.map((item) => getOptionValue(item));
+        // Sempre armazena IDs
+        fieldWithoutRef.onChange(mappedIds);
+        // Guarda objetos para onChange externo
+        selectedOption = items;
       } else {
-        fieldWithoutRef.onChange(getOptionValue(newValue as T));
+        const item = newValue as T;
+        // Sempre armazena ID
+        fieldWithoutRef.onChange(getOptionValue(item));
+        // Guarda objeto para onChange externo
+        selectedOption = item;
       }
     } else {
+      // Valor nulo/undefined
       fieldWithoutRef.onChange(newValue);
+      selectedOption = newValue as T;
     }
 
-    // Chama onChange externo uma única vez no final
-    onChange?.(event, newValue, reason);
+    // onChange externo recebe objetos completos
+    onChange?.(event, newValue, reason, selectedOption as T);
   };
 
   // Função auxiliar para obter o label da opção
