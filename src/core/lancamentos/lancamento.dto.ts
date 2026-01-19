@@ -14,7 +14,7 @@ export const lancamentoSchema = z.object({
   id: z.number().int().positive(),
   userId: z.number().int().positive(),
   tipo: tipoLancamentoEnum,
-  valor: z.string(), // Decimal como string
+  valor: z.number().positive(), // Decimal como string
   data: z.date(),
   descricao: z.string().nullable(),
   observacaoAutomatica: z.string().nullable(),
@@ -25,22 +25,42 @@ export const lancamentoSchema = z.object({
   updatedAt: z.date(),
 });
 
+// Schema para validar os Query Params
+export const findAllQuerySchema = z.object({
+  page: z.coerce.number().min(0).default(0),
+  limit: z.coerce.number().min(1).max(500).default(10), // Trave um limite máximo por segurança
+
+  // Filtros opcionais (transformam string vazia em undefined se necessário)
+  userId: z.coerce.number().optional(),
+  dataInicio: z.string().optional(), 
+  dataFim: z.string().optional(),
+
+  categoriaId: z.coerce.number().optional(),
+  despesaId: z.coerce.number().optional(),
+  fonteRendaId: z.coerce.number().optional(),
+
+  tipo: z.enum(["pagamento", "agendamento"]).optional(), // Exemplo: Valida apenas valores permitidos
+  observacao: z.string().optional(),
+}).strict();
+
+
 // Schema para CRIAR lançamento
 export const createLancamentoSchema = z
   .object({
     tipo: tipoLancamentoEnum,
-    valor: z
-      .number().positive("Valor deve ser positivo"),
-    data: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
+    valor: z.number().positive("Valor deve ser positivo"),
+    data: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
     descricao: z.string().max(255).trim().optional(),
-    
+
     // Categoria (obrigatória)
     categoriaId: z.number().int().positive("Categoria é obrigatória"),
-    
+
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
     fonteRendaId: z.number().int().positive().nullable().optional(),
-    
+
     // Parcelas (usado para criar múltiplos registros)
     parcelas: z
       .number()
@@ -55,23 +75,22 @@ export const createLancamentoSchema = z
       // REGRA 1: Deve ter despesaId OU fonteRendaId, nunca ambos ou nenhum
       const temDespesa = !!data.despesaId;
       const temFonteRenda = !!data.fonteRendaId;
-      
+
       // XOR: um ou outro, não ambos, não nenhum
       return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
     },
     {
-      message: "Lançamento deve ter uma despesa OU uma fonte de renda, nunca ambos ou nenhum",
+      message:
+        "Lançamento deve ter uma despesa OU uma fonte de renda, nunca ambos ou nenhum",
       path: ["despesaId"],
-    }
+    },
   );
 
 // Schema para ATUALIZAR lançamento
 export const updateLancamentoSchema = z
   .object({
     tipo: tipoLancamentoEnum.optional(),
-    valor: z
-      .number().positive("Valor deve ser positivo")
-      .optional(),
+    valor: z.number().positive("Valor deve ser positivo").optional(),
     data: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
@@ -83,10 +102,7 @@ export const updateLancamentoSchema = z
   .refine(
     (data) => {
       // Se estiver alterando relacionamentos, validar XOR
-      if (
-        data.despesaId !== undefined ||
-        data.fonteRendaId !== undefined
-      ) {
+      if (data.despesaId !== undefined || data.fonteRendaId !== undefined) {
         const temDespesa = !!data.despesaId;
         const temFonteRenda = !!data.fonteRendaId;
         return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
@@ -96,7 +112,7 @@ export const updateLancamentoSchema = z
     {
       message: "Lançamento deve ter despesa OU fonte de renda, nunca ambos",
       path: ["despesaId"],
-    }
+    },
   );
 
 // Schema para buscar por ID
@@ -109,11 +125,19 @@ export const lancamentoQuerySchema = z.object({
   tipo: tipoLancamentoEnum.optional(),
   despesaId: z.coerce.number().int().positive().optional(),
   fonteRendaId: z.coerce.number().int().positive().optional(),
-  dataInicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  dataFim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dataInicio: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  dataFim: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 // Types exportados
+
+export type FindAllFilters = z.infer<typeof findAllQuerySchema>;
 export type Lancamento = z.infer<typeof lancamentoSchema>;
 export type CreateLancamentoDTO = z.infer<typeof createLancamentoSchema>;
 export type UpdateLancamentoDTO = z.infer<typeof updateLancamentoSchema>;

@@ -9,12 +9,15 @@ import CustomTextField from "../theme-elements/CustomTextField";
 
 type FormTextFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange">;
+    Omit<TextFieldProps, "name" | "value" | "onChange"> & {
+      shrinkLabel?: boolean;
+    };
 
 export function HookTextField<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
+  shrinkLabel,
   ...props
 }: FormTextFieldProps<TFieldValues>) {
   const {
@@ -26,11 +29,14 @@ export function HookTextField<TFieldValues extends FieldValues>({
     <CustomTextField
       {...field}
       value={field.value ?? ""}
-      {...props}
-      inputRef={field.ref}
       fullWidth
+      inputRef={field.ref}
       error={!!error}
       helperText={error?.message}
+      InputLabelProps={{
+        shrink: shrinkLabel,
+      }}
+      {...props}
     />
   );
 }

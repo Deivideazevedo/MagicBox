@@ -46,7 +46,7 @@ interface FormularioProps {
   tipo: "pagamento" | "agendamento";
   parcelar: boolean;
   parcelas: number | null | undefined;
-  valor: string | number;
+  valor: number;
   valorTotal: number;
   handleTipoChange: (
     event: React.MouseEvent<HTMLElement>,
@@ -279,6 +279,7 @@ export default function Formulario({
                 control={control}
                 placeholder="R$ 0,00"
                 InputLabelProps={{ shrink: true }}
+                returnAsNumber
               />
             </Grid>
 

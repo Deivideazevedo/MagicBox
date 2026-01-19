@@ -32,7 +32,7 @@ export default function LancamentosPage() {
     totalRows,
     paginacao,
     filtros,
-    filtrosHandlers,
+    handleSearch,
     modais,
     modalHandlers,
     isDeleting,
@@ -72,8 +72,7 @@ export default function LancamentosPage() {
           categorias={categorias}
           despesas={despesas}
           fontesRenda={fontesRenda}
-          onAplicarFiltros={filtrosHandlers.aplicar}
-          onLimparFiltros={filtrosHandlers.limpar}
+          handleSearch={handleSearch}
         />
 
         {/* DataGrid */}

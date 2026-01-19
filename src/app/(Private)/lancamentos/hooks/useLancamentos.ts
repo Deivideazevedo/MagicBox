@@ -8,7 +8,11 @@ import {
   useUpdateLancamentoMutation,
   useDeleteLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
-import { Lancamento, LancamentoPayload, LancamentoForm } from "@/core/lancamentos/types";
+import {
+  Lancamento,
+  LancamentoPayload,
+  LancamentoForm,
+} from "@/core/lancamentos/types";
 import { useSession } from "next-auth/react";
 import { Swalert } from "@/utils/swalert";
 
@@ -20,9 +24,9 @@ const lancamentoSchema = z.object({
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
   tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.string(),
+  valor: z.number(),
   data: z.string().min(1, "Data é obrigatória"),
-  descricao: z.string().optional(),
+  observacao: z.string().optional(),
   parcelas: z.union([z.string(), z.number(), z.null()]).optional(),
 });
 
@@ -39,18 +43,9 @@ export function useLancamentos({
 
   // Montar query params vazio para pegar todos os lançamentos do usuário
   const queryParams = new URLSearchParams();
-  
-  // Se lancamentosProps existir (não é undefined), skip a query RTK
-  const { data: response = [], isLoading: isLoadingList } =
-    useGetLancamentosQuery(queryParams.toString(), {
-      skip: lancamentosProps !== undefined,
-    });
-
-  // Extrair array de lancamentos da resposta
-  const lancamentosQuery = Array.isArray(response) ? response : response?.data || [];
 
   // Usa props se fornecido, senão usa resultado da query
-  const lancamentos = lancamentosProps ?? lancamentosQuery;
+  const lancamentos = lancamentosProps;
 
   // RTK Query mutations
   const [createLancamento, { isLoading: isCreating }] =
@@ -79,8 +74,9 @@ export function useLancamentos({
   // Calcular total com parcelas
   const totalComParcelas =
     isParcelado && watchedValues.parcelas
-      ? parseFloat(watchedValues.valor || "0") * parseInt(String(watchedValues.parcelas || "1"), 10)
-      : parseFloat(watchedValues.valor || "0");
+      ? watchedValues.valor  *
+        parseInt(String(watchedValues.parcelas || "1"), 10)
+      : watchedValues.valor;
 
   const onSubmit = useCallback(
     async (payload: LancamentoForm) => {
@@ -95,7 +91,9 @@ export function useLancamentos({
           parcelas: formData.parcelas ? Number(formData.parcelas) : null,
           despesaId: formData.despesaId ? Number(formData.despesaId) : null,
           categoriaId: formData.categoriaId,
-          fonteRendaId: formData.fonteRendaId ? Number(formData.fonteRendaId) : null,
+          fonteRendaId: formData.fonteRendaId
+            ? Number(formData.fonteRendaId)
+            : null,
         };
 
         const lancamentoData: LancamentoPayload = {
@@ -107,7 +105,7 @@ export function useLancamentos({
             id: String(id),
             data: lancamentoData,
           }).unwrap();
-          
+
           Swalert({
             title: "Lançamento Atualizado!",
             text: "O lançamento foi atualizado com sucesso.",
@@ -117,7 +115,7 @@ export function useLancamentos({
           });
         } else {
           await createLancamento(lancamentoData).unwrap();
-          
+
           Swalert({
             title: "Lançamento Criado!",
             text: `${data.tipo === "pagamento" ? "Pagamento registrado" : "Agendamento criado"} com sucesso.`,
@@ -132,9 +130,9 @@ export function useLancamentos({
           tipo: "pagamento",
           despesaId: "",
           categoriaId: 0,
-          valor: "0",
+          valor: 0,
           data: new Date().toISOString().split("T")[0],
-          descricao: "",
+          observacao: "",
           parcelas: "1",
         });
         setStep(1);
@@ -150,26 +148,26 @@ export function useLancamentos({
         return false; // Falha
       }
     },
-    [createLancamento, updateLancamento, reset, session]
+    [createLancamento, updateLancamento, reset, session],
   );
 
   const handleEdit = useCallback(
     (lancamento: Lancamento, scrollCallback?: () => void) => {
       setValue("id", lancamento.id);
       setValue("userId", lancamento.userId);
-      setValue("despesaId", lancamento.despesaId);
-      setValue("categoriaId", lancamento.categoriaId);
+      setValue("despesaId", lancamento.despesa?.id);
+      setValue("categoriaId", Number(lancamento?.categoria?.id));
       setValue("tipo", lancamento.tipo);
-      setValue("valor", String(lancamento.valor));
+      setValue("valor", lancamento.valor);
       setValue("data", lancamento.data);
-      setValue("descricao", lancamento.descricao);
+      setValue("observacao", lancamento.observacao);
       setValue("parcelas", "1");
 
       if (scrollCallback) {
         setTimeout(() => scrollCallback(), 100);
       }
     },
-    [setValue]
+    [setValue],
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -197,7 +195,7 @@ export function useLancamentos({
         });
       }
     },
-    [deleteLancamento]
+    [deleteLancamento],
   );
 
   const nextStep = () => {
@@ -267,7 +265,6 @@ export function useLancamentos({
     isCreating,
     isUpdating,
     isDeleting,
-    isLoadingList,
 
     // Data
     lancamentos,

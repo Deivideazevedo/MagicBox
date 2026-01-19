@@ -9,11 +9,8 @@ export interface Lancamento {
   userId: number;
   tipo: TipoLancamento;
   data: string;
-  descricao?: string;
+  observacao?: string;
   observacaoAutomatica?: string;
-  categoriaId: number;
-  despesaId?: number | null;
-  fonteRendaId?: number | null;
   valor: number;
   createdAt: string;
   updatedAt: string;
@@ -30,7 +27,7 @@ export interface LancamentoPayload {
   tipo: TipoLancamento;
   valor: number | string;
   data: Date | string;
-  descricao?: string;
+  observacao?: string;
   categoriaId: number;
   despesaId?: number | null;
   fonteRendaId?: number | null;
@@ -42,10 +39,10 @@ export interface LancamentoForm {
   id?: string | number;
   userId?: string | number;
   tipo: TipoLancamento;
-  valor: string;
+  valor: number;
   data: string;
   categoriaId: number;
-  descricao?: string;
+  observacao?: string;
   despesaId?: string | number | null;
   fonteRendaId?: string | number | null;
   parcelas?: string | number | null; // Para formulários com parcelamento
@@ -60,13 +57,3 @@ export type LancamentoParams = Partial<
     busca?: string;
   }
 >;
-
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: {
-    total: number;
-    page: number;
-    lastPage: number;
-    limit: number;
-  };
-}

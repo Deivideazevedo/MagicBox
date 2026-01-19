@@ -9,7 +9,13 @@ import {
   Typography,
   alpha,
 } from "@mui/material";
-import { DataGrid, GridColDef, ptBR, GridSelectionModel, GridValueGetterParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  GridColDef,
+  ptBR,
+  GridSelectionModel,
+  GridValueGetterParams,
+} from "@mui/x-data-grid";
 import {
   IconEye,
   IconEdit,
@@ -76,67 +82,66 @@ export default function DataGridLancamentos({
 
   // Mapear IDs para nomes
   const categoriasMap = useMemo(() => {
-    return categorias.reduce((acc, cat) => {
-      acc[cat.id] = cat.nome;
-      return acc;
-    }, {} as Record<number, string>);
+    return categorias.reduce(
+      (acc, cat) => {
+        acc[cat.id] = cat.nome;
+        return acc;
+      },
+      {} as Record<number, string>,
+    );
   }, [categorias]);
 
   const despesasMap = useMemo(() => {
-    return despesas.reduce((acc, desp) => {
-      acc[desp.id] = desp.nome;
-      return acc;
-    }, {} as Record<number, string>);
+    return despesas.reduce(
+      (acc, desp) => {
+        acc[desp.id] = desp.nome;
+        return acc;
+      },
+      {} as Record<number, string>,
+    );
   }, [despesas]);
 
   const fontesRendaMap = useMemo(() => {
-    return fontesRenda.reduce((acc, fonte) => {
-      acc[fonte.id] = fonte.nome;
-      return acc;
-    }, {} as Record<number, string>);
+    return fontesRenda.reduce(
+      (acc, fonte) => {
+        acc[fonte.id] = fonte.nome;
+        return acc;
+      },
+      {} as Record<number, string>,
+    );
   }, [fontesRenda]);
 
   const columns: GridColDef[] = [
     {
       field: "data",
       headerName: "Data",
-      width: 120,
+      flex: 0.5,
+      minWidth: 100,
+      maxWidth: 120,
       renderCell: (params) => (
         <Typography variant="body2">{formatarData(params.value)}</Typography>
       ),
     },
     {
-      field: "tipo",
-      headerName: "Tipo",
-      width: 130,
-      renderCell: (params) => {
-        const isPagamento = params.value === "pagamento";
-        return (
-          <Chip
-            size="small"
-            icon={isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />}
-            label={isPagamento ? "Pagamento" : "Agendamento"}
-            color={isPagamento ? "success" : "warning"}
-            sx={{
-              fontWeight: 600,
-              fontSize: "0.75rem",
-            }}
-          />
-        );
-      },
-    },
-    {
       field: "origem",
       headerName: "Origem",
-      width: 110,
+      flex: 0.6,
+      minWidth: 120,
+      maxWidth: 150,
       renderCell: (params) => {
         const row = params.row as Lancamento;
         if (!row) return null;
-        const isDespesa = Boolean(row.despesaId);
+        const isDespesa = Boolean(row.despesa);
         return (
           <Chip
             size="small"
-            icon={isDespesa ? <IconArrowDown size={16} /> : <IconArrowUp size={16} />}
+            icon={
+              isDespesa ? (
+                <IconArrowDown size={16} />
+              ) : (
+                <IconArrowUp size={16} />
+              )
+            }
             label={isDespesa ? "Despesa" : "Renda"}
             color={isDespesa ? "error" : "success"}
             variant="outlined"
@@ -149,9 +154,39 @@ export default function DataGridLancamentos({
       },
     },
     {
+      field: "tipo",
+      headerName: "Tipo",
+      flex: 0.7,
+      minWidth: 130,
+      maxWidth: 160,
+      renderCell: (params) => {
+        const isPagamento = params.value === "pagamento";
+        return (
+          <Chip
+            size="small"
+            icon={
+              isPagamento ? (
+                <IconChecks size={16} />
+              ) : (
+                <IconCalendar size={16} />
+              )
+            }
+            label={isPagamento ? "Pagamento" : "Agendamento"}
+            color={isPagamento ? "success" : "warning"}
+            sx={{
+              fontWeight: 600,
+              fontSize: "0.75rem",
+            }}
+          />
+        );
+      },
+    },
+    {
       field: "categoria",
       headerName: "Categoria",
-      width: 150,
+      flex: 1,
+      minWidth: 130,
+      maxWidth: 200,
       valueGetter: (params: GridValueGetterParams) => {
         const row = params.row as Lancamento;
         // Fallback seguro para evitar erro quando categoria é undefined
@@ -159,7 +194,7 @@ export default function DataGridLancamentos({
         return row.categoria.nome || "-";
       },
       renderCell: (params) => (
-        <Typography variant="body2" fontWeight={500}>
+        <Typography variant="body2" fontWeight={500} noWrap>
           {params.value}
         </Typography>
       ),
@@ -167,8 +202,9 @@ export default function DataGridLancamentos({
     {
       field: "item",
       headerName: "Nome",
-      width: 200,
-      flex: 1,
+      flex: 1.3,
+      minWidth: 150,
+      maxWidth: 300,
       valueGetter: (params: GridValueGetterParams) => {
         const row = params.row as Lancamento;
         // Fallback seguro
@@ -185,10 +221,11 @@ export default function DataGridLancamentos({
       ),
     },
     {
-      field: "descricao",
-      headerName: "Descrição",
-      width: 250,
-      flex: 1,
+      field: "observacao",
+      headerName: "Observação",
+      flex: 1.5,
+      minWidth: 120,
+      maxWidth: 200,
       renderCell: (params) => (
         <Tooltip title={params.value || "-"} arrow>
           <Typography variant="body2" noWrap color="textSecondary">
@@ -200,13 +237,15 @@ export default function DataGridLancamentos({
     {
       field: "valor",
       headerName: "Valor",
-      width: 130,
       align: "right",
       headerAlign: "right",
+      flex: 0.7,
+      minWidth: 110,
+      maxWidth: 150,
       renderCell: (params) => {
         const row = params.row as Lancamento;
         if (!row) return null;
-        const isDespesa = Boolean(row.despesaId);
+        const isDespesa = Boolean(row.despesa);
         return (
           <Typography
             variant="body2"
@@ -221,7 +260,9 @@ export default function DataGridLancamentos({
     {
       field: "acoes",
       headerName: "Ações",
-      width: 130,
+      flex: 0.6,
+      minWidth: 120,
+      maxWidth: 150,
       align: "center",
       headerAlign: "center",
       sortable: false,
@@ -313,12 +354,21 @@ export default function DataGridLancamentos({
         columns={columns}
         loading={loading}
         checkboxSelection
-        disableColumnSelector
+        // disableColumnSelector
+        disableSelectionOnClick
         onSelectionModelChange={(newSelection: GridSelectionModel) => {
           onSelectionChange(newSelection as number[]);
         }}
-        // Paginação client-side (versão gratuita do MUI DataGrid)
+        // Paginação server-side
+        paginationMode="server"
+        rowCount={totalRows}
+        page={page}
         pageSize={pageSize}
+        onPageChange={(newPage: number) => {
+          if (onPageChange) {
+            onPageChange(newPage);
+          }
+        }}
         onPageSizeChange={(newSize: number) => {
           if (onPageSizeChange) {
             onPageSizeChange(newSize);
@@ -329,6 +379,12 @@ export default function DataGridLancamentos({
         sx={{
           "& .MuiDataGrid-row:hover": {
             backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.04),
+          },
+          "& .MuiDataGrid-cell:focus": {
+            outline: "none",
+          },
+          "& .MuiDataGrid-cell:focus-within": {
+            outline: "none",
           },
         }}
       />

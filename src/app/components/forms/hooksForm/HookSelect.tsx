@@ -13,17 +13,20 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 
-type HookSelectProps<TFieldValues extends FieldValues, T> = UseControllerProps<TFieldValues> & 
-  Omit<SelectProps, 'name' | 'value' | 'onChange'> & {
-  options?: T[];
-  placeholder?: string;
-  returnAsNumber?: boolean;
-  getValue?: (obj: T) => string | number | readonly string[];
-  getLabel?: (obj: T) => React.ReactNode;
-  children?: React.ReactNode;
-  disableEmpty?: boolean;
-  onChange?: (value: string | number, option?: T) => void;
-};
+type HookSelectProps<
+  TFieldValues extends FieldValues,
+  T,
+> = UseControllerProps<TFieldValues> &
+  Omit<SelectProps, "name" | "value" | "onChange"> & {
+    options?: T[];
+    placeholder?: string;
+    returnAsNumber?: boolean;
+    getValue?: (obj: T) => string | number | readonly string[];
+    getLabel?: (obj: T) => React.ReactNode;
+    children?: React.ReactNode;
+    disableEmpty?: boolean;
+    onChange?: (value: string | number, option?: T) => void;
+  };
 
 export function HookSelect<TFieldValues extends FieldValues, T>({
   name,
@@ -45,32 +48,36 @@ export function HookSelect<TFieldValues extends FieldValues, T>({
   } = useController({ name, control, rules });
 
   // Função para converter o valor baseado na propriedade returnAsNumber
-  const handleChange = (event: SelectChangeEvent<string>) => {
+  const handleChange = (event: SelectChangeEvent<string | number>) => {
     const rawValue = event.target.value;
     const processedValue = returnAsNumber ? Number(rawValue) : rawValue;
-    
+
     // Encontrar o objeto completo para passar no onChange externo
     const selectedOption = options?.find((item) => {
       const itemValue = getValue ? getValue(item) : (item as any)?.id;
       return String(itemValue) === String(rawValue);
     });
-    
+
     // Sempre armazena o ID no field
     fieldWithoutRef.onChange(processedValue);
-    
+
     // onChange externo recebe ID e objeto completo
     onChange?.(processedValue, selectedOption);
   };
+
+  const newValue = returnAsNumber
+    ? Number(fieldWithoutRef.value)
+    : String(fieldWithoutRef.value ?? "");
 
   return (
     <FormControl fullWidth error={!!error}>
       <InputLabel shrink={props.displayEmpty} color={props.color}>
         {props.label}
       </InputLabel>
-      <Select 
+      <Select
         {...fieldWithoutRef}
-        value={fieldWithoutRef.value ?? ""}
-        {...props} 
+        value={newValue}
+        {...props}
         inputRef={ref}
         onChange={handleChange}
       >

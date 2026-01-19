@@ -25,7 +25,7 @@ type HookAutocompleteProps<
   T,
   Multiple extends boolean | undefined = undefined,
   DisableClearable extends boolean | undefined = undefined,
-  FreeSolo extends boolean | undefined = undefined
+  FreeSolo extends boolean | undefined = undefined,
 > = Omit<
   AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>,
   "renderInput"
@@ -35,6 +35,7 @@ type HookAutocompleteProps<
     placeholder?: string;
     textFieldProps?: Omit<TextFieldProps, "label" | "placeholder">;
     selectAll?: boolean;
+    shrinkLabel?: boolean;
     getOptionLabel?: (option: T) => string;
     getOptionValue?: (option: T) => string | number;
     isOptionEqualToValue?: (option: T, value: T) => boolean;
@@ -42,7 +43,7 @@ type HookAutocompleteProps<
       event: SyntheticEvent,
       value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
       reason: string,
-      option?: T
+      option?: T,
     ) => void;
   };
 
@@ -51,7 +52,7 @@ export function HookAutocomplete<
   T,
   Multiple extends boolean | undefined = undefined,
   DisableClearable extends boolean | undefined = undefined,
-  FreeSolo extends boolean | undefined = undefined
+  FreeSolo extends boolean | undefined = undefined,
 >({
   name,
   control,
@@ -65,6 +66,7 @@ export function HookAutocomplete<
   renderOption,
   renderTags,
   selectAll,
+  shrinkLabel,
   options,
   onChange,
   ...props
@@ -118,7 +120,7 @@ export function HookAutocomplete<
       const selectedIds = new Set(values.map((v) => String(v)));
 
       const selectedOptions = options.filter((option) =>
-        selectedIds.has(String(getOptionValue(option)))
+        selectedIds.has(String(getOptionValue(option))),
       );
 
       // Se selectAll estiver ativo e todos os itens reais estão selecionados, incluir "Todos"
@@ -134,18 +136,19 @@ export function HookAutocomplete<
     }
 
     // Se for único
-    return (options.find((option) => getOptionValue(option) === fieldWithoutRef.value) ||
-      null) as LocalAutocompleteValue;
+    return (options.find(
+      (option) => getOptionValue(option) === fieldWithoutRef.value,
+    ) || null) as LocalAutocompleteValue;
   };
 
   // Função para lidar com a mudança do Autocomplete
   const handleChange = (
     event: SyntheticEvent<Element, Event>,
     newValue: LocalAutocompleteValue,
-    reason: string
+    reason: string,
   ) => {
     let selectedOption: T | T[] | undefined;
-    
+
     if (selectAll && props.multiple && Array.isArray(newValue)) {
       const selectedOptions = newValue as T[];
       const currentOptions = getCurrentValue() as T[];
@@ -154,14 +157,14 @@ export function HookAutocomplete<
       const isAllSelected = selectedOptions.some((opt) =>
         getOptionValue
           ? getOptionValue(opt) === allOption.id
-          : (opt as any)?.id === allOption.id
+          : (opt as any)?.id === allOption.id,
       );
 
       // Verifica se a opção "Selecionar Todos" estava PRESENTE na seleção anterior (antes do clique)
       const wasAllSelected = currentOptions?.some((opt) =>
         getOptionValue
           ? getOptionValue(opt) === allOption.id
-          : (opt as any)?.id === allOption.id
+          : (opt as any)?.id === allOption.id,
       );
 
       let finalIds: (string | number)[] = [];
@@ -171,7 +174,7 @@ export function HookAutocomplete<
         // CASO 1: "Todos" está presente AGORA mas NÃO estava antes → Usuário clicou em "Selecionar Todos"
         finalObjects = [...(options || [])];
         finalIds = finalObjects.map((o) =>
-          getOptionValue ? getOptionValue(o) : (o as any).id
+          getOptionValue ? getOptionValue(o) : (o as any).id,
         );
       } else if (!isAllSelected && wasAllSelected) {
         // CASO 2: "Todos" NÃO está presente AGORA mas estava antes → Usuário desmarcou "Selecionar Todos"
@@ -180,14 +183,12 @@ export function HookAutocomplete<
       } else {
         // CASO 3: Mudança normal (usuário clicou em um item específico, não em "Todos")
         finalObjects = selectedOptions.filter((opt) => {
-          const optId = getOptionValue
-            ? getOptionValue(opt)
-            : (opt as any)?.id;
+          const optId = getOptionValue ? getOptionValue(opt) : (opt as any)?.id;
           return optId !== allOption.id;
         });
-        
+
         finalIds = finalObjects.map((opt) =>
-          getOptionValue ? getOptionValue(opt) : (opt as any).id
+          getOptionValue ? getOptionValue(opt) : (opt as any).id,
         );
       }
 
@@ -195,7 +196,6 @@ export function HookAutocomplete<
       fieldWithoutRef.onChange(finalIds);
       // Guarda objetos para onChange externo
       selectedOption = finalObjects;
-      
     } else if (getOptionValue && newValue !== null && newValue !== undefined) {
       // Lógica para seleção única ou múltipla sem selectAll
       if (Array.isArray(newValue)) {
@@ -243,7 +243,7 @@ export function HookAutocomplete<
     ? (
         optionProps: React.HTMLAttributes<HTMLLIElement> & { key: string },
         option: T,
-        state: AutocompleteRenderOptionState
+        state: AutocompleteRenderOptionState,
       ) => {
         const { key, ...restOptionProps } = optionProps;
         return (
@@ -275,7 +275,7 @@ export function HookAutocomplete<
       }
     : (
         optionProps: React.HTMLAttributes<HTMLLIElement> & { key: string },
-        option: T
+        option: T,
       ) => {
         const { key, ...restOptionProps } = optionProps;
         return (
@@ -295,7 +295,7 @@ export function HookAutocomplete<
 
   const defaultRenderTags = (
     tagValue: T[],
-    getTagProps: AutocompleteRenderGetTagProps
+    getTagProps: AutocompleteRenderGetTagProps,
   ) => {
     if (!props.multiple) return null;
 
@@ -377,6 +377,9 @@ export function HookAutocomplete<
           placeholder={placeholder}
           error={!!error}
           helperText={error?.message}
+          InputLabelProps={{
+            shrink: shrinkLabel,
+          }}
           {...textFieldProps}
         />
       )}

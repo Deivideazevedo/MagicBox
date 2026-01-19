@@ -1,7 +1,7 @@
 /**
  * Limpa um objeto removendo chaves ou valores específicos.
  *
- * Por padrão, remove chaves cujo valor seja `undefined`.
+ * Por padrão, remove chaves cujo valor seja `undefined`, `null`, string vazia.
  * Permite configurar quais valores ou chaves devem ser removidos,
  * ou utilizar uma função de limpeza personalizada.
  *
@@ -15,14 +15,14 @@
  */
 
 type CleanObjectParams<T> = {
-  dataForm: T;
+  params: T;
   valuesToRemove?: any[];
   keysToRemove?: (keyof T)[];
   customClean?: (key: keyof T, value: T[keyof T]) => boolean;
 };
 export function fnCleanObject<T extends Record<string, any>>({
-  dataForm,
-  valuesToRemove = [undefined],
+  params,
+  valuesToRemove = [undefined, null, ""],
   keysToRemove = [],
   customClean,
 }: CleanObjectParams<T>): T {
@@ -30,7 +30,7 @@ export function fnCleanObject<T extends Record<string, any>>({
   const valuesToRemoveSet = new Set(valuesToRemove);
 
   return Object.fromEntries(
-    Object.entries(dataForm).filter(([key, value]) => {
+    Object.entries(params).filter(([key, value]) => {
       // Se existir, usar o removedor customizado
       if (customClean) return customClean(key as keyof T, value as T[keyof T]);
 

@@ -56,7 +56,7 @@ export default function ModalVisualizacao({
   const fonteRenda = lancamento.fonteRenda;
 
   const isPagamento = lancamento.tipo === "pagamento";
-  const isDespesa = Boolean(lancamento.despesaId);
+  const isDespesa = Boolean(lancamento.despesa);
 
   const formatarValor = (valor: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -212,12 +212,12 @@ export default function ModalVisualizacao({
               />
             </Grid>
 
-            {lancamento.descricao && (
+            {lancamento.observacao && (
               <Grid item xs={12}>
                 <InfoItem
                   icon={IconNotes}
-                  label="Descrição"
-                  value={lancamento.descricao}
+                  label="Obersavação"
+                  value={lancamento.observacao}
                   color="info"
                 />
               </Grid>

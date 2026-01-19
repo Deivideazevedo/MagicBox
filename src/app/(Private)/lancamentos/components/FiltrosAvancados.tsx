@@ -12,7 +12,11 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { IconFilter, IconFilterOff, IconChevronDown } from "@tabler/icons-react";
+import {
+  IconFilter,
+  IconFilterOff,
+  IconChevronDown,
+} from "@tabler/icons-react";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
@@ -22,20 +26,20 @@ import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
 import { FiltrosLancamentos } from "../hooks/useLancamentosList";
 import { useMemo, useState } from "react";
+import { FindAllFilters } from "@/dtos";
 
 // Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | FonteRenda) & { 
+type ItemComOrigem = (Despesa | FonteRenda) & {
   origem: "despesa" | "renda";
   uniqueId: string; // Composto: "despesa-{id}" ou "renda-{id}"
 };
 
 interface FiltrosAvancadosProps {
-  filtros: FiltrosLancamentos;
+  filtros: FindAllFilters;
   categorias: Categoria[];
   despesas: Despesa[];
   fontesRenda: FonteRenda[];
-  onAplicarFiltros: (filtros: FiltrosLancamentos) => void;
-  onLimparFiltros: () => void;
+  handleSearch: (filtros: Partial<FindAllFilters>) => void;
 }
 
 export default function FiltrosAvancados({
@@ -43,91 +47,99 @@ export default function FiltrosAvancados({
   categorias,
   despesas,
   fontesRenda,
-  onAplicarFiltros,
-  onLimparFiltros,
+  handleSearch,
 }: FiltrosAvancadosProps) {
-  const { control, handleSubmit, reset, watch, setValue } = useForm<FiltrosLancamentos>({
-    defaultValues: {
-      dataInicio: filtros.dataInicio || "",
-      dataFim: filtros.dataFim || "",
-      categoriaId: filtros.categoriaId || "",
-      origem: filtros.origem || "",
-      item: filtros.item || null,
-      tipo: filtros.tipo || "",
-      busca: filtros.busca || "",
-    },
-  });
+  const defaultValues: FiltrosLancamentos = {
+    dataInicio: filtros.dataInicio || "",
+    dataFim: filtros.dataFim || "",
+    origem: "",
+    tipo: "",
+    observacao: "",
+    categoriaId: null,
+    item: null,
+  };
+  const { control, handleSubmit, reset, watch, setValue } =
+    useForm<FiltrosLancamentos>({
+      defaultValues,
+    });
 
   const categoriaIdWatch = watch("categoriaId");
   const origemWatch = watch("origem");
-  const itemIdWatch = watch("item"); // Agora armazena uniqueId (string)
-  
-  // Estado para manter o objeto completo selecionado
-  const [selectedItem, setSelectedItem] = useState<ItemComOrigem | null>(filtros.item || null);
-
-  const handleAplicar = (data: FiltrosLancamentos) => {
-    // Construir filtros com o objeto completo
-    const filtrosComObjeto: FiltrosLancamentos = {
-      ...data,
-      item: selectedItem, // Usar o objeto completo armazenado
-    };
-    onAplicarFiltros(filtrosComObjeto);
-  };
-
-  const handleLimpar = () => {
-    setSelectedItem(null); // Limpar estado do item selecionado
-    reset({
-      dataInicio: filtros.dataInicio || "",
-      dataFim: filtros.dataFim || "",
-      categoriaId: "",
-      origem: "",
-      item: null,
-      tipo: "",
-      busca: "",
-    });
-    onLimparFiltros();
-  };
 
   // Adicionar atributo origem e uniqueId às despesas e fontes de renda
   const despesasComOrigem: ItemComOrigem[] = useMemo(
-    () => despesas.map((d) => ({ 
-      ...d, 
-      origem: "despesa" as const,
-      uniqueId: `despesa-${d.id}`
-    })),
-    [despesas]
+    () =>
+      despesas.map((d) => ({
+        ...d,
+        origem: "despesa" as const,
+        uniqueId: `despesa-${d.id}`,
+      })),
+    [despesas],
   );
 
   const fontesRendaComOrigem: ItemComOrigem[] = useMemo(
-    () => fontesRenda.map((f) => ({ 
-      ...f, 
-      origem: "renda" as const,
-      uniqueId: `renda-${f.id}`
-    })),
-    [fontesRenda]
+    () =>
+      fontesRenda.map((f) => ({
+        ...f,
+        origem: "renda" as const,
+        uniqueId: `renda-${f.id}`,
+      })),
+    [fontesRenda],
   );
 
   // Filtrar despesas pela categoria selecionada (ou todas se não houver categoria)
-  const despesasFiltradas = (categoriaIdWatch && typeof categoriaIdWatch === 'number')
-    ? despesasComOrigem.filter((d) => {
-        // Despesas têm categoriaId direto
-        return 'categoriaId' in d && d.categoriaId === categoriaIdWatch;
-      })
-    : despesasComOrigem;
+  const despesasFiltradas =
+    categoriaIdWatch && typeof categoriaIdWatch === "number"
+      ? despesasComOrigem.filter((d) => d.categoria?.id === categoriaIdWatch)
+      : despesasComOrigem;
 
   // Filtrar fontes de renda pela categoria selecionada (ou todas se não houver categoria)
-  const fontesRendaFiltradas = (categoriaIdWatch && typeof categoriaIdWatch === 'number')
-    ? fontesRendaComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
-    : fontesRendaComOrigem;
+  const fontesRendaFiltradas =
+    categoriaIdWatch && typeof categoriaIdWatch === "number"
+      ? fontesRendaComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
+      : fontesRendaComOrigem;
 
   // Opções do campo "Nome" baseado na origem
   // Se origem for vazia/todos, mostrar despesas E fontes de renda juntas
-  const opcoesNome = origemWatch === "despesa" 
-    ? despesasFiltradas 
-    : origemWatch === "renda" 
-    ? fontesRendaFiltradas 
-    : [...despesasFiltradas, ...fontesRendaFiltradas]; // Todos juntos
+  const opcoesNome =
+    origemWatch === "despesa"
+      ? despesasFiltradas
+      : origemWatch === "renda"
+        ? fontesRendaFiltradas
+        : [...despesasFiltradas, ...fontesRendaFiltradas]; // Todos juntos
 
+  const onConvert = (
+    rawFilters: FiltrosLancamentos,
+  ): Partial<FindAllFilters> => {
+    const { item, origem, tipo, ...rest } = rawFilters;
+
+    const spllitedItem = item ? item.split("-") : [];
+    const despesaId =
+      spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
+    const fonteRendaId =
+      spllitedItem[0] === "renda" ? Number(spllitedItem[1]) : undefined;
+
+    const result: Partial<FindAllFilters> = {
+      ...rest,
+      despesaId,
+      fonteRendaId,      
+      observacao: rest.observacao || undefined,
+      tipo: tipo || undefined,
+      categoriaId: rawFilters.categoriaId || undefined,
+    };
+    return result;
+  };
+
+  const handleAplicar = (data: FiltrosLancamentos) => {
+    // Construir filtros com o objeto completo
+    const novosFiltros = onConvert(data);
+    handleSearch(novosFiltros);
+  };
+
+  const handleLimpar = () => {
+    reset();
+    handleSearch(onConvert(defaultValues));
+  };
   return (
     <Accordion
       defaultExpanded={true}
@@ -199,6 +211,27 @@ export default function FiltrosAvancados({
               />
             </Grid>
 
+            {/* Origem (Despesa/Renda) */}
+            <Grid item xs={12} md={3}>
+              <HookSelect
+                name="origem"
+                control={control}
+                label="Origem"
+                placeholder="Todas"
+                returnAsNumber={false}
+                size="small"
+                displayEmpty
+                onChange={() => {
+                  // Limpar item ao mudar origem
+                  setValue("item", null);
+                }}
+              >
+                <MenuItem value="">Todas</MenuItem>
+                <MenuItem value="despesa">Despesa</MenuItem>
+                <MenuItem value="renda">Renda</MenuItem>
+              </HookSelect>
+            </Grid>
+
             {/* Tipo */}
             <Grid item xs={12} md={3}>
               <HookSelect
@@ -231,31 +264,8 @@ export default function FiltrosAvancados({
                 onChange={() => {
                   // Limpar item ao mudar categoria
                   setValue("item", null);
-                  setSelectedItem(null);
                 }}
               />
-            </Grid>
-
-            {/* Origem (Despesa/Renda) */}
-            <Grid item xs={12} md={3}>
-              <HookSelect
-                name="origem"
-                control={control}
-                label="Origem"
-                placeholder="Todas"
-                returnAsNumber={false}
-                size="small"
-                displayEmpty
-                onChange={() => {
-                  // Limpar item ao mudar origem
-                  setValue("item", null);
-                  setSelectedItem(null);
-                }}
-              >
-                <MenuItem value="">Todas</MenuItem>
-                <MenuItem value="despesa">Despesa</MenuItem>
-                <MenuItem value="renda">Renda</MenuItem>
-              </HookSelect>
             </Grid>
 
             {/* Nome (Despesa ou Fonte de Renda) - Agora Autocomplete */}
@@ -264,26 +274,24 @@ export default function FiltrosAvancados({
                 name="item"
                 control={control}
                 label="Nome"
-                placeholder="Todos"
+                placeholder="Selecione..."
                 options={opcoesNome}
                 getOptionValue={(item) => item.uniqueId}
                 getOptionLabel={(item) => item.nome}
                 size="small"
-                onChange={(event, value, reason, selectedOption) => {
-                  // Armazenar objeto completo no estado para usar no handleAplicar
-                  setSelectedItem(selectedOption as ItemComOrigem || null);
-                }}
+                shrinkLabel
               />
             </Grid>
 
             {/* Busca */}
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={6}>
               <HookTextField
-                name="busca"
+                name="observacao"
                 control={control}
-                label="Buscar por descrição"
+                label="Observação"
                 placeholder="Digite para buscar..."
                 size="small"
+                shrinkLabel
               />
             </Grid>
           </Grid>

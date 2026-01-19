@@ -21,7 +21,7 @@ const lancamentoSchema = z.object({
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   itemId: z.number().min(1, "Selecione uma despesa ou fonte de renda"),
   tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.string().min(1, "Valor é obrigatório"),
+  valor: z.number().min(0.01, "Valor é obrigatório"),
   data: z.string().min(1, "Data é obrigatória"),
   descricao: z.string().optional(),
   parcelas: z.number().nullable().optional(),
@@ -53,7 +53,7 @@ export function useLancamentoForm({
   const despesasList = useMemo(() => despesasProps || [], [despesasProps]);
   const fontesRendaList = useMemo(
     () => fontesRendaProps || [],
-    [fontesRendaProps]
+    [fontesRendaProps],
   );
 
   const [createLancamento, { isLoading: isCreating }] =
@@ -67,13 +67,13 @@ export function useLancamentoForm({
       categoriaId: 0,
       itemId: 0,
       tipo: "pagamento",
-      valor: "",
+      valor: 0,
       data: new Date().toISOString().split("T")[0],
       descricao: "",
       parcelas: null,
       parcelar: false,
     }),
-    []
+    [],
   );
 
   const {
@@ -99,10 +99,16 @@ export function useLancamentoForm({
   useEffect(() => {
     if (lancamentoParaEditar) {
       // Determinar origem (despesa ou fonteRenda) - considerar snake_case do Prisma
-      const despesaId = (lancamentoParaEditar as any).despesa_id || lancamentoParaEditar.despesaId;
-      const fonteRendaId = (lancamentoParaEditar as any).fonte_renda_id || lancamentoParaEditar.fonteRendaId;
-      const categoriaId = (lancamentoParaEditar as any).categoria_id || lancamentoParaEditar.categoriaId;
-      
+      const despesaId =
+        (lancamentoParaEditar as any).despesa_id ||
+        lancamentoParaEditar.despesaId;
+      const fonteRendaId =
+        (lancamentoParaEditar as any).fonte_renda_id ||
+        lancamentoParaEditar.fonteRendaId;
+      const categoriaId =
+        (lancamentoParaEditar as any).categoria_id ||
+        lancamentoParaEditar.categoriaId;
+
       const novaOrigem = despesaId ? "despesa" : "fonteRenda";
       setOrigem(novaOrigem);
 
@@ -111,14 +117,15 @@ export function useLancamentoForm({
       setValue("categoriaId", categoriaId);
       setValue("itemId", despesaId || fonteRendaId || 0);
       setValue("tipo", lancamentoParaEditar.tipo);
-      setValue("valor", String(lancamentoParaEditar.valor));
-      
+      setValue("valor", Number(lancamentoParaEditar.valor));
+
       // Formatar data corretamente
-      const dataLancamento = typeof lancamentoParaEditar.data === 'string' 
-        ? lancamentoParaEditar.data.split('T')[0]
-        : new Date(lancamentoParaEditar.data).toISOString().split('T')[0];
+      const dataLancamento =
+        typeof lancamentoParaEditar.data === "string"
+          ? lancamentoParaEditar.data.split("T")[0]
+          : new Date(lancamentoParaEditar.data).toISOString().split("T")[0];
       setValue("data", dataLancamento);
-      
+
       setValue("descricao", lancamentoParaEditar.descricao || "");
       setValue("parcelar", false); // Edição não permite parcelamento
       setValue("parcelas", null);
@@ -156,8 +163,8 @@ export function useLancamentoForm({
 
   // Calcular valor total com parcelas
   const valorTotal = useMemo(() => {
-    if (!parcelar || !parcelas || !valor) return parseFloat(valor || "0");
-    return parseFloat(valor) * parcelas;
+    if (!parcelar || !parcelas || !valor) return valor;
+    return valor * parcelas;
   }, [parcelar, parcelas, valor]);
 
   const onSubmit = useCallback(
@@ -207,24 +214,9 @@ export function useLancamentoForm({
 
         // Callback de sucesso
         onSuccess?.();
-      } catch (error) {
-        SwalToast.fire({
-          icon: "error",
-          title: `Erro ao ${id ? "atualizar" : "criar"} lançamento`,
-        });
-      }
+      } catch {}
     },
-    [
-      session,
-      origem,
-      parcelar,
-      id,
-      createLancamento,
-      updateLancamento,
-      reset,
-      defaultValues,
-      onSuccess,
-    ]
+    [session, origem, parcelar, createLancamento, updateLancamento, reset, defaultValues, onSuccess],
   );
 
   const handleTipoChange = useCallback(
@@ -236,7 +228,7 @@ export function useLancamentoForm({
         }
       }
     },
-    [setValue]
+    [setValue],
   );
 
   const toggleOrigem = useCallback(() => {
