@@ -38,7 +38,7 @@ interface QuickActionModalProps {
 
 interface FormData {
   // Campos comuns
-  descricao: string;
+  observacao: string;
   valor?: number;
   
   // Campos específicos de despesa
@@ -121,21 +121,21 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
     return (
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
-          {/* Descrição - campo comum */}
+          {/* Observação - campo comum */}
           <Grid item xs={12}>
             <Controller
-              name="descricao"
+              name="observacao"
               control={control}
               defaultValue=""
-              rules={{ required: "Descrição é obrigatória" }}
+              rules={{ required: "Observação é obrigatória" }}
               render={({ field }) => (
                 <TextField
                   {...field}
                   fullWidth
-                  label="Descrição"
+                  label="Observação"
                   variant="outlined"
-                  error={!!errors.descricao}
-                  helperText={errors.descricao?.message}
+                  error={!!errors.observacao}
+                  helperText={errors.observacao?.message}
                 />
               )}
             />

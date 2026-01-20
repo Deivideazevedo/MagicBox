@@ -23,7 +23,7 @@ const lancamentoSchema = z.object({
   tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.number().min(0.01, "Valor é obrigatório"),
   data: z.string().min(1, "Data é obrigatória"),
-  descricao: z.string().optional(),
+  observacao: z.string().optional(),
   parcelas: z.number().nullable().optional(),
   parcelar: z.boolean(),
 });
@@ -69,7 +69,7 @@ export function useLancamentoForm({
       tipo: "pagamento",
       valor: 0,
       data: new Date().toISOString().split("T")[0],
-      descricao: "",
+      observacao: "",
       parcelas: null,
       parcelar: false,
     }),
@@ -126,7 +126,7 @@ export function useLancamentoForm({
           : new Date(lancamentoParaEditar.data).toISOString().split("T")[0];
       setValue("data", dataLancamento);
 
-      setValue("descricao", lancamentoParaEditar.descricao || "");
+      setValue("observacao", lancamentoParaEditar.observacao || "");
       setValue("parcelar", false); // Edição não permite parcelamento
       setValue("parcelas", null);
     }
@@ -178,7 +178,7 @@ export function useLancamentoForm({
           tipo: payload.tipo,
           valor: payload.valor,
           data: payload.data,
-          descricao: payload.descricao || undefined,
+          observacao: payload.observacao || undefined,
           parcelas: parcelar && payload.parcelas ? payload.parcelas : null,
         };
 

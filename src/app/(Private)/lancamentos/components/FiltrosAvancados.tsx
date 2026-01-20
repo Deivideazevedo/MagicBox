@@ -123,6 +123,7 @@ export default function FiltrosAvancados({
       ...rest,
       despesaId,
       fonteRendaId,      
+      origem,
       observacao: rest.observacao || undefined,
       tipo: tipo || undefined,
       categoriaId: rawFilters.categoriaId || undefined,

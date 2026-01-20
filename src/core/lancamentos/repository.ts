@@ -9,26 +9,26 @@ import {
 } from "@prisma/client";
 import { LancamentoParams, LancamentoPayload } from "./types";
 import { PaginatedResult } from "../types/global";
+import { FindAllFilters } from "./lancamento.dto";
 export const lancamentoRepository = {
   /**
    * Busca lançamentos com suporte a filtros dinâmicos
    */
   async findAll(
-    filters: LancamentoParams
+    filters: FindAllFilters
   ): Promise<PaginatedResult<PrismaLancamento>> {
     const { 
       page = 0, 
       limit = 10, 
-      statusDinamico, 
       dataInicio,
       dataFim,
       tipo,
-      busca,
+      observacao,
       userId,
       categoriaId,
       despesaId,
       fonteRendaId,
-      ...otherFilters 
+      origem,
     } = filters;
 
     let whereClause: Prisma.LancamentoWhereInput = {};
@@ -45,6 +45,13 @@ export const lancamentoRepository = {
     }
     if (fonteRendaId) {
       whereClause.fonte_renda_id = Number(fonteRendaId);
+    }
+    if (origem) {
+      if (origem === "despesa") {
+        whereClause.despesa_id = { not: null };
+      } else if (origem === "renda") {
+        whereClause.fonte_renda_id = { not: null };
+      }
     }
 
     // Filtro por período
@@ -64,9 +71,9 @@ export const lancamentoRepository = {
     }
 
     // Filtro por busca (descrição)
-    if (busca) {
-      whereClause.descricao = {
-        contains: busca,
+    if (observacao) {
+      whereClause.observacao = {
+        contains: observacao,
         mode: 'insensitive',
       };
     }
@@ -204,7 +211,7 @@ export const lancamentoRepository = {
         tipo: data.tipo,
         valor: Number(data.valor),
         data: new Date(data.data),
-        descricao: data.descricao,
+        observacao: data.observacao,
         observacao_automatica: data.observacaoAutomatica,
         categoria_id: Number(data.categoriaId),
         despesa_id: data.despesaId ? Number(data.despesaId) : null,
@@ -247,7 +254,7 @@ export const lancamentoRepository = {
         tipo: data.tipo ? (data.tipo as TipoLancamento) : undefined,
         valor: data.valor ? Number(data.valor) : undefined,
         data: data.data ? new Date(data.data) : undefined,
-        descricao: data.descricao,
+        observacao: data.observacao,
         despesa_id: data.despesaId !== undefined 
           ? (data.despesaId ? Number(data.despesaId) : null) 
           : undefined,

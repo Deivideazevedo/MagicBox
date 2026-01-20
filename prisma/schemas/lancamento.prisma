@@ -7,7 +7,7 @@ model Lancamento {
   user_id               Int
   tipo                  TipoLancamento
   data                  DateTime // Data do lançamento/agendamento
-  descricao             String?        @db.VarChar(255)
+  observacao            String?        @db.VarChar(255)
   observacao_automatica String?        @db.VarChar(500) // Descrição automática para parcelamentos
 
   categoria_id   Int
@@ -33,12 +33,10 @@ model Lancamento {
   @@index([data])
   @@index([categoria_id])
   @@index([tipo])
-  
   // Índices compostos para otimização de queries comuns
   @@index([user_id, data(sort: Desc)]) // Listagem de lançamentos por usuário ordenado por data
   @@index([user_id, tipo]) // Filtro por tipo de lançamento
   @@index([user_id, categoria_id, data]) // Filtro por categoria
   @@index([user_id, despesa_id, data]) // Filtro por despesa
-  
   @@map("lancamentos")
 }

@@ -192,10 +192,10 @@ export default function TabelaExtrato({ filtros }: TabelaExtratoProps) {
       },
     },
     {
-      field: "descricao",
-      headerName: "Descrição",
+      field: "observacao",
+      headerName: "Observação",
       width: 200,
-      valueGetter: (params: GridValueGetterParams) => params.row.descricao || "-",
+      valueGetter: (params: GridValueGetterParams) => params.row.observacao || "-",
     },
     {
       field: "valor",

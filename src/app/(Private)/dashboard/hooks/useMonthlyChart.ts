@@ -20,10 +20,12 @@ export const useMonthlyChart = () => {
   const dataInicio = format(startOfMonth(subMonths(today, 5)), "yyyy-MM-dd");
   const dataFim = format(endOfMonth(today), "yyyy-MM-dd");
 
-  const queryParams = new URLSearchParams({
+  const queryParams = {
+    page: 0,
+    limit: 1000,
     dataInicio,
     dataFim
-  }).toString();
+  };
 
   const { data: response, isLoading } = useGetLancamentosQuery(queryParams);
 

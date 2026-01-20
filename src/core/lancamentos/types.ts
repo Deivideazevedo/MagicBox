@@ -14,6 +14,9 @@ export interface Lancamento {
   valor: number;
   createdAt: string;
   updatedAt: string;
+  categoriaId: number;
+  despesaId?: number | null;
+  fonteRendaId?: number | null;
 
   categoria?: Categoria;
   despesa?: Despesa;

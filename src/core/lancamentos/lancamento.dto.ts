@@ -16,7 +16,7 @@ export const lancamentoSchema = z.object({
   tipo: tipoLancamentoEnum,
   valor: z.number().positive(), // Decimal como string
   data: z.date(),
-  descricao: z.string().nullable(),
+  observacao: z.string().nullable(),
   observacaoAutomatica: z.string().nullable(),
   categoriaId: z.number().int().positive(),
   despesaId: z.number().int().positive().nullable(),
@@ -41,6 +41,7 @@ export const findAllQuerySchema = z.object({
 
   tipo: z.enum(["pagamento", "agendamento"]).optional(), // Exemplo: Valida apenas valores permitidos
   observacao: z.string().optional(),
+  origem: z.string().optional(),
 }).strict();
 
 
@@ -52,7 +53,7 @@ export const createLancamentoSchema = z
     data: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
-    descricao: z.string().max(255).trim().optional(),
+    observacao: z.string().max(255).trim().optional(),
 
     // Categoria (obrigatória)
     categoriaId: z.number().int().positive("Categoria é obrigatória"),
@@ -95,7 +96,7 @@ export const updateLancamentoSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
       .optional(),
-    descricao: z.string().min(1).max(255).trim().optional(),
+    observacao: z.string().min(1).max(255).trim().optional(),
     despesaId: z.number().int().positive().nullable().optional(),
     fonteRendaId: z.number().int().positive().nullable().optional(),
   })

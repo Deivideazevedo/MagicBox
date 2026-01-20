@@ -4,30 +4,31 @@ import { lancamentoRepository as repository } from "./repository";
 import { ValidationError, NotFoundError } from "@/lib/errors";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { FindAllFilters } from "./lancamento.dto";
 
 /**
  * Gera a observação automática para lançamentos parcelados
  * Formato: "descrição informada (nº da parcela / nº total de parcela) - R$ valor (dia/mês)"
  */
 function gerarObservacaoAutomatica(
-  descricao: string | undefined,
+  observacao: string | undefined,
   parcelaAtual: number,
   totalParcelas: number,
   valor: number,
   data: Date
 ): string {
-  const descricaoBase = descricao || "Lançamento";
+  const observacaoBase = observacao || "Lançamento";
   const valorFormatado = valor.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
   const dataFormatada = format(data, "dd/MM", { locale: ptBR });
   
-  return `${descricaoBase} (${parcelaAtual}/${totalParcelas}) - ${valorFormatado} (${dataFormatada})`;
+  return `${observacaoBase} (${parcelaAtual}/${totalParcelas}) - ${valorFormatado} (${dataFormatada})`;
 }
 
 export const lancamentoService = {
-  async findAll(filters: any) {
+  async findAll(filters: FindAllFilters) {
     // Sempre usa findAll com paginação
     return await repository.findAll(filters);
   },
@@ -75,7 +76,7 @@ export const lancamentoService = {
         tipo: payload.tipo,
         valor: valorNumerico,
         data: dataBase,
-        descricao: payload.descricao || null,
+        observacao: payload.observacao || null,
         observacaoAutomatica: null,
         categoriaId: payload.categoriaId,
         despesaId: payload.despesaId || null,
@@ -90,7 +91,7 @@ export const lancamentoService = {
     for (let i = 0; i < parcelas; i++) {
       const dataParcela = addMonths(dataBase, i);
       const observacaoAutomatica = gerarObservacaoAutomatica(
-        payload.descricao,
+        payload.observacao,
         i + 1,
         parcelas,
         valorNumerico,
@@ -102,7 +103,7 @@ export const lancamentoService = {
         tipo: payload.tipo,
         valor: valorNumerico,
         data: dataParcela,
-        descricao: payload.descricao || null,
+        observacao: payload.observacao || null,
         observacaoAutomatica,
         categoriaId: payload.categoriaId,
         despesaId: payload.despesaId || null,

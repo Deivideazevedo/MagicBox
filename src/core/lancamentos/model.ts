@@ -9,7 +9,7 @@ export class LancamentoModel implements Lancamento {
   tipo: TipoLancamento;
   valor: number;
   data: string;
-  descricao?: string;
+  observacao?: string;
   observacaoAutomatica?: string;
   createdAt: string;
   updatedAt: string;
@@ -23,7 +23,7 @@ export class LancamentoModel implements Lancamento {
     this.tipo = data.tipo;
     this.valor = data.valor;
     this.data = data.data;
-    this.descricao = data.descricao;
+    this.observacao = data.observacao;
     this.observacaoAutomatica = data.observacaoAutomatica;
     this.createdAt = data.createdAt;
     this.updatedAt = data.updatedAt;
@@ -43,7 +43,7 @@ export class LancamentoModel implements Lancamento {
       tipo: this.tipo,
       valor: this.valor,
       data: this.data,
-      descricao: this.descricao,
+      observacao: this.observacao,
       observacaoAutomatica: this.observacaoAutomatica,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

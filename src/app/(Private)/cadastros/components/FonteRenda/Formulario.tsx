@@ -104,7 +104,7 @@ export const Formulario = (formProps: FormProps) => {
             <Grid item xs={12}>
               <HookSelect
                 name="categoriaId"
-                color="error"
+                color="success"
                 control={control}
                 options={categorias}
                 label="Categoria"

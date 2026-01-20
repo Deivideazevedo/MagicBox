@@ -302,8 +302,8 @@ export default function Formulario({
             {/* Descrição */}
             <Grid item xs={12}>
               <HookTextField
-                label="Descrição (opcional)"
-                name="descricao"
+                label="Observação (opcional)"
+                name="observacao"
                 control={control}
                 placeholder={
                   isDespesa

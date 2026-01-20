@@ -3,6 +3,9 @@
 import { Box, Container, Typography, Grid, Card, Button } from "@mui/material";
 import { IconTrash } from "@tabler/icons-react";
 
+// Desabilitar prerendering estático para páginas dinâmicas protegidas
+export const dynamic = "force-dynamic";
+
 // Components
 import LancamentoDrawer from "./components/LancamentoDrawer";
 import MiniCardsResumo from "./components/MiniCardsResumo";
