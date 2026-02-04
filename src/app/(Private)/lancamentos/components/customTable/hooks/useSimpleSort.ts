@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ITableColumns } from '../types/columnProps';
-import { compareValues } from '../utils/comparison';
+import { ReactNode, useCallback, useMemo, useState } from "react";
+import { compareValues } from "../utils/comparison";
 
 /**
  * 🎯 Hook de ordenação SIMPLES - Ordena por UMA coluna por vez
@@ -17,8 +16,15 @@ import { compareValues } from '../utils/comparison';
  * // No onClick do header da tabela:
  * <TableCell onClick={() => requestSort('nome')}>Nome</TableCell>
  */
+type IColumnProps<T> = {
+  sortValue?: (row: T) => any;
+  render?: (row: T) => ReactNode;
+  filterValue?: (row: T) => string | number;
+};
 
-export type SortOrder = 'ASC' | 'DESC' | null;
+type ITableColumns<T> = Partial<Record<keyof T, IColumnProps<T>>>;
+
+export type SortOrder = "ASC" | "DESC" | null;
 
 export interface SortConfig<T> {
   key: keyof T;
@@ -53,7 +59,7 @@ export function useSimpleSort<T>(
       if (column.render) {
         const rendered = column.render(row);
         // Se render retorna string ou number, usa para ordenação
-        if (typeof rendered === 'string' || typeof rendered === 'number') {
+        if (typeof rendered === "string" || typeof rendered === "number") {
           return rendered;
         }
       }
@@ -81,7 +87,7 @@ export function useSimpleSort<T>(
       // - strings (normalizado sem acentos)
       // - tipos mistos
       const comparison = compareValues(aValue, bValue);
-      return sortConfig.order === 'ASC' ? comparison : -comparison;
+      return sortConfig.order === "ASC" ? comparison : -comparison;
     });
 
     return sorted;
@@ -92,15 +98,15 @@ export function useSimpleSort<T>(
     setSortConfig((current) => {
       // Se já está ordenando por esta coluna
       if (current?.key === key) {
-        if (current.order === 'ASC') {
-          return { key, order: 'DESC' };
+        if (current.order === "ASC") {
+          return { key, order: "DESC" };
         }
-        if (current.order === 'DESC') {
+        if (current.order === "DESC") {
           return null; // Remove ordenação
         }
       }
       // Nova coluna ou null -> começa com ASC
-      return { key, order: 'ASC' };
+      return { key, order: "ASC" };
     });
   };
 
