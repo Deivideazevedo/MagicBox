@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 import LancamentoDrawer from "./components/LancamentoDrawer";
 import MiniCardsResumo from "./components/MiniCardsResumo";
 import FiltrosAvancados from "./components/FiltrosAvancados";
-import DataGridLancamentos from "./components/DataGridLancamentos";
+import { CustomTable } from "./components/customTable";
 import ModalVisualizacao from "./components/ModalVisualizacao";
 import ModalEdicao from "./components/ModalEdicao";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
@@ -20,6 +20,7 @@ import { useLancamentosList } from "./hooks/useLancamentosList";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useMemo } from "react";
 
 export default function LancamentosPage() {
   const { data: categorias = [] } = useGetCategoriasQuery();
@@ -44,6 +45,16 @@ export default function LancamentosPage() {
     selectedIds,
     onSelectionChange,
   } = useLancamentosList();
+
+  const fullLancamentos = useMemo(() => {
+    return lancamentos.map((lancamento) => {
+      return {
+        ...lancamento,
+        origem: lancamento.despesa ? "Despesa" : "Renda",
+        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-"
+      };
+    });
+  }, [lancamentos]);
 
   return (
     <>
@@ -81,14 +92,18 @@ export default function LancamentosPage() {
         {/* DataGrid */}
         <Grid container spacing={3}>
           <Grid item xs={12}>
-
             <Card
               sx={{
                 borderRadius: 3,
                 p: 3,
               }}
             >
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
                 <Box>
                   <Typography variant="h6" fontWeight={600} gutterBottom>
                     Extrato de Lançamentos
@@ -97,7 +112,7 @@ export default function LancamentosPage() {
                     Visualize, edite ou exclua seus lançamentos
                   </Typography>
                 </Box>
-                
+
                 {selectedIds.length > 0 && (
                   <Button
                     variant="contained"
@@ -105,28 +120,53 @@ export default function LancamentosPage() {
                     startIcon={<IconTrash size={18} />}
                     onClick={excluirHandlers.bulk}
                     disabled={isDeleting}
-                    sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 600,
+                    }}
                   >
                     Excluir {selectedIds.length} selecionado(s)
                   </Button>
                 )}
               </Box>
-              
-              <DataGridLancamentos
-                lancamentos={lancamentos}
-                categorias={categorias}
-                despesas={despesas}
-                fontesRenda={fontesRenda}
-                onVisualizar={modalHandlers.visualizar.abrir}
-                onEditar={modalHandlers.editar.abrir}
-                onExcluir={modalHandlers.excluir.abrir}
+
+              <CustomTable
+                data={fullLancamentos}
+                columns={{
+                  origem: {
+                    render: (row) => (row.despesa ? "Despesa" : "Renda"),
+                  },
+                }}
+                actions={[
+                  {
+                    title: "Visualizar",
+                    callback: modalHandlers.visualizar.abrir,
+                    color: "info",
+                  },
+                  {
+                    title: "Editar",
+                    callback: modalHandlers.editar.abrir,
+                    color: "primary",
+                  },
+                  {
+                    title: "Excluir",
+                    callback: modalHandlers.excluir.abrir,
+                    color: "error",
+                  },
+                ]}
+                pagination={{
+                  page,
+                  rowsPerPage: pageSize,
+                  count: totalRows,
+                  onPageChange: (_event, newPage) =>
+                    paginacao.mudarPagina(newPage),
+                  onRowsPerPageChange: (event) =>
+                    paginacao.mudarTamanho(parseInt(event.target.value, 10)),
+                }}
+                isLoading={isLoading}
+                emptyMessage="Nenhum lançamento foi encontrado"
                 onSelectionChange={onSelectionChange}
-                loading={isLoading}
-                totalRows={totalRows}
-                page={page}
-                pageSize={pageSize}
-                onPageChange={paginacao.mudarPagina}
-                onPageSizeChange={paginacao.mudarTamanho}
               />
             </Card>
           </Grid>
@@ -168,7 +208,12 @@ export default function LancamentosPage() {
       >
         <Typography variant="body1" color="text.secondary">
           Você está prestes a remover{" "}
-          <Box component="span" fontWeight="bold" fontSize={15} color="text.primary">
+          <Box
+            component="span"
+            fontWeight="bold"
+            fontSize={15}
+            color="text.primary"
+          >
             "{lancamentoParaExcluirNome}"
           </Box>
           <br />
