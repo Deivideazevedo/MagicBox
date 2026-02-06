@@ -25,7 +25,7 @@ async function remove(
   const user = await getAuthUser();
   const { id } = params;
 
-  service.remove(id);
+  await service.remove(id);
   return NextResponse.json({ success: true });
 }
 
@@ -36,7 +36,7 @@ async function update(
   const { id: fonteRendaId } = params;
   const body: FonteRendaPayload = await request.json();
 
-  const fonteRendaAtualizada = service.update(fonteRendaId, body);
+  const fonteRendaAtualizada = await service.update(fonteRendaId, body);
 
   return NextResponse.json(fonteRendaAtualizada);
 }

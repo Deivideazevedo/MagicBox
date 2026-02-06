@@ -1,4 +1,3 @@
-import { SwalToast } from "@/utils/swalert";
 import {
   BaseQueryFn,
   createApi,
@@ -72,10 +71,12 @@ const baseQueryInterceptor: BaseQueryFn<
       }
     }
 
-    // Mostrar notificação para o usuário
-    SwalToast.fire({
-      title: message,
-      icon,
+    // Mostrar notificação para o usuário (import dinâmico para evitar dependência circular)
+    import("@/utils/swalert").then(({ SwalToast }) => {
+      SwalToast.fire({
+        title: message,
+        icon,
+      });
     });
 
     // Log detalhado para desenvolvimento

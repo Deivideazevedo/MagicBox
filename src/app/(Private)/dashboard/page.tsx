@@ -116,7 +116,7 @@ const Dashboard = () => {
         </Box>
 
         {/* Financial Summary Cards */}
-        <FinancialSummaryCards />
+        {/* <FinancialSummaryCards /> */}
 
         {/* Main Content Grid */}
         <Grid container spacing={3} sx={{ mt: 2 }}>
@@ -209,31 +209,6 @@ const Dashboard = () => {
             </Paper>
           </Grid>
         </Grid>
-
-        {/* Floating Action Button */}
-        <Fab
-          color="primary"
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "linear-gradient(45deg, #5D87FF 30%, #49BEFF 90%)",
-            "&:hover": {
-              background: "linear-gradient(45deg, #4570EA 30%, #2A9BE8 90%)",
-            },
-          }}
-          onClick={() => handleQuickAction("lancamento")}
-        >
-          <IconPlus />
-        </Fab>
-
-        {/* Quick Action Modal */}
-        <QuickActionModal
-          open={quickActionOpen}
-          onClose={() => setQuickActionOpen(false)}
-          action={selectedAction}
-          onActionComplete={() => setQuickActionOpen(false)}
-        />
       </Container>
     </PageContainer>
   );

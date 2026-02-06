@@ -57,11 +57,13 @@ const Sidebar = () => {
             variant="permanent"
             PaperProps={{
               sx: {
-                transition: theme.transitions.create("width", {
-                  duration: theme.transitions.duration.shortest,
-                }),
                 width: toggleWidth,
                 boxSizing: "border-box",
+                // overflowX: "hidden",
+                transition: theme.transitions.create("width", {
+                  duration: 600, // 0.6s em milissegundos
+                  easing: theme.transitions.easing.easeInOut,
+                }),
               },
             }}
           >

@@ -25,7 +25,7 @@ async function remove(
   const user = await getAuthUser();
   const { id } = params;
 
-  service.remove(id);
+  await service.remove(id);
   return NextResponse.json({ success: true });
 }
 

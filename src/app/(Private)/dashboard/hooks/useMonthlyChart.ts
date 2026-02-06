@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useGetLancamentosQuery } from "@/services/endpoints/lancamentosApi";
 import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -16,9 +16,8 @@ export const useMonthlyChart = () => {
   const [loading, setLoading] = useState(true);
 
   // Buscar lançamentos dos últimos 6 meses
-  const today = new Date();
-  const dataInicio = format(startOfMonth(subMonths(today, 5)), "yyyy-MM-dd");
-  const dataFim = format(endOfMonth(today), "yyyy-MM-dd");
+  const dataInicio = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const queryParams = {
     page: 0,
@@ -29,11 +28,14 @@ export const useMonthlyChart = () => {
 
   const { data: response, isLoading } = useGetLancamentosQuery(queryParams);
 
-  // Extrair array de lancamentos da resposta paginada
-  const lancamentos = Array.isArray(response) ? response : response?.data || [];
+  // Extrair array de lancamentos da resposta paginada (memoizado para evitar re-renders)
+  const lancamentos = useMemo(() => {
+    return Array.isArray(response) ? response : response?.data || [];
+  }, [response]);
 
   useEffect(() => {
     if (!isLoading && lancamentos) {
+      const today = new Date();
       const monthsData: MonthData[] = [];
 
       // Criar dados para os últimos 6 meses
@@ -76,7 +78,6 @@ export const useMonthlyChart = () => {
       setMonthlyData(monthsData);
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lancamentos, isLoading]);
 
   const currentMonth = monthlyData[monthlyData.length - 1];
