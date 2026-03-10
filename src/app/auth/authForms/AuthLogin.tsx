@@ -94,31 +94,29 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     },
   });
 
-  // --- 3. Lógica de login com credenciais e redirecionamento para callbackUrl ---
+  // --- 3. Lógica de login com credenciais ---
   const onSubmit = async (data: { username: string; password: string }) => {
+    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+    
     const result = await signIn("credentials", {
-      redirect: false,
+      redirect: false, // ✅ IMPORTANTE: Impede redirecionamento automático do NextAuth
       username: data.username,
       password: data.password,
     });
 
     if (result?.error) {
-      // Define o erro do formulário (ex: "Credenciais Inválidas")
+      // Mostra erro no formulário
       setError(result.error);
     } else if (result?.ok) {
-      // Se o login for bem-sucedido, redireciona para a callbackUrl
-      const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-      console.log('callbackUrl', callbackUrl);
-      router.push(callbackUrl);
+      // Sucesso: redireciona para callbackUrl
+      router.replace(callbackUrl);
     }
   };
 
-  // if (session) {
-  //   // Se já houver uma sessão, redireciona imediatamente
-  //   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-  //   router.push(callbackUrl);
-  //   return null; // Evita renderizar o resto da página durante o redirecionamento
-  // }
+  // Se já houver sessão, não renderiza o formulário (evita flash)
+  if (session) {
+    return null;
+  }
 
   return (
     <>

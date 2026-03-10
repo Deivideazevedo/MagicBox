@@ -19,11 +19,12 @@ import ConnectionErrorIcon from '@mui/icons-material/WifiOff';
 import CallbackErrorIcon from '@mui/icons-material/SyncProblem';
 import GenericErrorIcon from '@mui/icons-material/ErrorOutline';
 
-// Tipagem para as chaves de erro
-type ErrorKey = 'AccessDenied' | 'NetworkError' | 'default';
+// Tipagem para as chaves de erro (incluindo erros do NextAuth)
+type ErrorKey = 'AccessDenied' | 'NetworkError' | 'CredentialsSignin' | 'Configuration' | 'Verification' | 'OAuthSignin' | 'OAuthCallback' | 'OAuthCreateAccount' | 'EmailCreateAccount' | 'Callback' | 'OAuthAccountNotLinked' | 'EmailSignin' | 'SessionRequired' | 'default';
 
 // Detalhes do erro, agora com componentes de ícone JSX
-const errorDetails = {
+const errorDetails: Record<ErrorKey, { icon: JSX.Element; title: string; message: string; buttonText: string }> = {
+  // Erros de OAuth
   AccessDenied: {
     icon: <AccessDeniedIcon sx={{ fontSize: '4rem' }} color="error" />,
     title: 'Acesso Negado',
@@ -36,6 +37,84 @@ const errorDetails = {
     message: 'Não foi possível conectar ao provedor. Verifique sua internet e tente novamente.',
     buttonText: 'Tentar Novamente',
   },
+  
+  // Erros de credenciais
+  CredentialsSignin: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Credenciais Inválidas',
+    message: 'Usuário ou senha incorretos. Verifique seus dados e tente novamente.',
+    buttonText: 'Tentar Novamente',
+  },
+  
+  // Erros de configuração
+  Configuration: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro de Configuração',
+    message: 'Há um problema na configuração do servidor. Por favor, contate o suporte.',
+    buttonText: 'Voltar para o Login',
+  },
+  
+  // Erros de OAuth específicos
+  OAuthSignin: {
+    icon: <ConnectionErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro no Provedor OAuth',
+    message: 'Não foi possível iniciar o login com o provedor. Tente novamente.',
+    buttonText: 'Tentar Novamente',
+  },
+  OAuthCallback: {
+    icon: <CallbackErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro no Callback OAuth',
+    message: 'Ocorreu um erro ao processar a resposta do provedor de autenticação.',
+    buttonText: 'Tentar Novamente',
+  },
+  OAuthCreateAccount: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro ao Criar Conta',
+    message: 'Não foi possível criar sua conta com este provedor. Tente outro método.',
+    buttonText: 'Voltar para o Login',
+  },
+  OAuthAccountNotLinked: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Conta Já Registrada',
+    message: 'Este e-mail já está vinculado a outra conta. Faça login com o método original.',
+    buttonText: 'Voltar para o Login',
+  },
+  
+  // Erros de email
+  EmailCreateAccount: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro ao Criar Conta',
+    message: 'Não foi possível criar sua conta com este e-mail.',
+    buttonText: 'Voltar para o Login',
+  },
+  EmailSignin: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro no Login por E-mail',
+    message: 'Não foi possível enviar o e-mail de autenticação.',
+    buttonText: 'Tentar Novamente',
+  },
+  
+  // Outros erros
+  Verification: {
+    icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro de Verificação',
+    message: 'O token de verificação é inválido ou expirou.',
+    buttonText: 'Voltar para o Login',
+  },
+  Callback: {
+    icon: <CallbackErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Erro no Callback',
+    message: 'Ocorreu um erro ao processar o callback de autenticação.',
+    buttonText: 'Tentar Novamente',
+  },
+  SessionRequired: {
+    icon: <AccessDeniedIcon sx={{ fontSize: '4rem' }} color="error" />,
+    title: 'Sessão Necessária',
+    message: 'Você precisa estar autenticado para acessar esta página.',
+    buttonText: 'Fazer Login',
+  },
+  
+  // Erro padrão
   default: {
     icon: <GenericErrorIcon sx={{ fontSize: '4rem' }} color="error" />,
     title: 'Ocorreu um Erro',
@@ -51,15 +130,14 @@ const AuthErrorPage = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // NextAuth v4 usa o parâmetro 'error' por padrão
-    const errorCode = searchParams.get('callbackError') as ErrorKey | null;
+    // NextAuth usa o parâmetro 'error' por padrão, mas também suportamos 'callbackError'
+    const errorCode = (searchParams.get('error') || searchParams.get('callbackError')) as ErrorKey | null;
     
     // Define os detalhes corretos ou o padrão
     setDetails(errorDetails[errorCode ?? 'default']);
     setVisible(true); // Ativa a animação de Fade
 
     // Limpa a URL para que o erro não persista no refresh
-    // O ideal é que a URL base seja a da própria página de erro
     router.replace('/auth/error', { scroll: false });
     
   }, [searchParams, router]);
