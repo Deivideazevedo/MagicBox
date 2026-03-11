@@ -1,4 +1,4 @@
-import { Box, Collapse, IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, Collapse, IconButton, Paper, Stack, Tooltip } from '@mui/material';
 import {
   Search,
   Refresh,
@@ -56,8 +56,8 @@ export function TableTopBar({
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        px: 1,
-        pb: 0,
+        p: 1,
+        pt: 0,
       }}
     >
       {/* ESQUERDA */}

@@ -21,6 +21,8 @@ import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 import { useMemo } from "react";
+import { ITableColumns } from "./components/customTable/types/columnProps";
+import { Lancamento } from "@/core/lancamentos/types";
 
 export default function LancamentosPage() {
   const { data: categorias = [] } = useGetCategoriasQuery();
@@ -51,10 +53,19 @@ export default function LancamentosPage() {
       return {
         ...lancamento,
         origem: lancamento.despesa ? "Despesa" : "Renda",
-        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-"
+        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-",
       };
     });
   }, [lancamentos]);
+
+
+    // 📋 Configuração das colunas
+    const columns: ITableColumns<Lancamento> = {
+      data: {
+        // sortValue: (row) => row.produtos.length,
+        // render: (row) => row.produtos.length,
+      },
+    };
 
   return (
     <>
@@ -69,7 +80,7 @@ export default function LancamentosPage() {
         </Box>
 
         {/* Cards no topo */}
-        {/* <Grid container spacing={3} mb={3}>
+        <Grid container spacing={3} mb={3}>
           <Grid item xs={12}>
             <MiniCardsResumo
               totalLancamentos={totais.totalLancamentos}
@@ -78,7 +89,7 @@ export default function LancamentosPage() {
               valorAgendamentos={totais.valorAgendamentos}
             />
           </Grid>
-        </Grid> */}
+        </Grid>
 
         {/* Filtros avançados */}
         <FiltrosAvancados
@@ -98,49 +109,13 @@ export default function LancamentosPage() {
                 p: 3,
               }}
             >
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Box>
-                  <Typography variant="h6" fontWeight={600} gutterBottom>
-                    Extrato de Lançamentos
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    Visualize, edite ou exclua seus lançamentos
-                  </Typography>
-                </Box>
-
-                {selectedIds.length > 0 && (
-                  <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<IconTrash size={18} />}
-                    onClick={excluirHandlers.bulk}
-                    disabled={isDeleting}
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Excluir {selectedIds.length} selecionado(s)
-                  </Button>
-                )}
-              </Box>
-
+              
               <CustomTable
                 data={fullLancamentos}
-                columns={{
-                  origem: {
-                    render: (row) => (row.despesa ? "Despesa" : "Renda"),
-                  },
-                }}
+                columns={columns}
                 actions={[
                   {
-                    title: "Visualizar",
+                    title: "Visualizar",                    
                     callback: modalHandlers.visualizar.abrir,
                     color: "info",
                   },
@@ -166,7 +141,6 @@ export default function LancamentosPage() {
                 }}
                 isLoading={isLoading}
                 emptyMessage="Nenhum lançamento foi encontrado"
-                onSelectionChange={onSelectionChange}
               />
             </Card>
           </Grid>

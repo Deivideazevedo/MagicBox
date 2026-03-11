@@ -1,6 +1,6 @@
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
-import { ITableColumns } from "../types/columnProps";
 import { fnNormalizedString } from "../utils/comparison";
+import { ITableColumns } from "../utils/renderColumn";
 
 interface UseTableFilterProps<T> {
   data: T[];
@@ -18,7 +18,7 @@ interface UseTableFilterReturn<T> {
  * Filtra baseado nas colunas configuradas usando: filterValue > render > valor direto
  * Usa useDeferredValue para otimizar a filtragem durante digitação
  */
-export function useTableFilter<T extends object>({
+export function useTableFilter<T>({
   data,
   columns,
 }: UseTableFilterProps<T>): UseTableFilterReturn<T> {
@@ -67,13 +67,9 @@ export function useTableFilter<T extends object>({
     const normalizedFilter = fnNormalizedString(trimmedFilter);
 
     return data.filter((item) => {
-      // Garante que keysToSearch seja SEMPRE um array de chaves de T
-      // se passar colum, filtrará apenas pelas chaves configuradas, senão por todas as chaves do objeto
-      const keysToSearch = (
-        columns ? Object.keys(columns) : Object.keys(item)
-      ) as (keyof T)[];
-
-      return keysToSearch.some((key) => {
+      // Itera sobre todas as colunas definidas
+      const cols = Object.keys(columns || item || {}) as (keyof T)[];
+      return cols.some((key) => {
         const filterValue = getFilterValue(item, key);
         return fnNormalizedString(filterValue).includes(normalizedFilter);
       });

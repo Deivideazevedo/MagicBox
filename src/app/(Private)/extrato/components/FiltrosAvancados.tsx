@@ -212,112 +212,31 @@ export default function FiltrosAvancados({
               />
             </Grid>
 
-            {/* Origem (Despesa/Renda) */}
             <Grid item xs={12} md={3}>
-              <HookSelect
-                name="origem"
-                control={control}
-                label="Origem"
-                placeholder="Todas"
-                returnAsNumber={false}
-                size="small"
-                displayEmpty
-                onChange={() => {
-                  // Limpar item ao mudar origem
-                  setValue("item", null);
-                }}
-              >
-                <MenuItem value="">Todas</MenuItem>
-                <MenuItem value="despesa">Despesa</MenuItem>
-                <MenuItem value="renda">Renda</MenuItem>
-              </HookSelect>
-            </Grid>
-
-            {/* Tipo */}
-            <Grid item xs={12} md={3}>
-              <HookSelect
-                name="tipo"
-                control={control}
-                label="Tipo"
-                placeholder="Todos"
-                returnAsNumber={false}
-                size="small"
-                displayEmpty
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="pagamento">Pagamento</MenuItem>
-                <MenuItem value="agendamento">Agendamento</MenuItem>
-              </HookSelect>
-            </Grid>
-
-            {/* Categoria */}
-            <Grid item xs={12} md={3}>
-              <HookSelect
-                name="categoriaId"
-                control={control}
-                label="Categoria"
-                placeholder="Todas"
-                options={categorias}
-                getValue={(cat) => cat.id}
-                getLabel={(cat) => cat.nome}
-                size="small"
-                displayEmpty
-                onChange={() => {
-                  // Limpar item ao mudar categoria
-                  setValue("item", null);
-                }}
-              />
-            </Grid>
-
-            {/* Nome (Despesa ou Fonte de Renda) - Agora Autocomplete */}
-            <Grid item xs={12} md={3}>
-              <HookAutocomplete<FiltrosLancamentos, ItemComOrigem>
-                name="item"
-                control={control}
-                label="Nome"
-                placeholder="Selecione..."
-                options={opcoesNome}
-                getOptionValue={(item) => item.uniqueId}
-                getOptionLabel={(item) => item.nome}
-                size="small"
-                shrinkLabel
-              />
-            </Grid>
-
-            {/* Busca */}
-            <Grid item xs={12} md={6}>
-              <HookTextField
-                name="observacao"
-                control={control}
-                label="Observação"
-                placeholder="Digite para buscar..."
-                size="small"
-                shrinkLabel
-              />
-            </Grid>
-          </Grid>
-
-          {/* Botões */}
-          <Box display="flex" gap={2} mt={3}>
             <Button
               fullWidth
               type="submit"
               variant="contained"
               startIcon={<IconFilter size={18} />}
-              size="small"
             >
               Aplicar
             </Button>
+            </Grid>
+
+
+
+            <Grid item xs={12} md={3}>
             <Button
               fullWidth
               variant="outlined"
               startIcon={<IconFilterOff size={18} />}
               onClick={handleLimpar}
-              size="small"
             >
               Limpar
             </Button>
-          </Box>
+            </Grid>
+          </Grid>
+
         </form>
       </AccordionDetails>
     </Accordion>

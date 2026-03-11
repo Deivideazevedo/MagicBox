@@ -1,5 +1,18 @@
 import { ReactNode } from 'react';
-import { ITableColumns } from '../types/columnProps';
+
+/**
+ * Propriedades de configuração de uma coluna
+ */
+export type IColumnProps<T = any> = {
+  sortValue?: (row: T) => any;
+  render?: (row: T) => ReactNode;
+  filterValue?: (row: T) => string | number;
+};
+
+/**
+ * Tipo para configuração de colunas baseado nas keys do tipo T
+ */
+export type ITableColumns<T = any> = Partial<Record<keyof T | string, IColumnProps<T>>>;
 
 /**
  * Função utilitária para renderizar uma coluna da tabela
@@ -23,6 +36,8 @@ export function createRenderColumn<T>(row: T, columns?: ITableColumns<T>) {
   return (key: keyof T): ReactNode => {
     const column = columns?.[key];
     const value = row[key];
+
+    console.log('value', value);
 
     // 1. Prioridade: render customizado
     if (column?.render) {

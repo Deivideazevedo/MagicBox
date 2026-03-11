@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
+import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import {
   Alert,
   Box,
-  Checkbox,
-  Chip,
+  Collapse,
   IconButton,
   LinearProgress,
   Paper,
@@ -15,76 +15,41 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Tooltip,
   Typography,
-  alpha,
-} from "@mui/material";
-import { ReactNode, useState, useEffect, useMemo } from "react";
-import {
-  IconEye,
-  IconEdit,
-  IconTrash,
-  IconCalendar,
-  IconChecks,
-  IconArrowDown,
-  IconArrowUp,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import { ptBR as ptBRDate } from "date-fns/locale";
-
-// Types
-import { Lancamento } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+} from '@mui/material';
+import { useMemo, useState } from 'react';
 
 // Hooks e componentes internos
-import { SortIcon } from "./components/SortIcon";
-import { TableTopBar } from "./components/TableTopBar";
-import { useSimpleSort } from "./hooks/useSimpleSort";
-import { useTableFilter } from "./hooks/useTableFilter";
-import { CustomPaginationActions } from "./components/CustomPaginationActions";
-import { createRenderColumn } from "./utils/renderColumn";
+import { MultiSortIcon } from './components/MultiSortIcon';
+// import { SortIcon } from './components/SortIcon';
+import { TableTopBar } from './components/TableTopBar';
+import { MultiSortConfig, useMultiSort } from './hooks/useMultiSort';
+// import { useSimpleSort } from './hooks/useSimpleSort';
+import { useTableFilter } from './hooks/useTableFilter';
+// import { ActionsListMode } from './components/ActionsListMode';
+import { createRenderColumn } from './utils/renderColumn';
 
-// ==================== TYPES ====================
+// Types
+import { ActionsListMode } from './components/ActionsListMode';
+import { CustomPaginationActions } from './components/CustomPaginationActions';
+import { IActionConfig } from './types/actions';
+import { ITableColumns } from './types/columnProps';
+import { Cliente } from './utils/mockData';
+import { Lancamento } from "@/core/lancamentos/types";
 
+
+// NOVO CUSTOMTABLE - TEMPLATE PARA SER COPIADO E ADAPTADO
 type OrigemType = Lancamento & { origem: string; nome: string };
-
-/**
- * Configuração de uma ação individual para uma linha
- */
-interface IActionConfig {
-  icon?: ReactNode;
-  title: string;
-  color?: "primary" | "secondary" | "error" | "info" | "success" | "warning";
-  callback: (row: OrigemType) => void;
-}
-
-/**
- * Propriedades de configuração de uma coluna
- */
-type IColumnProps = {
-  sortValue?: (row: OrigemType) => any;
-  render?: (row: OrigemType) => ReactNode;
-  filterValue?: (row: OrigemType) => string | number;
-};
-
-/**
- * Tipo para configuração de colunas baseado nas keys do tipo T
- * Permite definir configurações opcionais para cada propriedade do objeto
- * Inclui 'origem' como coluna adicional personalizada
- */
-type ITableColumns = Partial<Record<keyof OrigemType | "origem", IColumnProps>>;
 
 interface CustomTableProps {
   /** Dados a serem exibidos */
   data: OrigemType[];
 
   /** Configuração das colunas */
-  columns: ITableColumns;
+  columns: ITableColumns<OrigemType>;
 
   /** Lista de ações para cada linha */
-  actions: IActionConfig[];
+  actions: IActionConfig<OrigemType>[];
 
   /** Paginação */
   pagination: {
@@ -101,15 +66,21 @@ interface CustomTableProps {
   /** Mensagem customizada quando não houver dados */
   emptyMessage?: string;
 
-  /** Seleção de linhas */
-  onSelectionChange?: (ids: number[]) => void;
+  /** Ordenação inicial - aplicada ao montar o componente */
+  initialSort?: MultiSortConfig<OrigemType>[];
+
+  /** Ordenação externa - sincronizada com o estado do pai */
+  externalSort?: MultiSortConfig<OrigemType>[];
+
+  /** Callback quando a ordenação muda - para sincronização externa */
+  onExternalSort?: (sort: MultiSortConfig<OrigemType>[]) => void;
 }
 
 /**
- * 📋 CustomTable - Tabela de Lançamentos
+ * 📋 CustomTable - Componente template para tabelas customizáveis
  *
- * Componente especializado para exibir e gerenciar lançamentos financeiros.
- * Encapsula: filtro, ordenação, paginação, seleção e ações.
+ * Este componente é um TEMPLATE para ser copiado e adaptado conforme necessário.
+ * Ele encapsula: filtro, ordenação, paginação e layout básico.
  */
 export function CustomTable({
   data,
@@ -117,92 +88,43 @@ export function CustomTable({
   actions,
   pagination,
   isLoading = false,
-  emptyMessage = "Nenhum dado foi encontrado",
-  onSelectionChange,
+  emptyMessage = 'Nenhum dado foi encontrado',
+  initialSort,
+  externalSort,
+  onExternalSort,
 }: CustomTableProps) {
-  // Estado de seleção
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  // Limpar seleção ao mudar de página
-  useEffect(() => {
-    setSelectedIds([]);
-    if (onSelectionChange) onSelectionChange([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page]);
-
   // 🔍 Hook de filtro (interno)
   const { filteredData, filterText, setFilterText } = useTableFilter({
     data,
     columns,
   });
 
-  // 🎯 Hook de ordenação (interno)
-  const { sortedData, requestSort, getSortIcon, setSortConfig } = useSimpleSort(
+  // 🎯 Hook de ordenação multi-coluna (interno)
+  const { sortedData, requestSort, getSortIcon, resetSort } = useMultiSort(
     filteredData,
     columns,
+    externalSort ?? initialSort, // Prioriza externalSort, senão usa initialSort
+    onExternalSort,
+    initialSort, // Passa initialSort para resetar corretamente
   );
 
-  // 🔄 Reset de filtros, ordenação, paginação e seleção
+  // 🔄 Reset de filtros, ordenação Paginação
   const handleReset = () => {
-    setFilterText("");
-    setSortConfig(null);
-    setSelectedIds([]);
-    if (onSelectionChange) onSelectionChange([]);
+    setFilterText('');
+    resetSort(); // Para multi-sort
+    // setSortConfig(null); // Para simple-sort
     pagination.onRowsPerPageChange({
       target: { value: String(10) },
     } as React.ChangeEvent<HTMLInputElement>);
     pagination.onPageChange(null, 0);
   };
 
-  // Handlers de seleção
-  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      const allIds = sortedData.map((row) => row.id);
-      setSelectedIds(allIds);
-      if (onSelectionChange) onSelectionChange(allIds);
-    } else {
-      setSelectedIds([]);
-      if (onSelectionChange) onSelectionChange([]);
-    }
-  };
-
-  const handleSelectOne = (id: number) => {
-    const newSelectedIds = selectedIds.includes(id)
-      ? selectedIds.filter((selectedId) => selectedId !== id)
-      : [...selectedIds, id];
-    setSelectedIds(newSelectedIds);
-    if (onSelectionChange) onSelectionChange(newSelectedIds);
-  };
-
-  // Helpers de formatação
-  const formatarValor = (valor: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(valor);
-  };
-
-  const formatarData = (data: string) => {
-    try {
-      return format(new Date(data), "dd/MM/yyyy", { locale: ptBRDate });
-    } catch {
-      return data;
-    }
-  };
-
   // 📏 Calcular total de colunas para colSpan
-  // 9 colunas: checkbox + data + origem + tipo + categoria + nome + observacao + valor + ações
-  const totalColumns = 9;
+  // 7 colunas: expansão + nome + email + cidade + produtos + total + ações
+  const totalColumns = 7;
 
   return (
-    <Paper
-      sx={{
-        // boxShadow: "none",
-        // border: "none",
-        borderRadius: 2,
-      }}
-      variant="outlined"
-    >
+    <Paper sx={{ boxShadow: 4 }} variant="outlined">
       {/* TopBar com busca e reset */}
       <TableTopBar
         filterText={filterText}
@@ -213,164 +135,135 @@ export function CustomTable({
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow
-              sx={{
-                backgroundColor: (theme) =>
-                  alpha(theme.palette.primary.main, 0.08),
-              }}
-            >
-              {/* Checkbox Select All */}
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={
-                    selectedIds.length > 0 &&
-                    selectedIds.length < sortedData.length
-                  }
-                  checked={
-                    sortedData.length > 0 &&
-                    selectedIds.length === sortedData.length
-                  }
-                  onChange={handleSelectAll}
-                />
-              </TableCell>
+            <TableRow>
+              {/* Coluna de expansão */}
+              <TableCell sx={{ width: 0 }} />
 
-              {/* Data */}
+              {/* Nome */}
               <TableCell
-                onClick={() => requestSort("data")}
+                onClick={() => requestSort('data')}
                 sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 100,
-                  maxWidth: 120,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("data") ? 1 : 0.4,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('data') ? 1 : 0.4,
                   },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Typography fontWeight={700}>Data</Typography>
-                  <SortIcon order={getSortIcon("data")} />
+                  <MultiSortIcon sortInfo={getSortIcon('data')} />
                 </Box>
               </TableCell>
 
-              {/* Origem */}
+              {/* Email */}
               <TableCell
-                onClick={() => requestSort("origem")}
+                onClick={() => requestSort('origem')}
                 sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 120,
-                  maxWidth: 150,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("origem") ? 1 : 0.4,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('origem') ? 1 : 0.4,
                   },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Typography fontWeight={700}>Origem</Typography>
-                  <SortIcon order={getSortIcon("origem")} />
+                  <MultiSortIcon sortInfo={getSortIcon('origem')} />
                 </Box>
               </TableCell>
 
               {/* Tipo */}
               <TableCell
-                onClick={() => requestSort("tipo")}
+                onClick={() => requestSort('tipo')}
                 sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 130,
-                  maxWidth: 160,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("tipo") ? 1 : 0.4,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('tipo') ? 1 : 0.4,
                   },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Typography fontWeight={700}>Tipo</Typography>
-                  <SortIcon order={getSortIcon("tipo")} />
+                  <MultiSortIcon sortInfo={getSortIcon('tipo')} />
+                  {/* <SortIcon order={getSortIcon('cidade')} /> */}
                 </Box>
               </TableCell>
 
-              {/* Categoria */}
-              <TableCell
-                onClick={() => requestSort("categoria")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 130,
-                  maxWidth: 200,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("categoria") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Categoria</Typography>
-                  <SortIcon order={getSortIcon("categoria")} />
-                </Box>
-              </TableCell>
-
-              {/* Nome (Despesa/Fonte) */}
-              <TableCell
-                onClick={() => requestSort("nome")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 150,
-                  maxWidth: 300,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("nome") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Nome</Typography>
-                  <SortIcon order={getSortIcon("nome")} />
-                </Box>
-              </TableCell>
-
-              {/* Observação */}
-              <TableCell
-                onClick={() => requestSort("observacao")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 120,
-                  maxWidth: 200,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("observacao") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Observação</Typography>
-                  <SortIcon order={getSortIcon("observacao")} />
-                </Box>
-              </TableCell>
-
-              {/* Valor */}
+              {/* Nome */}
               <TableCell
                 align="right"
-                onClick={() => requestSort("valor")}
+                onClick={() => requestSort('nome')}
                 sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 110,
-                  maxWidth: 150,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("valor") ? 1 : 0.4,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('nome') ? 1 : 0.4,
                   },
                 }}
               >
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <Typography fontWeight={700}>Nome</Typography>
+                  <MultiSortIcon sortInfo={getSortIcon('nome')} />
+                </Box>
+              </TableCell>
+
+
+
+              {/* Nome */}
+              <TableCell
+                align="right"
+                onClick={() => requestSort('observacao')}
+                sx={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('observacao') ? 1 : 0.4,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <Typography fontWeight={700}>Observação</Typography>
+                  <MultiSortIcon sortInfo={getSortIcon('observacao')} />
+                </Box>
+              </TableCell>
+
+
+
+              {/* Nome */}
+              <TableCell
+                align="right"
+                onClick={() => requestSort('valor')}
+                sx={{
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  '&:hover .sort-icon': {
+                    opacity: getSortIcon('valor') ? 1 : 0.4,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
                   }}
                 >
                   <Typography fontWeight={700}>Valor</Typography>
-                  <SortIcon order={getSortIcon("valor")} />
+                  <MultiSortIcon sortInfo={getSortIcon('valor')} />
                 </Box>
               </TableCell>
 
@@ -397,24 +290,21 @@ export function CustomTable({
               <TableRow>
                 <TableCell colSpan={totalColumns} align="center">
                   <Alert
-                    severity="info"
-                    sx={{ alignItems: "center", justifyContent: "center" }}
+                    severity="warning"
+                    sx={{ alignItems: 'center', justifyContent: 'center' }}
                   >
                     {emptyMessage}
                   </Alert>
                 </TableCell>
               </TableRow>
             ) : (
-              sortedData.map((row) => (
+              sortedData.map((row, index) => (
                 <CustomRow
-                  key={row.id}
+                  key={index}
                   row={row}
                   columns={columns}
                   actions={actions}
-                  isSelected={selectedIds.includes(row.id)}
-                  onSelect={handleSelectOne}
-                  formatarData={formatarData}
-                  formatarValor={formatarValor}
+                  totalColumns={totalColumns}
                 />
               ))
             )}
@@ -426,10 +316,10 @@ export function CustomTable({
       <TablePagination
         component="div"
         sx={{
-          borderTop: "1px solid",
-          borderColor: "divider",
-          "& .MuiTablePagination-select": {
-            borderRadius: "6px",
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          '& .MuiTablePagination-select': {
+            borderRadius: '6px',
           },
         }}
         labelRowsPerPage="Linhas por página"
@@ -437,7 +327,7 @@ export function CustomTable({
           `${from}–${to} de ${count}`
         }
         count={pagination.count}
-        rowsPerPageOptions={[10, 20, 50, 100]}
+        rowsPerPageOptions={[2, 5, 10, 25, 50]}
         onPageChange={pagination.onPageChange}
         onRowsPerPageChange={pagination.onRowsPerPageChange}
         ActionsComponent={CustomPaginationActions}
@@ -452,158 +342,125 @@ export function CustomTable({
 // Componente interno de linha
 interface CustomRowProps {
   row: OrigemType;
-  columns: ITableColumns;
-  actions: IActionConfig[];
-  isSelected: boolean;
-  onSelect: (id: number) => void;
-  formatarData: (data: string) => string;
-  formatarValor: (valor: number) => string;
+  columns: ITableColumns<OrigemType>;
+  actions: IActionConfig<OrigemType>[];
+  totalColumns: number;
 }
 
-function CustomRow({
-  row,
-  columns,
-  actions,
-  isSelected,
-  onSelect,
-  formatarData,
-  formatarValor,
-}: CustomRowProps) {
+function CustomRow({ row, columns, actions, totalColumns }: CustomRowProps) {
+  const [open, setOpen] = useState(false);
+
   // Helper para renderizar colunas usando a função utilitária
   const renderColumn = useMemo(
     () => createRenderColumn(row, columns),
     [row, columns],
   );
 
-  const isDespesa = Boolean(row.despesa);
-  const isPagamento = row.tipo === "pagamento";
-
   return (
-    <TableRow
-      sx={{
-        "& td": { border: 0 },
-        "&:hover": {
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
-        },
-        ...(isSelected && {
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-        }),
-      }}
-    >
-      {/* Checkbox */}
-      <TableCell padding="checkbox">
-        <Checkbox checked={isSelected} onChange={() => onSelect(row.id)} />
-      </TableCell>
+    <>
+      <TableRow sx={{ '& td': { border: 0 } }}>
+        <TableCell>
+          <IconButton
+            size="small"
+            onClick={() => setOpen(!open)}
+            sx={{
+              ':hover': {
+                bgcolor: 'primary.light',
+                color: 'primary.main',
+              },
+            }}
+          >
+            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+          </IconButton>
+        </TableCell>
 
-      {/* Data */}
-      <TableCell>
-        <Typography variant="body2">{formatarData(row.data)}</Typography>
-      </TableCell>
-
-      {/* Origem */}
-      <TableCell>
-        <Chip
-          size="small"
-          icon={
-            isDespesa ? <IconArrowDown size={16} /> : <IconArrowUp size={16} />
-          }
-          label={renderColumn("origem")}
-          color={isDespesa ? "error" : "success"}
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
-        />
-      </TableCell>
-
-      {/* Tipo */}
-      <TableCell>
-        <Chip
-          size="small"
-          icon={
-            isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />
-          }
-          label={isPagamento ? "Pagamento" : "Agendamento"}
-          color={isPagamento ? "success" : "warning"}
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
-        />
-      </TableCell>
-
-      {/* Categoria */}
-      <TableCell>
-        <Typography variant="body2" fontWeight={500} noWrap>
-          {row.categoria?.nome || "-"}
-        </Typography>
-      </TableCell>
-
-      {/* Nome (Despesa/Fonte) */}
-      <TableCell>
-        <Typography variant="body2" noWrap>
-          {row.nome}
-        </Typography>
-      </TableCell>
-
-      {/* Observação */}
-      <TableCell>
-        <Tooltip title={row.observacao || "-"} arrow>
-          <Typography variant="body2" noWrap color="textSecondary">
-            {row.observacao || "-"}
-          </Typography>
-        </Tooltip>
-      </TableCell>
-
-      {/* Valor */}
-      <TableCell align="right">
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          color={isDespesa ? "error.main" : "success.main"}
-        >
-          {formatarValor(row.valor)}
-        </Typography>
-      </TableCell>
-
-      {/* Ações */}
-      <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
-        <Box display="flex" gap={0.5} justifyContent="center">
-          {actions.map((action, index) => {
-            let icon = <IconEye size={18} />;
-            if (action.title.toLowerCase().includes("editar")) {
-              icon = <IconEdit size={18} />;
-            } else if (
-              action.title.toLowerCase().includes("remover") ||
-              action.title.toLowerCase().includes("excluir")
-            ) {
-              icon = <IconTrash size={18} />;
-            }
-
-            return (
-              <Tooltip key={index} title={action.title} arrow>
-                <IconButton
-                  size="small"
-                  color={action.color || "default"}
-                  onClick={() => action.callback(row)}
-                  sx={{
-                    "&:hover": {
-                      bgcolor: (theme) =>
-                        alpha(
-                          theme.palette[action.color || "primary"].main,
-                          0.1,
-                        ),
-                    },
-                  }}
-                >
-                  {icon}
-                </IconButton>
-              </Tooltip>
-            );
+        {/* ✨ Renderização flexível - usa render customizado ou valor direto */}
+        <TableCell>{renderColumn('data')}</TableCell>
+        <TableCell>{renderColumn('origem')}</TableCell>
+        <TableCell>{renderColumn('tipo')}</TableCell>
+        <TableCell align="right">{renderColumn('nome')}</TableCell>
+        <TableCell align="right">
+          R${' '}
+          {row.valor.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
           })}
-        </Box>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell align="right">{renderColumn('observacao')}</TableCell>
+
+        {/* Célula de ações - usando modo icon */}
+        <TableCell align="center" sx={{ whiteSpace: 'nowrap', width: 0 }}>
+          {/* <ActionsIconMode row={row} actions={actions} /> */}
+          {/* Para usar modo menu dropdown, substitua por: */}
+          <ActionsListMode row={row} actions={actions} />
+        </TableCell>
+      </TableRow>
+
+      {/* <TableRow>
+        <TableCell
+          style={{ paddingBottom: 0, paddingTop: 0, borderTop: 1 }}
+          colSpan={totalColumns}
+        >
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box sx={{ margin: 2 }}>
+              <Box
+                mb={1}
+                bgcolor={'grey.100'}
+                p={1}
+                borderRadius={'4px 4px 0px 0px'}
+              >
+                <Typography variant="h6" gutterBottom fontWeight={600}>
+                  Produtos de {row.nome}
+                </Typography>
+              </Box>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>
+                      <strong>ID</strong>
+                    </TableCell>
+                    <TableCell>
+                      <strong>Produto</strong>
+                    </TableCell>
+                    <TableCell align="right">
+                      <strong>Preço Unit.</strong>
+                    </TableCell>
+                    <TableCell align="right">
+                      <strong>Qtd</strong>
+                    </TableCell>
+                    <TableCell align="right">
+                      <strong>Total</strong>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {row.produtos.map((produto) => (
+                    <TableRow key={produto.id}>
+                      <TableCell>{produto.id}</TableCell>
+                      <TableCell>{produto.nome}</TableCell>
+                      <TableCell align="right">
+                        R${' '}
+                        {produto.preco.toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </TableCell>
+                      <TableCell align="right">{produto.quantidade}</TableCell>
+                      <TableCell align="right">
+                        R${' '}
+                        {(produto.preco * produto.quantidade).toLocaleString(
+                          'pt-BR',
+                          {
+                            minimumFractionDigits: 2,
+                          },
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow> */}
+    </>
   );
 }

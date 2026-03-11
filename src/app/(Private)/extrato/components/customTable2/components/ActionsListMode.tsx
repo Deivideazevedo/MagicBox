@@ -8,8 +8,16 @@ import {
 } from '@mui/material';
 import { IconDotsVertical } from '@tabler/icons-react';
 import { Visibility, Edit, Delete } from '@mui/icons-material';
-import { useState } from 'react';
-import { IActionConfig } from '../types/actions';
+import { ReactNode, useState } from 'react';
+
+
+
+export interface IActionConfig<T> {
+  icon?: ReactNode;
+  title: string;
+  color?: 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  callback: (row: T) => void;
+}
 
 interface ActionsListModeProps<T> {
   row: T;

@@ -1,6 +1,6 @@
 import { IconButton, Stack, Tooltip } from '@mui/material';
 import { Visibility, Edit, Delete } from '@mui/icons-material';
-import { IActionConfig } from '../types/actions';
+import { IActionConfig } from '@/app/components/tables/customTable/types/actions';
 
 interface ActionsIconModeProps<T> {
   row: T;

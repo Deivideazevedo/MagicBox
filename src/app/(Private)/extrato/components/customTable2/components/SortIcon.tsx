@@ -6,7 +6,7 @@ interface SortIconProps {
 }
 
 /**
- * Componente para exibir ícone de ordenação simples
+ * Componente para exibir ícone de ordenação
  * Sempre renderiza o Box para manter o espaço, mas com opacidade 0 quando inativo
  */
 export function SortIcon({ order }: SortIconProps) {
