@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { ITableColumns } from '../types/columnProps';
+import { IColumnProps } from '..';
 
 /**
  * Função utilitária para renderizar uma coluna da tabela
@@ -19,9 +19,9 @@ import { ITableColumns } from '../types/columnProps';
  * <TableCell>{renderCol('email')}</TableCell>
  * ```
  */
-export function createRenderColumn<T>(row: T, columns?: ITableColumns<T>) {
+export function createRenderColumn<T>(row: T, columns?: IColumnProps<T>[]) {
   return (key: keyof T): ReactNode => {
-    const column = columns?.[key];
+    const column = columns?.find(col => col.key === key);
     const value = row[key];
 
     // 1. Prioridade: render customizado

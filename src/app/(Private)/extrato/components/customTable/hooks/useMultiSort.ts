@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ITableColumns } from '../types/columnProps';
 import { compareValues } from '../utils/comparison';
 import { isEqual } from 'lodash';
+import { IColumnProps } from '..';
 
 /**
  * 🎯 Hook de ordenação MÚLTIPLA - Ordena por VÁRIAS colunas simultaneamente
@@ -34,7 +34,7 @@ export interface MultiSortConfig<T> {
 
 export function useMultiSort<T>(
   data: T[],
-  columns: ITableColumns<T>,
+  columns: IColumnProps<T>[],
   externalSort?: MultiSortConfig<T>[],
   onExternalSort?: (sort: MultiSortConfig<T>[]) => void,
   initialSort?: MultiSortConfig<T>[], // Usado em resetSort
@@ -54,7 +54,7 @@ export function useMultiSort<T>(
   // Função para obter o valor de ordenação baseado na prioridade: sortValue > render > valor da coluna
   const getSortValue = useCallback(
     (row: T, key: keyof T) => {
-      const column = columns[key];
+      const column = columns?.find(col => col.key === key);
 
       if (!column) {
         return row[key];

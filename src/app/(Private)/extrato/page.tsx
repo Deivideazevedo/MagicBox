@@ -21,7 +21,6 @@ import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 import { useMemo } from "react";
-import { ITableColumns } from "./components/customTable/types/columnProps";
 import { Lancamento } from "@/core/lancamentos/types";
 
 export default function LancamentosPage() {
@@ -58,14 +57,6 @@ export default function LancamentosPage() {
     });
   }, [lancamentos]);
 
-
-    // 📋 Configuração das colunas
-    const columns: ITableColumns<Lancamento> = {
-      data: {
-        // sortValue: (row) => row.produtos.length,
-        // render: (row) => row.produtos.length,
-      },
-    };
 
   return (
     <>
@@ -112,7 +103,6 @@ export default function LancamentosPage() {
               
               <CustomTable
                 data={fullLancamentos}
-                columns={columns}
                 actions={[
                   {
                     title: "Visualizar",                    

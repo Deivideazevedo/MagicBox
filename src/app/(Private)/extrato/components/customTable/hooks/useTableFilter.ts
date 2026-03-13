@@ -1,10 +1,10 @@
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
-import { ITableColumns } from "../types/columnProps";
 import { fnNormalizedString } from "../utils/comparison";
+import { IColumnProps } from "..";
 
 interface UseTableFilterProps<T> {
   data: T[];
-  columns?: ITableColumns<T>;
+  columns?: IColumnProps<T>[];
 }
 
 interface UseTableFilterReturn<T> {
@@ -31,7 +31,7 @@ export function useTableFilter<T extends object>({
   // Função para obter o valor de filtro baseado na prioridade: filterValue > render > valor da coluna
   const getFilterValue = useCallback(
     (row: T, key: keyof T): string => {
-      const column = columns?.[key];
+      const column = columns?.find(col => col.key === key);
 
       if (!column) {
         const value = row[key];
