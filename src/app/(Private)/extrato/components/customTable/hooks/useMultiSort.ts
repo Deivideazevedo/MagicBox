@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { compareValues } from '../utils/comparison';
-import { isEqual } from 'lodash';
-import { IColumnProps } from '..';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { compareValues } from "../utils/comparison";
+import { isEqual } from "lodash";
+import { IColumnProps } from "..";
 
 /**
  * 🎯 Hook de ordenação MÚLTIPLA - Ordena por VÁRIAS colunas simultaneamente
@@ -25,7 +25,7 @@ import { IColumnProps } from '..';
  * <TableCell onClick={() => requestSort('nome')}>Nome</TableCell>
  */
 
-export type SortOrder = 'ASC' | 'DESC';
+export type SortOrder = "ASC" | "DESC";
 
 export interface MultiSortConfig<T> {
   key: keyof T;
@@ -51,10 +51,16 @@ export function useMultiSort<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [externalSort]);
 
+  const columnsMap = useMemo(() => {
+    const map = new Map<keyof T, IColumnProps<T>>();
+    columns?.forEach((col) => map.set(col.key, col));
+    return map;
+  }, [columns]);
+
   // Função para obter o valor de ordenação baseado na prioridade: sortValue > render > valor da coluna
   const getSortValue = useCallback(
     (row: T, key: keyof T) => {
-      const column = columns?.find(col => col.key === key);
+      const column = columnsMap.get(key);
 
       if (!column) {
         return row[key];
@@ -68,7 +74,7 @@ export function useMultiSort<T>(
       // 2. Prioridade: render (retorna string/number do render)
       if (column.render) {
         const rendered = column.render(row);
-        if (typeof rendered === 'string' || typeof rendered === 'number') {
+        if (typeof rendered === "string" || typeof rendered === "number") {
           return rendered;
         }
       }
@@ -76,7 +82,7 @@ export function useMultiSort<T>(
       // 3. Prioridade: valor da coluna
       return row[key];
     },
-    [columns],
+    [columnsMap],
   );
 
   // Função de ordenação múltipla
@@ -95,7 +101,7 @@ export function useMultiSort<T>(
 
         // Se houver diferença, retorna baseado na ordem
         if (comparison !== 0) {
-          return config.order === 'ASC' ? comparison : -comparison;
+          return config.order === "ASC" ? comparison : -comparison;
         }
         // Se forem iguais, continua para próxima configuração
       }
@@ -121,18 +127,18 @@ export function useMultiSort<T>(
           const updated = [...sortConfigs];
 
           // ASC -> DESC
-          if (existingConfig.order === 'ASC') {
-            updated[existingIndex] = { key, order: 'DESC' };
+          if (existingConfig.order === "ASC") {
+            updated[existingIndex] = { key, order: "DESC" };
             return updated;
           }
           // DESC -> remove
-          else if (existingConfig.order === 'DESC') {
+          else if (existingConfig.order === "DESC") {
             return sortConfigs.filter((_, index) => index !== existingIndex);
           }
         }
 
         // Nova coluna -> adiciona com ASC
-        return [...sortConfigs, { key, order: 'ASC' }];
+        return [...sortConfigs, { key, order: "ASC" }];
       })();
 
       // Atualiza estado local

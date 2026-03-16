@@ -11,22 +11,6 @@ import { SwalToast } from "@/utils/swalert";
 import axios from "axios";
 import { FindAllFilters } from "@/dtos";
 
-// Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | FonteRenda) & {
-  origem: "despesa" | "renda";
-  uniqueId: string; // Composto: "despesa-{id}" ou "renda-{id}"
-};
-
-export interface FiltrosLancamentos {
-  dataInicio?: string;
-  dataFim?: string;
-  categoriaId?: number | null;
-  item?: string | null;
-  observacao?: string;
-  origem?: "despesa" | "renda" | "";
-  tipo?: "pagamento" | "agendamento" | "";
-}
-
 interface UseLancamentosListProps {
   lancamentos?: Lancamento[];
 }
@@ -61,8 +45,9 @@ export function useLancamentosList({
     useLazyGetLancamentosQuery();
 
   useEffect(() => {
-    trigger(filtros);
-  }, [filtros, trigger]);
+    trigger(filtros, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { lancamentosFromQuery, meta } = useMemo(() => {
     return {
@@ -107,10 +92,11 @@ export function useLancamentosList({
   const handleSearch = useCallback(
     (novosFiltros: Partial<FindAllFilters>) => {
       const finalFiltros = { ...filtros, ...novosFiltros };
+      trigger(finalFiltros, true);
       setFiltros(finalFiltros);
       setSelectedIds([]);
     },
-    [filtros],
+    [filtros, trigger],
   );
 
   // Handlers de Modais
@@ -191,26 +177,19 @@ export function useLancamentosList({
     [modals.excluir, selectedIds, modalHandlers.excluir],
   );
 
-  // Handlers de Paginação
-  const paginacaoHandlers = useMemo(
-    () => ({
-      mudarPagina: (newPage: number) => {
-        setFiltros((prev) => ({
-          ...prev,
-          page: newPage,
-        }));
-        setSelectedIds([]);
-      },
-      mudarTamanho: (newPageSize: number) => {
-        setFiltros((prev) => ({
-          ...prev,
-          limit: newPageSize,
-          page: 0,
-        }));
-        setSelectedIds([]);
-      },
-    }),
-    [],
+  const onUpdatePaginationParams = useCallback(
+    (params: { page?: number; limit?: number }) => {
+      const finalFiltros = {
+        ...filtros,
+        page: params.page ?? filtros.page,
+        limit: params.limit ?? filtros.limit,
+      };
+      trigger(finalFiltros, true);
+      setFiltros(finalFiltros);
+
+      setSelectedIds([]);
+    },
+    [trigger, filtros],
   );
 
   return {
@@ -220,11 +199,11 @@ export function useLancamentosList({
     isLoading,
 
     // Paginação
-    page: filtros.page || 0,
+    page: filtros.page ?? 0,
     pageSize: filtros.limit ?? 10,
     totalRows: meta.total,
     lastPage: meta.lastPage,
-    paginacao: paginacaoHandlers,
+    onUpdatePaginationParams,
 
     // Filtros
     filtros,

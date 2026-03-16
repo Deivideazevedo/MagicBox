@@ -1,6 +1,8 @@
 import { IconButton, Stack, Tooltip } from '@mui/material';
 import { Visibility, Edit, Delete } from '@mui/icons-material';
 import { IActionConfig } from '../types/actions';
+import { IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconEye } from '@tabler/icons-react';
 
 interface ActionsIconModeProps<T> {
   row: T;
@@ -14,9 +16,12 @@ interface ActionsIconModeProps<T> {
 export function ActionsIconMode<T>({ row, actions }: ActionsIconModeProps<T>) {
   // Ícones padrão (fallback) para as 3 primeiras ações
   const defaultIcons = [
-    <Visibility fontSize="small" key="default-1" />,
-    <Edit fontSize="small" key="default-2" />,
-    <Delete fontSize="small" key="default-3" />,
+    // <Visibility fontSize="small" key="default-1" />,
+    <IconEye size={18} key="default-15" />,
+    <IconEdit size={18} key="default-13" />,
+    <IconTrash size={18} key="default-14" />,
+    // <Edit fontSize="small" key="default-2" />,
+    // <Delete fontSize="small" key="default-3" />,
   ];
 
   return (

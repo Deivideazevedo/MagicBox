@@ -35,7 +35,7 @@ export default function LancamentosPage() {
     page,
     pageSize,
     totalRows,
-    paginacao,
+    onUpdatePaginationParams,
     filtros,
     handleSearch,
     modais,
@@ -57,13 +57,12 @@ export default function LancamentosPage() {
     });
   }, [lancamentos]);
 
-
   return (
     <>
       <Container maxWidth="xl">
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" gutterBottom fontWeight={700}>
-            Lançamentos
+            Extrato
           </Typography>
           <Typography variant="h6" color="textSecondary">
             Gerencie seus pagamentos e agendamentos financeiros
@@ -92,49 +91,36 @@ export default function LancamentosPage() {
         />
 
         {/* DataGrid */}
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                p: 3,
-              }}
-            >
-              
-              <CustomTable
-                data={fullLancamentos}
-                actions={[
-                  {
-                    title: "Visualizar",                    
-                    callback: modalHandlers.visualizar.abrir,
-                    color: "info",
-                  },
-                  {
-                    title: "Editar",
-                    callback: modalHandlers.editar.abrir,
-                    color: "primary",
-                  },
-                  {
-                    title: "Excluir",
-                    callback: modalHandlers.excluir.abrir,
-                    color: "error",
-                  },
-                ]}
-                pagination={{
-                  page,
-                  rowsPerPage: pageSize,
-                  count: totalRows,
-                  onPageChange: (_event, newPage) =>
-                    paginacao.mudarPagina(newPage),
-                  onRowsPerPageChange: (event) =>
-                    paginacao.mudarTamanho(parseInt(event.target.value, 10)),
-                }}
-                isLoading={isLoading}
-                emptyMessage="Nenhum lançamento foi encontrado"
-              />
-            </Card>
-          </Grid>
-        </Grid>
+
+        <CustomTable
+          data={fullLancamentos}
+          actions={[
+            {
+              title: "Visualizar",
+              callback: modalHandlers.visualizar.abrir,
+              color: "info",
+            },
+            {
+              title: "Editar",
+              callback: modalHandlers.editar.abrir,
+              color: "primary",
+            },
+            {
+              title: "Excluir",
+              callback: modalHandlers.excluir.abrir,
+              color: "error",
+            },
+          ]}
+          pagination={{
+            page,
+            rowsPerPage: pageSize,
+            count: totalRows,
+            onUpdatePaginationParams,
+          }}
+          isLoading={isLoading}
+          emptyMessage="Nenhum lançamento foi encontrado"
+        />
+     
       </Container>
 
       {/* Drawer para novo lançamento */}

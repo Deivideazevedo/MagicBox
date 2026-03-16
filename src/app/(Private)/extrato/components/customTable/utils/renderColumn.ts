@@ -2,6 +2,18 @@ import { ReactNode } from 'react';
 import { IColumnProps } from '..';
 
 /**
+ * Pré-calcula um mapa de colunas para acesso O(1) em vez de O(n)
+ * Evita múltiplas buscas lineares durante renderização
+ */
+function createColumnMap<T>(columns?: IColumnProps<T>[]): Map<keyof T, IColumnProps<T>> {
+  const map = new Map<keyof T, IColumnProps<T>>();
+  if (columns) {
+    columns.forEach(col => map.set(col.key, col));
+  }
+  return map;
+}
+
+/**
  * Função utilitária para renderizar uma coluna da tabela
  *
  * @description
@@ -20,8 +32,12 @@ import { IColumnProps } from '..';
  * ```
  */
 export function createRenderColumn<T>(row: T, columns?: IColumnProps<T>[]) {
+  // 🚀 Pré-calcula map de colunas uma vez (em vez de .find() para cada célula)
+  const columnMap = createColumnMap(columns);
+  
   return (key: keyof T): ReactNode => {
-    const column = columns?.find(col => col.key === key);
+    const column = columnMap.get(key);  // ← O(1) em vez de O(n)
+    
     const value = row[key];
 
     // 1. Prioridade: render customizado
@@ -35,6 +51,6 @@ export function createRenderColumn<T>(row: T, columns?: IColumnProps<T>[]) {
     }
 
     // 3. Array ou objeto complexo precisa de render customizado
-    return null;
+    return "-";
   };
 }

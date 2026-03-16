@@ -1,9 +1,9 @@
-import { Badge, Box, Tooltip } from '@mui/material';
-import { IconArrowUp, IconArrowDown } from '@tabler/icons-react';
+import { Badge, Box, Tooltip } from "@mui/material";
+import { IconArrowUp, IconArrowDown } from "@tabler/icons-react";
 
-interface MultiSortIconProps {
-  sortInfo: {
-    order: 'ASC' | 'DESC';
+export interface MultiSortIconProps {
+  sortInfo?: {
+    order: "ASC" | "DESC";
     position: number;
     total: number;
   } | null;
@@ -14,13 +14,13 @@ interface MultiSortIconProps {
  * Sempre renderiza o Box para manter o espaço, mas com opacidade 0 quando inativo
  * Quando há múltiplas ordenações, exibe um badge com a posição
  */
-export function MultiSortIcon({ sortInfo }: MultiSortIconProps) {
+export function MultiSortIcon({ sortInfo = null }: MultiSortIconProps) {
   const isActive = sortInfo !== null;
   const showBadge = sortInfo && sortInfo.total > 1;
 
   const tooltipTitle = sortInfo
-    ? `${sortInfo.order === 'ASC' ? 'Crescente' : 'Decrescente'}${showBadge ? ` (Prioridade ${sortInfo.position})` : ''}`
-    : '';
+    ? `${sortInfo.order === "ASC" ? "Crescente" : "Decrescente"}${showBadge ? ` (Prioridade ${sortInfo.position})` : ""}`
+    : "";
 
   return (
     <Tooltip title={tooltipTitle} arrow>
@@ -28,17 +28,17 @@ export function MultiSortIcon({ sortInfo }: MultiSortIconProps) {
         component="span"
         className="sort-icon"
         sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
+          display: "inline-flex",
+          alignItems: "center",
           ml: 1,
           p: 0.3,
-          borderRadius: '50%',
+          borderRadius: "50%",
           width: 24,
           height: 24,
           minWidth: 0,
-          transition: 'all 0.1s linear',
-          color: 'primary.main',
-          bgcolor: 'primary.light',
+          transition: "all 0.1s linear",
+          color: "primary.main",
+          bgcolor: "primary.light",
 
           // Estado padrão (inativo e sem hover)
           opacity: 0,
@@ -46,9 +46,9 @@ export function MultiSortIcon({ sortInfo }: MultiSortIconProps) {
           // Estado ativo (sempre visível)
           ...(isActive && {
             opacity: 1,
-            ':hover': {
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
+            ":hover": {
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
             },
           }),
         }}
@@ -56,16 +56,16 @@ export function MultiSortIcon({ sortInfo }: MultiSortIconProps) {
         <Badge
           badgeContent={showBadge ? sortInfo.position : 0}
           anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           }}
           sx={{
-            '& .MuiBadge-badge': {
-              fontSize: '0.625rem',
+            "& .MuiBadge-badge": {
+              fontSize: "0.625rem",
               height: 14,
               minWidth: 14,
-              padding: '0 3px',
-              bgcolor: (theme) => theme.palette.warning.main,
+              padding: "0 3px",
+              bgcolor: (theme) => theme.palette.secondary.main,
               color: (theme) => theme.palette.primary.contrastText,
               fontWeight: 700,
               top: -2,
@@ -73,7 +73,7 @@ export function MultiSortIcon({ sortInfo }: MultiSortIconProps) {
             },
           }}
         >
-          {sortInfo?.order === 'DESC' ? (
+          {sortInfo?.order === "DESC" ? (
             <IconArrowDown size={19} strokeWidth={2.5} />
           ) : (
             <IconArrowUp size={19} strokeWidth={2.5} />

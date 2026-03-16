@@ -1,146 +1,108 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Box,
   Button,
   Grid,
-  MenuItem,
   Typography,
   alpha,
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Chip,
+  Divider,
 } from "@mui/material";
 import {
   IconFilter,
   IconFilterOff,
   IconChevronDown,
+  IconCalendarEvent,
 } from "@tabler/icons-react";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
-import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
-import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
-import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
-import { FiltrosLancamentos } from "../hooks/useLancamentosList";
-import { useMemo, useState } from "react";
 import { FindAllFilters } from "@/dtos";
 
-// Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | FonteRenda) & {
-  origem: "despesa" | "renda";
-  uniqueId: string; // Composto: "despesa-{id}" ou "renda-{id}"
-};
+// Importe o novo componente que criamos
+import { CustomDateRangePicker } from "./CustomDateRangePicker"; // Ajuste o caminho conforme necessário
+
+export interface FiltrosExtrato {
+  dataInicio?: string | null;
+  dataFim?: string | null;
+}
 
 interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
-  categorias: Categoria[];
-  despesas: Despesa[];
-  fontesRenda: FonteRenda[];
   handleSearch: (filtros: Partial<FindAllFilters>) => void;
 }
 
+const formatarDataISO = (date: Date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function FiltrosAvancados({
   filtros,
-  categorias,
-  despesas,
-  fontesRenda,
   handleSearch,
 }: FiltrosAvancadosProps) {
-  const defaultValues: FiltrosLancamentos = {
-    dataInicio: filtros.dataInicio || "",
-    dataFim: filtros.dataFim || "",
-    origem: "",
-    tipo: "",
-    observacao: "",
-    categoriaId: null,
-    item: null,
+  const [filtroRapido, setFiltroRapido] = useState<"mes" | "ano" | "custom">("mes");
+
+  const defaultValues: FiltrosExtrato = {
+    dataInicio: filtros.dataInicio || formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+    dataFim: filtros.dataFim || formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)),
   };
-  const { control, handleSubmit, reset, watch, setValue } =
-    useForm<FiltrosLancamentos>({
-      defaultValues,
+
+  const { handleSubmit, reset, watch, setValue, getValues } = useForm<FiltrosExtrato>({
+    defaultValues,
+  });
+
+  // Atalhos Rápidos
+// Atalhos Rápidos
+  const aplicarFiltroRapido = (tipo: "mes" | "ano") => {
+    const date = new Date();
+    const anoAtual = date.getFullYear();
+    const mesAtual = date.getMonth();
+    
+    let inicio, fim;
+
+    if (tipo === "mes") {
+      inicio = formatarDataISO(new Date(anoAtual, mesAtual, 1));
+      fim = formatarDataISO(new Date(anoAtual, mesAtual + 1, 0));
+    } else {
+      inicio = formatarDataISO(new Date(anoAtual, 0, 1));
+      fim = formatarDataISO(new Date(anoAtual, 11, 31));
+    }
+
+    setValue("dataInicio", inicio);
+    setValue("dataFim", fim);
+    setFiltroRapido(tipo);
+    
+    // Convertendo explicitamente para não passar null
+    handleSearch({ dataInicio: inicio, dataFim: fim });
+  };
+
+  // Aplicar do Formulário (Customizado)
+  const handleAplicar = (data: FiltrosExtrato) => {
+    setFiltroRapido("custom");
+    // CORREÇÃO AQUI: Forçando 'undefined' caso a data seja null, satisfazendo a interface
+    handleSearch({
+      dataInicio: data.dataInicio || undefined,
+      dataFim: data.dataFim || undefined,
     });
-
-  const categoriaIdWatch = watch("categoriaId");
-  const origemWatch = watch("origem");
-
-  // Adicionar atributo origem e uniqueId às despesas e fontes de renda
-  const despesasComOrigem: ItemComOrigem[] = useMemo(
-    () =>
-      despesas.map((d) => ({
-        ...d,
-        origem: "despesa" as const,
-        uniqueId: `despesa-${d.id}`,
-      })),
-    [despesas],
-  );
-
-  const fontesRendaComOrigem: ItemComOrigem[] = useMemo(
-    () =>
-      fontesRenda.map((f) => ({
-        ...f,
-        origem: "renda" as const,
-        uniqueId: `renda-${f.id}`,
-      })),
-    [fontesRenda],
-  );
-
-  // Filtrar despesas pela categoria selecionada (ou todas se não houver categoria)
-  const despesasFiltradas =
-    categoriaIdWatch && typeof categoriaIdWatch === "number"
-      ? despesasComOrigem.filter((d) => d.categoria?.id === categoriaIdWatch)
-      : despesasComOrigem;
-
-  // Filtrar fontes de renda pela categoria selecionada (ou todas se não houver categoria)
-  const fontesRendaFiltradas =
-    categoriaIdWatch && typeof categoriaIdWatch === "number"
-      ? fontesRendaComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
-      : fontesRendaComOrigem;
-
-  // Opções do campo "Nome" baseado na origem
-  // Se origem for vazia/todos, mostrar despesas E fontes de renda juntas
-  const opcoesNome =
-    origemWatch === "despesa"
-      ? despesasFiltradas
-      : origemWatch === "renda"
-        ? fontesRendaFiltradas
-        : [...despesasFiltradas, ...fontesRendaFiltradas]; // Todos juntos
-
-  const onConvert = (
-    rawFilters: FiltrosLancamentos,
-  ): Partial<FindAllFilters> => {
-    const { item, origem, tipo, ...rest } = rawFilters;
-
-    const spllitedItem = item ? item.split("-") : [];
-    const despesaId =
-      spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
-    const fonteRendaId =
-      spllitedItem[0] === "renda" ? Number(spllitedItem[1]) : undefined;
-
-    const result: Partial<FindAllFilters> = {
-      ...rest,
-      despesaId,
-      fonteRendaId,      
-      origem,
-      observacao: rest.observacao || undefined,
-      tipo: tipo || undefined,
-      categoriaId: rawFilters.categoriaId || undefined,
-    };
-    return result;
-  };
-
-  const handleAplicar = (data: FiltrosLancamentos) => {
-    // Construir filtros com o objeto completo
-    const novosFiltros = onConvert(data);
-    handleSearch(novosFiltros);
   };
 
   const handleLimpar = () => {
     reset();
-    handleSearch(onConvert(defaultValues));
+    setFiltroRapido("mes");
+    const inicioDefault = formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const fimDefault = formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+    setValue("dataInicio", inicioDefault);
+    setValue("dataFim", fimDefault);
+    
+    handleSearch({ dataInicio: inicioDefault, dataFim: fimDefault });
   };
+
   return (
     <Accordion
       defaultExpanded={true}
@@ -148,23 +110,12 @@ export default function FiltrosAvancados({
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        "&:before": { display: "none" },
-        boxShadow: "none",
+        boxShadow: 1,
+        mb: "0px !important",
+        "&:before": { display: "none" }
       }}
     >
-      <AccordionSummary
-        expandIcon={<IconChevronDown size={20} />}
-        sx={{
-          px: 2.5,
-          py: 1,
-          minHeight: "auto",
-          "&.Mui-expanded": { minHeight: "auto" },
-          "& .MuiAccordionSummary-content": {
-            margin: "12px 0",
-            "&.Mui-expanded": { margin: "12px 0" },
-          },
-        }}
-      >
+      <AccordionSummary expandIcon={<IconChevronDown size={20} />} sx={{ px: 2.5, pb: 0 }}>
         <Box display="flex" alignItems="center" gap={1.5} width="100%">
           <Box
             sx={{
@@ -188,55 +139,80 @@ export default function FiltrosAvancados({
         </Box>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
+      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 1 }}>
+        
+        <Box 
+          display="flex" 
+          alignItems="center" 
+          gap={1.5} 
+          mb={2} 
+          p={1.5} 
+          sx={{ bgcolor: (theme) => alpha(theme.palette.background.default, 0.6), borderRadius: 2 }}
+        >
+          <IconCalendarEvent size={20} color={alpha("#fff", 0.6)} /> 
+          <Typography variant="body2" fontWeight={500} mr={1}>
+            Busca Rápida:
+          </Typography>
+          <Chip 
+            label="Mês Atual" 
+            onClick={() => aplicarFiltroRapido("mes")} 
+            color={filtroRapido === "mes" ? "primary" : "default"}
+            variant={filtroRapido === "mes" ? "filled" : "outlined"}
+            sx={{ borderRadius: 2, fontWeight: filtroRapido === "mes" ? 600 : 400, transition: "all 0.2s" }}
+          />
+          <Chip 
+            label="Ano Atual" 
+            onClick={() => aplicarFiltroRapido("ano")} 
+            color={filtroRapido === "ano" ? "primary" : "default"}
+            variant={filtroRapido === "ano" ? "filled" : "outlined"}
+            sx={{ borderRadius: 2, fontWeight: filtroRapido === "ano" ? 600 : 400, transition: "all 0.2s" }}
+          />
+        </Box>
+
+        <Divider sx={{ mb: 2, opacity: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">OU BUSCA CUSTOMIZADA</Typography>
+        </Divider>
+
         <form onSubmit={handleSubmit(handleAplicar)}>
-          <Grid container spacing={2}>
-            {/* Período */}
-            <Grid item xs={12} md={3}>
-              <HookDatePicker
-                name="dataInicio"
-                control={control}
-                label="Data Início"
-                shrinkLabel
-                size="small"
+          <Grid container spacing={2} alignItems="center">
+            
+            {/* O NOVO COMPONENTE SUBSTITUINDO OS DOIS DATEPICKERS */}
+            <Grid item xs={12} md={6}>
+              <CustomDateRangePicker
+                startDate={watch("dataInicio") || null}
+                endDate={watch("dataFim") || null}
+                onChange={(start, end) => {
+                  setValue("dataInicio", start);
+                  setValue("dataFim", end);
+                  setFiltroRapido("custom"); // Muda o status para customizado ao interagir com o calendário
+                }}
               />
             </Grid>
 
             <Grid item xs={12} md={3}>
-              <HookDatePicker
-                name="dataFim"
-                control={control}
-                label="Data Fim"
-                shrinkLabel
-                size="small"
-              />
+              <Button
+                fullWidth
+                type="submit"
+                variant="contained"
+                startIcon={<IconFilter size={18} />}
+                sx={{ height: 40 }}
+              >
+                Aplicar Customizado
+              </Button>
             </Grid>
 
             <Grid item xs={12} md={3}>
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              startIcon={<IconFilter size={18} />}
-            >
-              Aplicar
-            </Button>
-            </Grid>
-
-
-
-            <Grid item xs={12} md={3}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconFilterOff size={18} />}
-              onClick={handleLimpar}
-            >
-              Limpar
-            </Button>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<IconFilterOff size={18} />}
+                onClick={handleLimpar}
+                sx={{ height: 40 }}
+              >
+                Limpar
+              </Button>
             </Grid>
           </Grid>
-
         </form>
       </AccordionDetails>
     </Accordion>

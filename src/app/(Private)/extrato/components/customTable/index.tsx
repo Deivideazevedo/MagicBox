@@ -2,7 +2,9 @@
 
 import {
   Alert,
+  alpha,
   Box,
+  Chip,
   LinearProgress,
   Paper,
   Table,
@@ -12,9 +14,9 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Typography
+  Typography,
 } from "@mui/material";
-import { ReactNode, useMemo, useState } from "react";
+import { memo, ReactNode, useMemo, useState } from "react";
 
 // Hooks e componentes internos
 import { MultiSortIcon } from "./components/MultiSortIcon";
@@ -28,9 +30,10 @@ import { createRenderColumn } from "./utils/renderColumn";
 
 // Types
 import { Lancamento } from "@/core/lancamentos/types";
+import { IconCalendar, IconChecks } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ActionsListMode } from "./components/ActionsListMode";
+import { ActionsIconMode } from "./components/ActionsIconMode";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
 import { IActionConfig } from "./types/actions";
 
@@ -56,24 +59,89 @@ type OrigemType = Lancamento & { origem: string; nome: string };
 export type IColumnProps<T> = {
   key: keyof T;
   label: string;
-  align?: "left" | "right";
+  align?: "left" | "right" | "center";
   sortValue?: (row: T) => any;
   render?: (row: T) => ReactNode;
   filterValue?: (row: T) => string | number;
 };
 
 const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
-  { key: "data", label: "Data", render: (row) => formatarData(row.data) },
-  { key: "origem", label: "Origem" },
-  { key: "tipo", label: "Tipo" },
+  {
+    key: "data",
+    label: "Data",
+    sortValue: (row) => new Date(row.data).getTime(),
+    render: (row) => formatarData(row.data),
+    align: "center",
+  },
   { key: "nome", label: "Nome", align: "right" },
   {
     key: "valor",
     label: "Valor",
     align: "right",
-    render: (row) => formatarValor(row.valor),
+    sortValue: (row) => row.valor,
+    render: (row) => (
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color={Boolean(row.despesa) ? "error.main" : "success.main"}
+      >
+        {formatarValor(row.valor)}
+      </Typography>
+    ),
   },
-  { key: "observacao", label: "Observação", align: "right" },
+  // {
+  //   key: "origem",
+  //   label: "Origem",
+  //   render: (row) => {
+  //     const isDespesa = Boolean(row.despesa);
+  //     return (
+  //       <Chip
+  //         size="small"
+  //         icon={
+  //           isDespesa ? <IconArrowDown size={16} /> : <IconArrowUp size={16} />
+  //         }
+  //         label={row.origem}
+  //         color={isDespesa ? "error" : "success"}
+  //         variant="outlined"
+  //         sx={{
+  //           fontWeight: 600,
+  //           fontSize: "0.75rem",
+  //         }}
+  //       />
+  //     );
+  //   },
+  // },
+  {
+    key: "tipo",
+    label: "Tipo",
+    render: (row) => {
+      const isPagamento = row.tipo === "pagamento";
+      const isDespesa = Boolean(row.despesa);
+      return (
+        <Chip
+          size="small"
+          icon={
+            isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />
+          }
+          label={isPagamento ? "Pagamento" : "Agendamento"}
+          color={
+            isPagamento && !isDespesa
+              ? "success"
+              : isPagamento && isDespesa
+                ? "error"
+                : "warning"
+          }
+          sx={{
+            fontWeight: 600,
+            fontSize: "0.75rem",
+            // color: "common.white",
+            // "& .MuiChip-icon": { color: "common.white" },
+          }}
+        />
+      );
+    },
+  },
+  { key: "observacao", label: "Observação", align: "left" },
 ];
 
 interface CustomTableProps {
@@ -88,8 +156,10 @@ interface CustomTableProps {
     page: number;
     rowsPerPage: number;
     count: number;
-    onPageChange: (event: unknown, newPage: number) => void;
-    onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onUpdatePaginationParams: (params: {
+      page?: number;
+      limit?: number;
+    }) => void;
   };
 
   /** Estado de loading */
@@ -143,19 +213,43 @@ export function CustomTable({
   const handleReset = () => {
     setFilterText("");
     resetSort(); // Para multi-sort
-    // setSortConfig(null); // Para simple-sort
-    pagination.onRowsPerPageChange({
-      target: { value: String(10) },
-    } as React.ChangeEvent<HTMLInputElement>);
-    pagination.onPageChange(null, 0);
+
+    // Evita disparar updates/fetches quando já está na configuração padrão.
+    if (pagination.rowsPerPage !== 10 || pagination.page !== 0) {
+      pagination.onUpdatePaginationParams({ page: 0, limit: 10 });
+    }
   };
 
   // 📏 Calcular total de colunas para colSpan
   // 7 colunas: expansão + nome + email + cidade + produtos + total + ações
   const totalColumns = TABLE_COLUMNS.length + 2;
 
+  // Função para lidar com a mudança de página
+  const handleChangePage = (
+    event: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number,
+  ) => {
+    pagination.onUpdatePaginationParams?.({ page: newPage }); // newPage é passada nativamente pela tablePagination
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const newLimit = parseInt(event.target.value, 10);
+    pagination.onUpdatePaginationParams?.({ limit: newLimit, page: 0 }); // Resetar para página 0
+  };
+
   return (
-    <Paper sx={{ boxShadow: 4 }} variant="outlined">
+    <Paper
+      sx={{
+        borderRadius: 3,
+        mt: 3,
+        boxShadow: 2,
+        border: "1px solid",
+        borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+      }}
+      variant="outlined"
+    >
       {/* TopBar com busca e reset */}
       <TableTopBar
         filterText={filterText}
@@ -166,7 +260,14 @@ export function CustomTable({
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow
+              sx={
+                {
+                  // backgroundColor: (theme) =>
+                  //   alpha(theme.palette.primary.light, 0.5),
+                }
+              }
+            >
               {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
                 <TableCell
                   key={String(key)}
@@ -185,7 +286,11 @@ export function CustomTable({
                       display: "flex",
                       alignItems: "center",
                       justifyContent:
-                        align === "right" ? "flex-end" : "flex-start",
+                        align === "right"
+                          ? "flex-end"
+                          : align === "left"
+                            ? "flex-start"
+                            : "center",
                     }}
                   >
                     <Typography fontWeight={700}>{label}</Typography>
@@ -217,7 +322,7 @@ export function CustomTable({
               <TableRow>
                 <TableCell colSpan={totalColumns} align="center">
                   <Alert
-                    severity="warning"
+                    severity="info"
                     sx={{ alignItems: "center", justifyContent: "center" }}
                   >
                     {emptyMessage}
@@ -227,7 +332,7 @@ export function CustomTable({
             ) : (
               sortedData.map((row, index) => (
                 <CustomRow
-                  key={index}
+                  key={row?.id || index}
                   row={row}
                   columns={TABLE_COLUMNS}
                   actions={actions}
@@ -254,8 +359,8 @@ export function CustomTable({
         }
         count={pagination.count}
         rowsPerPageOptions={[2, 5, 10, 25, 50]}
-        onPageChange={pagination.onPageChange}
-        onRowsPerPageChange={pagination.onRowsPerPageChange}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
         ActionsComponent={CustomPaginationActions}
         rowsPerPage={pagination.rowsPerPage}
         page={pagination.page}
@@ -268,35 +373,73 @@ export function CustomTable({
 // Componente interno de linha
 interface CustomRowProps {
   row: OrigemType;
-  columns:  IColumnProps<OrigemType>[];
+  columns: IColumnProps<OrigemType>[];
   actions: IActionConfig<OrigemType>[];
+  isSelected?: boolean;
 }
 
-function CustomRow({ row, columns, actions }: CustomRowProps) {
-  const [open, setOpen] = useState(false);
+/**
+ * 🚀 CustomRow memoizado para evitar re-renders desnecessários
+ * Quando a tabela re-renderiza (ordenação, filtro), as linhas não são recalculadas
+ * se row.id e isSelected forem iguais (comparador customizado otimizado)
+ */
+const CustomRow = memo(
+  function CustomRow({ row, columns, actions, isSelected }: CustomRowProps) {
+    // Helper para renderizar colunas usando a função utilitária
+    const renderColumn = useMemo(
+      () => createRenderColumn(row, columns),
+      [row, columns],
+    );
 
-  // Helper para renderizar colunas usando a função utilitária
-  const renderColumn = useMemo(
-    () => createRenderColumn(row, columns),
-    [row, columns],
-  );
+    return (
+      <>
+        <TableRow
+          sx={{
+            "& td": { border: 0 },
+            "&:hover": {
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+            },
+            ...(isSelected && {
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+            }),
+          }}
+        >
+          {TABLE_COLUMNS.map(({ key, align = "left" }) => {
+            return (
+              <TableCell key={String(key)} align={align}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent:
+                      align === "right"
+                        ? "flex-end"
+                        : align === "left"
+                          ? "flex-start"
+                          : "center",
+                  }}
+                >
+                  {renderColumn(key)}
 
-  return (
-    <>
-      <TableRow sx={{ "& td": { border: 0 } }}>
-        {TABLE_COLUMNS.map(({ key, align = "left" }) => (
-          <TableCell key={String(key)} align={align}>
-            {renderColumn(key)}
+                  <MultiSortIcon />
+                </Box>
+              </TableCell>
+            );
+          })}
+
+          {/* Célula de ações - usando modo icon */}
+          <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
+            <ActionsIconMode row={row} actions={actions} />
+            {/* Para usar modo menu dropdown, substitua por: */}
+            {/* <ActionsListMode row={row} actions={actions} /> */}
           </TableCell>
-        ))}
-
-        {/* Célula de ações - usando modo icon */}
-        <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
-          {/* <ActionsIconMode row={row} actions={actions} /> */}
-          {/* Para usar modo menu dropdown, substitua por: */}
-          <ActionsListMode row={row} actions={actions} />
-        </TableCell>
-      </TableRow>
-    </>
-  );
-}
+        </TableRow>
+      </>
+    );
+  },
+  (prev, next) => {
+    // Comparador customizado otimizado: re-renderiza apenas se row.id ou isSelected mudarem
+    // false = re-renderiza, true = mantém memoizado
+    return prev.row.id === next.row.id && prev.isSelected === next.isSelected;
+  },
+);

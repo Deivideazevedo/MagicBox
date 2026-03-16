@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ITableColumns } from '../types/columnProps';
 import { compareValues } from '../utils/comparison';
+import { IColumnProps } from '..';
 
 /**
  * 🎯 Hook de ordenação SIMPLES - Ordena por UMA coluna por vez
@@ -27,9 +27,16 @@ export interface SortConfig<T> {
 
 export function useSimpleSort<T>(
   data: T[],
-  columns: ITableColumns<T>,
+  columns: IColumnProps<T>[],
   initialSortConfig?: SortConfig<T>,
 ) {
+
+  const columnsMap = useMemo(() => {
+    const map = new Map<keyof T, IColumnProps<T>>();
+    columns?.forEach((col) => map.set(col.key, col));
+    return map;
+  }, [columns]);
+
   const [sortConfig, setSortConfig] = useState<SortConfig<T> | null>(
     initialSortConfig || null,
   );
@@ -38,7 +45,7 @@ export function useSimpleSort<T>(
   const getSortValue = useCallback(
     (row: T, key: keyof T) => {
       // Encontra a configuração da coluna
-      const column = columns[key];
+      const column = columnsMap.get(key);
 
       if (!column) {
         return row[key]; // Se não encontrar coluna, usa valor direto
@@ -61,7 +68,7 @@ export function useSimpleSort<T>(
       // 3. Prioridade: valor da coluna
       return row[key];
     },
-    [columns],
+    [columnsMap],
   );
 
   // Função de ordenação

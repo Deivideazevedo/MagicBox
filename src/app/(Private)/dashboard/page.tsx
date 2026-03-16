@@ -43,7 +43,7 @@ const Dashboard = () => {
 
   // 🔥 ERRO DE RUNTIME PROPOSITAL - Remover após testar
   const obj: any = undefined;
-  const teste = obj.propriedades; // ← Vai gerar TypeError e acionar error.tsx
+  // const teste = obj.propriedades; // ← Vai gerar TypeError e acionar error.tsx
 
   const userName = session?.user?.name?.split(" ")[0] || "Usuário";
 

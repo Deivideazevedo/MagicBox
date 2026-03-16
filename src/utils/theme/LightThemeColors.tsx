@@ -4,7 +4,7 @@ const LightThemeColors = [
     palette: {
       primary: {
         main: '#5D87FF',
-        light: '#ECF2FF',
+        light: '#e0eaff',
         dark: '#4570EA',
         contrastText: '#ffffff',
       },
@@ -209,7 +209,7 @@ const LightThemeColors = [
     palette: {
       primary: {
         main: '#1E40AF',
-        light: '#DBEAFE',
+        light: '#cce1fd',
         dark: '#1E3A8A',
         contrastText: '#ffffff',
       },

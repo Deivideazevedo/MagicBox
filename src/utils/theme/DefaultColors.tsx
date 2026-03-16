@@ -131,7 +131,7 @@ const baseDarkTheme = {
       main: '#22D3EE', // Cyan claro
       light: '#67E8F9',
       dark: '#06B6D4',
-      contrastText: '#000000',
+      contrastText: '#ffffff',
     },
     success: {
       main: '#10B981', // Emerald - tom mais balanceado
@@ -141,7 +141,7 @@ const baseDarkTheme = {
     },
     info: {
       main: '#60A5FA', // Blue claro
-      light: '#93C5FD',
+      light: '#326cad',
       dark: '#3B82F6',
       contrastText: '#000000',
     },
@@ -153,9 +153,9 @@ const baseDarkTheme = {
     },
     warning: {
       main: '#FBBF24', // Amber claro
-      light: '#FCD34D',
+      light: '#5e4a0a',
       dark: '#F59E0B',
-      contrastText: '#000000',
+      contrastText: '#ffffff',
     },
     purple: {
       A50: '#1E1B4B',
