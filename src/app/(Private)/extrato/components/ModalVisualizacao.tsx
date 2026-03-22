@@ -34,18 +34,12 @@ import { FonteRenda } from "@/core/fontesRenda/types";
 interface ModalVisualizacaoProps {
   open: boolean;
   lancamento: Lancamento | null;
-  categorias: Categoria[];
-  despesas: Despesa[];
-  fontesRenda: FonteRenda[];
   onClose: () => void;
 }
 
 export default function ModalVisualizacao({
   open,
   lancamento,
-  categorias,
-  despesas,
-  fontesRenda,
   onClose,
 }: ModalVisualizacaoProps) {
   if (!lancamento) return null;

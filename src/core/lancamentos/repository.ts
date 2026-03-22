@@ -1,4 +1,4 @@
-// src/core/lancamentos/repository.ts
+// src/core/lancamentos/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import {
   Lancamento as PrismaLancamento,
@@ -14,8 +14,8 @@ export const lancamentoRepository = {
   /**
    * Busca lançamentos com suporte a filtros dinâmicos
    */
-  async findAll(
-    filters: FindAllFilters
+  async listarTodos(
+    filtros: FindAllFilters
   ): Promise<PaginatedResult<PrismaLancamento>> {
     const { 
       page = 0, 
@@ -29,7 +29,7 @@ export const lancamentoRepository = {
       despesaId,
       fonteRendaId,
       origem,
-    } = filters;
+    } = filtros;
 
     let whereClause: Prisma.LancamentoWhereInput = {};
 
@@ -126,7 +126,7 @@ export const lancamentoRepository = {
     };
   },
 
-  async findById(id: string | number) {
+  async buscarPorId(id: string | number) {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
@@ -165,7 +165,7 @@ export const lancamentoRepository = {
     return lancamento;
   },
 
-  async findByUser(userId: string | number) {
+  async listarPorUsuario(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
 
@@ -203,7 +203,7 @@ export const lancamentoRepository = {
     return lancamentos;
   },
 
-  async create(data: any) {
+  async criar(data: any) {
     // Cria o lançamento sem buscar as relações (economiza 2 queries desnecessárias)
     const lancamento = await prisma.lancamento.create({
       data: {
@@ -218,7 +218,7 @@ export const lancamentoRepository = {
         fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : null,
       },
       // REMOVIDO include para otimização de performance
-      // Se precisar das relações, faça um findById logo após
+      // Se precisar das relações, faça um buscarPorId logo após
     });
 
     return {
@@ -229,7 +229,7 @@ export const lancamentoRepository = {
     };
   },
 
-  async remove(id: string | number): Promise<boolean> {
+  async remover(id: string | number): Promise<boolean> {
     const numericId = Number(id);
     if (isNaN(numericId)) return false;
 
@@ -244,7 +244,7 @@ export const lancamentoRepository = {
     }
   },
 
-  async update(id: string | number, data: Partial<LancamentoPayload>) {
+  async atualizar(id: string | number, data: Partial<LancamentoPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 
@@ -263,7 +263,7 @@ export const lancamentoRepository = {
           : undefined,
       },
       // REMOVIDO include para otimização de performance
-      // Se precisar das relações, faça um findById logo após
+      // Se precisar das relações, faça um buscarPorId logo após
     });
 
     return {

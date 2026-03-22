@@ -8,7 +8,7 @@ import { z } from "zod";
 // Schema base da Despesa
 export const despesaSchema = z.object({
   id: z.number().int().positive(),
-  userId: z.number().int().positive(),
+  idUsuario: z.number().int().positive(),
   categoriaId: z.number().int().positive(),
   nome: z.string().min(1).max(100),
   mensalmente: z.boolean(),
@@ -57,7 +57,7 @@ export const updateDespesaSchema = z
     valorEstimado: z.number().int().nullable().optional(),
     diaVencimento: z.number().int().min(1).max(31).nullable().optional(),
     status: z.boolean(),
-    userId: z.number().int().positive().optional(),
+    idUsuario: z.number().int().positive().optional(),
   })
   .refine(
     (data) => {

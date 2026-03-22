@@ -1,4 +1,4 @@
-import { categoriaService as service } from "@/core/categorias/service";
+import { categoriaService as servico } from "@/core/categorias/service";
 import { CategoriaPayload } from "@/core/categorias/types";
 import { updateCategoriaSchema } from "@/dtos";
 import { errorHandler } from "@/lib/error-handler";
@@ -10,42 +10,42 @@ import { NextRequest, NextResponse } from "next/server";
  * Atualiza uma categoria existente
  * Body: { nome: string }
  */
-export const PATCH = errorHandler(update);
+export const PATCH = errorHandler(atualizar);
 
 /**
  * DELETE /api/categorias/[id]
  * Remove uma categoria
  */
-export const DELETE = errorHandler(remove);
+export const DELETE = errorHandler(remover);
 
-async function remove(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+async function remover(
+  requisicao: NextRequest,
+  { parametros }: { parametros: { id: string } }
 ) {
-  const user = await getAuthUser();
-  const { id } = params;
+  const usuario = await getAuthUser();
+  const { id } = parametros;
 
-  await service.remove(id);
+  await servico.remover(id);
   return NextResponse.json({ success: true });
 }
 
-async function update(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+async function atualizar(
+  requisicao: NextRequest,
+  { parametros }: { parametros: { id: string } }
 ) {
-  const { id: categoriaId } = params;
-  const body: CategoriaPayload = await request.json();
-  const user = await getAuthUser();
+  const { id: categoriaId } = parametros;
+  const corpo: CategoriaPayload = await requisicao.json();
+  const usuario = await getAuthUser();
 
   
-  const validation = updateCategoriaSchema.parse(body);
+  const validacao = updateCategoriaSchema.parse(corpo);
 
-  const payload = {
-    ...validation,
-    userId: validation.userId ?? Number(user.id), // Garante que userId seja number
+  const dados = {
+    ...validacao,
+    userId: validacao.userId ?? Number(usuario.id), // Garante que userId seja number
   };
 
 
-  const categoriaAtualizada = await service.update(Number(categoriaId), payload);
+  const categoriaAtualizada = await servico.atualizar(Number(categoriaId), dados);
   return NextResponse.json(categoriaAtualizada);
 }

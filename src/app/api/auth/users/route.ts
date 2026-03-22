@@ -1,7 +1,7 @@
 // src/app/api/auth/users/route.ts
 import "@/lib/zod-config";
 
-import { authService as service } from "@/core/users/service";
+import { authService as servico } from "@/core/users/service";
 import { registerUserSchema } from "@/core/users/user.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { ConflictError, NotFoundError, ValidationError } from "@/lib/errors";
@@ -28,8 +28,8 @@ export const GET = errorHandler(findUser);
  */
 export const POST = errorHandler(createUser);
 
-async function findUser(request: NextRequest): Promise<NextResponse> {
-  const { searchParams } = new URL(request.url);
+async function findUser(requisicao: NextRequest): Promise<NextResponse> {
+  const { searchParams } = new URL(requisicao.url);
   const username = searchParams.get("username");
   const email = searchParams.get("email");
 
@@ -37,28 +37,28 @@ async function findUser(request: NextRequest): Promise<NextResponse> {
     throw new ValidationError("Username ou email é obrigatório");
   }
 
-  const user = await service.findByUsernameOrEmail(
+  const usuario = await servico.findByUsernameOrEmail(
     username || undefined,
     email || undefined
   );
 
-  if (!user) {
+  if (!usuario) {
     throw new NotFoundError("Usuário não encontrado");
   }
 
   // Retorna usuário sem senha
-  const { password, ...userWithoutPassword } = user;
+  const { password, ...userWithoutPassword } = usuario;
   return NextResponse.json(userWithoutPassword);
 }
 
-async function createUser(request: NextRequest): Promise<NextResponse> {
-  const body = await request.json();
+async function createUser(requisicao: NextRequest): Promise<NextResponse> {
+  const corpo = await requisicao.json();
 
   // Validação com Zod
-  const validatedData = registerUserSchema.parse(body);
+  const validatedData = registerUserSchema.parse(corpo);
 
   // Verifica se usuário já existe
-  const existingUser = await service.findByUsernameOrEmail(
+  const existingUser = await servico.findByUsernameOrEmail(
     validatedData.username,
     validatedData.email || undefined
   );
@@ -68,13 +68,13 @@ async function createUser(request: NextRequest): Promise<NextResponse> {
   }
 
   // Cria usuário
-  const newUser = await service.create({
+  const newUser = await servico.criar({
     username: validatedData.username,
     email: validatedData.email || null,
     password: validatedData.password,
     name: validatedData.name || null,
     image: validatedData.image || null,
-    role: "user",
+    role: "usuario",
   });
 
   const { password, ...userWithoutPassword } = newUser;

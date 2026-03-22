@@ -1,4 +1,4 @@
-import { fonteRendaService as service } from "@/core/fontesRenda/service";
+import { fonteRendaService as servico } from "@/core/fontesRenda/service";
 import { FonteRendaPayload } from "@/core/fontesRenda/types";
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
@@ -9,34 +9,34 @@ import { NextRequest, NextResponse } from "next/server";
  * Atualiza uma fonteRenda existente
  * Body: { nome: string }
  */
-export const PATCH = errorHandler(update);
+export const PATCH = errorHandler(atualizar);
 
 /**
  * DELETE /api/fonteRendas/[id]
  * Remove uma fonteRenda
  */
-export const DELETE = errorHandler(remove);
+export const DELETE = errorHandler(remover);
 
 
-async function remove(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+async function remover(
+  requisicao: NextRequest,
+  { parametros }: { parametros: { id: string } }
 ) {
-  const user = await getAuthUser();
-  const { id } = params;
+  const usuario = await getAuthUser();
+  const { id } = parametros;
 
-  await service.remove(id);
+  await servico.remover(id);
   return NextResponse.json({ success: true });
 }
 
-async function update(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+async function atualizar(
+  requisicao: NextRequest,
+  { parametros }: { parametros: { id: string } }
 ) {
-  const { id: fonteRendaId } = params;
-  const body: FonteRendaPayload = await request.json();
+  const { id: fonteRendaId } = parametros;
+  const corpo: FonteRendaPayload = await requisicao.json();
 
-  const fonteRendaAtualizada = await service.update(fonteRendaId, body);
+  const fonteRendaAtualizada = await servico.atualizar(fonteRendaId, corpo);
 
   return NextResponse.json(fonteRendaAtualizada);
 }

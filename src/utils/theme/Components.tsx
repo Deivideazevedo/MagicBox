@@ -1,7 +1,6 @@
 // project imports
-import { padding } from "@mui/system";
-import "./DefaultColors";
 import { Theme } from "@mui/material/styles";
+import "./DefaultColors";
 
 const components: any = (theme: Theme) => {
   return {
@@ -340,6 +339,21 @@ const components: any = (theme: Theme) => {
         root: {
           backgroundColor: theme.palette.grey[200],
           borderRadius: "6px",
+        },
+      },
+    },
+    MuiSkeleton: {
+      defaultProps: {
+        animation: "wave",
+      },
+
+      styleOverrides: {
+        root: {
+          backgroundColor: theme.palette.action.hover,
+          borderRadius: 6,
+          "&::after": {
+            background: `linear-gradient(90deg, transparent, ${theme.palette.action.selected}, transparent)`,
+          },
         },
       },
     },

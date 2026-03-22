@@ -1,19 +1,19 @@
-// src/core/auth/repository.ts
+// src/core/auth/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import { User as PrismaUser } from "@prisma/client";
 import { UserPayload } from "./types";
 
 export const authRepository = {
-  async findAll(filters: Partial<PrismaUser>) {
+  async listarTodos(filtros: Partial<PrismaUser>) {
     return await prisma.user.findMany({
       where: { 
-        ...filters,
+        ...filtros,
         deletedAt: null, // Exclui registros deletados
       },
     });
   },
 
-  async findById(id: string | number) {
+  async buscarPorId(id: string | number) {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
@@ -25,7 +25,7 @@ export const authRepository = {
     });
   },
 
-  async create(data: UserPayload) {
+  async criar(data: UserPayload) {
     return await prisma.user.create({
       data: {
         username: data.username,
@@ -33,12 +33,12 @@ export const authRepository = {
         password: data.password,
         name: data.name,
         image: data.image,
-        role: data.role || "user",
+        role: data.role || "usuario",
       },
     });
   },
 
-  async remove(id: string | number): Promise<boolean> {
+  async remover(id: string | number): Promise<boolean> {
     const numericId = Number(id);
     if (isNaN(numericId)) return false;
 
@@ -54,28 +54,28 @@ export const authRepository = {
     }
   },
 
-  async update(
+  async atualizar(
     id: string | number,
-    payload: Partial<UserPayload>
+    dados: Partial<UserPayload>
   ) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 
     return await prisma.user.update({
       where: { id: numericId },
-      data: payload,
+      data: dados,
     });
   },
 
-  async findByUsernameOrEmail(payload: { username?: string; email?: string | null }) {
-    if (!payload.username && !payload.email) return null;
+  async findByUsernameOrEmail(dados: { username?: string; email?: string | null }) {
+    if (!dados.username && !dados.email) return null;
 
     const where: any = { 
       OR: [],
       deletedAt: null, // Exclui registros deletados
     };
-    if (payload.username) where.OR.push({ username: payload.username });
-    if (payload.email) where.OR.push({ email: payload.email });
+    if (dados.username) where.OR.push({ username: dados.username });
+    if (dados.email) where.OR.push({ email: dados.email });
 
     if (where.OR.length === 0) return null;
 

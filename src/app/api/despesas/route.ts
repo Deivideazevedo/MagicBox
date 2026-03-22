@@ -1,44 +1,44 @@
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
-import { despesaService as service } from "@/core/despesas/service";
+import { despesaService as servico } from "@/core/despesas/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
 import { createDespesaSchema } from "@/core/despesas/despesa.dto";
 
-export const GET = errorHandler(findAll);
-export const POST = errorHandler(create);
+export const GET = errorHandler(listarTodos);
+export const POST = errorHandler(criar);
 
-async function findAll(request: NextRequest): Promise<NextResponse> {
+async function listarTodos(requisicao: NextRequest): Promise<NextResponse> {
   const { id: authId, role } = await getAuthUser();
-  const { searchParams } = new URL(request.url);
-  const filters = Object.fromEntries(searchParams.entries());
+  const { searchParams } = new URL(requisicao.url);
+  const filtros = Object.fromEntries(searchParams.entries());
 
   // Se for admin, pode usar userId do filtro caso exista
   // Se não for admin, só pode usar o próprio userId
-  const userId = role === "admin" ? filters.userId || authId : authId;
+  const userId = role === "admin" ? filtros.userId || authId : authId;
 
   // Converte userId para number se necessário
   const numericUserId = Number(userId);
 
-  const despesas = await service.findByUser(numericUserId);
+  const despesas = await servico.listarPorUsuario(numericUserId);
 
   return NextResponse.json(despesas);
 }
 
-async function create(request: NextRequest): Promise<NextResponse> {
-  const user = await getAuthUser();
-  const body = await request.json();
+async function criar(requisicao: NextRequest): Promise<NextResponse> {
+  const usuario = await getAuthUser();
+  const corpo = await requisicao.json();
 
   // Validação com Zod
-  const validation = createDespesaSchema.parse(body);
+  const validacao = createDespesaSchema.parse(corpo);
 
-  const payload = {
-    ...validation,
-    userId: Number(user.id), // Garante que userId seja number
-    valorEstimado: validation.valorEstimado ? Number(validation.valorEstimado) : null,
-    diaVencimento: validation.diaVencimento ? Number(validation.diaVencimento) : null,
+  const dados = {
+    ...validacao,
+    userId: Number(usuario.id), // Garante que userId seja number
+    valorEstimado: validacao.valorEstimado ? Number(validacao.valorEstimado) : null,
+    diaVencimento: validacao.diaVencimento ? Number(validacao.diaVencimento) : null,
   };
 
-  const novaDespesa = await service.create(payload);
+  const novaDespesa = await servico.criar(dados);
   return NextResponse.json(novaDespesa, { status: 201 });
 }

@@ -116,9 +116,9 @@
 //       return [];
 //   }
   
-//   const result: Array<{ id: number }> = await prisma.$queryRaw(
+//   const resultado: Array<{ id: number }> = await prisma.$queryRaw(
 //     Prisma.sql([sql])
 //   );
   
-//   return result.map((row: { id: number }) => row.id);
+//   return resultado.map((row: { id: number }) => row.id);
 // }

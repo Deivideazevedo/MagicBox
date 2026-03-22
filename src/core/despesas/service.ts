@@ -1,41 +1,41 @@
 // src/core/despesas/service.ts
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
-import { despesaRepository as repository } from "./repository";
+import { despesaRepository as repositorio } from "./repository";
 import { Despesa, DespesaPayload } from "./types";
 
 export const despesaService = {
-  async findAll(filters: any) {
-    return await repository.findAll(filters);
+  async listarTodos(filtros: any) {
+    return await repositorio.listarTodos(filtros);
   },
 
-  async findByUser(userId: string | number) {
-    return await repository.findByUser(userId);
+  async listarPorUsuario(userId: string | number) {
+    return await repositorio.listarPorUsuario(userId);
   },
 
-  async create(payload: DespesaPayload) {
-    if (!payload.userId) {
+  async criar(dados: DespesaPayload) {
+    if (!dados.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
     const data = {
-      ...payload,
-      userId: Number(payload.userId)
+      ...dados,
+      userId: Number(dados.userId)
     };
-    return await repository.create(data);
+    return await repositorio.criar(data);
   },
 
-  async remove(despesaId: string | number) {
-    const despesa = await repository.findById(despesaId);
+  async remover(despesaId: string | number) {
+    const despesa = await repositorio.buscarPorId(despesaId);
     if (!despesa) throw new NotFoundError("Despesa não encontrada");
 
-    return await repository.remove(despesaId);
+    return await repositorio.remover(despesaId);
   },
 
-  async update(despesaId: string | number, despesa: DespesaPayload) {
-    const hasDespesa = await repository.findById(despesaId);
+  async atualizar(despesaId: string | number, despesa: DespesaPayload) {
+    const hasDespesa = await repositorio.buscarPorId(despesaId);
     if (!hasDespesa) throw new NotFoundError("Despesa não encontrada");
     if (!despesa.nome) throw new ValidationError("Nome é obrigatório");
 
-    return await repository.update(despesaId, despesa);
+    return await repositorio.atualizar(despesaId, despesa);
   },
 };

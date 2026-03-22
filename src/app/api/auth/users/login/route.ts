@@ -1,7 +1,7 @@
 // src/app/api/auth/users/login/route.ts
 import "@/lib/zod-config";
 
-import { authService as service } from "@/core/users/service";
+import { authService as servico } from "@/core/users/service";
 import { loginUserSchema } from "@/core/users/user.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { ValidationError } from "@/lib/errors";
@@ -20,33 +20,33 @@ import { NextRequest, NextResponse } from "next/server";
  * Exemplo:
  * POST /api/auth/users/login
  * Body: { "username": "admin", "password": "wise951" }
- * Response: { "token": "eyJhbGc...", "user": {...}, "expiresIn": "7d" }
+ * Response: { "token": "eyJhbGc...", "usuario": {...}, "expiresIn": "7d" }
  */
 export const POST = errorHandler(login);
 
-async function login(request: NextRequest): Promise<NextResponse> {
-  const body = await request.json();
+async function login(requisicao: NextRequest): Promise<NextResponse> {
+  const corpo = await requisicao.json();
 
   // Validação com Zod
-  const { username, email, password } = loginUserSchema.parse(body);
+  const { username, email, password } = loginUserSchema.parse(corpo);
 
   // Autentica usuário (MESMA função usada pelo CredentialsProvider)
-  const user = await service.authenticate({ username, email, password });
+  const usuario = await servico.authenticate({ username, email, password });
 
-  if (!user) {
+  if (!usuario) {
     throw new ValidationError("Credenciais inválidas");
   }
 
   // Adapta o usuário para o formato esperado pelo token
   const userForToken = {
-    id: user.id, // ✅ Já é number do Prisma
-    name: user.name,
-    username: user.username,
-    email: user.email,
-    image: user.image,
-    role: user.role,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
+    id: usuario.id, // ✅ Já é number do Prisma
+    name: usuario.name,
+    username: usuario.username,
+    email: usuario.email,
+    image: usuario.image,
+    role: usuario.role,
+    createdAt: usuario.createdAt.toISOString(),
+    updatedAt: usuario.updatedAt.toISOString(),
   };
 
   // Gera JWT customizado para uso externo
@@ -54,7 +54,7 @@ async function login(request: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({
     token,
-    user: userForToken,
+    usuario: userForToken,
     expiresIn: "7d",
   });
 }

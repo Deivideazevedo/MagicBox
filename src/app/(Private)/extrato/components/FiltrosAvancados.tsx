@@ -13,12 +13,14 @@ import {
   AccordionDetails,
   Chip,
   Divider,
+  useTheme,
 } from "@mui/material";
 import {
   IconFilter,
   IconFilterOff,
   IconChevronDown,
   IconCalendarEvent,
+  IconCalendar,
 } from "@tabler/icons-react";
 import { FindAllFilters } from "@/dtos";
 
@@ -46,24 +48,37 @@ export default function FiltrosAvancados({
   filtros,
   handleSearch,
 }: FiltrosAvancadosProps) {
-  const [filtroRapido, setFiltroRapido] = useState<"mes" | "ano" | "custom">("mes");
+  const theme = useTheme();
+
+  const [filtroRapido, setFiltroRapido] = useState<"mes" | "ano" | "custom">(
+    "mes",
+  );
 
   const defaultValues: FiltrosExtrato = {
-    dataInicio: filtros.dataInicio || formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-    dataFim: filtros.dataFim || formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)),
+    dataInicio:
+      filtros.dataInicio ||
+      formatarDataISO(
+        new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      ),
+    dataFim:
+      filtros.dataFim ||
+      formatarDataISO(
+        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+      ),
   };
 
-  const { handleSubmit, reset, watch, setValue, getValues } = useForm<FiltrosExtrato>({
-    defaultValues,
-  });
+  const { handleSubmit, reset, watch, setValue, getValues } =
+    useForm<FiltrosExtrato>({
+      defaultValues,
+    });
 
   // Atalhos Rápidos
-// Atalhos Rápidos
+  // Atalhos Rápidos
   const aplicarFiltroRapido = (tipo: "mes" | "ano") => {
     const date = new Date();
     const anoAtual = date.getFullYear();
     const mesAtual = date.getMonth();
-    
+
     let inicio, fim;
 
     if (tipo === "mes") {
@@ -77,7 +92,7 @@ export default function FiltrosAvancados({
     setValue("dataInicio", inicio);
     setValue("dataFim", fim);
     setFiltroRapido(tipo);
-    
+
     // Convertendo explicitamente para não passar null
     handleSearch({ dataInicio: inicio, dataFim: fim });
   };
@@ -95,27 +110,43 @@ export default function FiltrosAvancados({
   const handleLimpar = () => {
     reset();
     setFiltroRapido("mes");
-    const inicioDefault = formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-    const fimDefault = formatarDataISO(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0));
+    const inicioDefault = formatarDataISO(
+      new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    );
+    const fimDefault = formatarDataISO(
+      new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+    );
     setValue("dataInicio", inicioDefault);
     setValue("dataFim", fimDefault);
-    
+
     handleSearch({ dataInicio: inicioDefault, dataFim: fimDefault });
   };
 
   return (
     <Accordion
-      defaultExpanded={true}
+      defaultExpanded={false}
       sx={{
+        minHeight: 20,
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
         boxShadow: 1,
         mb: "0px !important",
-        "&:before": { display: "none" }
+        "&:before": { display: "none" },
       }}
     >
-      <AccordionSummary expandIcon={<IconChevronDown size={20} />} sx={{ px: 2.5, pb: 0 }}>
+      <AccordionSummary
+        expandIcon={<IconChevronDown size={20} />}
+        sx={{
+          px: 2.5,
+          pb: 0,
+          minHeight: "48px !important",
+          "& .MuiAccordionSummary-content.Mui-expanded": {
+            mt: "12px !important", // Garante que não apareça margem ao expandir
+            mb: "6px !important", // Garante que não apareça margem ao expandir
+          },
+        }}
+      >
         <Box display="flex" alignItems="center" gap={1.5} width="100%">
           <Box
             sx={{
@@ -133,49 +164,61 @@ export default function FiltrosAvancados({
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={600}>
-              Filtros
+              Filtros Rápidos
             </Typography>
+          </Box>
+
+          <Box display="flex" alignItems="center" gap={1}>
+            {[
+              {
+                id: "mes",
+                label: "Mês Atual",
+                icon: <IconCalendarEvent size={16} />,
+              },
+              {
+                id: "ano",
+                label: "Ano Atual",
+                icon: <IconCalendar size={16} />,
+              },
+            ].map((item) => (
+              <Chip
+                key={item.id}
+                size="small"
+                icon={item.icon}
+                label={item.label}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  aplicarFiltroRapido(item.id as "mes" | "ano");
+                }}
+                color="primary"
+                variant={filtroRapido === item.id ? "filled" : "outlined"}
+                sx={{
+                  height: 28,
+                  px: 1,
+                  fontWeight: filtroRapido === item.id ? 600 : 500,
+                  "& .MuiChip-label": { px: 1, fontSize: "0.73rem" },
+                  "& .MuiChip-icon": { ml: 0.5 },
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: 1,
+                  },
+                }}
+              />
+            ))}
           </Box>
         </Box>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 1 }}>
-        
-        <Box 
-          display="flex" 
-          alignItems="center" 
-          gap={1.5} 
-          mb={2} 
-          p={1.5} 
-          sx={{ bgcolor: (theme) => alpha(theme.palette.background.default, 0.6), borderRadius: 2 }}
-        >
-          <IconCalendarEvent size={20} color={alpha("#fff", 0.6)} /> 
-          <Typography variant="body2" fontWeight={500} mr={1}>
-            Busca Rápida:
-          </Typography>
-          <Chip 
-            label="Mês Atual" 
-            onClick={() => aplicarFiltroRapido("mes")} 
-            color={filtroRapido === "mes" ? "primary" : "default"}
-            variant={filtroRapido === "mes" ? "filled" : "outlined"}
-            sx={{ borderRadius: 2, fontWeight: filtroRapido === "mes" ? 600 : 400, transition: "all 0.2s" }}
-          />
-          <Chip 
-            label="Ano Atual" 
-            onClick={() => aplicarFiltroRapido("ano")} 
-            color={filtroRapido === "ano" ? "primary" : "default"}
-            variant={filtroRapido === "ano" ? "filled" : "outlined"}
-            sx={{ borderRadius: 2, fontWeight: filtroRapido === "ano" ? 600 : 400, transition: "all 0.2s" }}
-          />
-        </Box>
-
+      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
         <Divider sx={{ mb: 2, opacity: 0.5 }}>
-          <Typography variant="caption" color="text.secondary">OU BUSCA CUSTOMIZADA</Typography>
+          <Typography variant="caption" color="text.secondary">
+            OU BUSCA CUSTOMIZADA
+          </Typography>
         </Divider>
 
         <form onSubmit={handleSubmit(handleAplicar)}>
           <Grid container spacing={2} alignItems="center">
-            
             {/* O NOVO COMPONENTE SUBSTITUINDO OS DOIS DATEPICKERS */}
             <Grid item xs={12} md={6}>
               <CustomDateRangePicker

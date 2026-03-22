@@ -1,42 +1,42 @@
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
-import { fonteRendaService as service } from "@/core/fontesRenda/service";
+import { fonteRendaService as servico } from "@/core/fontesRenda/service";
 import { NextRequest, NextResponse } from "next/server";
 import { ValidationError } from "@/lib/errors";
 import { createFonteRendaSchema } from "@/core/fontesRenda/fonte-renda.dto";
 
-export const GET = errorHandler(findAll);
-export const POST = errorHandler(create);
+export const GET = errorHandler(listarTodos);
+export const POST = errorHandler(criar);
 
-async function findAll(request: NextRequest): Promise<NextResponse> {
+async function listarTodos(requisicao: NextRequest): Promise<NextResponse> {
   const { id: authId, role } = await getAuthUser();
-  const { searchParams } = new URL(request.url);
-  const filters = Object.fromEntries(searchParams.entries());
+  const { searchParams } = new URL(requisicao.url);
+  const filtros = Object.fromEntries(searchParams.entries());
 
   // Se for admin, pode usar userId do filtro caso exista
   // Se não for admin, só pode usar o próprio userId
-  const userId = role === "admin" ? filters.userId || authId : authId;
+  const userId = role === "admin" ? filtros.userId || authId : authId;
 
   // Converte userId para number se necessário
   const numericUserId = Number(userId);
 
-  const fonteRendas = await service.findByUser(numericUserId);
+  const fonteRendas = await servico.listarPorUsuario(numericUserId);
 
   return NextResponse.json(fonteRendas);
 }
 
-async function create(request: NextRequest): Promise<NextResponse> {
-  const user = await getAuthUser();
-  const body = await request.json();
+async function criar(requisicao: NextRequest): Promise<NextResponse> {
+  const usuario = await getAuthUser();
+  const corpo = await requisicao.json();
 
   // Validação com Zod
-  const validation = createFonteRendaSchema.parse(body);
+  const validacao = createFonteRendaSchema.parse(corpo);
 
-  const payload = {
-    ...validation,
-    userId: Number(user.id), // Garante que userId seja number
+  const dados = {
+    ...validacao,
+    userId: Number(usuario.id), // Garante que userId seja number
   };
 
-  const novaFonteRenda = await service.create(payload);
+  const novaFonteRenda = await servico.criar(dados);
   return NextResponse.json(novaFonteRenda, { status: 201 });
 }

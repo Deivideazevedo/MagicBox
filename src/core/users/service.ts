@@ -1,73 +1,73 @@
 // src/core/auth/service.ts
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { ValidationError } from "yup";
-import { authRepository as repository } from "./repository";
+import { authRepository as repositorio } from "./repository";
 import { AuthPayload, UserPayload } from "./types";
 import bcrypt from "bcryptjs";
 
 export const authService = {
-  async findAll(filters: any) {
-    return await repository.findAll(filters);
+  async listarTodos(filtros: any) {
+    return await repositorio.listarTodos(filtros);
   },
 
   async findByID(userId: string | number) {
-    return await repository.findById(userId);
+    return await repositorio.buscarPorId(userId);
   },
 
-  async create(payload: UserPayload) {
-    const existingUser = await repository.findByUsernameOrEmail({ username: payload.username, email: payload.email });
+  async criar(dados: UserPayload) {
+    const existingUser = await repositorio.findByUsernameOrEmail({ username: dados.username, email: dados.email });
     if (existingUser) {
       throw new ValidationError("Usuário ou email já cadastrado");
     }
 
-    const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const hashedPassword = await bcrypt.hash(dados.password, 10);
     
-    return await repository.create({
-      ...payload,
+    return await repositorio.criar({
+      ...dados,
       password: hashedPassword,
     });
   },
 
-  async remove(userId: string | number) {
-    const user = await repository.findById(userId);
-    if (!user) throw new NotFoundError("Usuário não encontrado");
+  async remover(userId: string | number) {
+    const usuario = await repositorio.buscarPorId(userId);
+    if (!usuario) throw new NotFoundError("Usuário não encontrado");
 
-    return await repository.remove(userId);
+    return await repositorio.remover(userId);
   },
 
-  async update(userId: string | number, user: Partial<UserPayload>) {
-    const hasUser = await repository.findById(userId);
+  async atualizar(userId: string | number, usuario: Partial<UserPayload>) {
+    const hasUser = await repositorio.buscarPorId(userId);
     if (!hasUser) throw new NotFoundError("Usuário não encontrado");
 
-    if (user.password) {
-      user.password = await bcrypt.hash(user.password, 10);
+    if (usuario.password) {
+      usuario.password = await bcrypt.hash(usuario.password, 10);
     }
 
-    return await repository.update(userId, user);
+    return await repositorio.atualizar(userId, usuario);
   },
 
   /**
    * Autentica usuário por username/email e senha
    */
-  async authenticate(payload: AuthPayload) {
-    const user = await repository.findByUsernameOrEmail(payload);
+  async authenticate(dados: AuthPayload) {
+    const usuario = await repositorio.findByUsernameOrEmail(dados);
     
-    if (!user) {
+    if (!usuario) {
       throw new UnauthorizedError("Credenciais inválidas");
     }
 
-    if (!user.password) {
+    if (!usuario.password) {
        throw new UnauthorizedError("Usuário sem senha definida (login social?)");
     }
 
-    const isValidPassword = await bcrypt.compare(payload.password, user.password);
+    const isValidPassword = await bcrypt.compare(dados.password, usuario.password);
 
     if (!isValidPassword) {
       throw new UnauthorizedError("Credenciais inválidas");
     }
 
     // Retorna usuário sem senha
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = usuario;
     return userWithoutPassword;
   },
 
@@ -75,28 +75,28 @@ export const authService = {
    * Busca usuário por username ou email
    */
   async findByUsernameOrEmail(username?: string, email?: string) {
-    return await repository.findByUsernameOrEmail({ username, email });
+    return await repositorio.findByUsernameOrEmail({ username, email });
   },
 
-  async findOrCreateByOAuth(payload: { email: string; name: string; image?: string | null }) {
-    const existingUser = await repository.findByUsernameOrEmail({ email: payload.email });
+  async findOrCreateByOAuth(dados: { email: string; name: string; image?: string | null }) {
+    const existingUser = await repositorio.findByUsernameOrEmail({ email: dados.email });
     if (existingUser) {
       const { password: _, ...userWithoutPassword } = existingUser;
       return userWithoutPassword;
     }
 
-    // Create new user
+    // Create new usuario
     const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
     // Gera username único baseado no email
-    const username = payload.email.split("@")[0] + Math.floor(Math.random() * 10000);
+    const username = dados.email.split("@")[0] + Math.floor(Math.random() * 10000);
 
-    const newUser = await repository.create({
-      email: payload.email,
+    const newUser = await repositorio.criar({
+      email: dados.email,
       username: username,
       password: hashedPassword,
-      name: payload.name,
-      image: payload.image,
+      name: dados.name,
+      image: dados.image,
     });
 
     const { password: _, ...userWithoutPassword } = newUser;

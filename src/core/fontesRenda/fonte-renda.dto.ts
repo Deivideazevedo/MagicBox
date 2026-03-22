@@ -8,7 +8,7 @@ import { z } from "zod";
 // Schema base da FonteRenda
 export const fonteRendaSchema = z.object({
   id: z.number().int().positive(),
-  userId: z.number().int().positive(),
+  idUsuario: z.number().int().positive(),
   nome: z.string().min(1).max(100),
   valorEstimado: z.string().nullable(), // Decimal como string
   diaRecebimento: z.number().int().min(1).max(31).nullable(),

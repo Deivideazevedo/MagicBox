@@ -1,20 +1,20 @@
-// src/core/fontesRenda/repository.ts
+// src/core/fontesRenda/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import { FonteRenda as PrismaFonteRenda } from "@prisma/client";
 import { FonteRendaPayload } from "./types";
 
 export const fonteRendaRepository = {
-  async findAll(filters: Partial<PrismaFonteRenda>) {
+  async listarTodos(filtros: Partial<PrismaFonteRenda>) {
     return await prisma.fonteRenda.findMany({
       where: {
-        ...filters,
+        ...filtros,
         deletedAt: null, // Exclui registros deletados
       },
       orderBy: { nome: "asc" },
     });
   },
 
-  async findById(id: string | number) {
+  async buscarPorId(id: string | number) {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
@@ -26,7 +26,7 @@ export const fonteRendaRepository = {
     });
   },
 
-  async findByUser(userId: string | number) {
+  async listarPorUsuario(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
 
@@ -40,7 +40,7 @@ export const fonteRendaRepository = {
     });
   },
 
-  async create(data: FonteRendaPayload & { userId: number }) {
+  async criar(data: FonteRendaPayload & { userId: number }) {
     return await prisma.fonteRenda.create({
       data: {
         nome: data.nome,
@@ -54,7 +54,7 @@ export const fonteRendaRepository = {
     });
   },
 
-  async remove(id: string | number): Promise<boolean> {
+  async remover(id: string | number): Promise<boolean> {
     const numericId = Number(id);
     if (isNaN(numericId)) return false;
 
@@ -70,7 +70,7 @@ export const fonteRendaRepository = {
     }
   },
 
-  async update(id: string | number, data: Partial<FonteRendaPayload>) {
+  async atualizar(id: string | number, data: Partial<FonteRendaPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 

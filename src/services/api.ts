@@ -95,6 +95,7 @@ const baseQueryInterceptor: BaseQueryFn<
 // API base do RTK Query com interceptor
 export const api = createApi({
   reducerPath: "api",
+  keepUnusedDataFor: 300, // Mantém dados por 60 segundos para evitar refetchs desnecessários
   baseQuery: baseQueryInterceptor,
   tagTypes: [
     "Categorias",
@@ -104,6 +105,7 @@ export const api = createApi({
     "Dashboard",
     "Receita",
     "FonteRenda",
+    "Extrato",
   ],
   endpoints: () => ({}), // Endpoints serão injetados nos arquivos de serviço específicos
 });

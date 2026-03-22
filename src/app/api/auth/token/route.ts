@@ -13,10 +13,10 @@ export const dynamic = 'force-dynamic';
  * ROTA PROTEGIDA: Middleware valida autenticação (Cookie OU Bearer Token)
  * Usuário já está autenticado ao chegar aqui
  */
-export async function GET(request: NextRequest) {
+export async function GET(requisicao: NextRequest) {
   try {
     // Obter token do NextAuth
-    const authResult = await authenticate(request);
+    const authResult = await authenticate(requisicao);
     const hasToken = authResult?.token;
 
     if (!hasToken?.accessToken) {
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       data: {
         accessToken: hasToken.accessToken,
         tokenType: "Bearer",
-        user: session?.user
+        usuario: session?.user
           ? {
               id: session.user.id,
               username: session.user.username,

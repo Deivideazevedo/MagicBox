@@ -1,20 +1,20 @@
-// src/core/categorias/repository.ts
+// src/core/categorias/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import { Categoria as PrismaCategoria } from "@prisma/client";
 import { CategoriaPayload } from "./types";
 
 export const categoriaRepository = {
-  async findAll(filters: Partial<PrismaCategoria>) {
+  async listarTodos(filtros: Partial<PrismaCategoria>) {
     return await prisma.categoria.findMany({
       where: {
-        ...filters,
+        ...filtros,
         deletedAt: null, // Exclui registros deletados
       },
       orderBy: { nome: "asc" },
     });
   },
 
-  async findById(id: string | number) {
+  async buscarPorId(id: string | number) {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
@@ -26,7 +26,7 @@ export const categoriaRepository = {
     });
   },
 
-  async findByUser(userId: string | number) {
+  async listarPorUsuario(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
 
@@ -39,7 +39,7 @@ export const categoriaRepository = {
     });
   },
 
-  async create(data: CategoriaPayload) {
+  async criar(data: CategoriaPayload) {
     return await prisma.categoria.create({
       data: {
         nome: data.nome,
@@ -48,7 +48,7 @@ export const categoriaRepository = {
     });
   },
 
-  async remove(id: string | number): Promise<boolean> {
+  async remover(id: string | number): Promise<boolean> {
     const numericId = Number(id);
     if (isNaN(numericId)) return false;
 
@@ -64,7 +64,7 @@ export const categoriaRepository = {
     }
   },
 
-  async update(id: number, data: Partial<CategoriaPayload>) {
+  async atualizar(id: number, data: Partial<CategoriaPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 

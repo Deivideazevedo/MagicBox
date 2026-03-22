@@ -111,10 +111,11 @@ export function TableTopBar({
             size="small"
             color="primary"
             sx={{
-              display: !searchOpen ? 'flex' : 'none',
+              visibility: !searchOpen ? 'visible' : 'hidden',
               pointerEvents: !searchOpen ? 'auto' : 'none',
               opacity: !searchOpen ? 1 : 0,
-              transition: 'opacity 0.4s ease',
+              transform: !searchOpen ? 'scale(1)' : 'scale(0.9)',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
             }}
           >
             <Search />

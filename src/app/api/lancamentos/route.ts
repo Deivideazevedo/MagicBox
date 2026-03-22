@@ -1,15 +1,15 @@
 import { createLancamentoSchema, findAllQuerySchema } from "@/core/lancamentos/lancamento.dto";
-import { lancamentoService as service } from "@/core/lancamentos/service";
+import { lancamentoService as servico } from "@/core/lancamentos/service";
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-export const GET = errorHandler(findAll);
-export const POST = errorHandler(create);
+export const GET = errorHandler(listarTodos);
+export const POST = errorHandler(criar);
 
-async function findAll(request: NextRequest): Promise<NextResponse> {
+async function listarTodos(requisicao: NextRequest): Promise<NextResponse> {
   const { id: authId, role } = await getAuthUser();
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = new URL(requisicao.url);
 
   const rawFilters = Object.fromEntries(searchParams.entries());
 
@@ -18,29 +18,29 @@ async function findAll(request: NextRequest): Promise<NextResponse> {
   const userId =
     role === "admin" ? searchParams.get("userId") || authId : authId;
 
-  const filters = findAllQuerySchema.parse({
+  const filtros = findAllQuerySchema.parse({
     ...rawFilters,
     userId: Number(userId),
   });
 
-  const result = await service.findAll(filters);
+  const resultado = await servico.listarTodos(filtros);
 
   // Sempre retorna resposta paginada
-  return NextResponse.json(result);
+  return NextResponse.json(resultado);
 }
 
-async function create(request: NextRequest): Promise<NextResponse> {
-  const user = await getAuthUser();
-  const body = await request.json();
+async function criar(requisicao: NextRequest): Promise<NextResponse> {
+  const usuario = await getAuthUser();
+  const corpo = await requisicao.json();
 
   // Validação com Zod
-  const validation = createLancamentoSchema.parse(body);
+  const validacao = createLancamentoSchema.parse(corpo);
 
-  const payload = {
-    ...validation,
-    userId: Number(user.id), // Garante que userId seja number
+  const dados = {
+    ...validacao,
+    userId: Number(usuario.id), // Garante que userId seja number
   };
 
-  const novoLancamento = await service.create(payload);
+  const novoLancamento = await servico.criar(dados);
   return NextResponse.json(novoLancamento, { status: 201 });
 }

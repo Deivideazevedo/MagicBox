@@ -1,41 +1,41 @@
 // src/core/fontesRenda/service.ts
 import { NotFoundError } from "@/lib/errors";
 import { ValidationError } from "yup";
-import { fonteRendaRepository as repository } from "./repository";
+import { fonteRendaRepository as repositorio } from "./repository";
 import { FonteRenda, FonteRendaPayload } from "./types";
 
 export const fonteRendaService = {
-  async findAll(filters: any) {
-    return await repository.findAll(filters);
+  async listarTodos(filtros: any) {
+    return await repositorio.listarTodos(filtros);
   },
 
-  async findByUser(userId: string | number) {
-    return await repository.findByUser(userId);
+  async listarPorUsuario(userId: string | number) {
+    return await repositorio.listarPorUsuario(userId);
   },
 
-  async create(payload: FonteRendaPayload) {
-    if (!payload.userId) {
+  async criar(dados: FonteRendaPayload) {
+    if (!dados.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
     const data = {
-      ...payload,
-      userId: Number(payload.userId)
+      ...dados,
+      userId: Number(dados.userId)
     };
-    return await repository.create(data);
+    return await repositorio.criar(data);
   },
 
-  async remove(fonteRendaId: string | number) {
-    const FonteRenda = await repository.findById(fonteRendaId);
+  async remover(fonteRendaId: string | number) {
+    const FonteRenda = await repositorio.buscarPorId(fonteRendaId);
     if (!FonteRenda) throw new NotFoundError("FonteRenda não encontrada");
 
-    return await repository.remove(fonteRendaId);
+    return await repositorio.remover(fonteRendaId);
   },
 
-  async update(fonteRendaId: string | number, FonteRenda: FonteRendaPayload) {
-    const hasFonteRenda = await repository.findById(fonteRendaId);
+  async atualizar(fonteRendaId: string | number, FonteRenda: FonteRendaPayload) {
+    const hasFonteRenda = await repositorio.buscarPorId(fonteRendaId);
     if (!hasFonteRenda) throw new NotFoundError("FonteRenda não encontrada");
     if (!FonteRenda.nome) throw new ValidationError("Nome é obrigatório");
 
-    return await repository.update(fonteRendaId, FonteRenda);
+    return await repositorio.atualizar(fonteRendaId, FonteRenda);
   },
 };

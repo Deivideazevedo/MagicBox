@@ -34,7 +34,7 @@ export interface LancamentoPayload {
   categoriaId: number;
   despesaId?: number | null;
   fonteRendaId?: number | null;
-  parcelas?: number | null; // Usado apenas no payload para gerar múltiplos registros
+  parcelas?: number | null; // Usado apenas no dados para gerar múltiplos registros
 }
 
 // Interface específica para formulários no frontend
