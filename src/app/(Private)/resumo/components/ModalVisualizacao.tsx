@@ -30,10 +30,11 @@ import { Lancamento } from "@/core/lancamentos/types";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
+import { ResumoResposta } from "@/core/lancamentos/resumo/types";
 
 interface ModalVisualizacaoProps {
   open: boolean;
-  lancamento: Lancamento | null;
+  lancamento: ResumoResposta | null;
   onClose: () => void;
 }
 
@@ -45,12 +46,12 @@ export default function ModalVisualizacao({
   if (!lancamento) return null;
 
   // Usar dados do Prisma (categoria, despesa, fonteRenda já vêm populados)
-  const categoria = lancamento.categoria;
-  const despesa = lancamento.despesa;
-  const fonteRenda = lancamento.fonteRenda;
+  // const categoria = lancamento.categoria;
+  // const despesa = lancamento.despesa;
+  // const fonteRenda = lancamento.fonteRenda;
 
-  const isPagamento = lancamento.tipo === "pagamento";
-  const isDespesa = Boolean(lancamento.despesa);
+  // const isPagamento = lancamento.tipo === "pagamento";
+  // const isDespesa = Boolean(lancamento.despesa);
 
   const formatarValor = (valor: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -102,7 +103,7 @@ export default function ModalVisualizacao({
       }}
     >
       <DialogTitle>
-        <Stack direction="row" alignItems="center" gap={2}>
+        {/* <Stack direction="row" alignItems="center" gap={2}>
           <Box
             sx={{
               width: 48,
@@ -132,7 +133,7 @@ export default function ModalVisualizacao({
           <IconButton onClick={onClose} size="small">
             <IconX size={20} />
           </IconButton>
-        </Stack>
+        </Stack> */}
       </DialogTitle>
 
       <Divider />
@@ -140,7 +141,7 @@ export default function ModalVisualizacao({
       <DialogContent>
         <Stack spacing={3}>
           {/* Valor */}
-          <Box
+          {/* <Box
             sx={{
               p: 2.5,
               borderRadius: 3,
@@ -175,10 +176,10 @@ export default function ModalVisualizacao({
                 </Typography>
               </Box>
             </Box>
-          </Box>
+          </Box> */}
 
           {/* Informações Gerais */}
-          <Grid container spacing={2.5}>
+          {/* <Grid container spacing={2.5}>
             <Grid item xs={12}>
               <InfoItem
                 icon={IconCalendar}
@@ -240,18 +241,18 @@ export default function ModalVisualizacao({
                 </Box>
               </Grid>
             )}
-          </Grid>
+          </Grid> */}
 
           {/* Metadados */}
           <Divider />
-          <Box>
+          {/* <Box>
             <Typography variant="caption" color="textSecondary" display="block" mb={0.5}>
               Criado em: {formatarData(lancamento.createdAt)}
             </Typography>
             <Typography variant="caption" color="textSecondary" display="block">
               Atualizado em: {formatarData(lancamento.updatedAt)}
             </Typography>
-          </Box>
+          </Box> */}
         </Stack>
       </DialogContent>
 

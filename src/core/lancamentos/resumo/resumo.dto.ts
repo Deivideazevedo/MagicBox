@@ -1,26 +1,25 @@
 import { z } from "zod";
 
 // ============================================
-// DTO: EXTRATO
+// DTO: RESUMO
 // ============================================
 // Schemas de validação para requisições de extrato
 // REGRAS DE NEGÓCIO implementadas aqui
 
 // Schema para validar os Query Params
-export const extratoFiltrosSchema = z
+export const resumoTodosFiltrosSchema = z
   .object({
-    page: z.coerce.number().min(0).default(0),
-    limit: z.coerce.number().min(1).max(500).default(10), // Trave um limite máximo por segurança
-
     // Filtros opcionais (transformam string vazia em undefined se necessário)
     userId: z.coerce.number().optional(),
     dataInicio: z.string(),
     dataFim: z.string(),
+    despesaId: z.coerce.number().optional(),
+    fonteRendaId: z.coerce.number().optional(),
   })
   .strict();
 
 // Schema para validar os Query Params
-export const extratoResumoFiltrosSchema = z
+export const resumoFiltrosSchema = z
   .object({
     // Filtros opcionais (transformam string vazia em undefined se necessário)
     userId: z.coerce.number().optional(),
@@ -30,5 +29,6 @@ export const extratoResumoFiltrosSchema = z
   .strict();
 
 // Types exportados
-export type ExtratoFiltros = z.infer<typeof extratoFiltrosSchema>;
-export type ExtratoResumoFiltros = z.infer<typeof extratoResumoFiltrosSchema>;
+export type ResumoTodosFiltros = z.infer<typeof resumoTodosFiltrosSchema>;
+export type ResumoCardFiltros = z.infer<typeof resumoFiltrosSchema>;
+export type ResumoFiltros = z.infer<typeof resumoFiltrosSchema>;

@@ -1,5 +1,8 @@
-import { ExtratoParametros, ExtratoResposta } from "@/core/lancamentos/extrato/types";
-import { useLazyGetExtratoQuery } from "@/services/endpoints/extratoApi";
+import {
+  ResumoParametros,
+  ResumoResposta,
+} from "@/core/lancamentos/resumo/types";
+import { useLazyGetResumoQuery } from "@/services/endpoints/resumoApi";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Função para obter primeiro e último dia do mês atual
@@ -14,42 +17,34 @@ const getDefaultDates = () => {
   };
 };
 
-export function useExtratoList() {
-  const [filtros, setFiltros] = useState<ExtratoParametros>(() => {
+export function useResumo() {
+  const [filtros, setFiltros] = useState<ResumoParametros>(() => {
     return {
       ...getDefaultDates(),
-      page: 0,
-      limit: 10,
     };
   });
 
   // Se extratosProps existir (não é undefined), skip a query RTK
   const [trigger, { data: responseData, isLoading, isFetching }] =
-    useLazyGetExtratoQuery();
+    useLazyGetResumoQuery();
 
+    console.log('responseData', responseData);
   useEffect(() => {
     trigger(filtros, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { extratosFromQuery, meta } = useMemo(() => {
-    return {
-      extratosFromQuery: responseData?.data || [],
-      meta: responseData?.meta || { lastPage: 0, total: 0, page: 0, limit: 0 },
-    };
-  }, [responseData]);
-
 
   // Estados de modais agrupados
   const [modals, setModals] = useState({
-    visualizar: null as ExtratoResposta | null,
-    editar: null as ExtratoResposta | null,
-    excluir: null as ExtratoResposta | null,
+    visualizar: null as ResumoResposta | null,
+    editar: null as ResumoResposta | null,
+    excluir: null as ResumoResposta | null,
   });
 
   // Handlers de Filtros
   const handleSearch = useCallback(
-    (novosFiltros: Partial<ExtratoParametros>) => {
+    (novosFiltros: Partial<ResumoParametros>) => {
       const finalFiltros = { ...filtros, ...novosFiltros };
       trigger(finalFiltros, true);
       setFiltros(finalFiltros);
@@ -61,7 +56,7 @@ export function useExtratoList() {
   const modalHandlers = useMemo(
     () => ({
       visualizar: {
-        abrir: (lancamento: ExtratoResposta) =>
+        abrir: (lancamento: ResumoResposta) =>
           setModals((prev) => ({ ...prev, visualizar: lancamento })),
         fechar: () => setModals((prev) => ({ ...prev, visualizar: null })),
       },
@@ -73,8 +68,6 @@ export function useExtratoList() {
     (params: { page?: number; limit?: number }) => {
       const finalFiltros = {
         ...filtros,
-        page: params.page ?? filtros.page,
-        limit: params.limit ?? filtros.limit,
       };
       trigger(finalFiltros, true);
       setFiltros(finalFiltros);
@@ -84,15 +77,15 @@ export function useExtratoList() {
 
   return {
     // Dados
-    extrato: extratosFromQuery,
+    resumo: responseData ?? [],
     isLoading,
     isFetching,
 
     // Paginação
-    page: filtros.page ?? 0,
-    pageSize: filtros.limit ?? 10,
-    totalRows: meta.total,
-    lastPage: meta.lastPage,
+    page: 0,
+    pageSize: 10,
+    totalRows: 0,//meta?.total,
+    lastPage: 0, //meta?.lastPage,
     onUpdatePaginationParams,
 
     // Filtros
@@ -102,6 +95,5 @@ export function useExtratoList() {
     // Modais
     modais: modals,
     modalHandlers,
-
   };
 }

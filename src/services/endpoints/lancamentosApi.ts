@@ -11,7 +11,7 @@ export const lancamentosApi = api.injectEndpoints({
         url: "/lancamentos",
         params: fnCleanObject({ params }),
       }),
-      providesTags: ["Lancamentos", "Extrato"],
+      providesTags: ["Lancamentos", "Resumo"],
     }),
 
     createLancamento: builder.mutation<Lancamento, LancamentoPayload>({
@@ -20,7 +20,7 @@ export const lancamentosApi = api.injectEndpoints({
         method: "POST",
         body: newLancamento,
       }),
-      invalidatesTags: ["Lancamentos", "Extrato"],
+      invalidatesTags: ["Lancamentos", "Resumo"],
     }),
 
     updateLancamento: builder.mutation<
@@ -32,7 +32,7 @@ export const lancamentosApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Lancamentos", "Extrato"],
+      invalidatesTags: ["Lancamentos", "Resumo"],
     }),
 
     deleteLancamento: builder.mutation<{ success: boolean }, string>({
@@ -40,7 +40,7 @@ export const lancamentosApi = api.injectEndpoints({
         url: `/lancamentos/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Lancamentos", "Extrato"],
+      invalidatesTags: ["Lancamentos", "Resumo"],
     }),
   }),
 });

@@ -14,15 +14,15 @@ import ModalVisualizacao from "./components/ModalVisualizacao";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
 // Hooks
-import { useExtratoList } from "./hooks/useExtratoList";
+import { useResumo } from "./hooks/useResumo";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 import { useMemo } from "react";
 
-export default function ExtratosPage() {
+export default function ResumoPage() {
   const {
-    extrato,
+    resumo,
     isLoading,
     isFetching,
     page,
@@ -33,7 +33,7 @@ export default function ExtratosPage() {
     handleSearch,
     modais,
     modalHandlers,
-  } = useExtratoList();
+  } = useResumo();
 
 
   return (
@@ -41,7 +41,7 @@ export default function ExtratosPage() {
       <Container maxWidth="xl">
         <Box sx={{ mb: 0 }}>
           <Typography variant="h3" gutterBottom fontWeight={700}>
-            Extrato
+            Resumo
           </Typography>
           <Typography variant="h6" color="textSecondary">
             Gerencie seus pagamentos e agendamentos financeiros
@@ -66,7 +66,7 @@ export default function ExtratosPage() {
 
         {/* DataGrid */}
         <CustomTable
-          data={extrato}
+          data={resumo}
           actions={[
             {
               title: "Visualizar",

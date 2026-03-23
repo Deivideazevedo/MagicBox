@@ -58,9 +58,9 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
-    title: "Extrato",
+    title: "Resumo",
     icon: IconList,
-    href: "/extrato",
+    href: "/resumo",
   },
   {
     id: uniqueId(),

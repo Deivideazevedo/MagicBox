@@ -29,7 +29,7 @@ import { useTableFilter } from "./hooks/useTableFilter";
 import { createRenderColumn } from "./utils/renderColumn";
 
 // Types
-import { ExtratoResposta } from "@/core/lancamentos/extrato/types";
+import { ResumoResposta } from "@/core/lancamentos/resumo/types";
 import { IconCalendar, IconChecks } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,28 +38,22 @@ import { CustomPaginationActions } from "./components/CustomPaginationActions";
 import { IActionConfig } from "./types/actions";
 
 // Helpers de formatação
-const formatarValor = (valor: number) => {
+const formatarValor = (valor: number | string) => {
+  if (Number(valor) === 0) return "-";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(valor);
-};
-
-const formatarData = (data: string) => {
-  try {
-    return format(new Date(data), "dd/MM/yyyy", { locale: ptBR });
-  } catch {
-    return data;
-  }
+  }).format(Number(valor));
 };
 
 // NOVO CUSTOMTABLE - TEMPLATE PARA SER COPIADO E ADAPTADO
-type OrigemType = ExtratoResposta; // Exemplo de tipo, adapte conforme necessário
+type OrigemType = ResumoResposta; // Exemplo de tipo, adapte conforme necessário
 
 export type IColumnProps<T> = {
   key: keyof T;
   label: string;
   align?: "left" | "right" | "center";
+  isSortable?: boolean; // Se a coluna é ordenável
   sortValue?: (row: T) => any;
   render?: (row: T) => ReactNode;
   filterValue?: (row: T) => string | number;
@@ -67,66 +61,92 @@ export type IColumnProps<T> = {
 
 const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
   {
-    key: "data",
-    label: "Data",
-    sortValue: (row) => new Date(row.data).getTime(),
-    render: (row) => formatarData(row.data),
+    key: "mes",
+    label: "Período",
+    sortValue: (row) => new Date(row.ano, row.mes - 1, 1).getTime(),
+    render: (row) =>
+      format(new Date(row.ano, row.mes - 1, 1), "MM/yyyy", { locale: ptBR }),
     align: "center",
   },
   {
-    key: "despesa",
-    label: "Nome",
-    align: "right",
-    render: (row) => row.despesa?.nome || row.fonteRenda?.nome || "-",
-    sortValue: (row) => row?.despesa?.nome || row?.fonteRenda?.nome || "",
-    filterValue: (row) => row?.despesa?.nome || row?.fonteRenda?.nome || "-",
+    key: "nome",
+    label: "Lançamento",
   },
   {
-    key: "valor",
-    label: "Valor",
+    key: "valorPrevisto",
+    label: "V. Previsto",
     align: "right",
-    sortValue: (row) => row.valor,
-    render: (row) => (
-      <Typography
-        variant="body2"
-        fontWeight={600}
-        color={Boolean(row.despesa) ? "error.main" : "success.main"}
-      >
-        {formatarValor(row.valor)}
-      </Typography>
-    ),
-  },
-  {
-    key: "tipo",
-    label: "Tipo",
+    sortValue: (row) => Number(row.valorPrevisto), // Garante ordenação numérica
     render: (row) => {
-      const isPagamento = row.tipo === "pagamento";
-      const isDespesa = Boolean(row.despesa);
+      const valorNum = Number(row.valorPrevisto);
+      const isDespesa = row.origem === "despesa";
+
+      // 1. Condição para valor zerado ou inexistente
+      if (valorNum === 0) {
+        return <Typography variant="body2">-</Typography>;
+      }
+
+      // 2. Condição para valores presentes
       return (
-        <Chip
-          size="small"
-          icon={
-            isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />
-          }
-          label={isPagamento ? "Pagamento" : "Agendamento"}
-          color={
-            isPagamento && !isDespesa
-              ? "success"
-              : isPagamento && isDespesa
-                ? "error"
-                : "warning"
-          }
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-            // color: "common.white",
-            // "& .MuiChip-icon": { color: "common.white" },
-          }}
-        />
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          color={isDespesa ? "error.main" : "success.main"}
+        >
+          {isDespesa ? "- " : "+ "}
+          {formatarValor(valorNum)}
+        </Typography>
       );
     },
   },
-  { key: "observacao", label: "Observação", align: "left" },
+  {
+    key: "valorPago",
+    label: "V. Pago",
+    align: "right",
+    sortValue: (row) => Number(row.valorPago), // Garante ordenação numérica
+    render: (row) => {
+      const valorNum = Number(row.valorPago);
+      const isDespesa = row.origem === "despesa";
+
+      // 1. Condição para valor zerado ou inexistente
+      if (valorNum === 0) {
+        return <Typography variant="body2">-</Typography>;
+      }
+
+      // 2. Condição para valores presentes
+      return (
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          color={isDespesa ? "error.main" : "success.main"}
+        >
+          {isDespesa ? "- " : "+ "}
+          {formatarValor(valorNum)}
+        </Typography>
+      );
+    },
+  },
+  {
+    key: "status",
+    label: "Status",
+    align: "center",
+    render: (row) =>
+      row.status ? (
+        <Chip
+          label={row.status}
+          size="small"
+          color={
+            row.status === "Pago"
+              ? "success"
+              : row.atrasado
+                ? "error"
+                : "primary"
+          }
+        />
+      ) : (
+        "-"
+      ), // Exibe um traço neutro se o status for vazio
+  },
 ];
 
 interface CustomTableProps {
@@ -246,8 +266,8 @@ export function CustomTable({
         onReset={handleReset}
       />
 
-      <TableContainer>
-        <Table>
+      <TableContainer sx={{ maxHeight: 350 }}>
+        <Table sx={{ maxHeight: 350 }} stickyHeader>
           <TableHead>
             <TableRow
               sx={
@@ -307,29 +327,25 @@ export function CustomTable({
           )} */}
 
           <TableBody>
-            {(isLoading || isFetching) && (
+            {isLoading || isFetching ? (
               <TableRow>
-                <TableCell
-                  colSpan={totalColumns}
-                  align="center"
-                  sx={{ p: "128px 20px" }}
-                >
+                <TableCell colSpan={totalColumns} align="center">
                   <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
-            )}
-            {sortedData.length === 0 && (!isLoading || !isFetching) && (
+            ) : sortedData.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={totalColumns}
-                  align="center"
-                  sx={{ p: "128px 20px" }}
-                >
-                  <CircularProgress size={40} />
+                <TableCell colSpan={totalColumns} align="center">
+                  <Alert
+                    severity="info"
+                    sx={{ alignItems: "center", justifyContent: "center" }}
+                  >
+                    {emptyMessage}
+                  </Alert>
                 </TableCell>
               </TableRow>
-            )}
-            {sortedData.length > 0 &&
+            ) : (
+              sortedData.length > 0 &&
               (!isLoading || !isFetching) &&
               sortedData.map((row) => (
                 <CustomRow
@@ -338,34 +354,30 @@ export function CustomTable({
                   columns={TABLE_COLUMNS}
                   actions={actions}
                 />
-              ))}
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Paginação */}
-      <TablePagination
-        component="div"
+      <Box
         sx={{
-          borderTop: "1px solid",
-          borderColor: "divider",
-          "& .MuiTablePagination-select": {
-            borderRadius: "6px",
-          },
+          px: 2,
+          py: 1,
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          fontWeight: "bold",
+          fontSize: 13,
+          // color: theme.palette.text.primary,
         }}
-        labelRowsPerPage="Linhas por página"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}–${to} de ${count}`
-        }
-        count={pagination.count}
-        rowsPerPageOptions={[2, 5, 10, 25, 50]}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        ActionsComponent={CustomPaginationActions}
-        rowsPerPage={pagination.rowsPerPage}
-        page={pagination.page}
-      />
-      {/* <CustomTablePagination pagination={pagination} /> */}
+      >
+        {`Total: ${
+          filteredData.length !== data.length
+            ? `${filteredData.length} / ${data.length}`
+            : data.length
+        }`}
+      </Box>
     </Paper>
   );
 }

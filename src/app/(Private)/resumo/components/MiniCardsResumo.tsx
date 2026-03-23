@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetExtratoResumoQuery } from "@/services/endpoints/extratoApi";
+import { useGetResumoCardQuery } from "@/services/endpoints/resumoApi";
 import {
   alpha,
   Box,
@@ -36,7 +36,7 @@ export default function MiniCardsResumo(params: {
     data: resumo,
     isLoading,
     isFetching,
-  } = useGetExtratoResumoQuery({
+  } = useGetResumoCardQuery({
     dataInicio: params.dataInicio,
     dataFim: params.dataFim,
   });

@@ -29,7 +29,7 @@ import { useTableFilter } from "./hooks/useTableFilter";
 import { createRenderColumn } from "./utils/renderColumn";
 
 // Types
-import { ExtratoResposta } from "@/core/lancamentos/extrato/types";
+import { ResumoResposta, ResumoTodosResposta } from "@/core/lancamentos/resumo/types";
 import { IconCalendar, IconChecks } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -54,7 +54,7 @@ const formatarData = (data: string) => {
 };
 
 // NOVO CUSTOMTABLE - TEMPLATE PARA SER COPIADO E ADAPTADO
-type OrigemType = ExtratoResposta; // Exemplo de tipo, adapte conforme necessário
+type OrigemType = ResumoTodosResposta; // Exemplo de tipo, adapte conforme necessário
 
 export type IColumnProps<T> = {
   key: keyof T;
@@ -325,7 +325,12 @@ export function CustomTable({
                   align="center"
                   sx={{ p: "128px 20px" }}
                 >
-                  <CircularProgress size={40} />
+                  <Alert
+                    severity="info"
+                    sx={{ alignItems: "center", justifyContent: "center" }}
+                  >
+                    {emptyMessage}
+                  </Alert>
                 </TableCell>
               </TableRow>
             )}

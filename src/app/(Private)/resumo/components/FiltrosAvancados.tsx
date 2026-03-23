@@ -26,6 +26,7 @@ import { FindAllFilters } from "@/dtos";
 
 // Importe o novo componente que criamos
 import { CustomDateRangePicker } from "./CustomDateRangePicker"; // Ajuste o caminho conforme necessário
+import { ResumoParametros } from "@/core/lancamentos/resumo/types";
 
 export interface FiltrosExtrato {
   dataInicio?: string | null;
@@ -33,7 +34,7 @@ export interface FiltrosExtrato {
 }
 
 interface FiltrosAvancadosProps {
-  filtros: FindAllFilters;
+  filtros: ResumoParametros;
   handleSearch: (filtros: Partial<FindAllFilters>) => void;
 }
 

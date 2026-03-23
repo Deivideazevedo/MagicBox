@@ -1,11 +1,25 @@
 import { Categoria } from "../../categorias/types";
 import { Despesa } from "../../despesas/types";
 import { FonteRenda } from "../../fontesRenda/types";
-import { ExtratoFiltros } from "./extrato.dto";
+import { ResumoFiltros } from "./resumo.dto";
 
 export type TipoLancamento = "pagamento" | "agendamento";
 
-export interface ExtratoResposta {
+export interface ResumoResposta {
+  id: string;
+  origemId: number;
+  origem: "renda" | "despesa";
+  nome: string;
+  valorPrevisto: number;
+  valorPago: number;
+  diaVencido: number | null;
+  mes: number;
+  ano: number;
+  status: string;
+  atrasado: boolean;
+}
+
+export interface ResumoTodosResposta {
   id: number;
   userId: number;
   tipo: TipoLancamento;
@@ -25,7 +39,7 @@ export interface ExtratoResposta {
   statusDinamico?: string;
 }
 
-export interface MiniCardsResumoProps {
+export interface ResumoMiniCardsProps {
   totalTransacoes: number;
   transacoesPagas: number;
   transacoesAgendadas: number;
@@ -40,4 +54,4 @@ export interface MiniCardsResumoProps {
   saldoProjetado: number;
 }
 
-export type ExtratoParametros = ExtratoFiltros;
+export type ResumoParametros = ResumoFiltros;
