@@ -3,11 +3,25 @@ import { Theme } from "@mui/material/styles";
 import "./DefaultColors";
 
 const components: any = (theme: Theme) => {
+  // Cor do fundo da canaleta da rolagem (track/corner), igual ao paper do tema.
+  const scrollbarTrackColor = theme.palette.background.paper;
+  // Cor do "thumb" no modo escuro para bom contraste sem ficar claro demais.
+  const scrollbarThumbDark = theme.palette.grey[700];
+  // Cor do "thumb" no modo claro para manter visibilidade adequada.
+  const scrollbarThumbLight = theme.palette.grey[500];
+  // Escolhe a cor final do "thumb" conforme o modo atual do tema.
+  const scrollbarThumbColor =
+    theme.palette.mode === "dark" ? scrollbarThumbDark : scrollbarThumbLight;
+
   return {
     MuiCssBaseline: {
       styleOverrides: {
         "*": {
           boxSizing: "border-box",
+          // Firefox: usa largura padrão (mais grossa que "thin").
+          // scrollbarWidth: "auto",
+          // Firefox: define thumb + track para evitar fundo claro no dark mode.
+          scrollbarColor: `${scrollbarThumbColor} ${scrollbarTrackColor}`,
         },
         html: {
           height: "100%",
@@ -73,9 +87,6 @@ const components: any = (theme: Theme) => {
         },
         ".MuiTimelineConnector-root": {
           width: "1px !important",
-        },
-        " .simplebar-scrollbar:before": {
-          background: `${theme.palette.grey[300]} !important`,
         },
         "@keyframes gradient": {
           "0%": {

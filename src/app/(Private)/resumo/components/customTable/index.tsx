@@ -4,9 +4,13 @@ import {
   Alert,
   alpha,
   Box,
+  Collapse,
   Chip,
   CircularProgress,
+  Divider,
+  IconButton,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -16,7 +20,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { memo, ReactNode, useMemo } from "react";
+import { memo, ReactNode, useMemo, useState } from "react";
 
 // Hooks e componentes internos
 import { MultiSortIcon } from "./components/MultiSortIcon";
@@ -30,7 +34,12 @@ import { createRenderColumn } from "./utils/renderColumn";
 
 // Types
 import { ResumoResposta } from "@/core/lancamentos/resumo/types";
-import { IconCalendar, IconChecks } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconChevronDown,
+  IconChevronUp,
+  IconChecks,
+} from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ActionsIconMode } from "./components/ActionsIconMode";
@@ -267,16 +276,11 @@ export function CustomTable({
       />
 
       <TableContainer sx={{ maxHeight: 350 }}>
-        <Table sx={{ maxHeight: 350 }} stickyHeader>
+        <Table stickyHeader>
           <TableHead>
-            <TableRow
-              sx={
-                {
-                  // backgroundColor: (theme) =>
-                  //   alpha(theme.palette.primary.light, 0.5),
-                }
-              }
-            >
+            <TableRow>
+              <TableCell sx={{ width: 0 }} />{" "}
+              {/* Célula para ícone de expansão, se necessário */}
               {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
                 <TableCell
                   key={String(key)}
@@ -307,7 +311,6 @@ export function CustomTable({
                   </Box>
                 </TableCell>
               ))}
-
               {/* Ações */}
               <TableCell align="center">
                 <Typography fontWeight={700}>Ações</Typography>
@@ -397,25 +400,51 @@ interface CustomRowProps {
  */
 const CustomRow = memo(
   function CustomRow({ row, columns, actions, isSelected }: CustomRowProps) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const rowTotalColumns = columns.length + 2;
+
     // Helper para renderizar colunas usando a função utilitária
     const renderColumn = useMemo(
       () => createRenderColumn(row, columns),
       [row, columns],
     );
 
+    const periodo = format(new Date(row.ano, row.mes - 1, 1), "MM/yyyy", {
+      locale: ptBR,
+    });
+
+    const diferenca = Number(row.valorPago) - Number(row.valorPrevisto);
+
     return (
       <>
         <TableRow
+          onClick={() => setIsExpanded((prev) => !prev)}
           sx={{
-            "& td": { border: 0 },
-            "&:hover": {
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+            "& td": {
+              borderBottom: (theme) =>
+                isExpanded ? "0" : `1px solid ${theme.palette.divider}`,
             },
-            ...(isSelected && {
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-            }),
+            "&:hover": {
+              bgcolor: (theme) => theme.palette.action.hover,
+            },
+            cursor: "pointer",
           }}
         >
+          <TableCell sx={{ width: 0 }}>
+            <IconButton
+              size="small"
+              aria-label={
+                isExpanded ? "Recolher detalhes" : "Expandir detalhes"
+              }
+              // onClick={() => setIsExpanded((prev) => !prev)}
+            >
+              {isExpanded ? (
+                <IconChevronUp size={18} />
+              ) : (
+                <IconChevronDown size={18} />
+              )}
+            </IconButton>
+          </TableCell>
           {TABLE_COLUMNS.map(({ key, align = "left" }) => {
             return (
               <TableCell key={String(key)} align={align}>
@@ -444,6 +473,91 @@ const CustomRow = memo(
             <ActionsIconMode row={row} actions={actions} />
             {/* Para usar modo menu dropdown, substitua por: */}
             {/* <ActionsListMode row={row} actions={actions} /> */}
+          </TableCell>
+        </TableRow>
+
+        <TableRow>
+          <TableCell
+            colSpan={rowTotalColumns}
+            sx={{
+              py: 0,
+              borderBottom: (theme) =>
+                isExpanded ? `1px solid ${theme.palette.divider}` : "0",
+              backgroundColor: (theme) =>
+                isExpanded ? alpha(theme.palette.primary.main, 0.03) : "transparent",
+            }}
+          >
+            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+              <Box sx={{ px: 2.5, py: 2 }}>
+                <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
+                  Detalhes do lançamento
+                </Typography>
+
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={1.5}
+                  divider={<Divider flexItem orientation="vertical" />}
+                >
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Origem
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {row.origem === "despesa" ? "Despesa" : "Renda"}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Período
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <IconCalendar size={14} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {periodo}
+                      </Typography>
+                    </Stack>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Vencimento/Recebimento
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {row.diaVencido
+                        ? `Dia ${row.diaVencido}`
+                        : "Sem dia definido"}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Diferença (Pago - Previsto)
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      color={diferenca >= 0 ? "success.main" : "error.main"}
+                    >
+                      {diferenca >= 0 ? "+ " : "- "}
+                      {formatarValor(Math.abs(diferenca))}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Situação
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      <IconChecks size={14} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {row.status || "Sem status"}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                </Stack>
+              </Box>
+            </Collapse>
           </TableCell>
         </TableRow>
       </>
