@@ -89,8 +89,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   } = useForm({
     resolver: yupResolver(validationSchema),
     defaultValues: {
-      username: "wisebo",
-      password: "wise@951",
+      username: "",
+      password: "",
     },
   });
 
