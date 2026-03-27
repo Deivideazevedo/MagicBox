@@ -1,15 +1,13 @@
 // src/core/lancamentos/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import {
-  Lancamento as PrismaLancamento,
-  TipoLancamento,
-  Despesa,
-  FonteRenda,
   Prisma,
+  Lancamento as PrismaLancamento,
+  TipoLancamento
 } from "@prisma/client";
-import { LancamentoParams, LancamentoPayload } from "./types";
 import { PaginatedResult } from "../types/global";
 import { FindAllFilters } from "./lancamento.dto";
+import { LancamentoPayload } from "./types";
 export const lancamentoRepository = {
   /**
    * Busca lançamentos com suporte a filtros dinâmicos

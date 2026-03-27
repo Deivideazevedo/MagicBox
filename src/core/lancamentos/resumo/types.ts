@@ -17,6 +17,15 @@ export interface ResumoResposta {
   ano: number;
   status: string;
   atrasado: boolean;
+  detalhes: DetalheResumo[];
+}
+
+type DetalheResumo = {
+  id: number;
+  tipo: TipoLancamento;
+  data: string;
+  valor: number;
+  observacao?: string;
 }
 
 export interface ResumoTodosResposta {

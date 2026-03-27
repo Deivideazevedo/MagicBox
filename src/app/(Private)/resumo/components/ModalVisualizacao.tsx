@@ -14,23 +14,23 @@ import {
   Typography,
   Chip,
   alpha,
+  useTheme,
 } from "@mui/material";
 import {
   IconX,
   IconCalendar,
-  IconChecks,
   IconCurrencyReal,
   IconNotes,
-  IconTag,
   IconReceipt,
+  IconArrowUpRight,
+  IconArrowDownLeft,
+  IconClock,
+  IconHistory,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Lancamento } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
 import { ResumoResposta } from "@/core/lancamentos/resumo/types";
+import { IconTag } from "@tabler/icons-react";
 
 interface ModalVisualizacaoProps {
   open: boolean;
@@ -43,54 +43,26 @@ export default function ModalVisualizacao({
   lancamento,
   onClose,
 }: ModalVisualizacaoProps) {
+  const theme = useTheme();
   if (!lancamento) return null;
 
-  // Usar dados do Prisma (categoria, despesa, fonteRenda já vêm populados)
-  // const categoria = lancamento.categoria;
-  // const despesa = lancamento.despesa;
-  // const fonteRenda = lancamento.fonteRenda;
+  const isDespesa = lancamento.origem === "despesa";
+  const corPrincipal = isDespesa ? theme.palette.error.main : theme.palette.success.main;
 
-  // const isPagamento = lancamento.tipo === "pagamento";
-  // const isDespesa = Boolean(lancamento.despesa);
-
-  const formatarValor = (valor: number) => {
+  const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(valor);
   };
 
-  const formatarData = (data: string) => {
+  const formatarDataCompleta = (data: string) => {
     try {
-      return format(new Date(data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+      return format(new Date(data), "HH:mm'h' - dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     } catch {
       return data;
     }
   };
-
-  const InfoItem = ({
-    icon: Icon,
-    label,
-    value,
-    color = "primary",
-  }: {
-    icon: any;
-    label: string;
-    value: React.ReactNode;
-    color?: "primary" | "success" | "error" | "info" | "warning";
-  }) => (
-    <Box>
-      <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-        <Icon size={16} color={`var(--mui-palette-${color}-main)`} />
-        <Typography variant="caption" color="textSecondary" fontWeight={600}>
-          {label}
-        </Typography>
-      </Box>
-      <Typography variant="body2" fontWeight={500} pl={3}>
-        {value}
-      </Typography>
-    </Box>
-  );
 
   return (
     <Dialog
@@ -99,171 +71,151 @@ export default function ModalVisualizacao({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 4 },
+        sx: { borderRadius: 4, backgroundImage: 'none' },
       }}
     >
-      <DialogTitle>
-        {/* <Stack direction="row" alignItems="center" gap={2}>
-          <Box
-            sx={{
-              width: 48,
-              height: 48,
-              borderRadius: 2,
-              backgroundColor: (theme) =>
-                alpha(theme.palette[isPagamento ? "success" : "warning"].main, 0.1),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: `${isPagamento ? "success" : "warning"}.main`,
-            }}
-          >
-            {isPagamento ? <IconChecks size={24} /> : <IconCalendar size={24} />}
-          </Box>
-          <Box flex={1}>
-            <Typography variant="h5" fontWeight={700}>
-              Detalhes do Lançamento
-            </Typography>
-            <Chip
-              size="small"
-              label={isPagamento ? "Pagamento" : "Agendamento"}
-              color={isPagamento ? "success" : "warning"}
-              sx={{ mt: 0.5, fontWeight: 600 }}
-            />
-          </Box>
-          <IconButton onClick={onClose} size="small">
+      <DialogTitle sx={{ p: 3 }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: "12px",
+                backgroundColor: alpha(corPrincipal, 0.1),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: corPrincipal,
+              }}
+            >
+              {isDespesa ? <IconArrowDownLeft size={24} /> : <IconArrowUpRight size={24} />}
+            </Box>
+            <Box>
+              <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
+                {lancamento.nome}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                Referência: {lancamento.mes.toString().padStart(2, '0')}/{lancamento.ano}
+              </Typography>
+            </Box>
+          </Stack>
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.disabled' }}>
             <IconX size={20} />
           </IconButton>
-        </Stack> */}
+        </Stack>
       </DialogTitle>
 
       <Divider />
 
-      <DialogContent>
+      <DialogContent sx={{ p: 3 }}>
         <Stack spacing={3}>
-          {/* Valor */}
-          {/* <Box
-            sx={{
-              p: 2.5,
-              borderRadius: 3,
-              bgcolor: (theme) =>
-                alpha(theme.palette[isDespesa ? "error" : "success"].main, 0.08),
-              border: "1px solid",
-              borderColor: (theme) =>
-                alpha(theme.palette[isDespesa ? "error" : "success"].main, 0.2),
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={1.5}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  bgcolor: `${isDespesa ? "error" : "success"}.main`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                }}
-              >
-                <IconCurrencyReal size={20} />
-              </Box>
-              <Box>
-                <Typography variant="caption" color="textSecondary" fontWeight={600}>
-                  Valor
+          {/* Card de Valores */}
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Box sx={{ p: 2, bgcolor: alpha(theme.palette.info.main, 0.05), borderRadius: 3, border: `1px solid ${alpha(theme.palette.info.main, 0.1)}` }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+                  VALOR PREVISTO
                 </Typography>
-                <Typography variant="h4" fontWeight={700} color={`${isDespesa ? "error" : "success"}.main`}>
-                  {formatarValor(Number(lancamento.valor))}
+                <Typography variant="h6" fontWeight={800}>
+                  {formatarMoeda(lancamento.valorPrevisto)}
                 </Typography>
               </Box>
-            </Box>
-          </Box> */}
-
-          {/* Informações Gerais */}
-          {/* <Grid container spacing={2.5}>
-            <Grid item xs={12}>
-              <InfoItem
-                icon={IconCalendar}
-                label="Data"
-                value={formatarData(lancamento.data)}
-                color="info"
-              />
             </Grid>
-
-            <Grid item xs={12}>
-              <InfoItem
-                icon={IconTag}
-                label="Categoria"
-                value={categoria?.nome || "-"}
-                color="primary"
-              />
+            <Grid item xs={6}>
+              <Box sx={{ p: 2, bgcolor: alpha(corPrincipal, 0.05), borderRadius: 3, border: `1px solid ${alpha(corPrincipal, 0.1)}` }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} display="block" mb={0.5}>
+                  VALOR REALIZADO
+                </Typography>
+                <Typography variant="h6" fontWeight={800} color={corPrincipal}>
+                  {formatarMoeda(lancamento.valorPago)}
+                </Typography>
+              </Box>
             </Grid>
+          </Grid>
 
-            <Grid item xs={12}>
-              <InfoItem
-                icon={IconReceipt}
-                label={isDespesa ? "Despesa" : "Fonte de Renda"}
-                value={despesa?.nome || fonteRenda?.nome || "-"}
-                color={isDespesa ? "error" : "success"}
-              />
-            </Grid>
+          {/* Status e Origem */}
+          <Stack direction="row" gap={1}>
+            <Chip 
+              icon={<IconTag size={16} />} 
+              label={isDespesa ? "Despesa" : "Receita/Renda"} 
+              variant="outlined" 
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+            <Chip 
+              label={lancamento.status} 
+              color={lancamento.atrasado ? "error" : "primary"} 
+              size="small"
+              sx={{ fontWeight: 600 }}
+            />
+          </Stack>
 
-            {lancamento.observacao && (
-              <Grid item xs={12}>
-                <InfoItem
-                  icon={IconNotes}
-                  label="Obersavação"
-                  value={lancamento.observacao}
-                  color="info"
-                />
-              </Grid>
-            )}
-
-            {lancamento.observacaoAutomatica && (
-              <Grid item xs={12}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    bgcolor: (theme) => alpha(theme.palette.info.main, 0.05),
-                    border: "1px solid",
-                    borderColor: (theme) => alpha(theme.palette.info.main, 0.1),
-                  }}
-                >
-                  <Box display="flex" alignItems="center" gap={1} mb={1}>
-                    <IconNotes size={16} color="var(--mui-palette-info-main)" />
-                    <Typography variant="caption" color="info.main" fontWeight={600}>
-                      Observação Automática (Parcelamento)
+          {/* Seção de Histórico/Detalhes */}
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconHistory size={18} /> Histórico de Movimentações
+            </Typography>
+            
+            <Stack spacing={1.5}>
+              {lancamento.detalhes && lancamento.detalhes.length > 0 ? (
+                lancamento.detalhes.map((det) => (
+                  <Box 
+                    key={det.id}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      bgcolor: 'background.default'
+                    }}
+                  >
+                    <Stack spacing={0.5}>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <IconClock size={14} color={theme.palette.text.secondary} />
+                        <Typography variant="caption" fontWeight={700} color="text.secondary">
+                          {formatarDataCompleta(det.data)}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        {det.observacao || (det.tipo === 'pagamento' ? 'Pagamento efetuado' : 'Lançamento registrado')}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="subtitle2" fontWeight={800} color={det.tipo === 'pagamento' ? 'success.main' : 'text.primary'}>
+                      {formatarMoeda(det.valor)}
                     </Typography>
                   </Box>
-                  <Typography variant="body2" color="textSecondary">
-                    {lancamento.observacaoAutomatica}
-                  </Typography>
-                </Box>
-              </Grid>
-            )}
-          </Grid> */}
-
-          {/* Metadados */}
-          <Divider />
-          {/* <Box>
-            <Typography variant="caption" color="textSecondary" display="block" mb={0.5}>
-              Criado em: {formatarData(lancamento.createdAt)}
-            </Typography>
-            <Typography variant="caption" color="textSecondary" display="block">
-              Atualizado em: {formatarData(lancamento.updatedAt)}
-            </Typography>
-          </Box> */}
+                ))
+              ) : (
+                <Typography variant="body2" color="text.disabled" sx={{ fontStyle: 'italic' }}>
+                  Nenhuma movimentação detalhada encontrada.
+                </Typography>
+              )}
+            </Stack>
+          </Box>
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, pt: 0 }}>
+      <Divider />
+
+      <DialogActions sx={{ p: 2.5 }}>
         <Button
           onClick={onClose}
-          variant="outlined"
-          startIcon={<IconX size={16} />}
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+          fullWidth
+          variant="contained"
+          color="inherit"
+          sx={{ 
+            borderRadius: 2, 
+            textTransform: "none", 
+            fontWeight: 700,
+            bgcolor: theme.palette.grey[200],
+            '&:hover': { bgcolor: theme.palette.grey[300] }
+          }}
         >
-          Fechar
+          Fechar Visualização
         </Button>
       </DialogActions>
     </Dialog>

@@ -390,22 +390,12 @@ const CustomRow = memo(
             "&:hover": {
               bgcolor: (theme) => theme.palette.action.hover,
             },
-            "&:hover .expand-btn": {
-              backgroundColor: "primary.main",
-              color: "primary.contrastText",
-            },
             cursor: "pointer",
           }}
         >
           <TableCell sx={{ width: 0 }}>
             <IconButton
-              className="expand-btn"
               size="small"
-              color="primary"
-              sx={{
-                p: 0,
-                transition: "all 0.1s ease",
-              }}
               aria-label={
                 isExpanded ? "Recolher detalhes" : "Expandir detalhes"
               }
@@ -465,16 +455,18 @@ const CustomRow = memo(
                   variant="subtitle2"
                   fontWeight={700}
                   sx={{
-                    mb: 1.5,
+                    mb: 1,
                     ml: -2.8,
                     display: "flex",
                     alignItems: "center",
                     gap: 1,
-                    color: "text.secondary",
+                    color: "primary.main",
                   }}
                 >
-                  <IconCalendar size={18} stroke={2.5} /> Histórico de
-                  Movimentações
+                  <Box sx={{ color: "primary.main", display: "inline-flex" }}>
+                    <IconCalendar size={18} stroke={2.5} color="currentColor" />
+                  </Box>
+                  Histórico de Movimentações
                 </Typography>
 
                 <Box sx={{ position: "relative" }}>
@@ -486,7 +478,8 @@ const CustomRow = memo(
                       bottom: 0,
                       left: -14,
                       width: "2px",
-                      bgcolor: "divider",
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.3),
                       zIndex: 0,
                     }}
                   />
@@ -505,24 +498,13 @@ const CustomRow = memo(
                             position: "relative",
                             "&:hover": {
                               "& .timeline-dot": {
+                                transform: "scale(1.3)",
                                 bgcolor: "primary.main",
-                                transform: "scale(1.25) translateY(-4px)",
                               },
                               "& .timeline-text": {
-                                fontSize: "0.875rem",
-                                color: "primary.main",
-                                transform: " translateY(-4px)",
-                              },
-                              "& .card-slim": {
-                                transform: "translateY(-4px)",
-                                borderColor: (theme) =>
-                                  alpha(theme.palette.primary.main, 0.5),
-                                boxShadow: (theme) =>
-                                  `0 4px 12px ${alpha(theme.palette.primary.main, 0.04)}`,
-                              },
-                              "& .card-value": {
-                                color: "primary.main",
                                 fontSize: "0.9rem",
+                                color: "primary.main",
+                                // transform: "translateX(-1px)",
                               },
                             },
                           }}
@@ -550,7 +532,7 @@ const CustomRow = memo(
                                 color: "text.secondary",
                                 whiteSpace: "nowrap",
                                 fontSize: "0.75rem",
-                                transition: "all 0.2s ease",
+                                transition: "0.1s",
                               }}
                             >
                               {format(new Date(detalhe.data), "dd/MM")}
@@ -563,12 +545,10 @@ const CustomRow = memo(
                                 width: 12,
                                 height: 12,
                                 borderRadius: "50%",
-                                bgcolor: isPagamento
-                                  ? "success.main"
-                                  : "warning.main",
+                                bgcolor: "primary.main",
                                 border: "2px solid white",
                                 boxShadow: 1,
-                                transition: "all 0.2s ease",
+                                transition: "0.2s",
                                 zIndex: 2,
                               }}
                             />
@@ -577,9 +557,9 @@ const CustomRow = memo(
                           {/* Card Slim */}
                           <Paper
                             variant="outlined"
-                            className="card-slim"
                             sx={{
                               flex: 1,
+                              ml: { xs: 1, md: 0 },
                               p: "10px 16px",
                               display: "flex",
                               alignItems: "center",
@@ -587,6 +567,12 @@ const CustomRow = memo(
                               transition: "all 0.2s ease",
                               borderRadius: "12px",
                               bgcolor: "background.paper",
+                              "&:hover": {
+                                transform: "translateX(8px)",
+                                borderColor: "primary.main",
+                                boxShadow: (theme) =>
+                                  `0 4px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
+                              },
                             }}
                           >
                             <Box>
@@ -616,18 +602,11 @@ const CustomRow = memo(
                               spacing={3}
                               alignItems="center"
                             >
-                              <Typography
-                                className="card-value"
-                                variant="subtitle2"
-                                fontWeight={800}
-                                sx={{
-                                  transition: "all 0.2s ease",
-                                }}
-                              >
+                              <Typography variant="subtitle2" fontWeight={800}>
                                 {formatarValor(detalhe.valor)}
                               </Typography>
                               <ActionsIconMode
-                                row={row}
+                                row={detalhe}
                                 actions={actions}
                               />
                             </Stack>
