@@ -267,7 +267,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
                     </Typography>
                   </Link>{" "}
                   e{" "}
-                  <Link href="/privacidade" style={{ textDecoration: "none", color: "inherit" }}>
+                  <Link href="/privacy" style={{ textDecoration: "none", color: "inherit" }}>
                     <Typography component="span" color="primary.main" fontWeight={500}>
                       Política de Privacidade
                     </Typography>

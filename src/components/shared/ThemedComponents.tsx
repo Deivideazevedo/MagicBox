@@ -4,6 +4,7 @@ import { useTheme } from "@mui/material/styles";
 import { Box, styled } from "@mui/material";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
+import { alpha } from "@mui/system";
 
 // Componente estilizado que responde ao tema
 export const ThemedHeroSection = styled(Box)(({ theme }) => ({
@@ -45,13 +46,14 @@ export const ThemedFeatureCard = styled(Box)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 2,
   padding: theme.spacing(3),
   textAlign: 'center',
-  transition: 'all 0.3s ease',
   height: '100%',
   '&:hover': {
     borderColor: theme.palette.primary.main,
-    boxShadow: `0 8px 25px ${theme.palette.primary.main}25`,
-    transform: 'translateY(-4px)',
-  }
+    // Use alpha() do MUI para o boxShadow ficar mais limpo
+    boxShadow: `0 12px 30px ${alpha(theme.palette.primary.main, 0.12)}`,
+    transform: 'translateY(-8px)', // Um pouco mais de movimento para o feedback ser claro
+  },
+  transition: "all 0.3s ease"
 }));
 
 // Hook para obter informações do tema

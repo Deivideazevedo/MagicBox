@@ -11,7 +11,7 @@ export interface AuthResult {
 }
 
 // Rotas públicas (não requerem autenticação)
-const PUBLIC_ROUTES = ["/", "/about"];
+const PUBLIC_ROUTES = ["/", "/about", "/privacy"];
 
 // Rotas de autenticação (login, registro, erro)
 const AUTH_ROUTES = ["/auth"];

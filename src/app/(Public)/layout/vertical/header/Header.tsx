@@ -31,6 +31,7 @@ import { setDarkMode } from "@/store/customizer/CustomizerSlice";
 // Links de navegação para a área pública
 const publicNavLinks = [
   { title: "Home", href: "/" },
+  { title: "Privacidade", href: "/privacy" },
   { title: "Recursos", href: "/features" },
   { title: "Preços", href: "/pricing" },
   { title: "Contato", href: "/contact" },

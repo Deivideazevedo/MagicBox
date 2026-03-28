@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "TipoLancamento" AS ENUM ('pagamento', 'agendamento', 'receita');
+CREATE TYPE "TipoLancamento" AS ENUM ('pagamento', 'agendamento');
 
 -- CreateTable
 CREATE TABLE "categorias" (
@@ -50,18 +50,17 @@ CREATE TABLE "fontes_renda" (
 -- CreateTable
 CREATE TABLE "lancamentos" (
     "id" SERIAL NOT NULL,
-    "userId" INTEGER NOT NULL,
+    "user_id" INTEGER NOT NULL,
     "tipo" "TipoLancamento" NOT NULL,
     "data" TIMESTAMP(3) NOT NULL,
-    "descricao" VARCHAR(255),
-    "categoriaId" INTEGER NOT NULL,
-    "despesaId" INTEGER,
-    "fonteRendaId" INTEGER,
+    "observacao" VARCHAR(255),
+    "observacao_automatica" VARCHAR(500),
+    "categoria_id" INTEGER NOT NULL,
+    "despesa_id" INTEGER,
+    "fonte_renda_id" INTEGER,
     "valor" DECIMAL(10,2) NOT NULL,
-    "parcelas" INTEGER,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "lancamentos_pkey" PRIMARY KEY ("id")
 );
@@ -107,16 +106,34 @@ CREATE INDEX "fontes_renda_categoriaId_idx" ON "fontes_renda"("categoriaId");
 CREATE INDEX "fontes_renda_status_idx" ON "fontes_renda"("status");
 
 -- CreateIndex
-CREATE INDEX "lancamentos_userId_idx" ON "lancamentos"("userId");
+CREATE INDEX "lancamentos_user_id_idx" ON "lancamentos"("user_id");
 
 -- CreateIndex
-CREATE INDEX "lancamentos_despesaId_idx" ON "lancamentos"("despesaId");
+CREATE INDEX "lancamentos_despesa_id_idx" ON "lancamentos"("despesa_id");
 
 -- CreateIndex
-CREATE INDEX "lancamentos_fonteRendaId_idx" ON "lancamentos"("fonteRendaId");
+CREATE INDEX "lancamentos_fonte_renda_id_idx" ON "lancamentos"("fonte_renda_id");
 
 -- CreateIndex
 CREATE INDEX "lancamentos_data_idx" ON "lancamentos"("data");
+
+-- CreateIndex
+CREATE INDEX "lancamentos_categoria_id_idx" ON "lancamentos"("categoria_id");
+
+-- CreateIndex
+CREATE INDEX "lancamentos_tipo_idx" ON "lancamentos"("tipo");
+
+-- CreateIndex
+CREATE INDEX "lancamentos_user_id_data_idx" ON "lancamentos"("user_id", "data" DESC);
+
+-- CreateIndex
+CREATE INDEX "lancamentos_user_id_tipo_idx" ON "lancamentos"("user_id", "tipo");
+
+-- CreateIndex
+CREATE INDEX "lancamentos_user_id_categoria_id_data_idx" ON "lancamentos"("user_id", "categoria_id", "data");
+
+-- CreateIndex
+CREATE INDEX "lancamentos_user_id_despesa_id_data_idx" ON "lancamentos"("user_id", "despesa_id", "data");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
@@ -146,13 +163,13 @@ ALTER TABLE "fontes_renda" ADD CONSTRAINT "fontes_renda_userId_fkey" FOREIGN KEY
 ALTER TABLE "fontes_renda" ADD CONSTRAINT "fontes_renda_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_categoria_id_fkey" FOREIGN KEY ("categoria_id") REFERENCES "categorias"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_despesaId_fkey" FOREIGN KEY ("despesaId") REFERENCES "despesas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_despesa_id_fkey" FOREIGN KEY ("despesa_id") REFERENCES "despesas"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_fonteRendaId_fkey" FOREIGN KEY ("fonteRendaId") REFERENCES "fontes_renda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "lancamentos" ADD CONSTRAINT "lancamentos_fonte_renda_id_fkey" FOREIGN KEY ("fonte_renda_id") REFERENCES "fontes_renda"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
