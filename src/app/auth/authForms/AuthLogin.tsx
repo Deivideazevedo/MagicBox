@@ -113,10 +113,6 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     }
   };
 
-  // Se já houver sessão, não renderiza o formulário (evita flash)
-  if (session) {
-    return null;
-  }
 
   return (
     <>

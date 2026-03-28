@@ -137,8 +137,6 @@ const AuthErrorPage = () => {
     setDetails(errorDetails[errorCode ?? 'default']);
     setVisible(true); // Ativa a animação de Fade
 
-    // Limpa a URL para que o erro não persista no refresh
-    router.replace('/auth/error', { scroll: false });
     
   }, [searchParams, router]);
 

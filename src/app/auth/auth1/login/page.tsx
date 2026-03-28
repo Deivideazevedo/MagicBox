@@ -1,17 +1,17 @@
 "use client";
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 import Fade from '@mui/material/Fade';
 import Slide from '@mui/material/Slide';
-import { useTheme } from '@mui/material/styles';
 import PageContainer from '@/app/components/container/PageContainer';
-import Logo from '@/app/(Private)/layout/shared/logo/Logo';
 import AuthLogin from '../../authForms/AuthLogin';
 import { ThemedHeroSection, useCustomTheme } from '@/components/shared/ThemedComponents';
 import { 
@@ -19,7 +19,6 @@ import {
   IconChartPie,
   IconShieldCheck,
   IconTrendingUp,
-  IconStar,
 } from '@tabler/icons-react';
 
 // Desabilita SSR para esta página (necessário devido ao Redux e MUI theme)
@@ -27,6 +26,7 @@ export const dynamic = 'force-dynamic';
 
 export default function Login() {
   const { theme, isDarkMode } = useCustomTheme();
+  const { status } = useSession();
 
   const benefits = [
     {
@@ -45,6 +45,35 @@ export default function Login() {
       description: "Seus dados protegidos com criptografia"
     }
   ];
+
+  if (status === 'loading') {
+    return (
+      <PageContainer title="Verificando sessão..." description="Aguarde enquanto verificamos sua autenticação.">
+        <ThemedHeroSection
+          sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            px: 3,
+          }}
+        >
+          <Fade in timeout={1500}>
+            <Box>
+              <CircularProgress size={42} sx={{ color: 'common.white', mb: 2 }} />
+              <Typography variant="h4" fontWeight={700} color="common.white" gutterBottom>
+                Verificando sua sessão...
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'common.white', opacity: 0.9 }}>
+                Estamos preparando seu acesso com segurança.
+              </Typography>
+            </Box>
+          </Fade>
+        </ThemedHeroSection>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer title="Login - MagicBox" description="Acesse sua conta MagicBox">
