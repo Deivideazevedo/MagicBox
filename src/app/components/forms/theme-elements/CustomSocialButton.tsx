@@ -1,14 +1,16 @@
-import React from 'react';
-import { styled }  from "@mui/system";
-import { Button } from '@mui/material';
+import React from "react";
+import { alpha, bgcolor, borderColor, styled } from "@mui/system";
+import { Button } from "@mui/material";
 
 const CustomSocialButton = styled((props: any) => (
-  <Button variant="outlined" size="large" color="inherit" {...props} />
+  <Button variant="outlined" color="inherit" {...props} />
 ))(({ theme }) => ({
-  border: `1px solid ${theme.palette.divider}`,
+  border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
 
-  '&:hover': {
+  "&:hover": {
+    backgroundColor: alpha(theme.palette.primary.light, 0.2),
     color: theme.palette.primary.main,
+    borderColor: theme.palette.primary.main,
   },
 }));
 

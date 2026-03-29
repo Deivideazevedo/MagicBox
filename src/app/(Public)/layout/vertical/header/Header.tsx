@@ -27,6 +27,7 @@ import Profile from "./Profile";
 import { useSelector, useDispatch } from "@/store/hooks";
 import { AppState } from "@/store/store";
 import { setDarkMode } from "@/store/customizer/CustomizerSlice";
+import Logo from "../../shared/logo/Logo";
 
 // Links de navegação para a área pública
 const publicNavLinks = [
@@ -41,8 +42,9 @@ const PublicHeader = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const customizer = useSelector((state: AppState) => state.customizer);
-  const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up("lg"));
-  const lgDown = useMediaQuery((theme: any) => theme.breakpoints.down("lg"));
+  const lgUp = useMediaQuery(theme.breakpoints.up("lg"));
+  const lgDown = useMediaQuery(theme.breakpoints.down("lg"));
+  const mdUp = useMediaQuery(theme.breakpoints.up("md"));
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, status } = useSession();
@@ -67,21 +69,7 @@ const PublicHeader = () => {
           {/* Logo */}
           <Box sx={{ flexShrink: 0, mr: 2 }}>
             {/* Logo */}
-            <Typography
-              variant="h4"
-              component={Link}
-              href="/"
-              sx={{
-                textDecoration: "none",
-                color: theme.palette.primary.main,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              MagicBox
-            </Typography>
+            <Logo />
           </Box>
 
           <Box flexGrow={1} />
@@ -107,53 +95,55 @@ const PublicHeader = () => {
 
           {/* Ações da Direita (Busca e Autenticação) */}
           <Stack spacing={1} direction="row" alignItems="center">
-            <PublicSearch />
+            {/* <PublicSearch /> */}
 
             {/* Toggle de Tema */}
-          <IconButton
-            size="large"
-            color="inherit"
-            sx={{
-              "&:hover": {
-                backgroundColor: "primary.light",
-              },
-            }}
-            onClick={() =>
-              dispatch(
-                setDarkMode(
-                  customizer.activeMode === "light" ? "dark" : "light"
+            <IconButton
+              size="large"
+              color="inherit"
+              sx={{
+                "&:hover": {
+                  backgroundColor: "primary.light",
+                },
+              }}
+              onClick={() =>
+                dispatch(
+                  setDarkMode(
+                    customizer.activeMode === "light" ? "dark" : "light",
+                  ),
                 )
-              )
-            }
-          >
-            {customizer.activeMode === "light" ? (
-              <IconMoon size="20" stroke="1.5" />
-            ) : (
-              <IconSun size="20" stroke="1.5" />
-            )}
-          </IconButton>
+              }
+            >
+              {customizer.activeMode === "light" ? (
+                <IconMoon size="20" stroke="1.5" />
+              ) : (
+                <IconSun size="20" stroke="1.5" />
+              )}
+            </IconButton>
 
             {status === "authenticated" ? (
               <Profile />
             ) : (
-              <>
-                <Button
-                  variant="text"
-                  color="primary"
-                  component={Link}
-                  href="/auth/auth1/login"
-                >
-                  Login
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  href="/auth/register"
-                >
-                  Cadastre-se
-                </Button>
-              </>
+              mdUp && (
+                <>
+                  <Button
+                    variant="text"
+                    color="primary"
+                    component={Link}
+                    href="/auth/login"
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    component={Link}
+                    href="/auth/register"
+                  >
+                    Cadastre-se
+                  </Button>
+                </>
+              )
             )}
           </Stack>
 
@@ -194,7 +184,7 @@ const PublicHeader = () => {
               <>
                 <ListItemButton
                   component={Link}
-                  href="/auth/auth1/login"
+                  href="/auth/login"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <ListItemText primary="Login" />

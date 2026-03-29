@@ -50,7 +50,7 @@ interface FormularioProps {
   valorTotal: number;
   handleTipoChange: (
     event: React.MouseEvent<HTMLElement>,
-    newTipo: "pagamento" | "agendamento" | null
+    newTipo: "pagamento" | "agendamento" | null,
   ) => void;
   isCreating: boolean;
   itens: FonteRenda[] | Categoria[];
@@ -100,7 +100,7 @@ export default function Formulario({
           sx={{
             px: 1.5,
             py: 1.5,
-            pb: `${tipo === "agendamento" ? 27 : 7}px !important`,
+            pb: `27px !important`,
           }}
         >
           {/* Header com Switch de Origem */}
@@ -324,7 +324,14 @@ export default function Formulario({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid
+              item
+              xs={12}
+              sx={{
+                pt: tipo === "agendamento" ? 1.5 : "0px !important",
+                transition: "padding-top 0.5s ease",
+              }}
+            >
               {/* Parcelamento (apenas para agendamentos) */}
               <Collapse in={tipo === "agendamento"} timeout={400}>
                 <CustomToggle
@@ -375,17 +382,38 @@ export default function Formulario({
                 </Collapse>
               </Collapse>
             </Grid>
+
+            <Grid item xs={12}>
+              <LoadingButton
+                variant="contained"
+                color="primary"
+                startIcon={<IconDeviceFloppy size={18} />}
+                loading={isCreating}
+                type="submit"
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:focus-visible": {
+                    boxShadow: "none",
+                  },
+                }}
+              >
+                Salvar
+              </LoadingButton>
+            </Grid>
           </Grid>
         </CardContent>
       </Card>
 
       {/* Floating Action Buttons */}
-      <Box
+      {/* <Box
         sx={{
           position: "sticky",
           zIndex: 10,
           bottom: 16,
-          mt: 3,
+          mt: 2,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -439,7 +467,7 @@ export default function Formulario({
             </LoadingButton>
           </Stack>
         </Paper>
-      </Box>
+      </Box> */}
     </Box>
   );
 }

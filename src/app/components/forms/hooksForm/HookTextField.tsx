@@ -17,7 +17,7 @@ export function HookTextField<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
-  shrinkLabel,
+  shrinkLabel = true,
   ...props
 }: FormTextFieldProps<TFieldValues>) {
   const {

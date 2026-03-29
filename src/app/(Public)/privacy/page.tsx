@@ -122,7 +122,7 @@ export default function PrivacyPage() {
   };
 
   return (
-    <Box sx={{ bgcolor: "background.default" }}>
+    <Box sx={{ bgcolor: "background.default", px:4, py: 2, mt: 4, borderRadius: 3 }}>
       <ThemedHeroSection
         sx={{
           py: 6,
@@ -254,153 +254,173 @@ export default function PrivacyPage() {
           })}
         </Grid>
 
- {/* SEÇÃO DE TABS */}
-<Grid container spacing={4}>
-  <Grid item xs={12} md={3.5}>
-    <Box sx={{ position: { md: "sticky" }, top: 100 }}>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1 }}>
-        Navegação
-      </Typography>
-      <Tabs
-        orientation="vertical"
-        value={activeTab}
-        onChange={handleChange}
-        sx={{
-          borderLeft: `2px solid ${theme.palette.divider}`,
-          "& .MuiTabs-indicator": { 
-            left: 0, 
-            right: "auto", 
-            width: 4,
-            borderRadius: '0 4px 4px 0' 
-          },
-          "& .MuiTab-root": {
-            display: 'flex',
-            alignItems: "center",
-            justifyContent: "flex-start",
-            minHeight: "48px", // Mais "justinho"
-            textAlign: "left",
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            py: 1.5,
-            px: 2,
-            my: 0.8, // Espaçamento entre os itens para ver o arredondamento
-            // mx: 1,
-            color: "text.secondary",
-            borderRadius: '0 12px 12px 0', // Arredonda os cantos do lado direito
-            transition: "all 0.2s ease",
-            "&.Mui-selected": {
-              color: "primary.main",
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
-            },
-            "&:hover": {
-                bgcolor: alpha(theme.palette.primary.main, 0.04),
-            },
-            "& svg": {
-                marginRight: '12px !important' // Ícone colado ao texto à esquerda
-            }
-          },
-        }}
-      >
-        {secoes.map((secao) => (
-          <Tab
-            key={secao.id}
-            label={secao.titulo}
-            icon={secao.icon}
-            iconPosition="start"
-          />
-        ))}
-      </Tabs>
-    </Box>
-  </Grid>
+        {/* SEÇÃO DE TABS */}
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={3.5}>
+            <Box sx={{ position: { md: "sticky" }, top: 100 }}>
+              <Typography variant="h5" fontWeight={700} sx={{ mb: 3, px: 1 }}>
+                Navegação
+              </Typography>
+              <Tabs
+                orientation="vertical"
+                value={activeTab}
+                onChange={handleChange}
+                sx={{
+                  borderLeft: `2px solid ${theme.palette.divider}`,
+                  "& .MuiTabs-indicator": {
+                    left: 0,
+                    right: "auto",
+                    width: 4,
+                    borderRadius: "0 4px 4px 0",
+                  },
+                  "& .MuiTab-root": {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    minHeight: "48px", // Mais "justinho"
+                    textAlign: "left",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    fontSize: "0.95rem",
+                    py: 1.5,
+                    px: 2,
+                    my: 0.8, // Espaçamento entre os itens para ver o arredondamento
+                    // mx: 1,
+                    color: "text.secondary",
+                    borderRadius: "0 12px 12px 0", // Arredonda os cantos do lado direito
+                    transition: "all 0.2s ease",
+                    "&.Mui-selected": {
+                      color: "primary.main",
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    },
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                    },
+                    "& svg": {
+                      marginRight: "12px !important", // Ícone colado ao texto à esquerda
+                    },
+                  },
+                }}
+              >
+                {secoes.map((secao) => (
+                  <Tab
+                    key={secao.id}
+                    label={secao.titulo}
+                    icon={secao.icon}
+                    iconPosition="start"
+                  />
+                ))}
+              </Tabs>
+            </Box>
+          </Grid>
 
-<Grid item xs={12} md={8.5}>
-  {/* Adicionando a 'key={activeTab}' fazemos com que o Paper 
+          <Grid item xs={12} md={8.5}>
+            {/* Adicionando a 'key={activeTab}' fazemos com que o Paper 
     seja "reiniciado" e a animação aconteça no card inteiro 
   */}
-  <Paper
-    key={activeTab} 
-    elevation={1}
-    sx={{
-      p: { xs: 3, md: 5 },
-      borderRadius: 4,
-      border: `1px solid ${theme.palette.divider}`,
-      background: theme.palette.mode === 'dark' 
-          ? alpha(theme.palette.background.paper, 0.8) 
-          : alpha(theme.palette.primary.light, 0.05),
-      minHeight: "450px",
-      // ANIMAÇÃO APLICADA AO PAPER
-      animation: 'slideUpPaper 1s ease',
-      "@keyframes slideUpPaper": {
-        "0%": {
-          opacity: 0,
-          transform: "translateX(-30px)",
-        },
-        "100%": {
-          opacity: 1,
-          transform: "translateX(0)",
-        },
-      },
-    }}
-  >
-    {secoes.map((secao) => (
-      <Box
-        key={secao.id}
-        role="tabpanel"
-        hidden={activeTab !== secao.id}
-        sx={{ display: activeTab === secao.id ? "block" : "none" }}
-      >
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-          <Avatar
-            sx={{
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: "primary.main",
-              width: 48,
-              height: 48
-            }}
-          >
-            {secao.icon}
-          </Avatar>
-          <Typography variant="h4" fontWeight={800}>
-            {secao.titulo}
-          </Typography>
-        </Stack>
+            <Paper
+              key={activeTab}
+              elevation={1}
+              sx={{
+                p: { xs: 3, md: 5 },
+                borderRadius: 4,
+                border: `1px solid ${theme.palette.divider}`,
+                background:
+                  theme.palette.mode === "dark"
+                    ? alpha(theme.palette.background.paper, 0.8)
+                    : alpha(theme.palette.primary.light, 0.05),
+                minHeight: "450px",
+                // ANIMAÇÃO APLICADA AO PAPER
+                animation: "slideUpPaper 1s ease",
+                "@keyframes slideUpPaper": {
+                  "0%": {
+                    opacity: 0,
+                    transform: "translateX(-30px)",
+                  },
+                  "100%": {
+                    opacity: 1,
+                    transform: "translateX(0)",
+                  },
+                },
+              }}
+            >
+              {secoes.map((secao) => (
+                <Box
+                  key={secao.id}
+                  role="tabpanel"
+                  hidden={activeTab !== secao.id}
+                  sx={{ display: activeTab === secao.id ? "block" : "none" }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 3 }}
+                  >
+                    <Avatar
+                      sx={{
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: "primary.main",
+                        width: 48,
+                        height: 48,
+                      }}
+                    >
+                      {secao.icon}
+                    </Avatar>
+                    <Typography variant="h4" fontWeight={800}>
+                      {secao.titulo}
+                    </Typography>
+                  </Stack>
 
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ mb: 4, fontSize: "1.05rem", lineHeight: 1.7 }}
-        >
-          {secao.texto}
-        </Typography>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mb: 4, fontSize: "1.05rem", lineHeight: 1.7 }}
+                  >
+                    {secao.texto}
+                  </Typography>
 
-        <Divider sx={{ mb: 4 }} />
+                  <Divider sx={{ mb: 4 }} />
 
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-          Pontos principais:
-        </Typography>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    sx={{ mb: 2 }}
+                  >
+                    Pontos principais:
+                  </Typography>
 
-        <List disablePadding>
-          {secao.bullets.map((bullet, idx) => (
-            <ListItem key={idx} disableGutters sx={{ alignItems: "flex-start", mb: 1 }}>
-              <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
-                <IconCircleCheck size={22} color={theme.palette.success.main} />
-              </ListItemIcon>
-              <ListItemText
-                primary={bullet}
-                primaryTypographyProps={{ variant: "body2", fontWeight: 500 }}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-    ))}
-  </Paper>
+                  <List disablePadding>
+                    {secao.bullets.map((bullet, idx) => (
+                      <ListItem
+                        key={idx}
+                        disableGutters
+                        sx={{ alignItems: "flex-start", mb: 1 }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
+                          <IconCircleCheck
+                            size={22}
+                            color={theme.palette.success.main}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={bullet}
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            fontWeight: 500,
+                          }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              ))}
+            </Paper>
 
-  {/* Footer de Contato (Fora do Paper para não animar junto, se preferir) */}
-  {/* ... código do footer ... */}
-</Grid>
-</Grid>
+            {/* Footer de Contato (Fora do Paper para não animar junto, se preferir) */}
+            {/* ... código do footer ... */}
+          </Grid>
+        </Grid>
 
         <Box sx={{ mt: 6, textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">

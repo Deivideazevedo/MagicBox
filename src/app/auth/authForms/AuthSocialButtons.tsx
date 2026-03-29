@@ -1,18 +1,17 @@
 "use client";
-import CustomSocialButton from "@/app/components/forms/theme-elements/CustomSocialButton";
-import { Stack } from "@mui/system";
+import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
-import Box from "@mui/material/Box";
-import { signInType } from "@/app/(Private)/types/auth/auth";
+import Grid from "@mui/material/Grid";
 import { signIn } from "next-auth/react";
+import CustomSocialButton from "@/app/components/forms/theme-elements/CustomSocialButton";
 
-const AuthSocialButtons = ({ title }: signInType) => {
+interface AuthSocialButtonsProps {
+  title?: string;
+}
+
+const AuthSocialButtons = () => {
   const handleGoogleSignIn = async () => {
     await signIn("google");
-  };
-
-  const handleGithubSignIn = async () => {
-    await signIn("github");
   };
 
   const handleMicrosoftSignIn = async () => {
@@ -20,20 +19,19 @@ const AuthSocialButtons = ({ title }: signInType) => {
   };
 
   return (
-    <>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        justifyContent="center"
-        spacing={2}
-        mt={3}
-        sx={{
-          "& .MuiButton-root": {
-            minWidth: { xs: "100%", sm: "auto" },
-            maxWidth: { xs: "100%" },
-          },
-        }}
-      >
-        <CustomSocialButton onClick={handleGoogleSignIn}>
+    <Grid container spacing={1.5} mt={0.5}>
+      <Grid item xs={12} md={6}>
+        <CustomSocialButton
+          onClick={handleGoogleSignIn}
+          variant="outlined"
+          fullWidth
+          // sx={{
+          //   py: 1,
+          //   textTransform: "none",
+          //   justifyContent: "center",
+          //   borderColor: "divider",
+          // }}
+        >
           <Avatar
             src={"/images/svgs/google-icon.svg"}
             alt={"Google"}
@@ -44,11 +42,23 @@ const AuthSocialButtons = ({ title }: signInType) => {
               mr: 1,
             }}
           />
-            {title}{" "}
           Google
         </CustomSocialButton>
+      </Grid>
 
-        <CustomSocialButton onClick={handleMicrosoftSignIn}>
+      <Grid item xs={12} md={6}>
+        <CustomSocialButton
+          onClick={handleMicrosoftSignIn}
+          variant="outlined"
+          fullWidth
+          // sx={{
+          //   py: 1,
+          //   // textTransform: "none",
+          //   justifyContent: "center",
+          //   borderColor: "divider",
+          //   color: "text.primary",
+          // }}
+        >
           <Avatar
             src={"/images/svgs/microsoft-icon.svg"}
             alt={"Microsoft"}
@@ -59,10 +69,10 @@ const AuthSocialButtons = ({ title }: signInType) => {
               mr: 1,
             }}
           />
-          {title} Microsoft
+          Microsoft
         </CustomSocialButton>
-      </Stack>
-    </>
+      </Grid>
+    </Grid>
   );
 };
 

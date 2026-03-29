@@ -4,7 +4,7 @@ import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordFiel
 import CustomCheckbox from "@/app/components/forms/theme-elements/Checkbox";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Alert } from "@mui/material";
+import { Alert, Collapse } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -20,7 +20,7 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 import Swal from "sweetalert2";
-import LoadingButton from '@mui/lab/LoadingButton'; 
+import LoadingButton from "@mui/lab/LoadingButton";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
 const validationSchema = yup.object({
@@ -39,7 +39,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   useEffect(() => {
     const errorType = searchParams.get("callbackError");
     const successMessage = searchParams.get("message");
-    
+
     if (errorType) {
       if (errorType === "AccessDenied") {
         Swal.fire({
@@ -61,9 +61,6 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
           timer: 5000,
         });
       }
-
-      // Limpa os parâmetros da URL após exibir o toast
-      router.replace("/auth/auth1/login", { scroll: false });
     }
 
     if (successMessage) {
@@ -76,9 +73,6 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
         showConfirmButton: false,
         timer: 6000,
       });
-
-      // Limpa a mensagem da URL
-      router.replace("/auth/auth1/login", { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -96,8 +90,6 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
   // --- 3. Lógica de login com credenciais ---
   const onSubmit = async (data: { username: string; password: string }) => {
-    const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-    
     const result = await signIn("credentials", {
       redirect: false, // ✅ IMPORTANTE: Impede redirecionamento automático do NextAuth
       username: data.username,
@@ -107,16 +99,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     if (result?.error) {
       // Mostra erro no formulário
       setError(result.error);
-    } else if (result?.ok) {
-      // Sucesso: redireciona para callbackUrl
-      router.replace(callbackUrl);
     }
   };
-
-  // Se já houver sessão, não renderiza o formulário (evita flash)
-  if (session) {
-    return null;
-  }
 
   return (
     <>
@@ -128,7 +112,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
       {subtext}
 
-      <AuthSocialButtons title="Entrar com" />
+      <AuthSocialButtons />
 
       <Box mt={3}>
         <Divider>
@@ -145,21 +129,24 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
         </Divider>
       </Box>
 
-      {error ? (
-        <Box mt={3}>
-          <Alert severity="error" sx={{ alignItems: "center" }}>
+      <Collapse in={!!error} sx={{ mt: 2 }}>
+        <Box mb={1.5}>
+          <Alert
+            severity="error"
+            sx={{
+              alignItems: "center",
+            }}
+          >
             {error}
           </Alert>
         </Box>
-      ) : (
-        ""
-      )}
+      </Collapse>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack spacing={2}>
           <Box>
-            <CustomFormLabel htmlFor="username" sx={{ textAlign: 'left', mb: 0.5 }}>
-              Username
+            <CustomFormLabel htmlFor="username" sx={{ textAlign: "left" }}>
+              Usuário
             </CustomFormLabel>
             <HookTextField
               name="username"
@@ -170,8 +157,8 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             />
           </Box>
           <Box>
-            <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.5 }}>
-              Password
+            <CustomFormLabel htmlFor="password" sx={{ textAlign: "left" }}>
+              Senha
             </CustomFormLabel>
             <HookPasswordField
               name="password"
@@ -180,39 +167,28 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
               fullWidth
               size="medium"
             />
-          </Box>
-          <Stack
-            justifyContent="space-between"
-            direction="row"
-            alignItems="center"
-            sx={{ mt: 1, mb: 2 }}
-          >
-            <FormGroup>
-              <FormControlLabel
-                control={<CustomCheckbox defaultChecked />}
-                label="Remember this Device"
-                sx={{ 
-                  '& .MuiFormControlLabel-label': { 
-                    fontSize: '0.875rem' 
-                  }
-                }}
-              />
-            </FormGroup>
-            <Typography
-              component={Link}
-              href="/"
-              fontWeight="500"
-              sx={{
-                textDecoration: "none",
-                color: "primary.main",
-                fontSize: '0.875rem',
-              }}
+            <Box
+              display={"flex"}
+              justifyContent="right"
+              alignItems="center"
+              mt={1}
             >
-              Forgot Password?
-            </Typography>
-          </Stack>
+              {/* <Typography
+                component={Link}
+                href="/"
+                fontWeight="500"
+                sx={{
+                  textDecoration: "none",
+                  color: "primary.main",
+                  fontSize: "0.875rem",
+                }}
+              >
+                Esqueceu a senha?
+              </Typography> */}
+            </Box>
+          </Box>
         </Stack>
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 2 }}>
           <LoadingButton
             color="primary"
             variant="contained"
@@ -220,15 +196,15 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             fullWidth
             type="submit"
             loading={isSubmitting}
-            sx={{ 
+            sx={{
               py: 1.5,
               borderRadius: 2,
-              textTransform: 'none',
-              fontSize: '1rem',
+              textTransform: "none",
+              fontSize: "1rem",
               fontWeight: 600,
             }}
           >
-            Sign In
+            Entrar
           </LoadingButton>
         </Box>
       </form>

@@ -13,6 +13,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -44,6 +46,8 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const theme = useTheme();
+  const isMd = useMediaQuery(theme.breakpoints.only("md"));
   const [registerUser, { isLoading }] = useRegisterUserMutation();
 
   // --- Tratamento de erros OAuth (mesmo padrão do AuthLogin) ---
@@ -73,7 +77,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
       }
 
       // Limpa os parâmetros da URL após exibir o toast
-      router.replace("/auth/auth1/register", { scroll: false });
+      router.replace("/auth/register", { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -83,7 +87,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(validationSchema),
-    mode: "onBlur",
+    // mode: "onBlur",
   });
 
   const onSubmit = async (data: any) => {
@@ -121,7 +125,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
         router.push(callbackUrl);
       } else {
         // Se falhar o login automático, redireciona para página de login
-        router.push("/auth/auth1/login?message=Conta criada! Faça login para continuar.");
+        router.push("/auth/login?message=Conta criada! Faça login para continuar.");
       }
       
     } catch (err: any) {
@@ -142,22 +146,22 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
 
       {subtext}
 
-      <AuthSocialButtons title="Entrar com" />
+       <AuthSocialButtons />
 
-      <Box mt={3}>
-        <Divider>
-          <Typography
-            component="span"
-            color="textSecondary"
-            variant="h6"
-            fontWeight="400"
-            position="relative"
-            px={2}
-          >
-            ou cadastre-se com
-          </Typography>
-        </Divider>
-      </Box>
+        <Box mt={2}>
+          <Divider>
+            <Typography
+              component="span"
+              color="textSecondary"
+              variant="body2"
+              fontWeight="400"
+              position="relative"
+              px={2}
+            >
+              ou cadastre-se com
+            </Typography>
+          </Divider>
+        </Box>
 
       {error && (
         <Box mt={2}>
@@ -166,9 +170,9 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
       )}
 
       <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={2} mt={3}>
+        <Stack spacing={1.25} mt={2}>
           <Box>
-            <CustomFormLabel htmlFor="name" sx={{ textAlign: 'left', mb: 0.5 }}>
+            <CustomFormLabel htmlFor="name" sx={{ textAlign: 'left', mb: 0.25 }}>
               Nome Completo
             </CustomFormLabel>
             <HookTextField
@@ -185,7 +189,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           </Box>
 
           <Box>
-            <CustomFormLabel htmlFor="username" sx={{ textAlign: 'left', mb: 0.5 }}>
+            <CustomFormLabel htmlFor="username" sx={{ textAlign: 'left', mb: 0.25 }}>
               Username
             </CustomFormLabel>
             <HookTextField
@@ -202,7 +206,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           </Box>
 
           <Box>
-            <CustomFormLabel htmlFor="email" sx={{ textAlign: 'left', mb: 0.5 }}>
+            <CustomFormLabel htmlFor="email" sx={{ textAlign: 'left', mb: 0.25 }}>
               Email
             </CustomFormLabel>
             <HookTextField
@@ -220,7 +224,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           </Box>
 
           <Box>
-            <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.5 }}>
+            <CustomFormLabel htmlFor="password" sx={{ textAlign: 'left', mb: 0.25 }}>
               Senha
             </CustomFormLabel>
             <HookPasswordField
@@ -237,7 +241,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           </Box>
 
           <Box>
-            <CustomFormLabel htmlFor="confirmPassword" sx={{ textAlign: 'left', mb: 0.5 }}>
+            <CustomFormLabel htmlFor="confirmPassword" sx={{ textAlign: 'left', mb: 0.25 }}>
               Confirmar Senha
             </CustomFormLabel>
             <HookPasswordField
@@ -254,12 +258,12 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           </Box>
         </Stack>
 
-        <Box mt={2}>
+        <Box mt={1.5}>
           <FormGroup>
             <FormControlLabel
               control={<CustomCheckbox defaultChecked />}
               label={
-                <Typography variant="body2" fontWeight={400} sx={{ fontSize: '0.875rem' }}>
+                <Typography variant="body2" fontWeight={400} sx={{ fontSize: '0.8rem', lineHeight: 1.3 }}>
                   Eu aceito os{" "}
                   <Link href="/termos" style={{ textDecoration: "none", color: "inherit" }}>
                     <Typography component="span" color="primary.main" fontWeight={500}>
@@ -286,11 +290,11 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
           fullWidth
           type="submit"
           sx={{
-            mt: 3,
-            py: 1.5,
+            mt: 2,
+            py: 1.1,
             borderRadius: 2,
             fontWeight: 600,
-            fontSize: "1rem",
+            fontSize: "0.95rem",
             textTransform: 'none',
           }}
         >
