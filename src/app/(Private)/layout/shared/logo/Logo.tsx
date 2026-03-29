@@ -14,6 +14,7 @@ const Logo = () => {
   const LinkStyled = styled(Link)(() => ({
     height: customizer.TopbarHeight,
     width: isExpandedLogo ? "220px" : "44px",
+    transform: "translateY(-4px)",
     overflow: "hidden",
     display: "flex",
     alignItems: "flex-end",

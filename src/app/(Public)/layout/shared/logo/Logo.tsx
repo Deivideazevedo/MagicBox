@@ -31,11 +31,11 @@ const Logo = () => {
     "& .logo-icon": {
       display: "inline-flex",
       transform: "translateY(0)",
-      transition: "transform 0.2s ease",
+      transition: "transform 0.3s ease",
       willChange: "transform",
     },
     "&:hover .logo-icon": {
-      animation: `${levitate} 1.35s ease-in-out infinite`,
+      animation: `${levitate} 1s ease-in-out infinite`,
     },
   }));
 
