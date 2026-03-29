@@ -76,19 +76,16 @@ export default function Login() {
 
   return (
     <PageContainer
-      title="Login - MagicBox"
+      title="Login"
       description="Acesse sua conta MagicBox"
     >
       <ThemedHeroSection
         sx={{
-          minHeight: "100vh",
-          position: "relative",
-          overflow: "hidden",
+          height: "100vh",
           borderRadius: 0,
         }}
       >
-        <Container maxWidth="xl" sx={{ position: "relative", zIndex: 1 }}>
-          <Grid container sx={{ minHeight: "100vh" }}>
+          <Grid container sx={{ minHeight: "calc(100vh - 70px)"}}>
             {/* Left Side - Branding & Benefits */}
             {isMdUp && (
               <Grid
@@ -303,7 +300,7 @@ export default function Login() {
                             },
                           }}
                         >
-                          Ainda não tem uma conta? 
+                          Ainda não tem uma conta?
                         </Typography>
                       </Stack>
                     }
@@ -312,7 +309,6 @@ export default function Login() {
               </Fade>
             </Grid>
           </Grid>
-        </Container>
       </ThemedHeroSection>
     </PageContainer>
   );

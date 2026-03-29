@@ -10,7 +10,7 @@ const levitate = keyframes`
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-6px);
+    transform: translateY(-4px);
   }
   100% {
     transform: translateY(0px);
@@ -25,6 +25,7 @@ const Logo = () => {
     display: "flex",
     alignItems: "flex-end",
     gap: "4px",
+    transform: "translateY(-4px)",
     whiteSpace: "nowrap",
     textDecoration: "none",
     "& .logo-icon": {
@@ -56,7 +57,7 @@ const Logo = () => {
         sx={{
           fontWeight: 700,
           fontSize: "1.2rem",
-          lineHeight: 1.2,
+          lineHeight: 1.25,
           display: "block",
           background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
           WebkitBackgroundClip: "text",
