@@ -79,6 +79,8 @@ export const useCategorias = ({
         nome: payload.nome,
       };
 
+      console.log('payload', payload);
+
       try {
         if (payload.id) {
           await updateCategoria({
@@ -107,7 +109,8 @@ export const useCategorias = ({
         id: categoria.id,
         nome: categoria.nome,
       };
-      setRow({ ...categoria, ...data });
+      console.log('categoria3', categoria);
+      setRow(categoria);
       reset(data);
 
       // Foca no campo nome

@@ -1,12 +1,12 @@
 import { PaginatedResult } from "@/core/types/global";
 import { api } from "../api";
-import { Lancamento, LancamentoPayload } from "@/core/lancamentos/types";
+import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
 import { FindAllFilters } from "@/dtos";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 
 export const lancamentosApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getLancamentos: builder.query<PaginatedResult<Lancamento>, FindAllFilters>({
+    getLancamentos: builder.query<PaginatedResult<LancamentoResposta>, FindAllFilters>({
       query: (params) => ({
         url: "/lancamentos",
         params: fnCleanObject({ params }),
@@ -14,7 +14,7 @@ export const lancamentosApi = api.injectEndpoints({
       providesTags: ["Lancamentos", "Resumo"],
     }),
 
-    createLancamento: builder.mutation<Lancamento, LancamentoPayload>({
+    createLancamento: builder.mutation<LancamentoResposta, LancamentoPayload>({
       query: (newLancamento) => ({
         url: "/lancamentos",
         method: "POST",
@@ -24,7 +24,7 @@ export const lancamentosApi = api.injectEndpoints({
     }),
 
     updateLancamento: builder.mutation<
-      Lancamento,
+      LancamentoResposta,
       { id: string; data: LancamentoPayload }
     >({
       query: ({ id, data }) => ({

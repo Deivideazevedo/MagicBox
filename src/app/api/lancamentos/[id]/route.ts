@@ -12,9 +12,9 @@ export const DELETE = errorHandler(remover);
 
 async function buscarPorId(
   requisicao: NextRequest,
-  { parametros }: { parametros: { id: string } }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
-  const { id } = parametros;
+  const { id } = params;
   const lancamento = await servico.buscarPorId(id);
   
   if (!lancamento) {
@@ -26,9 +26,9 @@ async function buscarPorId(
 
 async function atualizar(
   requisicao: NextRequest,
-  { parametros }: { parametros: { id: string } }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
-  const { id } = parametros;
+  const { id } = params;
   const corpo = await requisicao.json();
 
   // Validação com Zod
@@ -43,9 +43,9 @@ async function atualizar(
 
 async function remover(
   requisicao: NextRequest,
-  { parametros }: { parametros: { id: string } }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
-  const { id } = parametros;
+  const { id } = params;
   const success = await servico.remover(id);
   
   if (!success) {

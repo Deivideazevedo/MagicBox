@@ -190,9 +190,6 @@ export default function LancamentosPage() {
       <ModalEdicao
         open={Boolean(modais.editar)}
         lancamento={modais.editar}
-        categorias={categorias}
-        despesas={despesas}
-        fontesRenda={fontesRenda}
         onClose={modalHandlers.editar.fechar}
       />
 

@@ -20,10 +20,10 @@ export const DELETE = errorHandler(remover);
 
 async function remover(
   requisicao: NextRequest,
-  { parametros }: { parametros: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const usuario = await getAuthUser();
-  const { id } = parametros;
+  await getAuthUser();
+  const { id } = params;
 
   await servico.remover(id);
   return NextResponse.json({ success: true });
@@ -31,9 +31,9 @@ async function remover(
 
 async function atualizar(
   requisicao: NextRequest,
-  { parametros }: { parametros: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id: fonteRendaId } = parametros;
+  const { id: fonteRendaId } = params;
   const corpo: FonteRendaPayload = await requisicao.json();
 
   const fonteRendaAtualizada = await servico.atualizar(fonteRendaId, corpo);

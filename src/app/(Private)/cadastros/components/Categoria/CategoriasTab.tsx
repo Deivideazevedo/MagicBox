@@ -41,24 +41,9 @@ interface CategoriasTabProps {
 export default function CategoriasTab({ categorias }: CategoriasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
 
-  const { handleEdit, formProps, listProps, deleteProps } =
+  const { formProps, listProps, deleteProps } =
     useCategorias({ categorias });
 
-  // const scrollToForm = () => {
-  //   if (formRef.current) {
-  //     const elementPosition = formRef.current.getBoundingClientRect().top;
-  //     const offsetPosition = elementPosition + window.pageYOffset - 200;
-
-  //     window.scrollTo({
-  //       top: offsetPosition,
-  //       behavior: "smooth",
-  //     });
-  //   }
-  // };
-
-  // const handleEditWithScroll = (categoria: Categoria) => {
-  //   handleEdit(categoria, scrollToForm);
-  // };
 
   return (
     <Box sx={{ px: 3, pb: 3 }}>

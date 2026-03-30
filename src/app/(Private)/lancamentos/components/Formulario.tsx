@@ -35,7 +35,12 @@ import {
   IconSwitchHorizontal,
   IconWallet,
 } from "@tabler/icons-react";
-import { Control, UseFormReset, UseFormSetFocus } from "react-hook-form";
+import {
+  Control,
+  UseFormReset,
+  UseFormSetFocus,
+  UseFormSetValue,
+} from "react-hook-form";
 import { Categoria } from "@/core/categorias/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
 import { LancamentoFormData } from "../hooks/useLancamentoForm";
@@ -57,11 +62,13 @@ interface FormularioProps {
   reset: UseFormReset<LancamentoFormData>;
   defaultValues: LancamentoFormData;
   setFocus: UseFormSetFocus<LancamentoFormData>;
+  setValue: UseFormSetValue<LancamentoFormData>;
   categoriaId: string | number;
   isDespesa: boolean;
   corTema: string;
   toggleOrigem: () => void;
   categorias: Categoria[];
+  id?: number;
 }
 
 export default function Formulario({
@@ -78,11 +85,13 @@ export default function Formulario({
   reset,
   defaultValues,
   setFocus,
+  setValue,
   categoriaId,
   isDespesa,
   corTema,
   toggleOrigem,
   categorias,
+  id,
 }: FormularioProps) {
   const theme = useTheme();
 
@@ -251,7 +260,12 @@ export default function Formulario({
                 displayEmpty
                 getValue={(obj: Categoria) => obj.id}
                 getLabel={(obj: Categoria) => obj.nome}
-                onChange={() => setFocus("itemId")}
+                onChange={() => {
+                  if (id) {
+                    setValue("itemId", 0);
+                    setFocus("itemId");
+                  }
+                }}
               />
             </Grid>
 

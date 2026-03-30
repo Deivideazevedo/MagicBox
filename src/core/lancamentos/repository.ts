@@ -242,6 +242,20 @@ export const lancamentoRepository = {
     }
   },
 
+  async removerEmMassa(
+    ids: number[],
+    userId: number,
+  ): Promise<{ count: number }> {
+    const resultado = await prisma.lancamento.deleteMany({
+      where: {
+        id: { in: ids },
+        user_id: userId,
+      },
+    });
+
+    return { count: resultado.count };
+  },
+
   async atualizar(id: string | number, data: Partial<LancamentoPayload>) {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");

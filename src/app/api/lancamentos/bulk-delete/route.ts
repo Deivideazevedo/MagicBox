@@ -1,57 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { errorHandler } from "@/lib/error-handler";
+import { getAuthUser } from "@/lib/server-auth";
+import { lancamentoService as servico } from "@/core/lancamentos/service";
 
-const DATA_PATH = join(process.cwd(), "src/data/lancamentos.json");
-
-function readLancamentos() {
-  try {
-    const data = readFileSync(DATA_PATH, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-function writeLancamentos(lancamentos: any[]) {
-  writeFileSync(DATA_PATH, JSON.stringify(lancamentos, null, 2));
-}
+export const DELETE = errorHandler(removerEmMassa);
 
 /**
  * DELETE /api/lancamentos/bulk-delete
  * Remove múltiplos lançamentos de uma vez
- * Body: { ids: string[] }
+ * Body: { ids: (string | number)[] }
  */
-export async function DELETE(requisicao: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+async function removerEmMassa(requisicao: NextRequest): Promise<NextResponse> {
+  const { id: authUserId } = await getAuthUser();
+  const corpo = await requisicao.json();
+  const ids = corpo?.ids as Array<string | number>;
+  const resultado = await servico.removerEmMassa(ids, authUserId);
 
-    const corpo = await requisicao.json();
-    const { ids } = corpo;
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: "IDs são obrigatórios" }, { status: 400 });
-    }
-
-    const lancamentos = readLancamentos();
-    
-    // Filtrar apenas lançamentos do usuário que não estão na lista de IDs para deletar
-    const lancamentosFiltrados = lancamentos.filter((lancamento: any) => {
-      // Manter apenas se NÃO for do usuário atual OU se não estiver na lista de exclusão
-      return lancamento.userId !== session.user.id || !ids.includes(lancamento.id);
-    });
-
-    writeLancamentos(lancamentosFiltrados);
-
-    return NextResponse.json({ success: true, deletedCount: lancamentos.length - lancamentosFiltrados.length });
-  } catch (error) {
-    console.error("Erro ao excluir lançamentos em massa:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-  }
+  return NextResponse.json({
+    success: true,
+    deletedCount: resultado.count,
+  });
 }
