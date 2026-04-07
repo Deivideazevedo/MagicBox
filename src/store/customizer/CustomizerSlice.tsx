@@ -14,6 +14,7 @@ interface StateType {
   isHorizontal?: boolean;
   isCardShadow?: boolean;
   borderRadius?: number | any;
+  isCustomizerOpen?: boolean;
 }
 
 const initialState: StateType = {
@@ -30,6 +31,7 @@ const initialState: StateType = {
   isHorizontal: false,
   isCardShadow: true,
   borderRadius: 7,
+  isCustomizerOpen: false,
 };
 
 export const CustomizerSlice = createSlice({
@@ -67,6 +69,13 @@ export const CustomizerSlice = createSlice({
     setBorderRadius: (state: StateType, action) => {
       state.borderRadius = action.payload;
     },
+    toggleCustomizer: (state: StateType, action) => {
+      if (action.payload !== undefined) {
+        state.isCustomizerOpen = action.payload;
+      } else {
+        state.isCustomizerOpen = !state.isCustomizerOpen;
+      }
+    },
   },
 });
 
@@ -81,6 +90,7 @@ export const {
   setBorderRadius,
   toggleHorizontal,
   setCardShadow,
+  toggleCustomizer,
 } = CustomizerSlice.actions;
 
 export default CustomizerSlice.reducer;

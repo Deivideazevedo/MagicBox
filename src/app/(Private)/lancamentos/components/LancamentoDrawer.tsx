@@ -65,7 +65,7 @@ export default function LancamentoDrawer() {
           sx={{
             position: "fixed",
             right: "25px",
-            bottom: "85px",
+            bottom: "15px",
           }}
           onClick={handleOpenDrawer}
         >

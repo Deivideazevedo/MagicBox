@@ -28,6 +28,8 @@ export const createDespesaSchema = z
       .min(1, "Nome é obrigatório")
       .max(100, "Nome muito longo")
       .trim(),
+    icone: z.string().optional().nullable(),
+    cor: z.string().optional().nullable(),
     mensalmente: z.boolean().default(false),
     valorEstimado: z.number().nullable(),
     diaVencimento: z.number().int().min(1).max(31).nullable(),
@@ -53,8 +55,10 @@ export const updateDespesaSchema = z
   .object({
     categoriaId: z.number().int().positive(),
     nome: z.string().min(1).max(100).trim(),
+    icone: z.string().optional().nullable(),
+    cor: z.string().optional().nullable(),
     mensalmente: z.boolean(),
-    valorEstimado: z.number().int().nullable().optional(),
+    valorEstimado: z.number().nullable().optional(),
     diaVencimento: z.number().int().min(1).max(31).nullable().optional(),
     status: z.boolean(),
     idUsuario: z.number().int().positive().optional(),

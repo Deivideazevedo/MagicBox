@@ -43,6 +43,8 @@ export const categoriaRepository = {
     return await prisma.categoria.create({
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
         userId: data.userId as number,
       },
     });
@@ -72,6 +74,8 @@ export const categoriaRepository = {
       where: { id: numericId },
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
       },
     });
     return categoria;

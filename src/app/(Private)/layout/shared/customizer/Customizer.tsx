@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import Fab from '@mui/material/Fab';
@@ -21,6 +21,7 @@ import {
   toggleHorizontal,
   setBorderRadius,
   setCardShadow,
+  toggleCustomizer,
 } from "@/store/customizer/CustomizerSlice";
 import { AppState } from "@/store/store";
 import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
@@ -45,7 +46,6 @@ interface colors {
   disp?: string;
 }
 const Customizer: FC = () => {
-  const [showDrawer, setShowDrawer] = useState(false);
   const customizer = useSelector((state: AppState) => state.customizer);
 
   const dispatch = useDispatch();
@@ -98,23 +98,10 @@ const Customizer: FC = () => {
 
   return (
     <div>
-      {/* ------------------------------------------- */}
-      {/* --Floating Button to open customizer ------ */}
-      {/* ------------------------------------------- */}
-      <Tooltip title="Settings">
-        <Fab
-          color="primary"
-          aria-label="settings"
-          sx={{ position: "fixed", right: "25px", bottom: "15px" }}
-          onClick={() => setShowDrawer(true)}
-        >
-          <IconSettings stroke={1.5} />
-        </Fab>
-      </Tooltip>
       <Drawer
         anchor="right"
-        open={showDrawer}
-        onClose={() => setShowDrawer(false)}
+        open={customizer.isCustomizerOpen}
+        onClose={() => dispatch(toggleCustomizer(false))}
         PaperProps={{
           sx: {
             width: SidebarWidth,
@@ -133,7 +120,7 @@ const Customizer: FC = () => {
           >
             <Typography variant="h4">Settings</Typography>
 
-            <IconButton color="inherit" onClick={() => setShowDrawer(false)}>
+            <IconButton color="inherit" onClick={() => dispatch(toggleCustomizer(false))}>
               <IconX size="1rem" />
             </IconButton>
           </Box>

@@ -13,15 +13,11 @@ export const fonteRendaService = {
     return await repositorio.listarPorUsuario(userId);
   },
 
-  async criar(dados: FonteRendaPayload) {
+  async criar(dados: FonteRendaPayload & { userId: number }) {
     if (!dados.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
-    const data = {
-      ...dados,
-      userId: Number(dados.userId)
-    };
-    return await repositorio.criar(data);
+    return await repositorio.criar(dados);
   },
 
   async remover(fonteRendaId: string | number) {
@@ -31,10 +27,10 @@ export const fonteRendaService = {
     return await repositorio.remover(fonteRendaId);
   },
 
-  async atualizar(fonteRendaId: string | number, FonteRenda: FonteRendaPayload) {
+  async atualizar(fonteRendaId: string | number, FonteRenda: Partial<FonteRendaPayload>) {
     const hasFonteRenda = await repositorio.buscarPorId(fonteRendaId);
     if (!hasFonteRenda) throw new NotFoundError("FonteRenda não encontrada");
-    if (!FonteRenda.nome) throw new ValidationError("Nome é obrigatório");
+    if (!FonteRenda.nome && FonteRenda.nome !== undefined) throw new ValidationError("Nome é obrigatório");
 
     return await repositorio.atualizar(fonteRendaId, FonteRenda);
   },

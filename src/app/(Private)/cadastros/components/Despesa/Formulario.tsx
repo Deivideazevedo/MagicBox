@@ -4,8 +4,9 @@ import {
   HookDecimalField,
   HookSelect,
   HookTextField,
+  IconColorMenuPicker,
 } from "@/app/components/forms/hooksForm";
-import { Despesa, DespesaForm, DespesaPayload } from "@/core/despesas/types";
+import { Despesa, DespesaForm } from "@/core/despesas/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -27,15 +28,15 @@ import { IconCurrencyDollar } from "@tabler/icons-react";
 import { IconCategory } from "@tabler/icons-react";
 import { IconCreditCard } from "@tabler/icons-react";
 import { RefObject } from "react";
-import { Control } from "react-hook-form";
+import { Control, useWatch } from "react-hook-form";
 
 interface FormProps {
   isEdditing: boolean;
   isCollapsed: boolean;
   row: Despesa | null;
   handleCancelEdit: () => void;
-  handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>; // Tipo do handler de submit do React Hook Form
-  control: Control<DespesaForm>; // Controle tipado com o schema do formulário
+  handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+  control: Control<DespesaForm>;
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
@@ -56,32 +57,30 @@ export const Formulario = (formProps: FormProps) => {
     formRef,
   } = formProps;
 
+  const watchIcon = useWatch({ control, name: "icone" });
+  const watchColor = useWatch({ control, name: "cor" });
+  const watchNome = useWatch({ control, name: "nome" });
+
   return (
     <Card
       ref={formRef}
-      elevation={0} // Fica mais moderno sem sombra se tiver borda
+      elevation={0}
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        // Use a cor main com baixíssima opacidade para a borda ficar elegante
         borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
-        // Use 4% a 5% de opacidade no fundo. Fica um "rosa bebê" quase imperceptível.
         backgroundColor: (theme) => alpha(theme.palette.error.light, 0.05),
       }}
     >
       <CardContent sx={{ px: 1, py: 1.5 }}>
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Box
-            sx={{
-              borderRadius: 2,
-              p: 1,
-              display: "flex",
-              backgroundColor: "error.main",
-              color: "white",
-            }}
-          >
-            <IconCreditCard size={24} />
-          </Box>
+          <IconColorMenuPicker
+            control={control}
+            iconName="icone"
+            colorName="cor"
+            watchIcon={watchIcon}
+            watchColor={watchColor}
+          />
           <Box>
             <Typography
               variant="subtitle2"
@@ -95,14 +94,13 @@ export const Formulario = (formProps: FormProps) => {
               fontWeight={isEdditing ? 600 : 400}
               color={isEdditing ? "error.main" : "text.secondary"}
             >
-              {isEdditing ? `${row?.nome}` : "Adicione uma nova despesa"}
+              {watchNome || (isEdditing ? row?.nome : "Adicione uma nova despesa")}
             </Typography>
           </Box>
         </Box>
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={2.5}>
-            {/* Categoria */}
             <Grid item xs={12}>
               <HookSelect
                 name="categoriaId"
@@ -127,7 +125,6 @@ export const Formulario = (formProps: FormProps) => {
               />
             </Grid>
 
-            {/* Nome da Despesa */}
             <Grid item xs={12}>
               <HookTextField
                 label="Nome da Despesa"
@@ -147,6 +144,7 @@ export const Formulario = (formProps: FormProps) => {
                 }}
               />
             </Grid>
+
 
             {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
             <Grid item xs={12} sx={{ pt: "0px !important" }}>

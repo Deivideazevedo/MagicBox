@@ -1,3 +1,4 @@
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { FonteRenda } from "@/core/fontesRenda/types";
 import {
   alpha,
@@ -12,14 +13,17 @@ import {
   ListItemSecondaryAction,
   ListItemText,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { IconRepeat } from "@tabler/icons-react";
 import {
   IconEdit,
+  IconSearch,
   IconTrash,
   IconWallet,
 } from "@tabler/icons-react";
+import { useState } from "react";
 
 interface ListProps {
   fontesRenda: FonteRenda[];
@@ -29,6 +33,11 @@ interface ListProps {
 
 export const Listagem = (formProps: ListProps) => {
   const { fontesRenda, handleOpenDialog, handleEdit } = formProps;
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredFontes = fontesRenda.filter((f) =>
+    f.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card
@@ -45,6 +54,7 @@ export const Listagem = (formProps: ListProps) => {
             direction="row"
             justifyContent="space-between"
             alignItems="center"
+            mb={2}
           >
             <Box>
               <Typography variant="h6" fontWeight={600} color="text.primary">
@@ -62,9 +72,19 @@ export const Listagem = (formProps: ListProps) => {
               variant="outlined"
             />
           </Stack>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Pesquisar fonte de renda..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <IconSearch size={20} stroke={1.5} color="gray" style={{ marginRight: 8 }} />,
+            }}
+          />
         </Box>
 
-        {fontesRenda.length === 0 ? (
+        {filteredFontes.length === 0 ? (
           <Box
             sx={{
               textAlign: "center",
@@ -77,15 +97,24 @@ export const Listagem = (formProps: ListProps) => {
               style={{ opacity: 0.3, marginBottom: 16 }}
             />
             <Typography variant="h6" gutterBottom>
-              Nenhuma fonte de renda cadastrada
+              Nenhuma fonte de renda encontrada
             </Typography>
             <Typography variant="body2">
-              Comece adicionando suas primeiras fontes de renda
+              {searchTerm 
+                ? "Tente alterar o termo de busca."
+                : "Comece adicionando suas primeiras fontes de renda"}
             </Typography>
           </Box>
         ) : (
           <List disablePadding>
-            {fontesRenda.map((fonte: FonteRenda, index: number) => {
+            {filteredFontes.map((fonte: FonteRenda, index: number) => {
+              const bg = fonte.cor 
+                ? alpha(fonte.cor, 0.15) 
+                : (fonte.status ? "success.light" : "grey.300");
+              const fg = fonte.cor 
+                ? fonte.cor 
+                : (fonte.status ? "success.main" : "grey.600");
+
               return (
                 <Box key={fonte.id}>
                   <ListItem
@@ -102,22 +131,19 @@ export const Listagem = (formProps: ListProps) => {
                         width: 40,
                         height: 40,
                         borderRadius: 2,
-                        backgroundColor: fonte.status
-                          ? "success.light"
-                          : "grey.300",
+                        backgroundColor: bg,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: fonte.status ? "success.main" : "grey.600",
+                        color: fg,
                         mr: 2,
                       }}
                     >
-                      {fonte.mensalmente ? (
-                        <IconRepeat size={20} />
-                      ) : (
-                        <IconWallet size={20} />
-                      )}
-                      
+                      <DynamicIcon 
+                        name={fonte.icone} 
+                        size={20} 
+                        fallbackIcon={fonte.mensalmente ? "IconRepeat" : "IconWallet"} 
+                      />
                     </Box>
 
                     <ListItemText

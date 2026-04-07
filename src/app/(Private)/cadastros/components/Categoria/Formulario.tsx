@@ -1,4 +1,4 @@
-import { HookTextField } from "@/app/components/forms/hooksForm";
+import { HookTextField, IconColorMenuPicker } from "@/app/components/forms/hooksForm";
 import { Categoria, CategoriaForm } from "@/core/categorias/types";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { IconCategory, IconPlus, IconX } from "@tabler/icons-react";
 import { RefObject } from "react";
-import { Control } from "react-hook-form";
+import { Control, useWatch } from "react-hook-form";
 
 interface FormProps {
   isEditing: boolean;
@@ -39,6 +39,11 @@ export const Formulario = (formProps: FormProps) => {
     row,
   } = formProps;
 
+  // Monitora os valores de ícone e cor para atualizar o seletor em tempo real
+  const watchIcon = useWatch({ control, name: "icone" });
+  const watchColor = useWatch({ control, name: "cor" });
+  const watchNome = useWatch({ control, name: "nome" });
+
   return (
     <Card
       ref={formRef}
@@ -47,29 +52,25 @@ export const Formulario = (formProps: FormProps) => {
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.4),
+        backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.05),
       }}
     >
       <CardContent sx={{ px: 1, py: 1.5 }}>
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Box
-            sx={{
-              borderRadius: 2,
-              p: 1,
-              display: "flex",
-              backgroundColor: "primary.main",
-              color: "white",
-            }}
-          >
-            <IconCategory size={24} />
-          </Box>
+          <IconColorMenuPicker
+            control={control}
+            iconName="icone"
+            colorName="cor"
+            watchIcon={watchIcon}
+            watchColor={watchColor}
+          />
           <Box>
             <Typography
               variant="subtitle2"
               fontWeight={600}
               color="text.primary"
             >
-              {isEditing ? "Editando Categoria:" : "Nova Categoria"}
+              {isEditing ? `Editando Categoria:` : "Nova Categoria"}
             </Typography>
 
             <Typography
@@ -77,7 +78,7 @@ export const Formulario = (formProps: FormProps) => {
               fontWeight={isEditing ? 600 : 400}
               color={isEditing ? "primary.main" : "text.secondary"}
             >
-              {isEditing ? `${row?.nome}` : "Cadastro"}
+              {watchNome || (isEditing ? "" : "Adicione uma categoria")}
             </Typography>
           </Box>
         </Box>
@@ -97,7 +98,6 @@ export const Formulario = (formProps: FormProps) => {
                     </InputAdornment>
                   ),
                 }}
-                // InputLabelProps={{ shrink: true }}
                 sx={{
                   mb: 1,
                   "& .MuiOutlinedInput-input": {

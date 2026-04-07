@@ -1,27 +1,30 @@
 import { z } from "zod";
 
-// Schema para CRIAR categoria (sem id, userId vem do token, sem timestamps)
-// Mensagens customizadas no schema têm prioridade sobre o errorMap global
+// Schema para CRIAR categoria (validação na API/Formulário)
 export const createCategoriaSchema = z
   .object({
     nome: z
       .string()
-      .min(1) // Usa mensagem global: "Campo obrigatório"
+      .min(1) 
       .max(100, "O nome deve ter no máximo 100 caracteres")
       .trim(),
+    icone: z.string().optional().nullable(),
+    cor: z.string().optional().nullable(),
     userId: z.number().int().positive().optional().nullable(),
   })
-  .strict(); // Detecta campos não esperados - mensagem global: "Campos não permitidos: x, y"
+  .strict(); 
 
-// Schema para ATUALIZAR categoria (apenas campos editáveis)
+// Schema para ATUALIZAR categoria 
 export const updateCategoriaSchema = z
   .object({
     nome: z
       .string()
-      .min(1) // Usa mensagem global
+      .min(1)
       .max(100, "O nome deve ter no máximo 100 caracteres")
       .trim(),
-    userId: z.number().int().positive().optional(), // Vem do token, mas permite passar para testes
+    icone: z.string().optional().nullable(),
+    cor: z.string().optional().nullable(),
+    userId: z.number().int().positive().optional(), 
   });
 
 // Schema para buscar por ID

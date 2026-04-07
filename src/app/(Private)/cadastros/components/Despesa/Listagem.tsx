@@ -1,3 +1,4 @@
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import {
@@ -13,14 +14,16 @@ import {
   ListItemSecondaryAction,
   ListItemText,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import {
   IconCreditCard,
   IconEdit,
-  IconRepeat,
+  IconSearch,
   IconTrash,
 } from "@tabler/icons-react";
+import { useState } from "react";
 
 interface ListProps {
   despesas: Despesa[];
@@ -30,6 +33,11 @@ interface ListProps {
 
 export const Listagem = (formProps: ListProps) => {
   const { despesas, handleOpenDialog, handleEdit } = formProps;
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredDespesas = despesas.filter((d) =>
+    d.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card
@@ -38,7 +46,6 @@ export const Listagem = (formProps: ListProps) => {
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
-        // backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -47,6 +54,7 @@ export const Listagem = (formProps: ListProps) => {
             direction="row"
             justifyContent="space-between"
             alignItems="center"
+            mb={2}
           >
             <Box>
               <Typography variant="h6" fontWeight={600} color="text.primary">
@@ -64,9 +72,19 @@ export const Listagem = (formProps: ListProps) => {
               variant="outlined"
             />
           </Stack>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Pesquisar despesa..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <IconSearch size={20} stroke={1.5} color="gray" style={{ marginRight: 8 }} />,
+            }}
+          />
         </Box>
 
-        {despesas.length === 0 ? (
+        {filteredDespesas.length === 0 ? (
           <Box
             sx={{
               textAlign: "center",
@@ -79,15 +97,24 @@ export const Listagem = (formProps: ListProps) => {
               style={{ opacity: 0.3, marginBottom: 16 }}
             />
             <Typography variant="h6" gutterBottom>
-              Nenhuma despesa cadastrada
+              Nenhuma despesa encontrada
             </Typography>
             <Typography variant="body2">
-              Comece adicionando suas primeiras despesas
+              {searchTerm 
+                ? "Tente alterar o termo de busca."
+                : "Comece adicionando suas primeiras despesas"}
             </Typography>
           </Box>
         ) : (
           <List disablePadding>
-            {despesas.map((despesa: Despesa, index: number) => {
+            {filteredDespesas.map((despesa: Despesa, index: number) => {
+              const bg = despesa.cor 
+                ? alpha(despesa.cor, 0.15) 
+                : (despesa.status ? "error.light" : "grey.300");
+              const fg = despesa.cor 
+                ? despesa.cor 
+                : (despesa.status ? "error.main" : "grey.600");
+
               return (
                 <Box key={despesa.id}>
                   <ListItem
@@ -104,21 +131,19 @@ export const Listagem = (formProps: ListProps) => {
                         width: 40,
                         height: 40,
                         borderRadius: 2,
-                        backgroundColor: despesa.status
-                          ? "error.light"
-                          : "grey.300",
+                        backgroundColor: bg,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: despesa.status ? "error.main" : "grey.600",
+                        color: fg,
                         mr: 2,
                       }}
                     >
-                      {despesa.mensalmente ? (
-                        <IconRepeat size={20} />
-                      ) : (
-                        <IconCreditCard size={20} />
-                      )}
+                      <DynamicIcon 
+                        name={despesa.icone} 
+                        size={20} 
+                        fallbackIcon={despesa.mensalmente ? "IconRepeat" : "IconCreditCard"} 
+                      />
                     </Box>
 
                     <ListItemText

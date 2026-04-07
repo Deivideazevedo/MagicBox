@@ -4,6 +4,7 @@ import {
   HookDecimalField,
   HookSelect,
   HookTextField,
+  IconColorMenuPicker,
 } from "@/app/components/forms/hooksForm";
 import { Categoria } from "@/core/categorias/types";
 import { FonteRenda, FonteRendaForm } from "@/core/fontesRenda/types";
@@ -30,7 +31,7 @@ import {
 import { IconCurrencyDollar } from "@tabler/icons-react";
 import { IconWallet } from "@tabler/icons-react";
 import { RefObject } from "react";
-import { Control } from "react-hook-form";
+import { Control, useWatch } from "react-hook-form";
 
 interface FormProps {
   isEdditing: boolean;
@@ -59,6 +60,10 @@ export const Formulario = (formProps: FormProps) => {
     formRef,
   } = formProps;
 
+  const watchIcon = useWatch({ control, name: "icone" });
+  const watchColor = useWatch({ control, name: "cor" });
+  const watchNome = useWatch({ control, name: "nome" });
+
   return (
     <Card
       ref={formRef}
@@ -72,17 +77,13 @@ export const Formulario = (formProps: FormProps) => {
     >
       <CardContent sx={{ px: 1, py: 1.5 }}>
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Box
-            sx={{
-              borderRadius: 2,
-              p: 1,
-              display: "flex",
-              backgroundColor: "success.main",
-              color: "white",
-            }}
-          >
-            <IconWallet size={24} />
-          </Box>
+          <IconColorMenuPicker
+            control={control}
+            iconName="icone"
+            colorName="cor"
+            watchIcon={watchIcon}
+            watchColor={watchColor}
+          />
           <Box>
             <Typography variant="subtitle2" fontWeight={600} color="text.primary">
               {isEdditing ? `Editando Fonte:` : "Nova Fonte de Renda"}
@@ -93,7 +94,7 @@ export const Formulario = (formProps: FormProps) => {
               fontWeight={isEdditing ? 600 : 400}
               color={isEdditing ? "success.main" : "text.secondary"}
             >
-              {isEdditing ? `${row?.nome}` : "Adicione uma nova fonte"}
+              {watchNome || (isEdditing ? "" : "Adicione uma nova fonte")}
             </Typography>
           </Box>
         </Box>

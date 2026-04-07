@@ -21,6 +21,8 @@ const despesaSchemaZod = z
     categoriaId: z.number().min(1, "Categoria é obrigatória"),
     mensalmente: z.boolean(),
     nome: z.string().min(1, "Nome é obrigatório"),
+    icone: z.string().optional().nullable(),
+    cor: z.string().optional().nullable(),
     valorEstimado: z.number().nullable(),
     diaVencimento: z.number().nullable(),
     status: z.boolean(),
@@ -96,6 +98,8 @@ export function useDespesas(params?: UseDespesasProps) {
       status: true,
       categoriaId: 0,
       nome: "",
+      icone: "IconCategory",
+      cor: "#212121",
       mensalmente: false,
       valorEstimado: null,
       diaVencimento: null,
@@ -132,6 +136,8 @@ export function useDespesas(params?: UseDespesasProps) {
         diaVencimento: formData.diaVencimento
           ? Number(formData.diaVencimento)
           : null,
+        icone: formData.icone,
+        cor: formData.cor,
       };
 
       try {
@@ -167,6 +173,8 @@ export function useDespesas(params?: UseDespesasProps) {
           ? Number(despesa.diaVencimento)
           : null,
         status: despesa.status,
+        icone: despesa.icone,
+        cor: despesa.cor,
       };
 
       setRow({ ...despesa, ...data });

@@ -9,6 +9,8 @@ model FonteRenda {
   userId         Int
   categoriaId    Int
   nome           String
+  icone          String?
+  cor            String?
   valorEstimado  Decimal?  @db.Decimal(10, 2)
   diaRecebimento Int? // Dia do mês (1-31)
   status         Boolean   @default(true) // true = ativa, false = inativa

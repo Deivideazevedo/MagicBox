@@ -21,6 +21,8 @@ import {
   IconTrendingUp,
 } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
+import { useDispatch } from "@/store/hooks";
+import { toggleCustomizer } from "@/store/customizer/CustomizerSlice";
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
@@ -32,6 +34,7 @@ const Profile = () => {
   };
 
   const { data: session } = useSession();
+  const dispatch = useDispatch();
 
   const profileMenuItems = [
     {
@@ -51,7 +54,7 @@ const Profile = () => {
     {
       title: 'Configurações',
       subtitle: 'Preferências do app',
-      href: '/dashboard/configuracoes',
+      onClick: () => dispatch(toggleCustomizer(true)),
       icon: <IconSettings size={20} />,
       color: '#FA896B',
     },
@@ -162,12 +165,16 @@ const Profile = () => {
         <Divider />
         
         <Box sx={{ py: 1 }}>
-          {profileMenuItems.map((item) => (
+          {profileMenuItems.map((item: any) => (
             <ListItemButton
               key={item.title}
-              component={Link}
-              href={item.href}
-              onClick={handleClose2}
+              {...(item.href ? { component: Link, href: item.href } : {})}
+              onClick={(e) => {
+                if (item.onClick) {
+                  item.onClick(e);
+                }
+                handleClose2();
+              }}
               sx={{
                 mx: 1,
                 my: 0.5,

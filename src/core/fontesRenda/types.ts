@@ -4,6 +4,8 @@ export interface FonteRenda {
   userId: number;
   id: number;
   nome: string;
+  icone: string | null;
+  cor: string | null;
   valorEstimado: number  | null;
   diaRecebimento: number | null; // 1-31
   mensalmente: boolean;
@@ -15,8 +17,10 @@ export interface FonteRenda {
 
 export interface FonteRendaPayload {
   id?: number;
-  userId?: number;
+  userId: number;
   nome: string;
+  icone?: string | null;
+  cor?: string | null;
   status: boolean;
   valorEstimado: number | null;
   diaRecebimento: number | null;
@@ -30,6 +34,8 @@ export interface FonteRendaForm {
   userId?: number;
   categoriaId: number;
   nome: string;
+  icone?: string | null;
+  cor?: string | null;
   status: boolean;
   mensalmente: boolean;
   valorEstimado: number | null;

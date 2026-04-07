@@ -10,6 +10,8 @@ model Despesa {
   userId        Int
   categoriaId   Int
   nome          String
+  icone         String?
+  cor           String?
   mensalmente   Boolean   @default(false) // Se repete todo mês
   valorEstimado Decimal?  @db.Decimal(10, 2) // Valor previsto
   diaVencimento Int? // Dia do mês (1-31)

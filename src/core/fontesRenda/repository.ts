@@ -44,6 +44,8 @@ export const fonteRendaRepository = {
     return await prisma.fonteRenda.create({
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
         userId: data.userId,
         status: data.status,
         valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
@@ -78,6 +80,8 @@ export const fonteRendaRepository = {
       where: { id: numericId },
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
         status: data.status,
         valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
         diaRecebimento: data.diaRecebimento ? Number(data.diaRecebimento) : null,

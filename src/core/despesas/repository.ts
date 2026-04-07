@@ -46,6 +46,8 @@ export const despesaRepository = {
     return await prisma.despesa.create({
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
         userId: data.userId,
         categoriaId: Number(data.categoriaId),
         mensalmente: data.mensalmente,
@@ -80,6 +82,8 @@ export const despesaRepository = {
       where: { id: numericId },
       data: {
         nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
         categoriaId: data.categoriaId ? Number(data.categoriaId) : undefined,
         mensalmente: data.mensalmente,
         status: data.status,

@@ -9,6 +9,9 @@ export { HookTextField } from "./HookTextField";
 export { default as HookPasswordField } from "./HookPasswordField";
 export { HookSelect } from "./HookSelect";
 export { HookAutocomplete } from "./HookAutocomplete";
+export { HookIconPicker } from "./HookIconPicker";
+export { HookColorPicker } from "./HookColorPicker";
+export { IconColorMenuPicker } from "./IconColorMenuPicker";
 
 // Date Pickers - Componentes de seleção de data
 export { HookDatePicker } from "./HookDatePicker";

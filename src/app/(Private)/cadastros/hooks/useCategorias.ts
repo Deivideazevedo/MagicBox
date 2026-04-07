@@ -20,6 +20,8 @@ import * as z from "zod";
 const categoriaSchema = z.object({
   id: z.number().optional(),
   nome: z.string().nonempty("Obrigatório"),
+  icone: z.string().optional().nullable(),
+  cor: z.string().optional().nullable(),
   userId: z.number().optional(),
 });
 
@@ -53,6 +55,8 @@ export const useCategorias = ({
     () => ({
       id: undefined,
       nome: "",
+      icone: "IconCategory",
+      cor: "#212121",
     }),
     []
   );
@@ -77,6 +81,8 @@ export const useCategorias = ({
       // Converter FormData para Payload
       const data: CategoriaPayload = {
         nome: payload.nome,
+        icone: payload.icone,
+        cor: payload.cor,
       };
 
       try {
@@ -106,6 +112,8 @@ export const useCategorias = ({
       const data = {
         id: categoria.id,
         nome: categoria.nome,
+        icone: categoria.icone,
+        cor: categoria.cor,
       };
       setRow({ ...categoria, ...data });
       reset(data);

@@ -1,3 +1,4 @@
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { Categoria } from "@/core/categorias/types";
 import {
   alpha,
@@ -12,10 +13,12 @@ import {
   ListItemSecondaryAction,
   ListItemText,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { IconCategory, IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconCategory, IconEdit, IconTrash, IconSearch } from "@tabler/icons-react";
+import { useState } from "react";
 
 interface ListProps {
   categorias: Categoria[];
@@ -25,6 +28,11 @@ interface ListProps {
 
 export const Listagem = (formProps: ListProps) => {
   const { categorias, handleOpenDialog, handleEdit } = formProps;
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCategorias = categorias.filter((c) =>
+    c.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card
@@ -33,7 +41,6 @@ export const Listagem = (formProps: ListProps) => {
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        // backgroundColor: (theme) => alpha(theme.palette.error.main, 0.04),
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -42,6 +49,7 @@ export const Listagem = (formProps: ListProps) => {
             direction="row"
             justifyContent="space-between"
             alignItems="center"
+            mb={2}
           >
             <Box>
               <Typography variant="h6" fontWeight={600} color="text.primary">
@@ -58,9 +66,19 @@ export const Listagem = (formProps: ListProps) => {
               size="medium"
             />
           </Stack>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Pesquisar categoria..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <IconSearch size={20} stroke={1.5} color="gray" style={{ marginRight: 8 }} />,
+            }}
+          />
         </Box>
 
-        {categorias.length === 0 ? (
+        {filteredCategorias.length === 0 ? (
           <Box
             sx={{
               textAlign: "center",
@@ -73,79 +91,86 @@ export const Listagem = (formProps: ListProps) => {
               style={{ opacity: 0.3, marginBottom: 16 }}
             />
             <Typography variant="h6" gutterBottom>
-              Nenhuma categoria cadastrada
+              Nenhuma categoria encontrada
             </Typography>
             <Typography variant="body2">
-              Comece adicionando suas primeiras categorias
+              {searchTerm
+                ? "Tente limpar o termo de busca."
+                : "Comece adicionando suas primeiras categorias"}
             </Typography>
           </Box>
         ) : (
           <List disablePadding>
-            {categorias.map((categoria: any, index: number) => (
-              <Box key={categoria.id}>
-                <ListItem
-                  sx={{
-                    py: 2,
-                    px: 2,
-                    "&:hover": {
-                      backgroundColor: "action.hover",
-                    },
-                  }}
-                >
-                  <Box
+            {filteredCategorias.map((categoria: any, index: number) => {
+              const bg = categoria.cor ? alpha(categoria.cor, 0.15) : "primary.light";
+              const fg = categoria.cor || "primary.main";
+
+              return (
+                <Box key={categoria.id}>
+                  <ListItem
                     sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      backgroundColor: "primary.light",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "primary.main",
-                      mr: 2,
+                      py: 2,
+                      px: 2,
+                      "&:hover": {
+                        backgroundColor: "action.hover",
+                      },
                     }}
                   >
-                    <IconCategory size={20} />
-                  </Box>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        backgroundColor: bg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: fg,
+                        mr: 2,
+                      }}
+                    >
+                      <DynamicIcon name={categoria.icone} size={20} fallbackIcon="IconCategory" />
+                    </Box>
 
-                  <ListItemText
-                    primary={categoria.nome}
-                    secondary={`Criada em ${new Date(
-                      categoria.createdAt
-                    ).toLocaleDateString("pt-BR")}`}
-                    primaryTypographyProps={{
-                      fontWeight: 500,
-                      color: "text.primary",
-                    }}
-                  />
+                    <ListItemText
+                      primary={categoria.nome}
+                      secondary={`Criada em ${new Date(
+                        categoria.createdAt
+                      ).toLocaleDateString("pt-BR")}`}
+                      primaryTypographyProps={{
+                        fontWeight: 500,
+                        color: "text.primary",
+                      }}
+                    />
 
-                  <ListItemSecondaryAction>
-                    <Stack direction="row" spacing={1}>
-                      <Tooltip title="Editar Categoria" placement="top">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(categoria)}
-                          color="primary"
-                        >
-                          <IconEdit size={18} />
-                        </IconButton>
-                      </Tooltip>
+                    <ListItemSecondaryAction>
+                      <Stack direction="row" spacing={1}>
+                        <Tooltip title="Editar Categoria" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEdit(categoria)}
+                            color="primary"
+                          >
+                            <IconEdit size={18} />
+                          </IconButton>
+                        </Tooltip>
 
-                      <Tooltip title="Excluir Categoria" placement="top">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(categoria)}
-                          color="error"
-                        >
-                          <IconTrash size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </ListItemSecondaryAction>
-                </ListItem>
-                {index < categorias.length - 1 && <Divider />}
-              </Box>
-            ))}
+                        <Tooltip title="Excluir Categoria" placement="top">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(categoria)}
+                            color="error"
+                          >
+                            <IconTrash size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                  {index < filteredCategorias.length - 1 && <Divider />}
+                </Box>
+              );
+            })}
           </List>
         )}
       </CardContent>

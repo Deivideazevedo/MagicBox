@@ -1,10 +1,12 @@
 import { Categoria } from "../categorias/types";
 
-export interface Despesa {
+export interface Despesa { // DB/Frontend type
   id: number;
   userId: number;
   categoriaId: number;
   nome: string;
+  icone: string | null;
+  cor: string | null;
   mensalmente: boolean;
   valorEstimado: number | null;
   diaVencimento: number | null;
@@ -15,11 +17,14 @@ export interface Despesa {
   categoria: Categoria | null;
 }
 
+// Payload for Backend interactions
 export interface DespesaPayload {
   id?: number;
-  userId?: number; 
+  userId: number;
   categoriaId: number;
   nome: string;
+  icone?: string | null;
+  cor?: string | null;
   mensalmente: boolean;
   status: boolean;
   valorEstimado?: number | null;
@@ -33,6 +38,8 @@ export interface DespesaForm {
   userId?: number;
   categoriaId: number;
   nome: string;
+  icone?: string | null;
+  cor?: string | null;
   mensalmente: boolean;
   status: boolean;
   valorEstimado: number | null;

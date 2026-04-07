@@ -22,6 +22,8 @@ const fonteRendaSchemaZod = z.object({
   id: z.union([z.string(), z.number()]).optional(),
   userId: z.number().optional(),
   nome: z.string().min(1, "Nome é obrigatório"),
+  icone: z.string().optional().nullable(),
+  cor: z.string().optional().nullable(),
   valorEstimado: z.number().nullable(),
   diaRecebimento: z.number().nullable(),
   status: z.boolean(),
@@ -61,6 +63,8 @@ export const useFontesRenda = ({
       id: undefined,
       userId: Number(session?.user?.id),
       nome: "",
+      icone: "IconCategory",
+      cor: "#212121",
       categoriaId: 0,
       valorEstimado: null,
       diaRecebimento: null,
@@ -102,6 +106,8 @@ export const useFontesRenda = ({
           diaRecebimento: formData.diaRecebimento
             ? Number(formData.diaRecebimento)
             : null,
+          icone: formData.icone,
+          cor: formData.cor,
         };
 
         if (id) {
@@ -139,6 +145,8 @@ export const useFontesRenda = ({
           : null,
         mensalmente: fonteRenda.mensalmente,
         status: fonteRenda.status,
+        icone: fonteRenda.icone,
+        cor: fonteRenda.cor,
       };
 
       reset(data);
