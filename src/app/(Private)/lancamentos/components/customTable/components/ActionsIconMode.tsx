@@ -1,6 +1,7 @@
-import { IconButton, Stack, Tooltip } from '@mui/material';
-import { Visibility, Edit, Delete } from '@mui/icons-material';
-import { IActionConfig } from '@/app/components/tables/customTable/types/actions';
+import { IconButton, Stack, Tooltip } from "@mui/material";
+import { Visibility, Edit, Delete } from "@mui/icons-material";
+import { IActionConfig } from "@/app/components/tables/customTable/types/actions";
+import { IconEdit, IconEye, IconTrash } from "@tabler/icons-react";
 
 interface ActionsIconModeProps<T> {
   row: T;
@@ -14,9 +15,9 @@ interface ActionsIconModeProps<T> {
 export function ActionsIconMode<T>({ row, actions }: ActionsIconModeProps<T>) {
   // Ícones padrão (fallback) para as 3 primeiras ações
   const defaultIcons = [
-    <Visibility fontSize="small" key="default-1" />,
-    <Edit fontSize="small" key="default-2" />,
-    <Delete fontSize="small" key="default-3" />,
+    <IconEye size={18} key="default-1" />,
+    <IconEdit size={18} key="default-2" />,
+    <IconTrash size={18} key="default-3" />,
   ];
 
   return (
@@ -26,7 +27,7 @@ export function ActionsIconMode<T>({ row, actions }: ActionsIconModeProps<T>) {
           <IconButton
             size="small"
             onClick={() => action.callback(row)}
-            color={action.color || 'primary'}
+            color={action.color || "primary"}
           >
             {action.icon || defaultIcons[index]}
           </IconButton>

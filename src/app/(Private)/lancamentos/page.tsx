@@ -51,7 +51,7 @@ export default function LancamentosPage() {
       return {
         ...lancamento,
         origem: lancamento.despesa ? "Despesa" : "Renda",
-        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-"
+        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-",
       };
     });
   }, [lancamentos]);
@@ -67,7 +67,6 @@ export default function LancamentosPage() {
             Gerencie seus pagamentos e agendamentos financeiros
           </Typography>
         </Box>
-
 
         {/* Filtros avançados */}
         <FiltrosAvancados
@@ -122,11 +121,6 @@ export default function LancamentosPage() {
 
               <CustomTable
                 data={fullLancamentos}
-                columns={{
-                  origem: {
-                    render: (row) => (row.despesa ? "Despesa" : "Renda"),
-                  },
-                }}
                 actions={[
                   {
                     title: "Visualizar",

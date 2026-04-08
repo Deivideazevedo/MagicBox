@@ -5,8 +5,7 @@ import {
   Box,
   Checkbox,
   Chip,
-  IconButton,
-  LinearProgress,
+  CircularProgress,
   Paper,
   Table,
   TableBody,
@@ -21,11 +20,8 @@ import {
   Avatar,
   Stack,
 } from "@mui/material";
-import { ReactNode, useState, useEffect, useMemo } from "react";
+import { ReactNode, useState, useEffect, useMemo, memo } from "react";
 import {
-  IconEye,
-  IconEdit,
-  IconTrash,
   IconCalendar,
   IconChecks,
   IconArrowDown,
@@ -42,12 +38,13 @@ import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
 
 // Hooks e componentes internos
-import { SortIcon } from "./components/SortIcon";
+import { MultiSortIcon } from "./components/MultiSortIcon";
 import { TableTopBar } from "./components/TableTopBar";
-import { useSimpleSort } from "./hooks/useSimpleSort";
+import { ActionsIconMode } from "./components/ActionsIconMode";
+import { useMultiSort } from "./hooks/useMultiSort";
 import { useTableFilter } from "./hooks/useTableFilter";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
-import { createRenderColumn } from "./utils/renderColumn";
+import { createRenderColumn, IColumnProps } from "./utils/renderColumn";
 import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker";
 
 // ==================== TYPES ====================
@@ -64,28 +61,190 @@ interface IActionConfig {
   callback: (row: OrigemType) => void;
 }
 
-/**
- * Propriedades de configuração de uma coluna
- */
-type IColumnProps = {
-  sortValue?: (row: OrigemType) => any;
-  render?: (row: OrigemType) => ReactNode;
-  filterValue?: (row: OrigemType) => string | number;
-};
+// ==================== COLUNAS DINÂMICAS ====================
 
-/**
- * Tipo para configuração de colunas baseado nas keys do tipo T
- * Permite definir configurações opcionais para cada propriedade do objeto
- * Inclui 'origem' como coluna adicional personalizada
- */
-type ITableColumns = Partial<Record<keyof OrigemType | "origem", IColumnProps>>;
+const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
+  {
+    key: "data",
+    label: "Data",
+    align: "left",
+    sortValue: (row) => new Date(row.data).getTime(),
+    render: (row) => {
+      try {
+        return format(new Date(row.data), "dd/MM/yyyy", { locale: ptBRDate });
+      } catch {
+        return row.data;
+      }
+    },
+    filterValue: (row) => row.data,
+  },
+  {
+    key: "origem",
+    label: "Origem",
+    align: "left",
+    sortValue: (row) => row.origem,
+    render: (row) => {
+      const isDespesa = Boolean(row.despesa);
+      return (
+        <Chip
+          size="small"
+          icon={
+            isDespesa ? <IconArrowDown size={16} /> : <IconArrowUp size={16} />
+          }
+          label={row.origem}
+          color={isDespesa ? "error" : "success"}
+          variant="outlined"
+          sx={{
+            fontWeight: 600,
+            fontSize: "0.75rem",
+          }}
+        />
+      );
+    },
+    filterValue: (row) => row.origem,
+  },
+  {
+    key: "tipo",
+    label: "Tipo",
+    align: "left",
+    sortValue: (row) => row.tipo,
+    render: (row) => {
+      const isPagamento = row.tipo === "pagamento";
+      return (
+        <Chip
+          size="small"
+          icon={
+            isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />
+          }
+          label={isPagamento ? "Pagamento" : "Agendamento"}
+          color={isPagamento ? "success" : "warning"}
+          sx={{
+            fontWeight: 600,
+            fontSize: "0.75rem",
+          }}
+        />
+      );
+    },
+    filterValue: (row) =>
+      row.tipo === "pagamento" ? "Pagamento" : "Agendamento",
+  },
+  {
+    key: "categoria",
+    label: "Categoria",
+    align: "left",
+    sortValue: (row) => row.categoria?.nome || "-",
+    render: (row) => (
+      <Stack direction="row" spacing={1.2} alignItems="center">
+        <Avatar
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor: row.categoria?.cor
+              ? alpha(row.categoria.cor, 0.15)
+              : "primary.light",
+            color: row.categoria?.cor || "primary.main",
+            "& svg": { width: 16, height: 16 },
+          }}
+        >
+          {row.categoria?.icone &&
+          AVAILABLE_ICONS[
+            row.categoria.icone as keyof typeof AVAILABLE_ICONS
+          ] ? (
+            AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
+          ) : (
+            <IconCategory />
+          )}
+        </Avatar>
+        <Typography variant="body2" fontWeight={500} noWrap>
+          {row.categoria?.nome || "-"}
+        </Typography>
+      </Stack>
+    ),
+    filterValue: (row) => row.categoria?.nome || "-",
+  },
+  {
+    key: "nome",
+    label: "Nome",
+    align: "left",
+    sortValue: (row) => row.nome,
+    render: (row) => (
+      <Stack direction="row" spacing={1.2} alignItems="center">
+        <Avatar
+          sx={{
+            width: 28,
+            height: 28,
+            bgcolor:
+              row.despesa?.cor || row.fonteRenda?.cor
+                ? alpha((row.despesa?.cor || row.fonteRenda?.cor)!, 0.15)
+                : "primary.light",
+            color: row.despesa?.cor || row.fonteRenda?.cor || "primary.main",
+            "& svg": { width: 16, height: 16 },
+          }}
+        >
+          {(row.despesa?.icone || row.fonteRenda?.icone) &&
+          AVAILABLE_ICONS[
+            (row.despesa?.icone ||
+              row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
+          ] ? (
+            AVAILABLE_ICONS[
+              (row.despesa?.icone ||
+                row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
+            ]
+          ) : (
+            <IconCategory />
+          )}
+        </Avatar>
+        <Typography variant="body2" noWrap>
+          {row.nome}
+        </Typography>
+      </Stack>
+    ),
+    filterValue: (row) => row.nome,
+  },
+  {
+    key: "observacao",
+    label: "Observação",
+    align: "left",
+    sortValue: (row) => row.observacao || "-",
+    render: (row) => (
+      <Tooltip title={row.observacao || "-"} arrow>
+        <Typography variant="body2" noWrap color="textSecondary">
+          {row.observacao || "-"}
+        </Typography>
+      </Tooltip>
+    ),
+    filterValue: (row) => row.observacao || "-",
+  },
+  {
+    key: "valor",
+    label: "Valor",
+    align: "right",
+    sortValue: (row) => row.valor,
+    render: (row) => {
+      const isDespesa = Boolean(row.despesa);
+      const formatarValor = (valor: number) => {
+        return new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format(valor);
+      };
+      return (
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          color={isDespesa ? "error.main" : "success.main"}
+        >
+          {formatarValor(row.valor)}
+        </Typography>
+      );
+    },
+    filterValue: (row) => String(row.valor),
+  },
+];
 
 interface CustomTableProps {
   /** Dados a serem exibidos */
   data: OrigemType[];
-
-  /** Configuração das colunas */
-  columns: ITableColumns;
 
   /** Lista de ações para cada linha */
   actions: IActionConfig[];
@@ -117,7 +276,6 @@ interface CustomTableProps {
  */
 export function CustomTable({
   data,
-  columns,
   actions,
   pagination,
   isLoading = false,
@@ -137,19 +295,19 @@ export function CustomTable({
   // 🔍 Hook de filtro (interno)
   const { filteredData, filterText, setFilterText } = useTableFilter({
     data,
-    columns,
+    columns: TABLE_COLUMNS,
   });
 
-  // 🎯 Hook de ordenação (interno)
-  const { sortedData, requestSort, getSortIcon, setSortConfig } = useSimpleSort(
+  // 🎯 Hook de ordenação múltipla (interno)
+  const { sortedData, requestSort, getSortIcon, resetSort } = useMultiSort(
     filteredData,
-    columns,
+    TABLE_COLUMNS,
   );
 
   // 🔄 Reset de filtros, ordenação, paginação e seleção
   const handleReset = () => {
     setFilterText("");
-    setSortConfig(null);
+    resetSort();
     setSelectedIds([]);
     if (onSelectionChange) onSelectionChange([]);
     pagination.onRowsPerPageChange({
@@ -178,25 +336,8 @@ export function CustomTable({
     if (onSelectionChange) onSelectionChange(newSelectedIds);
   };
 
-  // Helpers de formatação
-  const formatarValor = (valor: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(valor);
-  };
-
-  const formatarData = (data: string) => {
-    try {
-      return format(new Date(data), "dd/MM/yyyy", { locale: ptBRDate });
-    } catch {
-      return data;
-    }
-  };
-
-  // 📏 Calcular total de colunas para colSpan
-  // 9 colunas: checkbox + data + origem + tipo + categoria + nome + observacao + valor + ações
-  const totalColumns = 9;
+  // 📏 Calcular total de colunas para colSpan (8 colunas + 1 checkbox + 1 ações)
+  const totalColumns = TABLE_COLUMNS.length + 2;
 
   return (
     <Paper
@@ -238,145 +379,27 @@ export function CustomTable({
                 />
               </TableCell>
 
-              {/* Data */}
-              <TableCell
-                onClick={() => requestSort("data")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 100,
-                  maxWidth: 120,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("data") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Data</Typography>
-                  <SortIcon order={getSortIcon("data")} />
-                </Box>
-              </TableCell>
-
-              {/* Origem */}
-              <TableCell
-                onClick={() => requestSort("origem")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 120,
-                  maxWidth: 150,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("origem") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Origem</Typography>
-                  <SortIcon order={getSortIcon("origem")} />
-                </Box>
-              </TableCell>
-
-              {/* Tipo */}
-              <TableCell
-                onClick={() => requestSort("tipo")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 130,
-                  maxWidth: 160,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("tipo") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Tipo</Typography>
-                  <SortIcon order={getSortIcon("tipo")} />
-                </Box>
-              </TableCell>
-
-              {/* Categoria */}
-              <TableCell
-                onClick={() => requestSort("categoria")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 130,
-                  maxWidth: 200,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("categoria") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Categoria</Typography>
-                  <SortIcon order={getSortIcon("categoria")} />
-                </Box>
-              </TableCell>
-
-              {/* Nome (Despesa/Fonte) */}
-              <TableCell
-                onClick={() => requestSort("nome")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 150,
-                  maxWidth: 300,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("nome") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Nome</Typography>
-                  <SortIcon order={getSortIcon("nome")} />
-                </Box>
-              </TableCell>
-
-              {/* Observação */}
-              <TableCell
-                onClick={() => requestSort("observacao")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 120,
-                  maxWidth: 200,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("observacao") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Typography fontWeight={700}>Observação</Typography>
-                  <SortIcon order={getSortIcon("observacao")} />
-                </Box>
-              </TableCell>
-
-              {/* Valor */}
-              <TableCell
-                align="right"
-                onClick={() => requestSort("valor")}
-                sx={{
-                  cursor: "pointer",
-                  userSelect: "none",
-                  minWidth: 110,
-                  maxWidth: 150,
-                  "&:hover .sort-icon": {
-                    opacity: getSortIcon("valor") ? 1 : 0.4,
-                  },
-                }}
-              >
-                <Box
+              {/* Headers dinâmicos */}
+              {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
+                <TableCell
+                  key={String(key)}
+                  align={align}
+                  onClick={() => requestSort(key)}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    minWidth: 100,
+                    "&:hover .sort-icon": {
+                      opacity: getSortIcon(key) ? 1 : 0.4,
+                    },
                   }}
                 >
-                  <Typography fontWeight={700}>Valor</Typography>
-                  <SortIcon order={getSortIcon("valor")} />
-                </Box>
-              </TableCell>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Typography fontWeight={700}>{label}</Typography>
+                    <MultiSortIcon sortInfo={getSortIcon(key)} />
+                  </Box>
+                </TableCell>
+              ))}
 
               {/* Ações */}
               <TableCell align="center">
@@ -385,12 +408,12 @@ export function CustomTable({
             </TableRow>
           </TableHead>
 
-          {/* Loading bar */}
+          {/* Loading indicator */}
           {isLoading && (
             <TableBody>
               <TableRow>
-                <TableCell colSpan={totalColumns} sx={{ p: 0, border: 0 }}>
-                  <LinearProgress />
+                <TableCell colSpan={totalColumns} align="center" sx={{ py: 3 }}>
+                  <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -413,12 +436,10 @@ export function CustomTable({
                 <CustomRow
                   key={row.id}
                   row={row}
-                  columns={columns}
+                  columns={TABLE_COLUMNS}
                   actions={actions}
                   isSelected={selectedIds.includes(row.id)}
                   onSelect={handleSelectOne}
-                  formatarData={formatarData}
-                  formatarValor={formatarValor}
                 />
               ))
             )}
@@ -456,188 +477,77 @@ export function CustomTable({
 // Componente interno de linha
 interface CustomRowProps {
   row: OrigemType;
-  columns: ITableColumns;
+  columns: IColumnProps<OrigemType>[];
   actions: IActionConfig[];
   isSelected: boolean;
   onSelect: (id: number) => void;
-  formatarData: (data: string) => string;
-  formatarValor: (valor: number) => string;
 }
 
-function CustomRow({
-  row,
-  columns,
-  actions,
-  isSelected,
-  onSelect,
-  formatarData,
-  formatarValor,
-}: CustomRowProps) {
-  // Helper para renderizar colunas usando a função utilitária
-  const renderColumn = useMemo(
-    () => createRenderColumn(row, columns),
-    [row, columns],
-  );
+/**
+ * 🚀 CustomRow memoizado para evitar re-renders desnecessários
+ * Quando a tabela re-renderiza (ordenação, filtro), as linhas não são recalculadas
+ * se row.id for igual (comparador customizado otimizado)
+ */
+const CustomRow = memo(
+  function CustomRow({
+    row,
+    columns,
+    actions,
+    isSelected,
+    onSelect,
+  }: CustomRowProps) {
+    // Helper para renderizar colunas usando a função utilitária
+    const renderColumn = useMemo(
+      () => createRenderColumn(row, columns),
+      [row, columns],
+    );
 
-  const isDespesa = Boolean(row.despesa);
-  const isPagamento = row.tipo === "pagamento";
+    // Mapa de alinhamentos para O(1) lookup
+    const alignsMap = useMemo(() => {
+      const map = new Map<string | keyof OrigemType, string>();
+      columns.forEach(({ key, align }) => map.set(key, align || "left"));
+      return map;
+    }, [columns]);
 
-  return (
-    <TableRow
-      sx={{
-        "& td": { border: 0 },
-        "&:hover": {
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
-        },
-        ...(isSelected && {
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-        }),
-      }}
-    >
-      {/* Checkbox */}
-      <TableCell padding="checkbox">
-        <Checkbox checked={isSelected} onChange={() => onSelect(row.id)} />
-      </TableCell>
+    const isDespesa = Boolean(row.despesa);
 
-      {/* Data */}
-      <TableCell>
-        <Typography variant="body2">{formatarData(row.data)}</Typography>
-      </TableCell>
+    return (
+      <TableRow
+        sx={{
+          "& td": { border: 0 },
+          "&:hover": {
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+          },
+          ...(isSelected && {
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+          }),
+        }}
+      >
+        {/* Checkbox */}
+        <TableCell padding="checkbox">
+          <Checkbox checked={isSelected} onChange={() => onSelect(row.id)} />
+        </TableCell>
 
-      {/* Origem */}
-      <TableCell>
-        <Chip
-          size="small"
-          icon={
-            isDespesa ? <IconArrowDown size={16} /> : <IconArrowUp size={16} />
-          }
-          label={renderColumn("origem")}
-          color={isDespesa ? "error" : "success"}
-          variant="outlined"
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
-        />
-      </TableCell>
-
-      {/* Tipo */}
-      <TableCell>
-        <Chip
-          size="small"
-          icon={
-            isPagamento ? <IconChecks size={16} /> : <IconCalendar size={16} />
-          }
-          label={isPagamento ? "Pagamento" : "Agendamento"}
-          color={isPagamento ? "success" : "warning"}
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
-        />
-      </TableCell>
-
-      {/* Categoria */}
-      <TableCell>
-        <Stack direction="row" spacing={1.2} alignItems="center">
-          <Avatar
-            sx={{
-              width: 28,
-              height: 28,
-              bgcolor: row.categoria?.cor ? alpha(row.categoria.cor, 0.15) : "primary.light",
-              color: row.categoria?.cor || "primary.main",
-              "& svg": { width: 16, height: 16 },
-            }}
+        {/* Colunas dinâmicas */}
+        {columns.map(({ key }) => (
+          <TableCell
+            key={String(key)}
+            align={(alignsMap.get(key) as any) || "left"}
           >
-            {row.categoria?.icone && AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
-              ? AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
-              : <IconCategory />}
-          </Avatar>
-          <Typography variant="body2" fontWeight={500} noWrap>
-            {row.categoria?.nome || "-"}
-          </Typography>
-        </Stack>
-      </TableCell>
+            {renderColumn(key)}
+          </TableCell>
+        ))}
 
-      {/* Nome (Despesa/Fonte) */}
-      <TableCell>
-        <Stack direction="row" spacing={1.2} alignItems="center">
-          <Avatar
-            sx={{
-              width: 28,
-              height: 28,
-              bgcolor: (row.despesa?.cor || row.fonteRenda?.cor) ? alpha((row.despesa?.cor || row.fonteRenda?.cor)!, 0.15) : "primary.light",
-              color: (row.despesa?.cor || row.fonteRenda?.cor) || "primary.main",
-              "& svg": { width: 16, height: 16 },
-            }}
-          >
-            {(row.despesa?.icone || row.fonteRenda?.icone) && AVAILABLE_ICONS[(row.despesa?.icone || row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS]
-              ? AVAILABLE_ICONS[(row.despesa?.icone || row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS]
-              : <IconCategory />}
-          </Avatar>
-          <Typography variant="body2" noWrap>
-            {row.nome}
-          </Typography>
-        </Stack>
-      </TableCell>
-
-      {/* Observação */}
-      <TableCell>
-        <Tooltip title={row.observacao || "-"} arrow>
-          <Typography variant="body2" noWrap color="textSecondary">
-            {row.observacao || "-"}
-          </Typography>
-        </Tooltip>
-      </TableCell>
-
-      {/* Valor */}
-      <TableCell align="right">
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          color={isDespesa ? "error.main" : "success.main"}
-        >
-          {formatarValor(row.valor)}
-        </Typography>
-      </TableCell>
-
-      {/* Ações */}
-      <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
-        <Box display="flex" gap={0.5} justifyContent="center">
-          {actions.map((action, index) => {
-            let icon = <IconEye size={18} />;
-            if (action.title.toLowerCase().includes("editar")) {
-              icon = <IconEdit size={18} />;
-            } else if (
-              action.title.toLowerCase().includes("remover") ||
-              action.title.toLowerCase().includes("excluir")
-            ) {
-              icon = <IconTrash size={18} />;
-            }
-
-            return (
-              <Tooltip key={index} title={action.title} arrow>
-                <IconButton
-                  size="small"
-                  color={action.color || "default"}
-                  onClick={() => action.callback(row)}
-                  sx={{
-                    "&:hover": {
-                      bgcolor: (theme) =>
-                        alpha(
-                          theme.palette[action.color || "primary"].main,
-                          0.1,
-                        ),
-                    },
-                  }}
-                >
-                  {icon}
-                </IconButton>
-              </Tooltip>
-            );
-          })}
-        </Box>
-      </TableCell>
-    </TableRow>
-  );
-}
+        {/* Ações */}
+        <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
+          <ActionsIconMode row={row} actions={actions} />
+        </TableCell>
+      </TableRow>
+    );
+  },
+  (prev, next) => {
+    // Comparador customizado: re-renderiza apenas se row.id ou isSelected mudarem
+    // false = re-renderiza, true = mantém memoizado
+    return prev.row.id === next.row.id && prev.isSelected === next.isSelected;
+  },
+);

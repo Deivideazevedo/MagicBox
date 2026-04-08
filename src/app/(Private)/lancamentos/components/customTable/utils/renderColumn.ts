@@ -1,18 +1,30 @@
 import { ReactNode } from 'react';
 
 /**
- * Propriedades de configuração de uma coluna
+ * Propriedades de configuração de uma coluna (formato array)
  */
-export type IColumnProps<T = any> = {
+export type IColumnProps<T> = {
+  key: keyof T | string;
+  label: string;
+  align?: 'left' | 'right' | 'center';
+  isSortable?: boolean;
   sortValue?: (row: T) => any;
   render?: (row: T) => ReactNode;
   filterValue?: (row: T) => string | number;
 };
 
 /**
- * Tipo para configuração de colunas baseado nas keys do tipo T
+ * Pré-calcula um mapa de colunas para acesso O(1)
  */
-export type ITableColumns<T = any> = Partial<Record<keyof T | string, IColumnProps<T>>>;
+function createColumnMap<T>(
+  columns?: IColumnProps<T>[],
+): Map<keyof T | string, IColumnProps<T>> {
+  const map = new Map<keyof T | string, IColumnProps<T>>();
+  if (columns) {
+    columns.forEach((col) => map.set(col.key, col));
+  }
+  return map;
+}
 
 /**
  * Função utilitária para renderizar uma coluna da tabela
@@ -22,20 +34,23 @@ export type ITableColumns<T = any> = Partial<Record<keyof T | string, IColumnPro
  * A lógica de renderização segue esta prioridade:
  * 1. Se a coluna tem `render` customizado, usa ele
  * 2. Se o valor é string ou number, retorna direto
- * 3. Se for array ou objeto complexo, retorna null (precisa de render customizado)
+ * 3. Se for array ou objeto complexo, retorna "-"
  *
  * @example
  * ```tsx
- * const renderCol = createRenderColumn(cliente, columns);
+ * const renderCol = createRenderColumn(lancamento, TABLE_COLUMNS);
  *
  * <TableCell>{renderCol('nome')}</TableCell>
- * <TableCell>{renderCol('email')}</TableCell>
  * ```
  */
-export function createRenderColumn<T>(row: T, columns?: ITableColumns<T>) {
-  return (key: keyof T): ReactNode => {
-    const column = columns?.[key];
-    const value = row[key];
+export function createRenderColumn<T>(row: T, columns?: IColumnProps<T>[]) {
+  // 🚀 Pré-calcula map de colunas uma vez (em vez de .find() para cada célula)
+  const columnMap = createColumnMap(columns);
+
+  return (key: keyof T | string): ReactNode => {
+    const column = columnMap.get(key); // ← O(1)
+
+    const value = row[key as keyof T];
 
     // 1. Prioridade: render customizado
     if (column?.render) {
@@ -48,6 +63,6 @@ export function createRenderColumn<T>(row: T, columns?: ITableColumns<T>) {
     }
 
     // 3. Array ou objeto complexo precisa de render customizado
-    return null;
+    return '-';
   };
 }
