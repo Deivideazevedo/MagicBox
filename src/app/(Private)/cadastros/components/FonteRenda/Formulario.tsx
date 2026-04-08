@@ -20,6 +20,7 @@ import {
   InputAdornment,
   Stack,
   Typography,
+  useTheme,
 } from "@mui/material";
 import {
   IconCalendar,
@@ -47,6 +48,7 @@ interface FormProps {
 }
 
 export const Formulario = (formProps: FormProps) => {
+  const theme = useTheme();
   const {
     isEdditing,
     isCollapsed,
@@ -83,6 +85,8 @@ export const Formulario = (formProps: FormProps) => {
             colorName="cor"
             watchIcon={watchIcon}
             watchColor={watchColor}
+            fallbackIcon="IconWallet"
+            fallbackColor={theme.palette.success.main}
           />
           <Box>
             <Typography variant="subtitle2" fontWeight={600} color="text.primary">

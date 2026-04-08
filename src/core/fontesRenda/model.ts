@@ -5,6 +5,8 @@ export class FonteRendaModel implements FonteRenda {
   id: number;
   userId: number;
   nome: string;
+  icone: string | null;
+  cor: string | null;
   status: boolean;
   diaRecebimento: number | null;
   valorEstimado: number | null;
@@ -17,6 +19,8 @@ export class FonteRendaModel implements FonteRenda {
     this.id = id ?? 0;
     this.userId = props.userId ?? 0;
     this.nome = props.nome;
+    this.icone = props.icone ?? null;
+    this.cor = props.cor ?? null;
     this.status = props.status;
     this.mensalmente = props.mensalmente;
     this.categoria = null;

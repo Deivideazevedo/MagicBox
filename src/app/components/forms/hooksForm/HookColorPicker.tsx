@@ -1,23 +1,6 @@
-import { Box, FormHelperText, Tooltip, Typography } from "@mui/material";
+import { Box, FormHelperText, Tooltip, Typography, useTheme } from "@mui/material";
 import React from "react";
 import { FieldValues, useController, UseControllerProps } from "react-hook-form";
-
-// Cores pré-definidas em HEX, modernas e que combinam com a UI (cores que não sejam brancas demais para dar contraste com fundos brancos)
-export const AVAILABLE_COLORS = [
-  "#2684FF", // Blue Primary
-  "#13DEB9", // Teal / Cyan Secondary
-  "#FA896B", // Red / Orange Error
-  "#FFC91A", // Yellow Warning
-  "#00E676", // Green Success
-  "#9C27B0", // Purple
-  "#3F51B5", // Indigo
-  "#E91E63", // Pink
-  "#FF9800", // Orange
-  "#607D8B", // Blue Grey
-  "#795548", // Brown
-  "#00BCD4", // Cyan
-  "#212121", // Dark / Black
-];
 
 type HookColorPickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> & {
@@ -30,10 +13,27 @@ export function HookColorPicker<TFieldValues extends FieldValues>({
   rules,
   label = "Escolha uma Cor",
 }: HookColorPickerProps<TFieldValues>) {
+  const theme = useTheme();
   const {
     field,
     fieldState: { error },
   } = useController({ name, control, rules });
+
+  const themeColors = [
+    theme.palette.primary.main,
+    theme.palette.secondary.main,
+    theme.palette.error.main,
+    theme.palette.warning.main,
+    theme.palette.success.main,
+    theme.palette.info.main,
+    "#9C27B0", // Purple
+    "#3F51B5", // Indigo
+    "#E91E63", // Pink
+    "#607D8B", // Blue Grey
+    "#795548", // Brown
+    "#00BCD4", // Cyan
+    "#212121", // Dark / Black
+  ];
 
   return (
     <Box mb={2}>
@@ -48,12 +48,15 @@ export function HookColorPicker<TFieldValues extends FieldValues>({
         gap={1.5}
         p={1.5}
         sx={{
-          border: error ? "1px solid #fa896b" : "1px solid #e5eaef",
+          border: "1px solid",
+          borderColor: error ? "error.main" : "divider",
           borderRadius: 2,
-          backgroundColor: "#fff",
+          backgroundColor: "background.paper",
+          maxHeight: 180, // Altura máxima para ativar a rolagem
+          overflowY: "auto", // Adiciona a barra de rolagem vertical
         }}
       >
-        {AVAILABLE_COLORS.map((color) => {
+        {themeColors.map((color) => {
           const isSelected = field.value === color;
 
           return (
@@ -61,8 +64,8 @@ export function HookColorPicker<TFieldValues extends FieldValues>({
               <Box
                 onClick={() => field.onChange(color)}
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 24,
+                  height: 24,
                   borderRadius: "50%",
                   backgroundColor: color,
                   cursor: "pointer",
@@ -70,7 +73,7 @@ export function HookColorPicker<TFieldValues extends FieldValues>({
                   alignItems: "center",
                   justifyContent: "center",
                   boxShadow: isSelected
-                    ? `0 0 0 3px #fff, 0 0 0 5px ${color}`
+                    ? `0 0 0 3px ${theme.palette.background.paper}, 0 0 0 5px ${color}`
                     : "0 2px 4px rgba(0,0,0,0.1)",
                   transition: "all 0.2s ease-in-out",
                   "&:hover": {

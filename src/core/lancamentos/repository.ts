@@ -88,6 +88,8 @@ export const lancamentoRepository = {
             select: {
               id: true,
               nome: true,
+              icone: true,
+              cor: true,
             },
           },
           despesa: {
@@ -96,6 +98,8 @@ export const lancamentoRepository = {
               nome: true,
               valorEstimado: true,
               diaVencimento: true,
+              icone: true,
+              cor: true,
             },
           },
           fonteRenda: {
@@ -104,6 +108,8 @@ export const lancamentoRepository = {
               nome: true,
               valorEstimado: true,
               diaRecebimento: true,
+              icone: true,
+              cor: true,
             },
           },
         },

@@ -4,6 +4,10 @@ import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types"
 import { FindAllFilters } from "@/dtos";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 
+export interface BulkDeletePayload {
+  ids: number[];
+}
+
 export const lancamentosApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getLancamentos: builder.query<PaginatedResult<LancamentoResposta>, FindAllFilters>({
@@ -42,6 +46,15 @@ export const lancamentosApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Lancamentos", "Resumo"],
     }),
+
+    bulkDeleteLancamentos: builder.mutation<{ deletedCount: number }, BulkDeletePayload>({
+      query: (payload) => ({
+        url: "/lancamentos/bulk-delete",
+        method: "DELETE",
+        body: payload,
+      }),
+      invalidatesTags: ["Lancamentos", "Resumo"],
+    }),
   }),
 });
 
@@ -51,4 +64,5 @@ export const {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
   useDeleteLancamentoMutation,
+  useBulkDeleteLancamentosMutation,
 } = lancamentosApi;

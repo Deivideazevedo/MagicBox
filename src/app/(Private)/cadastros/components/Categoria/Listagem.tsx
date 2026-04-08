@@ -120,7 +120,7 @@ export const Listagem = (formProps: ListProps) => {
                       sx={{
                         width: 40,
                         height: 40,
-                        borderRadius: 2,
+                        borderRadius: "50%",
                         backgroundColor: bg,
                         display: "flex",
                         alignItems: "center",

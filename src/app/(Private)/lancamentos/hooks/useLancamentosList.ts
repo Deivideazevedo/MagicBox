@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   useLazyGetLancamentosQuery,
+  useBulkDeleteLancamentosMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { SwalToast } from "@/utils/swalert";
-import axios from "axios";
 import { FindAllFilters } from "@/dtos";
 
 export interface FiltrosLancamentos {
@@ -49,6 +49,9 @@ export function useLancamentosList({
   // Se lancamentosProps existir (não é undefined), skip a query RTK
   const [trigger, { data: responseData, isLoading }] =
     useLazyGetLancamentosQuery();
+
+  const [bulkDelete, { isLoading: isBulkDeleting }] =
+    useBulkDeleteLancamentosMutation();
 
   useEffect(() => {
     trigger(filtros);
@@ -137,9 +140,7 @@ export function useLancamentosList({
 
         setIsDeleting(true);
         try {
-          await axios.delete("/api/lancamentos/bulk-delete", {
-            data: { ids: idsParaExcluir },
-          });
+          await bulkDelete({ ids: idsParaExcluir }).unwrap();
 
           SwalToast.fire({
             icon: "success",
@@ -162,9 +163,7 @@ export function useLancamentosList({
 
         setIsDeleting(true);
         try {
-          await axios.delete("/api/lancamentos/bulk-delete", {
-            data: { ids: selectedIds },
-          });
+          await bulkDelete({ ids: selectedIds }).unwrap();
 
           SwalToast.fire({
             icon: "success",
@@ -178,7 +177,7 @@ export function useLancamentosList({
         }
       },
     }),
-    [modals.excluir, selectedIds, modalHandlers.excluir],
+    [modals.excluir, selectedIds, modalHandlers.excluir, bulkDelete],
   );
 
   // Handlers de Paginação

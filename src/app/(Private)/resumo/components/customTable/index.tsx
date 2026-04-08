@@ -3,6 +3,7 @@
 import {
   Alert,
   alpha,
+  Avatar,
   Box,
   Collapse,
   Chip,
@@ -39,12 +40,14 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconChecks,
+  IconCategory,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ActionsIconMode } from "./components/ActionsIconMode";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
 import { IActionConfig } from "./types/actions";
+import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker";
 
 // Helpers de formatação
 const formatarValor = (valor: number | string) => {
@@ -80,6 +83,34 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
   {
     key: "nome",
     label: "Lançamento",
+    render: (row) => {
+      // Busca o ícone no mapa de ícones disponíveis ou usa um padrão
+      const IconeElemento = row.icone
+        ? AVAILABLE_ICONS[row.icone as keyof typeof AVAILABLE_ICONS]
+        : <IconCategory size={20} />;
+
+      return (
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar
+            sx={{
+              width: 30,
+              height: 30,
+              bgcolor: row?.cor ? alpha(row.cor, 0.15) : "primary.light",
+              color: row?.cor || "primary.main",
+              "& svg": {
+                width: 18,
+                height: 18,
+              },
+            }}
+          >
+            {IconeElemento}
+          </Avatar>
+          <Typography variant="body2" fontWeight={700}>
+            {row.nome}
+          </Typography>
+        </Stack>
+      );
+    },
   },
   {
     key: "valorPrevisto",
@@ -345,11 +376,10 @@ export function CustomTable({
           // color: theme.palette.text.primary,
         }}
       >
-        {`Total: ${
-          filteredData.length !== data.length
-            ? `${filteredData.length} / ${data.length}`
-            : data.length
-        }`}
+        {`Total: ${filteredData.length !== data.length
+          ? `${filteredData.length} / ${data.length}`
+          : data.length
+          }`}
       </Box>
     </Paper>
   );
@@ -409,7 +439,7 @@ const CustomRow = memo(
               aria-label={
                 isExpanded ? "Recolher detalhes" : "Expandir detalhes"
               }
-              // onClick={() => setIsExpanded((prev) => !prev)}
+            // onClick={() => setIsExpanded((prev) => !prev)}
             >
               {isExpanded ? (
                 <IconChevronUp size={18} />

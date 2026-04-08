@@ -58,7 +58,7 @@ export default function LancamentosPage() {
 
   return (
     <>
-      <Container maxWidth="xl">
+      <Container maxWidth={false} sx={{ px: { xs: 0, md: 2 } }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" gutterBottom fontWeight={700}>
             Lançamentos
@@ -68,17 +68,6 @@ export default function LancamentosPage() {
           </Typography>
         </Box>
 
-        {/* Cards no topo */}
-        {/* <Grid container spacing={3} mb={3}>
-          <Grid item xs={12}>
-            <MiniCardsResumo
-              totalLancamentos={totais.totalLancamentos}
-              valorTotal={totais.valorTotal}
-              valorPagamentos={totais.valorPagamentos}
-              valorAgendamentos={totais.valorAgendamentos}
-            />
-          </Grid>
-        </Grid> */}
 
         {/* Filtros avançados */}
         <FiltrosAvancados

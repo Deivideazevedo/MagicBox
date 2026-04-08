@@ -1,7 +1,5 @@
 "use client";
 
-// export const dynamic = 'force-dynamic';
-
 import { useState } from "react";
 import {
   Box,
@@ -97,7 +95,7 @@ export default function CadastrosPage() {
   }
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth={false} sx={{ px: { xs: 0, md: 2 } }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" gutterBottom fontWeight={700}>
           Cadastros

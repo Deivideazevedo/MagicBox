@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Popover, IconButton, Typography, Divider, alpha } from "@mui/material";
+import { Box, Popover, IconButton, Typography, Divider, alpha, useTheme } from "@mui/material";
 import { Control, FieldValues, Path } from "react-hook-form";
 import { DynamicIcon } from "../../shared/DynamicIcon";
 import { HookIconPicker } from "./HookIconPicker";
@@ -12,6 +12,8 @@ interface IconColorMenuPickerProps<TFieldValues extends FieldValues> {
   label?: string;
   watchIcon?: string | null;
   watchColor?: string | null;
+  fallbackColor?: string;
+  fallbackIcon?: string;
 }
 
 export function IconColorMenuPicker<TFieldValues extends FieldValues>({
@@ -21,7 +23,10 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
   label,
   watchIcon,
   watchColor,
+  fallbackColor,
+  fallbackIcon,
 }: IconColorMenuPickerProps<TFieldValues>) {
+  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -35,9 +40,8 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
   const open = Boolean(anchorEl);
   const id = open ? "icon-color-popover" : undefined;
 
-  const currentColor = watchColor || "#212121"; // Dark padrão
-  const currentIcon = watchIcon || "IconCategory";
-
+  const currentColor = watchColor || fallbackColor || theme.palette.primary.main;
+  const currentIcon = watchIcon || fallbackIcon;
   return (
     <Box>
       {label && (
@@ -65,6 +69,7 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
           "&:hover": {
             transform: "scale(1.05)",
             backgroundColor: alpha(currentColor, 0.25),
+            color: alpha(currentColor, 1),
           },
         }}
       >
@@ -84,26 +89,29 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
           vertical: "top",
           horizontal: "left",
         }}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            p: 2,
-            width: 320,
-            borderRadius: 3,
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-            border: "1px solid",
-            borderColor: "divider",
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              p: 2,
+              width: 310,
+              borderRadius: 2,
+              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+              border: "1px solid",
+              borderColor: "divider",
+            backgroundColor: "background.default",
+            },
           },
         }}
       >
         <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>
           Personalizar Aparência
         </Typography>
-        
+
         <HookIconPicker control={control} name={iconName} label="Escolha um Ícone" />
-        
+
         <Divider sx={{ my: 2 }} />
-        
+
         <HookColorPicker control={control} name={colorName} label="Escolha uma Cor" />
       </Popover>
     </Box>

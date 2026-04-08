@@ -14,40 +14,104 @@ export const resumoRepository = {
 
   async obterResumo({ userId, dataInicio, dataFim }: ResumoFiltros) {
     const response = await prisma.$queryRaw<ResumoResposta[]>`
-      SELECT
-        COALESCE(l.fonte_renda_id, L.despesa_id) as "origemId",
-        CASE 
-          WHEN l.fonte_renda_id IS NOT NULL THEN 'renda'
-          ELSE 'despesa'
-        END as "origem",
-        CASE 
-          WHEN l.fonte_renda_id IS NOT NULL THEN f.nome
-          ELSE d.nome
-        END as "nome",
-        SUM(CASE WHEN l.tipo = 'agendamento' THEN valor ELSE 0 END) as "valorPrevisto",
-        SUM(CASE WHEN l.tipo = 'pagamento' THEN valor ELSE 0 END)  as "valorPago",
-        MAX(CASE WHEN l.despesa_id IS NOT NULL THEN d."diaVencimento" ELSE f."diaRecebimento" END) as "diaVencido",
-        EXTRACT(MONTH FROM data) as "mes",
-        EXTRACT(YEAR FROM data) as "ano",
-        -- Agregando os detalhes como JSON
-        JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', l.id,
-            'data', l.data,
-            'valor', l.valor,
-            'tipo', l.tipo,
-            'observacao', COALESCE(l.observacao, l.observacao_automatica)
-          ) ORDER BY l.data DESC
-        ) as "detalhes"
-      FROM lancamentos l
-      LEFT JOIN despesas d ON d.id = l.despesa_id
-      LEFT JOIN fontes_renda f ON f.id = l.fonte_renda_id   
-      WHERE 
-        user_id = ${userId}
-        AND data >= ${dataInicio}
-        AND data <= ${dataFim}
-      GROUP BY 1, 2, 3, 7, 8
-      ORDER BY 8, 7, 3;
+      WITH meses_do_periodo AS (
+        SELECT generate_series(
+          date_trunc('month', ${dataInicio}::date),
+          date_trunc('month', ${dataFim}::date),
+          '1 month'::interval
+        )::date as mes_referencia
+      ),
+      itens_recorrentes_base AS (
+        SELECT 
+          d.id as "origemId",
+          'despesa' as "origem",
+          d.nome,
+          d."valorEstimado" as "valorPrevisto",
+          d."diaVencimento" as "diaVencido",
+          d.icone,
+          d.cor,
+          m.mes_referencia
+        FROM despesas d
+        CROSS JOIN meses_do_periodo m
+        WHERE d."userId" = ${userId} AND d.status = true AND d.mensalmente = true AND d."deletedAt" IS NULL
+        UNION ALL
+        SELECT 
+          f.id as "origemId",
+          'renda' as "origem",
+          f.nome,
+          f."valorEstimado" as "valorPrevisto",
+          f."diaRecebimento" as "diaVencido",
+          f.icone,
+          f.cor,
+          m.mes_referencia
+        FROM fontes_renda f
+        CROSS JOIN meses_do_periodo m
+        WHERE f."userId" = ${userId} AND f.status = true AND f.mensalmente = true AND f."deletedAt" IS NULL
+      ),
+      lancamentos_reais_agrupados AS (
+          SELECT
+              COALESCE(l.fonte_renda_id, l.despesa_id) as "origemId",
+              CASE WHEN l.fonte_renda_id IS NOT NULL THEN 'renda' ELSE 'despesa' END as "origem",
+              EXTRACT(MONTH FROM l.data) as "mes",
+              EXTRACT(YEAR FROM l.data) as "ano",
+              SUM(CASE WHEN l.tipo = 'agendamento' THEN valor ELSE 0 END) as "valorPrevisto",
+              SUM(CASE WHEN l.tipo = 'pagamento' THEN valor ELSE 0 END) as "valorPago",
+              JSON_AGG(
+                JSON_BUILD_OBJECT(
+                  'id', l.id, 
+                  'data', l.data, 
+                  'valor', l.valor, 
+                  'tipo', l.tipo, 
+                  'observacao', COALESCE(l.observacao, l.observacao_automatica)
+                ) ORDER BY l.data DESC
+              ) as "detalhes"
+          FROM lancamentos l
+          WHERE l.user_id = ${userId} AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
+          GROUP BY 1, 2, 3, 4
+      ),
+      uniao_de_dados AS (
+          -- Mantém o que já existe no banco (lançamentos reais)
+          SELECT 
+              real."origemId", real."origem", real."mes", real."ano", real."valorPrevisto", real."valorPago", real."detalhes",
+              CASE WHEN real."origem" = 'despesa' THEN d.nome ELSE f.nome END as "nome",
+              CASE WHEN real."origem" = 'despesa' THEN d."diaVencimento" ELSE f."diaRecebimento" END as "diaVencido",
+              CASE WHEN real."origem" = 'despesa' THEN d.icone ELSE f.icone END as "icone",
+              CASE WHEN real."origem" = 'despesa' THEN d.cor ELSE f.cor END as "cor"
+          FROM lancamentos_reais_agrupados real
+          LEFT JOIN despesas d ON real."origemId" = d.id AND real."origem" = 'despesa'
+          LEFT JOIN fontes_renda f ON real."origemId" = f.id AND real."origem" = 'renda'
+          
+          UNION ALL
+          
+          -- Adiciona o que é recorrente e está faltando no período
+          SELECT 
+              rec."origemId", rec."origem", 
+              EXTRACT(MONTH FROM rec.mes_referencia) as "mes", 
+              EXTRACT(YEAR FROM rec.mes_referencia) as "ano",
+              rec."valorPrevisto", 
+              0 as "valorPago", 
+              JSON_BUILD_ARRAY(
+                JSON_BUILD_OBJECT(
+                  'id', -1,
+                  'data', rec.mes_referencia,
+                  'valor', rec."valorPrevisto",
+                  'tipo', 'agendamento',
+                  'observacao', 'Agendamento recorrente mensal'
+                )
+              ) as "detalhes",
+              rec.nome, 
+              rec."diaVencido",
+              rec.icone,
+              rec.cor
+          FROM itens_recorrentes_base rec
+          WHERE NOT EXISTS (
+              SELECT 1 FROM lancamentos_reais_agrupados real 
+              WHERE real."origemId" = rec."origemId" AND real."origem" = rec."origem" 
+              AND real."mes" = EXTRACT(MONTH FROM rec.mes_referencia) 
+              AND real."ano" = EXTRACT(YEAR FROM rec.mes_referencia)
+          )
+      )
+      SELECT * FROM uniao_de_dados ORDER BY "ano", "mes", "nome";
     `;
 
     return response.map((item) => {
@@ -58,10 +122,10 @@ export const resumoRepository = {
 
       // Chamada da utilitária
       const { label, isAtrasado } = calcularStatus(
-        valorPago, 
-        valorPrevisto, 
-        item.diaVencido, 
-        mes, 
+        valorPago,
+        valorPrevisto,
+        item.diaVencido,
+        mes,
         ano
       );
 
@@ -74,8 +138,7 @@ export const resumoRepository = {
         id: `${item.origem}-${item.origemId}-${mes}-${ano}`,
         status: label,
         atrasado: isAtrasado,
-        // Detalhes já vêm prontos do SQL como um array
-        detalhes: item.detalhes 
+        detalhes: item.detalhes
       };
     });
   },
@@ -91,19 +154,72 @@ export const resumoRepository = {
     };
 
     const [res] = await prisma.$queryRaw<ResumoCardResumo[]>`
+      WITH meses_do_periodo AS (
+        SELECT generate_series(
+          date_trunc('month', ${dataInicio}::date),
+          date_trunc('month', ${dataFim}::date),
+          '1 month'::interval
+        )::date as mes_referencia
+      ),
+      recorrencias_faltantes AS (
+        -- Busca despesas recorrentes sem lançamento em cada mês
+        SELECT 
+          d.id,
+          d."valorEstimado" as valor,
+          'despesa' as origem
+        FROM despesas d
+        CROSS JOIN meses_do_periodo m
+        WHERE d."userId" = ${userId} AND d.status = true AND d.mensalmente = true AND d."deletedAt" IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM lancamentos l 
+          WHERE l.despesa_id = d.id 
+          AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
+          AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
+          AND l.user_id = ${userId}
+        )
+        UNION ALL
+        -- Busca fontes de renda recorrentes sem lançamento em cada mês
+        SELECT 
+          f.id,
+          f."valorEstimado" as valor,
+          'renda' as origem
+        FROM fontes_renda f
+        CROSS JOIN meses_do_periodo m
+        WHERE f."userId" = ${userId} AND f.status = true AND f.mensalmente = true AND f."deletedAt" IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM lancamentos l 
+          WHERE l.fonte_renda_id = f.id 
+          AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
+          AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
+          AND l.user_id = ${userId}
+        )
+      ),
+      totais_dos_lancamentos AS (
+        SELECT
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' THEN 1 ELSE 0 END), 0) as "pagoCount",
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' THEN 1 ELSE 0 END), 0) as "agendadoCount",
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) as "entradasPagas",
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) as "entradasAgendadas",
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) as "saidasPagas",
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) as "saidasAgendadas"
+        FROM lancamentos
+        WHERE user_id = ${userId} AND data >= ${dataInicio}::date AND data <= ${dataFim}::date
+      ),
+      totais_das_projecoes AS (
+        SELECT
+          COUNT(*) as total_projetado,
+          COALESCE(SUM(CASE WHEN origem = 'renda' THEN valor ELSE 0 END), 0) as entradas_projetadas,
+          COALESCE(SUM(CASE WHEN origem = 'despesa' THEN valor ELSE 0 END), 0) as saidas_projetadas
+        FROM recorrencias_faltantes
+      )
       SELECT
-        COALESCE(SUM(CASE WHEN tipo = 'pagamento' THEN 1 ELSE 0 END), 0) AS "transacoesPagas",
-        COALESCE(SUM(CASE WHEN tipo = 'agendamento' THEN 1 ELSE 0 END), 0) AS "transacoesAgendadas",
-        COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) AS "entradasPagas",
-        COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) AS "entradasAgendadas",
-        COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) AS "saidasPagas",
-        COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) AS "saidasAgendadas"
-      FROM
-        lancamentos
-      WHERE
-        user_id = ${userId}
-        AND data >= ${dataInicio}
-        AND data <= ${dataFim}
+        real."pagoCount"::float as "transacoesPagas",
+        (real."agendadoCount" + proj.total_projetado)::float as "transacoesAgendadas",
+        real."entradasPagas"::float as "entradasPagas",
+        (real."entradasAgendadas" + proj.entradas_projetadas)::float as "entradasAgendadas",
+        real."saidasPagas"::float as "saidasPagas",
+        (real."saidasAgendadas" + proj.saidas_projetadas)::float as "saidasAgendadas"
+      FROM totais_dos_lancamentos real, totais_das_projecoes proj;
     `;
 
     const totais = {
@@ -158,6 +274,8 @@ export const resumoRepository = {
           select: {
             id: true,
             nome: true,
+            icone: true,
+            cor: true,
           },
         },
         despesa: {
@@ -166,6 +284,8 @@ export const resumoRepository = {
             nome: true,
             valorEstimado: true,
             diaVencimento: true,
+            icone: true,
+            cor: true,
           },
         },
         fonteRenda: {
@@ -174,6 +294,8 @@ export const resumoRepository = {
             nome: true,
             valorEstimado: true,
             diaRecebimento: true,
+            icone: true,
+            cor: true,
           },
         },
       },

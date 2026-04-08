@@ -2,27 +2,33 @@ import {
   Box,
   FormHelperText,
   IconButton,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import {
+  IconBolt,
   IconBriefcase,
   IconBuildingStore,
   IconBus,
   IconCar,
+  IconCategory,
   IconCoffee,
   IconCoin,
   IconCreditCard,
   IconDeviceGamepad2,
   IconDeviceMobile,
   IconDevices,
+  IconDeviceTv,
+  IconDroplet,
+  IconGasStation,
   IconGift,
   IconHeart,
   IconHome,
   IconMovie,
   IconNotes,
-  IconPackages,
-  IconPigMoney,
+  IconPill,
+  IconPizza,
   IconPlane,
   IconReceipt,
   IconReportMedical,
@@ -31,9 +37,14 @@ import {
   IconShoppingCart,
   IconTools,
   IconWallet,
+  IconWifi,
 } from "@tabler/icons-react";
-import React from "react";
-import { FieldValues, useController, UseControllerProps } from "react-hook-form";
+import React, { useState } from "react";
+import {
+  FieldValues,
+  useController,
+  UseControllerProps,
+} from "react-hook-form";
 
 // Mapeamento de nomes de ícones para os componentes do tabler-icons
 // Salvamos apenas a string (ex: "IconHome") no banco para ser adaptável no Mobile futuramente
@@ -53,7 +64,6 @@ export const AVAILABLE_ICONS = {
   IconPlane: <IconPlane />,
   IconCoin: <IconCoin />,
   IconWallet: <IconWallet />,
-  IconPigMoney: <IconPigMoney />,
   IconBriefcase: <IconBriefcase />,
   IconGift: <IconGift />,
   IconDeviceGamepad2: <IconDeviceGamepad2 />,
@@ -61,8 +71,15 @@ export const AVAILABLE_ICONS = {
   IconTools: <IconTools />,
   IconReceipt: <IconReceipt />,
   IconCreditCard: <IconCreditCard />,
-  IconPackages: <IconPackages />,
-  IconNotes: <IconNotes />,
+  IconCategory: <IconCategory />,
+  // Novos ícones
+  IconBolt: <IconBolt />, // Eletricidade
+  IconWifi: <IconWifi />, // Internet
+  IconDeviceTv: <IconDeviceTv />, // TV
+  IconDroplet: <IconDroplet />, // Água
+  IconGasStation: <IconGasStation />, // Combustível
+  IconPizza: <IconPizza />, // Comida
+  IconPill: <IconPill />, // Farmácia
 };
 
 type HookIconPickerProps<TFieldValues extends FieldValues> =
@@ -81,41 +98,66 @@ export function HookIconPicker<TFieldValues extends FieldValues>({
     fieldState: { error },
   } = useController({ name, control, rules });
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredIcons = Object.entries(AVAILABLE_ICONS).filter(([key]) =>
+    key.toLowerCase().includes(searchTerm.toLowerCase().replace(/\s/g, "")),
+  );
+
   return (
-    <Box mb={2}>
+    <Box>
       {label && (
         <Typography variant="body2" fontWeight={600} mb={1}>
           {label}
         </Typography>
       )}
+      {/* <TextField
+        fullWidth
+        variant="outlined"
+        size="small"
+        placeholder="Pesquisar ícone..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        sx={{ mb: 1.5 }}
+      /> */}
       <Box
         display="flex"
         flexWrap="wrap"
         gap={1}
-        p={1.5}
+        p={1}
         sx={{
-          border: error ? "1px solid #fa896b" : "1px solid #e5eaef",
+          border: "1px solid",
+          borderColor: error ? "error.main" : "divider",
           borderRadius: 2,
-          backgroundColor: "#fff",
+          backgroundColor: "background.paper",
+          // maxHeight: 200, // Altura máxima para ativar a rolagem
+          // overflowY: "auto", // Adiciona a barra de rolagem vertical
         }}
       >
-        {Object.entries(AVAILABLE_ICONS).map(([key, iconComponent]) => (
-          <Tooltip title={key.replace("Icon", "")} key={key}>
+        {filteredIcons.map(([key, iconComponent]) => (
+          // <Tooltip title={key.replace("Icon", "")} key={key}>
             <IconButton
+              key={key}
               onClick={() => field.onChange(key)}
+              size="small"
               color={field.value === key ? "primary" : "default"}
               sx={{
-                backgroundColor: field.value === key ? "primary.light" : "transparent",
-                border: field.value === key ? "1px solid" : "1px solid transparent",
-                borderColor: field.value === key ? "primary.main" : "transparent",
+                backgroundColor:
+                  field.value === key ? "primary.light" : "transparent",
+                border:
+                  field.value === key ? "1px solid" : "1px solid transparent",
+                borderColor:
+                  field.value === key ? "primary.main" : "transparent",
                 "&:hover": {
-                  backgroundColor: field.value === key ? "primary.light" : "action.hover",
+                  color: field.value === key ? "primary.dark" : "primary.main",
+                  backgroundColor:
+                    field.value === key ? "primary.light" : "action.hover",
                 },
               }}
             >
               {iconComponent}
             </IconButton>
-          </Tooltip>
+          // </Tooltip>
         ))}
       </Box>
       {error && (

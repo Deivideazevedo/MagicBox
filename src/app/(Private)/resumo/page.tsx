@@ -37,55 +37,52 @@ export default function ResumoPage() {
 
 
   return (
-    <>
-      <Container maxWidth="xl">
-        <Box sx={{ mb: 0 }}>
-          <Typography variant="h3" gutterBottom fontWeight={700}>
-            Resumo
-          </Typography>
-          <Typography variant="h6" color="textSecondary">
-            Gerencie seus pagamentos e agendamentos financeiros
-          </Typography>
-        </Box>
+    <Container maxWidth={false} sx={{ px: { xs: 0, md: 2 } }}>
+      <Box sx={{ mb: 0 }}>
+        <Typography variant="h3" gutterBottom fontWeight={700}>
+          Resumo
+        </Typography>
+        <Typography variant="h6" color="textSecondary">
+          Gerencie seus pagamentos e agendamentos financeiros
+        </Typography>
+      </Box>
 
-        {/* Cards no topo */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12}>
-            <MiniCardsResumo
-              dataFim={filtros.dataFim}
-              dataInicio={filtros.dataInicio}
-            />
-          </Grid>
+      {/* Cards no topo */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item xs={12}>
+          <MiniCardsResumo
+            dataFim={filtros.dataFim}
+            dataInicio={filtros.dataInicio}
+          />
         </Grid>
+      </Grid>
 
-        {/* Filtros avançados */}
-        <FiltrosAvancados
-          filtros={filtros}
-          handleSearch={handleSearch}
-        />
+      {/* Filtros avançados */}
+      <FiltrosAvancados
+        filtros={filtros}
+        handleSearch={handleSearch}
+      />
 
-        {/* DataGrid */}
-        <CustomTable
-          data={resumo}
-          actions={[
-            {
-              title: "Visualizar",
-              callback: modalHandlers.visualizar.abrir,
-              color: "info",
-            },
-          ]}
-          pagination={{
-            page,
-            rowsPerPage: pageSize,
-            count: totalRows,
-            onUpdatePaginationParams,
-          }}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          emptyMessage="Nenhum lançamento foi encontrado"
-        />
-     
-      </Container>
+      {/* DataGrid */}
+      <CustomTable
+        data={resumo}
+        actions={[
+          {
+            title: "Visualizar",
+            callback: modalHandlers.visualizar.abrir,
+            color: "info",
+          },
+        ]}
+        pagination={{
+          page,
+          rowsPerPage: pageSize,
+          count: totalRows,
+          onUpdatePaginationParams,
+        }}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        emptyMessage="Nenhum lançamento foi encontrado"
+      />
 
       {/* Modal de Visualização */}
       <ModalVisualizacao
@@ -93,7 +90,8 @@ export default function ResumoPage() {
         lancamento={modais.visualizar}
         onClose={modalHandlers.visualizar.fechar}
       />
+    </Container>
 
-    </>
+
   );
 }

@@ -56,7 +56,7 @@ export const useCategorias = ({
       id: undefined,
       nome: "",
       icone: "IconCategory",
-      cor: "#212121",
+      cor: "",
     }),
     []
   );

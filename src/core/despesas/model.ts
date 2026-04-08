@@ -6,6 +6,8 @@ export class DespesaModel implements Despesa {
   userId: number;
   categoriaId: number;
   nome: string;
+  icone: string | null;
+  cor: string | null;
   mensalmente: boolean;
   valorEstimado: number | null;
   diaVencimento: number | null;
@@ -20,6 +22,8 @@ export class DespesaModel implements Despesa {
     this.userId = props.userId ?? 0;
     this.categoriaId = props.categoriaId;
     this.nome = props.nome;
+    this.icone = props.icone ?? null;
+    this.cor = props.cor ?? null;
     this.mensalmente = props.mensalmente ?? false;
     this.status = props.status;
 

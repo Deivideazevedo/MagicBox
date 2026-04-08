@@ -18,6 +18,8 @@ import {
   Tooltip,
   Typography,
   alpha,
+  Avatar,
+  Stack,
 } from "@mui/material";
 import { ReactNode, useState, useEffect, useMemo } from "react";
 import {
@@ -28,6 +30,7 @@ import {
   IconChecks,
   IconArrowDown,
   IconArrowUp,
+  IconCategory,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR as ptBRDate } from "date-fns/locale";
@@ -45,6 +48,7 @@ import { useSimpleSort } from "./hooks/useSimpleSort";
 import { useTableFilter } from "./hooks/useTableFilter";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
 import { createRenderColumn } from "./utils/renderColumn";
+import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker";
 
 // ==================== TYPES ====================
 
@@ -535,16 +539,46 @@ function CustomRow({
 
       {/* Categoria */}
       <TableCell>
-        <Typography variant="body2" fontWeight={500} noWrap>
-          {row.categoria?.nome || "-"}
-        </Typography>
+        <Stack direction="row" spacing={1.2} alignItems="center">
+          <Avatar
+            sx={{
+              width: 28,
+              height: 28,
+              bgcolor: row.categoria?.cor ? alpha(row.categoria.cor, 0.15) : "primary.light",
+              color: row.categoria?.cor || "primary.main",
+              "& svg": { width: 16, height: 16 },
+            }}
+          >
+            {row.categoria?.icone && AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
+              ? AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
+              : <IconCategory />}
+          </Avatar>
+          <Typography variant="body2" fontWeight={500} noWrap>
+            {row.categoria?.nome || "-"}
+          </Typography>
+        </Stack>
       </TableCell>
 
       {/* Nome (Despesa/Fonte) */}
       <TableCell>
-        <Typography variant="body2" noWrap>
-          {row.nome}
-        </Typography>
+        <Stack direction="row" spacing={1.2} alignItems="center">
+          <Avatar
+            sx={{
+              width: 28,
+              height: 28,
+              bgcolor: (row.despesa?.cor || row.fonteRenda?.cor) ? alpha((row.despesa?.cor || row.fonteRenda?.cor)!, 0.15) : "primary.light",
+              color: (row.despesa?.cor || row.fonteRenda?.cor) || "primary.main",
+              "& svg": { width: 16, height: 16 },
+            }}
+          >
+            {(row.despesa?.icone || row.fonteRenda?.icone) && AVAILABLE_ICONS[(row.despesa?.icone || row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS]
+              ? AVAILABLE_ICONS[(row.despesa?.icone || row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS]
+              : <IconCategory />}
+          </Avatar>
+          <Typography variant="body2" noWrap>
+            {row.nome}
+          </Typography>
+        </Stack>
       </TableCell>
 
       {/* Observação */}

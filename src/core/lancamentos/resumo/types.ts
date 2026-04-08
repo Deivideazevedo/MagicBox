@@ -17,6 +17,8 @@ export interface ResumoResposta {
   ano: number;
   status: string;
   atrasado: boolean;
+  icone: string | null;
+  cor: string | null;
   detalhes: DetalheResumo[];
 }
 
