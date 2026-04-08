@@ -58,6 +58,7 @@ export function parseError(error: unknown) {
       P2003: "Referência inválida ou não encontrada",
       P2025: "Registro não encontrado",
       P2014: "A operação viola uma restrição de integridade",
+      P2021: "Tabela não encontrada no banco. Execute as migrations no banco atual",
     };
 
     body = {

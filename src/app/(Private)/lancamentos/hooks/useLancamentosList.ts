@@ -1,21 +1,11 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import {
-  useGetLancamentosQuery,
-  useDeleteLancamentoMutation,
   useLazyGetLancamentosQuery,
 } from "@/services/endpoints/lancamentosApi";
-import { Lancamento } from "@/core/lancamentos/types";
-import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { LancamentoResposta } from "@/core/lancamentos/types";
 import { SwalToast } from "@/utils/swalert";
 import axios from "axios";
 import { FindAllFilters } from "@/dtos";
-
-// Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | FonteRenda) & {
-  origem: "despesa" | "renda";
-  uniqueId: string; // Composto: "despesa-{id}" ou "renda-{id}"
-};
 
 export interface FiltrosLancamentos {
   dataInicio?: string;
@@ -28,7 +18,7 @@ export interface FiltrosLancamentos {
 }
 
 interface UseLancamentosListProps {
-  lancamentos?: Lancamento[];
+  lancamentos?: LancamentoResposta[];
 }
 
 // Função para obter primeiro e último dia do mês atual
@@ -76,24 +66,24 @@ export function useLancamentosList({
 
   // Estados de modais agrupados
   const [modals, setModals] = useState({
-    visualizar: null as Lancamento | null,
-    editar: null as Lancamento | null,
-    excluir: null as Lancamento | null,
+    visualizar: null as LancamentoResposta | null,
+    editar: null as LancamentoResposta | null,
+    excluir: null as LancamentoResposta | null,
   });
 
   // Calcular totais com base nos dados do backend (já filtrados)
   const totais = useMemo(() => {
     const totalLancamentos = lancamentos.length;
     const valorTotal = lancamentos.reduce(
-      (acc: number, l: Lancamento) => acc + Number(l.valor),
+      (acc: number, l: LancamentoResposta) => acc + Number(l.valor),
       0,
     );
     const valorPagamentos = lancamentos
-      .filter((l: Lancamento) => l.tipo === "pagamento")
-      .reduce((acc: number, l: Lancamento) => acc + Number(l.valor), 0);
+      .filter((l: LancamentoResposta) => l.tipo === "pagamento")
+      .reduce((acc: number, l: LancamentoResposta) => acc + Number(l.valor), 0);
     const valorAgendamentos = lancamentos
-      .filter((l: Lancamento) => l.tipo === "agendamento")
-      .reduce((acc: number, l: Lancamento) => acc + Number(l.valor), 0);
+      .filter((l: LancamentoResposta) => l.tipo === "agendamento")
+      .reduce((acc: number, l: LancamentoResposta) => acc + Number(l.valor), 0);
 
     return {
       totalLancamentos,
@@ -117,17 +107,17 @@ export function useLancamentosList({
   const modalHandlers = useMemo(
     () => ({
       visualizar: {
-        abrir: (lancamento: Lancamento) =>
+        abrir: (lancamento: LancamentoResposta) =>
           setModals((prev) => ({ ...prev, visualizar: lancamento })),
         fechar: () => setModals((prev) => ({ ...prev, visualizar: null })),
       },
       editar: {
-        abrir: (lancamento: Lancamento) =>
+        abrir: (lancamento: LancamentoResposta) =>
           setModals((prev) => ({ ...prev, editar: lancamento })),
         fechar: () => setModals((prev) => ({ ...prev, editar: null })),
       },
       excluir: {
-        abrir: (lancamento: Lancamento) =>
+        abrir: (lancamento: LancamentoResposta) =>
           setModals((prev) => ({ ...prev, excluir: lancamento })),
         fechar: () => setModals((prev) => ({ ...prev, excluir: null })),
       },

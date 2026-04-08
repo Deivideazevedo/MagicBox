@@ -5,8 +5,8 @@ import MyApp from "./app";
 import "@/lib/zod-config";
 
 export const metadata = {
-  title: "Modernize Demo",
-  description: "Modernize kit",
+  title: "MagicBox",
+  description: "Sistema de Gestão Financeira",
 };
 
 export default function RootLayout({

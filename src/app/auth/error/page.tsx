@@ -166,7 +166,7 @@ const AuthErrorPage = () => {
               
               <Button
                 component={Link}
-                href="/auth/auth1/login"
+                href="/auth/login"
                 variant="contained"
                 size="large"
                 sx={{ mt: 2 }}

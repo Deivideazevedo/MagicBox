@@ -6,6 +6,7 @@ import React from "react";
 import Header from "./layout/vertical/header/Header";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
+import { alpha } from "@mui/system";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -20,7 +21,7 @@ const PageWrapper = styled("div")(({ theme }) => ({
   flexDirection: "column",
   zIndex: 1,
   width: "100%",
-  backgroundColor: theme.palette.background.default,
+  backgroundColor: alpha(theme.palette.grey[100], 1), // Fundo semi-transparente para destacar o conteúdo
 }));
 
 export default function PublicLayout({

@@ -1,13 +1,11 @@
 "use client";
 
-// export const dynamic = 'force-dynamic';
-
 import PageContainer from "@/app/components/container/PageContainer";
 import {
   Box,
   Button,
   Container,
-  Fab,
+  Fade,
   Grid,
   IconButton,
   Paper,
@@ -21,7 +19,7 @@ import {
   IconWallet
 } from "@tabler/icons-react";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FinancialSummaryCards from "./components/FinancialSummaryCards";
 import GoalsProgress from "./components/GoalsProgress";
 import MonthlyChart from "./components/MonthlyChart";
@@ -35,6 +33,11 @@ const Dashboard = () => {
   const { data: session } = useSession();
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<"despesa" | "conta" | "lancamento" | null>(null);
+  const [isPageVisible, setIsPageVisible] = useState(false);
+
+  useEffect(() => {
+    setIsPageVisible(true);
+  }, []);
 
   const handleQuickAction = (action: "despesa" | "conta" | "lancamento") => {
     setSelectedAction(action);
@@ -49,7 +52,8 @@ const Dashboard = () => {
 
   return (
     <PageContainer title="Dashboard" description="Visão geral das suas finanças">
-      <Container maxWidth="xl">
+      <Fade in={isPageVisible} timeout={350}>
+        <Container maxWidth="xl">
         {/* Welcome Section */}
         <Box sx={{ mb: 4 }}>
           <Typography 
@@ -213,7 +217,8 @@ const Dashboard = () => {
             </Paper>
           </Grid>
         </Grid>
-      </Container>
+        </Container>
+      </Fade>
     </PageContainer>
   );
 };

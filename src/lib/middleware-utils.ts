@@ -11,7 +11,7 @@ export interface AuthResult {
 }
 
 // Rotas públicas (não requerem autenticação)
-const PUBLIC_ROUTES = ["/", "/about"];
+const PUBLIC_ROUTES = ["/", "/about", "/privacy"];
 
 // Rotas de autenticação (login, registro, erro)
 const AUTH_ROUTES = ["/auth"];
@@ -106,7 +106,7 @@ export const redirectToLogin = (request: NextRequest, callbackUrl?: string) => {
   const { pathname, search } = request.nextUrl;
   const callback = callbackUrl || encodeURIComponent(pathname + search);
   return NextResponse.redirect(
-    new URL(`/auth/auth1/login?callbackUrl=${callback}`, request.url)
+    new URL(`/auth/login?callbackUrl=${callback}`, request.url)
   );
 };
 
@@ -117,7 +117,7 @@ export const handleAuthError = (request: NextRequest, error: string) => {
   const isCommonError = ["Callback", "AccessDenied", "OAuthSignin"].includes(
     error
   );
-  const loginUrl = new URL("/auth/auth1/login", request.url);
+  const loginUrl = new URL("/auth/login", request.url);
 
   if (isCommonError) {
     loginUrl.searchParams.set(

@@ -85,6 +85,8 @@ export const useCategorias = ({
         cor: payload.cor,
       };
 
+      console.log('payload', payload);
+
       try {
         if (payload.id) {
           await updateCategoria({
@@ -115,7 +117,8 @@ export const useCategorias = ({
         icone: categoria.icone,
         cor: categoria.cor,
       };
-      setRow({ ...categoria, ...data });
+      console.log('categoria3', categoria);
+      setRow(categoria);
       reset(data);
 
       // Foca no campo nome

@@ -11,34 +11,22 @@ import {
   Typography,
 } from "@mui/material";
 import { IconX, IconEdit } from "@tabler/icons-react";
-import { Lancamento } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { LancamentoResposta } from "@/core/lancamentos/types";
 import { useLancamentoForm } from "../hooks/useLancamentoForm";
 import Formulario from "./Formulario";
 
 interface ModalEdicaoProps {
   open: boolean;
-  lancamento: Lancamento | null;
-  categorias: Categoria[];
-  despesas: Despesa[];
-  fontesRenda: FonteRenda[];
+  lancamento: LancamentoResposta | null;
   onClose: () => void;
 }
 
 export default function ModalEdicao({
   open,
   lancamento,
-  categorias,
-  despesas,
-  fontesRenda,
   onClose,
 }: ModalEdicaoProps) {
   const formProps = useLancamentoForm({
-    categorias,
-    despesas,
-    fontesRenda,
     lancamentoParaEditar: lancamento,
     onSuccess: onClose,
   });

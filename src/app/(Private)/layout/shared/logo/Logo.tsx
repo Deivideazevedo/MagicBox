@@ -9,51 +9,47 @@ import { Box, Typography } from "@mui/material";
 const Logo = () => {
   const customizer = useSelector((state: AppState) => state.customizer);
   const theme = useTheme();
+  const isExpandedLogo = !customizer.isCollapse || customizer.isSidebarHover;
   
   const LinkStyled = styled(Link)(() => ({
     height: customizer.TopbarHeight,
-    width: customizer.isCollapse ? "40px" : "200px",
+    width: isExpandedLogo ? "220px" : "44px",
+    transform: "translateY(-4px)",
     overflow: "hidden",
     display: "flex",
-    alignItems: "center",
-    gap: "12px",
+    alignItems: "flex-end",
+    gap: "6px",
+    whiteSpace: "nowrap",
     textDecoration: "none",
+    transition: "width 0.6s ease-in-out",
   }));
 
   return (
     <LinkStyled href="/">
       <Image
-        src={customizer.activeMode === "dark" ? "/images/logos/logo-light.png" : "/images/logos/logo-dark.png"}
-        alt="Magic Box Icon"
-        height={40}
-        width={40}
+        src={"/images/logos/logo.png"}
+        alt="MagicBox Icon"
+        height={46}
+        width={46}
         priority
       />
-      {!customizer.isCollapse && (
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+      {isExpandedLogo && (
+        <Box sx={{ display: "flex", alignItems: "flex-end" }}>
           <Typography
             variant="h4"
             component="span"
             sx={{
               fontWeight: 700,
-              color: theme.palette.primary.main,
               fontSize: "1.5rem",
-              lineHeight: 1,
+              lineHeight: 1.15,
+              display: "block",
+              background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
             }}
           >
-            Magic
-          </Typography>
-          <Typography
-            variant="h4"
-            component="span"
-            sx={{
-              fontWeight: 700,
-              color: theme.palette.secondary.main,
-              fontSize: "1.5rem",
-              lineHeight: 1,
-            }}
-          >
-            Box
+            MagicBox
           </Typography>
         </Box>
       )}

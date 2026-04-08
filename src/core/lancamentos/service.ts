@@ -142,5 +142,21 @@ export const lancamentoService = {
     }
     // Agora deleta permanentemente (sem soft delete)
     return await repositorio.remover(id);
-  }
+  },
+
+  async removerEmMassa(ids: Array<string | number>, userId: string | number) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new ValidationError("IDs são obrigatórios");
+    }
+
+    const idsNumericos = ids
+      .map((valor) => Number(valor))
+      .filter((valor) => Number.isFinite(valor));
+
+    if (idsNumericos.length === 0) {
+      throw new ValidationError("IDs inválidos para exclusão");
+    }
+
+    return await repositorio.removerEmMassa(idsNumericos, Number(userId));
+  },
 };

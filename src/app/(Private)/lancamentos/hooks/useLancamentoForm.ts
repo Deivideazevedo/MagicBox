@@ -1,11 +1,14 @@
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
-import { Lancamento, LancamentoPayload } from "@/core/lancamentos/types";
+import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
 import {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -34,7 +37,7 @@ interface UseLancamentoFormProps {
   categorias?: Categoria[];
   despesas?: Despesa[];
   fontesRenda?: FonteRenda[];
-  lancamentoParaEditar?: Lancamento | null;
+  lancamentoParaEditar?: LancamentoResposta | null;
   onSuccess?: () => void;
 }
 
@@ -47,13 +50,22 @@ export function useLancamentoForm({
 }: UseLancamentoFormProps) {
   const { data: session } = useSession();
   const [origem, setOrigem] = useState<TipoLancamentoOrigem>("despesa");
-  const [shouldFocusItem, setShouldFocusItem] = useState(false);
 
-  const categoriasList = categoriasProps || [];
-  const despesasList = useMemo(() => despesasProps || [], [despesasProps]);
+  const { data: categoriasApi = [] } = useGetCategoriasQuery();
+  const { data: despesasApi = [] } = useGetDespesasQuery();
+  const { data: fontesRendaApi = [] } = useGetFontesRendaQuery();
+
+  const categoriasList = useMemo(
+    () => categoriasProps ?? categoriasApi,
+    [categoriasProps, categoriasApi],
+  );
+  const despesasList = useMemo(
+    () => despesasProps ?? despesasApi,
+    [despesasProps, despesasApi],
+  );
   const fontesRendaList = useMemo(
-    () => fontesRendaProps || [],
-    [fontesRendaProps],
+    () => fontesRendaProps ?? fontesRendaApi,
+    [fontesRendaProps, fontesRendaApi],
   );
 
   const [createLancamento, { isLoading: isCreating }] =
@@ -98,16 +110,12 @@ export function useLancamentoForm({
   // Popular form quando houver lançamento para editar
   useEffect(() => {
     if (lancamentoParaEditar) {
-      // Determinar origem (despesa ou fonteRenda) - considerar snake_case do Prisma
       const despesaId =
-        (lancamentoParaEditar as any).despesa_id ||
-        lancamentoParaEditar.despesaId;
+        lancamentoParaEditar?.despesaId ?? lancamentoParaEditar.despesa_id;
       const fonteRendaId =
-        (lancamentoParaEditar as any).fonte_renda_id ||
-        lancamentoParaEditar.fonteRendaId;
+        lancamentoParaEditar?.fonteRendaId ?? lancamentoParaEditar.fonte_renda_id;
       const categoriaId =
-        (lancamentoParaEditar as any).categoria_id ||
-        lancamentoParaEditar.categoriaId;
+        lancamentoParaEditar?.categoriaId ?? lancamentoParaEditar.categoria_id;
 
       const novaOrigem = despesaId ? "despesa" : "fonteRenda";
       setOrigem(novaOrigem);
@@ -115,7 +123,7 @@ export function useLancamentoForm({
       // Popular campos
       setValue("id", lancamentoParaEditar.id);
       setValue("categoriaId", categoriaId);
-      setValue("itemId", despesaId || fonteRendaId || 0);
+      setValue("itemId", Number(despesaId || fonteRendaId));
       setValue("tipo", lancamentoParaEditar.tipo);
       setValue("valor", Number(lancamentoParaEditar.valor));
 
@@ -139,26 +147,23 @@ export function useLancamentoForm({
     }
   }, [parcelar, setValue]);
 
-  // Resetar itemId ao mudar origem ou categoria
-  useEffect(() => {
-    setValue("itemId", 0);
-  }, [origem, categoriaId, setValue]);
 
   // Foca no itemId quando shouldFocusItem é true e o campo não está disabled
   useEffect(() => {
-    if (shouldFocusItem && categoriaId && categoriaId > 0) {
+    if (categoriaId && categoriaId > 0) {
       setFocus("itemId");
-      setShouldFocusItem(false);
     }
-  }, [shouldFocusItem, categoriaId, setFocus]);
+  }, [categoriaId, setFocus]);
 
   // Filtrar itens pela categoria selecionada
   const itensFiltrados = useMemo(() => {
     if (!categoriaId) return [];
     if (origem === "despesa") {
-      return despesasList.filter((d: any) => d.categoriaId === categoriaId);
+      return despesasList.filter((d) => Number(d.categoriaId) === Number(categoriaId));
     }
-    return fontesRendaList.filter((f: any) => f.categoriaId === categoriaId);
+    return fontesRendaList.filter(
+      (f) => Number(f.categoria?.id) === Number(categoriaId),
+    );
   }, [origem, categoriaId, despesasList, fontesRendaList]);
 
   // Calcular valor total com parcelas
@@ -209,8 +214,6 @@ export function useLancamentoForm({
           tipo: payload.tipo,
         });
 
-        // Sinaliza que deve focar no itemId assim que o campo estiver pronto
-        setShouldFocusItem(true);
 
         // Callback de sucesso
         onSuccess?.();
@@ -257,9 +260,11 @@ export function useLancamentoForm({
     reset,
     defaultValues,
     setFocus,
+    setValue,
     isDespesa,
     corTema,
     toggleOrigem,
     setOrigem,
+    id,
   };
 }

@@ -36,7 +36,6 @@ async function atualizar(
   const { id: categoriaId } = params;
   const corpo: CategoriaPayload = await requisicao.json();
   const usuario = await getAuthUser();
-
   
   const validacao = updateCategoriaSchema.parse(corpo);
 

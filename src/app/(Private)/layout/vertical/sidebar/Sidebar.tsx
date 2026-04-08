@@ -40,6 +40,7 @@ const Sidebar = () => {
           sx={{
             zIndex: 100,
             width: toggleWidth,
+            overflow: "hidden",
             flexShrink: 0,
             ...(customizer.isCollapse && {
               position: "absolute",
@@ -59,9 +60,9 @@ const Sidebar = () => {
               sx: {
                 width: toggleWidth,
                 boxSizing: "border-box",
-                // overflowX: "hidden",
+                overflowX: "hidden",
                 transition: theme.transitions.create("width", {
-                  duration: 600, // 0.6s em milissegundos
+                  duration: 800, // 0.8s em milissegundos
                   easing: theme.transitions.easing.easeInOut,
                 }),
               },
@@ -78,7 +79,7 @@ const Sidebar = () => {
               {/* ------------------------------------------- */}
               {/* Logo */}
               {/* ------------------------------------------- */}
-              <Box px={3}>
+              <Box px={2.5}>
                 <Logo />
               </Box>
               <Scrollbar sx={{ height: "calc(100% - 190px)" }}>

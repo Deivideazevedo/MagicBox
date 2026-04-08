@@ -26,14 +26,14 @@ import {
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Lancamento } from "@/core/lancamentos/types";
+import { LancamentoResposta } from "@/core/lancamentos/types";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
 
 interface ModalVisualizacaoProps {
   open: boolean;
-  lancamento: Lancamento | null;
+  lancamento: LancamentoResposta | null;
   categorias: Categoria[];
   despesas: Despesa[];
   fontesRenda: FonteRenda[];

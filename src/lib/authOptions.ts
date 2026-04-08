@@ -32,8 +32,9 @@ export const authOptions: AuthOptions = {
       },
       authorize: async (credentials) => {
         try {
+          // return credentials as User;
           const user = await authService.authenticate(credentials as AuthPayload);
-
+          
           if (user) {
             return {
               ...user,
@@ -62,7 +63,7 @@ export const authOptions: AuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/auth/auth1/login",
+    signIn: "/auth/login",
     signOut: "/",
   },
   callbacks: {
