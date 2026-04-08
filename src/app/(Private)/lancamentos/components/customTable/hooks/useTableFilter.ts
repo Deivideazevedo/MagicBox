@@ -32,6 +32,7 @@ export function useTableFilter<T extends object>({
     columns?.forEach((col) => map.set(col.key, col));
     return map;
   }, [columns]);
+  
 
   // Função para obter o valor de filtro baseado na prioridade: filterValue > render > valor da coluna
   const getFilterValue = useCallback(
