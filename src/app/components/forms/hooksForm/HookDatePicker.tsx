@@ -16,6 +16,7 @@ type HookDatePickerProps<TFieldValues extends FieldValues> =
     > & {
       shrinkLabel?: boolean;
       size?: TextFieldProps["size"];
+      actions?: Array<"today" | "clear" | "accept">;
     };
 
 export function HookDatePicker<TFieldValues extends FieldValues>({
@@ -24,6 +25,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   rules,
   shrinkLabel,
   size = "medium",
+  actions,
   ...datePickerProps
 }: HookDatePickerProps<TFieldValues>) {
   const {
@@ -77,8 +79,8 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
         actionBar: {
           actions: (variant) =>
             variant === "mobile"
-              ? ["today", "clear", "accept"]
-              : ["today", "clear"],
+              ? actions || ["today", "clear", "accept"]
+              : actions || ["today", "clear"],
         },
       }}
     //   renderDay={(day, _value, DayComponentProps) => {

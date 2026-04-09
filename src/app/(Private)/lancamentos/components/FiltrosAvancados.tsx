@@ -17,6 +17,8 @@ import {
   Divider,
   ListItemIcon,
   ListItemText,
+  Badge,
+  Tooltip,
 } from "@mui/material";
 import {
   IconFilter,
@@ -33,9 +35,13 @@ import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocompl
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
-import { FiltrosLancamentos } from "../hooks/useLancamentosList";
-import { useMemo, useState } from "react";
+import { FiltroRapido, TipoPeriodo } from "./FiltroRapido";
+import { parseISO, isValid } from "date-fns";
+import { FiltrosLancamentos, getDefaultDates } from "../utils";
+
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { FindAllFilters } from "@/dtos";
+import { debounce } from "lodash";
 
 // Tipo para item com origem e ID único
 type ItemComOrigem = (Despesa | FonteRenda) & {
@@ -71,7 +77,7 @@ interface FiltrosAvancadosProps {
   categorias: Categoria[];
   despesas: Despesa[];
   fontesRenda: FonteRenda[];
-  handleSearch: (filtros: Partial<FindAllFilters>) => void;
+  handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
 }
 
 export default function FiltrosAvancados({
@@ -97,16 +103,16 @@ export default function FiltrosAvancados({
     });
 
   // Filtros ativos (opcionais adicionados pelo usuário)
-  // Iniciamos com 'periodo' ativo por padrão se houver datas nos filtros
-  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>(() => {
-    const ativos: FiltroKey[] = [];
-    if (filtros.dataInicio || filtros.dataFim) ativos.push("periodo");
-    return ativos;
-  });
+  // Agora todos os filtros iniciam vazios conforme solicitação
+  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>([]);
 
-  // Menu "Adicionar Filtro"
+  // Estado para controlar a expansão do Accordion
+  const [expandido, setExpandido] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuAberto = Boolean(anchorEl);
+
+  // Estados do Filtro Rápido (Controlados)
+  const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
 
   const categoriaIdWatch = watch("categoriaId");
   const origemWatch = watch("origem");
@@ -117,12 +123,15 @@ export default function FiltrosAvancados({
   // Adicionar um filtro à lista de ativos
   const adicionarFiltro = (key: FiltroKey) => {
     setFiltrosAtivos((prev) => [...prev, key]);
+    setExpandido(true); // Expande o accordion ao adicionar um filtro
     // setAnchorEl(null);
   };
 
   // Remover um filtro da lista de ativos e limpar seu valor
   const removerFiltro = (key: FiltroKey) => {
-    setFiltrosAtivos((prev) => prev.filter((k) => k !== key));
+    const novosAtivos = filtrosAtivos.filter((k) => k !== key);
+    setFiltrosAtivos(novosAtivos);
+
     if (key === "categoriaId") setValue("categoriaId", null);
     else if (key === "item") setValue("item", null);
     else if (key === "origem") setValue("origem", "");
@@ -132,6 +141,10 @@ export default function FiltrosAvancados({
       setValue("dataInicio", defaultValues.dataInicio);
       setValue("dataFim", defaultValues.dataFim);
     }
+
+    // Se remover o último filtro, recolhe o accordion opcionalmente (mantive aberto para o usuário ver que limpou)
+    // Se preferir fechar quando estiver vazio:
+    if (novosAtivos.length === 0) setExpandido(false);
   };
 
   // Dados processados
@@ -172,9 +185,7 @@ export default function FiltrosAvancados({
         ? fontesRendaFiltradas
         : [...despesasFiltradas, ...fontesRendaComOrigem];
 
-  const onConvert = (
-    rawFilters: FiltrosLancamentos,
-  ): Partial<FindAllFilters> => {
+  const onConvert = useCallback((rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
     const { item, origem, tipo, ...rest } = rawFilters;
 
     const spllitedItem = item ? item.split("-") : [];
@@ -193,16 +204,56 @@ export default function FiltrosAvancados({
       categoriaId: rawFilters.categoriaId || undefined,
     };
     return result;
-  };
+  }, []);
 
-  const handleAplicar = (data: FiltrosLancamentos) => {
-    handleSearch(onConvert(data));
-  };
+  const handleSearchDebounced = useCallback(
+    debounce((data: FiltrosLancamentos) => {
+      handleSearch(onConvert(data));
+    }, 500),
+    [handleSearch, onConvert]
+  );
+
+  // Watch total para disparo automático
+  const formValues = watch();
+
+  useEffect(() => {
+    const novosFiltros = onConvert(formValues);
+
+    // Verifica se houve mudança real nos filtros para evitar loops infinitos
+    const mudou =
+      novosFiltros.dataInicio !== filtros.dataInicio ||
+      novosFiltros.dataFim !== filtros.dataFim ||
+      novosFiltros.origem !== filtros.origem ||
+      novosFiltros.tipo !== filtros.tipo ||
+      novosFiltros.categoriaId !== filtros.categoriaId ||
+      novosFiltros.despesaId !== filtros.despesaId ||
+      novosFiltros.fonteRendaId !== filtros.fonteRendaId ||
+      novosFiltros.observacao !== filtros.observacao;
+
+    if (!mudou) return;
+
+    if (formValues.observacao !== filtros.observacao) {
+      handleSearchDebounced(formValues);
+    } else {
+      handleSearch(novosFiltros);
+    }
+  }, [formValues, filtros, handleSearch, handleSearchDebounced, onConvert]);
 
   const handleLimpar = () => {
-    reset(defaultValues);
+    reset({
+      ...getDefaultDates(),
+      origem: "",
+      tipo: "",
+      categoriaId: null,
+      observacao: "",
+    });
     setFiltrosAtivos([]);
-    handleSearch(onConvert(defaultValues));
+    setTipoPeriodo("mes");
+    handleSearch({
+      ...getDefaultDates(),
+      page: 0,
+      limit: 10,
+    }, true);
   };
 
   // Renderiza o campo de acordo com a chave do filtro
@@ -305,7 +356,8 @@ export default function FiltrosAvancados({
 
   return (
     <Accordion
-      defaultExpanded={true}
+      expanded={expandido}
+      onChange={(_e, expanded) => setExpandido(expanded)}
       sx={{
         borderRadius: 3,
         border: "1px solid",
@@ -339,152 +391,198 @@ export default function FiltrosAvancados({
           gap={1.5}
           sx={{ flex: { xs: "1 1 100%", sm: "0 1 auto" } }}
         >
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "primary.main",
-              flexShrink: 0,
-            }}
-          >
-            <IconFilter size={20} />
-          </Box>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="h6" fontWeight={600} noWrap>
-              Filtros
-            </Typography>
-            {filtrosAtivos.length > 0 && (
-              <Chip
-                label={`${filtrosAtivos.length + 2} ativos`}
-                size="small"
-                color="primary"
-                sx={{ fontWeight: 600, fontSize: "0.7rem", height: 20 }}
+          <Tooltip title="Filtros" arrow>
+            <Badge
+              badgeContent={filtrosAtivos.length}
+              color="primary"
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+              sx={{
+                "& .MuiBadge-badge": {
+                  fontSize: "0.625rem",
+                  height: 18,
+                  minWidth: 18,
+                  padding: "0 3px",
+                  bgcolor: (theme) => theme.palette.secondary.main,
+                  color: (theme) => theme.palette.primary.contrastText,
+                  fontWeight: 700,
+                  top: 4,
+                  right: 4,
+                },
+              }}
+            >
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAnchorEl(e.currentTarget);
+                }}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                  },
+                }}
+              >
+                <IconFilter size={20} />
+              </IconButton>
+            </Badge>
+          </Tooltip>
+          <Typography variant="h6" fontWeight={600} noWrap>
+            Filtros
+          </Typography>
+        </Box>
+
+        {/* Filtro Rápido aqui agora */}
+        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start", ml: { sm: 4 }, mt: { xs: 1, sm: 0 }, order: { xs: 3, sm: 2 } }}>
+          {!filtrosAtivos.includes("periodo") && (
+            <Box onClick={(e) => e.stopPropagation()}>
+              <FiltroRapido 
+                watch={watch} 
+                setValue={setValue} 
+                control={control}
+                tipo={tipoPeriodo}
+                setTipo={setTipoPeriodo}
               />
-            )}
-          </Box>
+            </Box>
+          )}
         </Box>
 
 
-        {/* Botão Adicionar Filtro */}
-        {filtrosListagem.length > 0 && (
-          <Box
-            sx={{
-              mr: 1,
-              width: { xs: "100%", sm: "auto" },
-              display: "flex",
-              // justifyContent: { xs: "flex-start", sm: "flex-end" },
-              mt: { xs: 1, sm: 0 },
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<IconPlus size={16} />}
-              onClick={(e) => {
-                setAnchorEl(e.currentTarget);
-              }}
-              sx={{
-                borderStyle: "dashed",
+        {/* Menu de filtros disponíveis */}
+        <Menu
+          anchorEl={anchorEl}
+          open={menuAberto}
+          onClose={() => setAnchorEl(null)}
+          onClick={(e) => e.stopPropagation()}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          slotProps={{
+            paper: {
+              // elevation: 3,
+              sx: {
+                minWidth: 180,
+                mt: 1,
                 borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 500,
-                color: "text.secondary",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                border: "1px solid",
                 borderColor: "divider",
-                height: 40,
-                width: { xs: "100%", sm: "auto" },
-                "&:hover": {
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  borderStyle: "dashed",
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
-            >
-              Adicionar Filtro
-            </Button>
-
-            {/* Menu de filtros disponíveis */}
-            <Menu
-              anchorEl={anchorEl}
-              open={menuAberto}
-              onClose={() => setAnchorEl(null)}
-              PaperProps={{
-                elevation: 3,
-                sx: {
-                  borderRadius: 2,
-                  minWidth: 180,
-                  mt: 0.5,
-                  "& .MuiMenuItem-root": {
-                    fontSize: "0.875rem",
-                    px: 2,
-                    py: 1,
-                    borderRadius: 1,
-                    mx: 0.5,
-                    my: 0.25,
-                    "&:hover": {
-                      bgcolor: (theme) =>
-                        alpha(theme.palette.primary.main, 0.08),
-                      color: "primary.main",
-                    },
+                backgroundColor: "background.default",
+                "& .MuiMenuItem-root": {
+                  fontSize: "0.875rem",
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  mx: 0.5,
+                  my: 0.25,
+                  "&:hover": {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                    color: "primary.main",
                   },
                 },
+              },
+            },
+          }}
+        >
+          <Typography
+            variant="caption"
+            fontWeight={600}
+            color="text.secondary"
+            sx={{ px: 2, pt: 1, pb: 0.5, display: "block" }}
+          >
+            Filtros disponíveis
+          </Typography>
+          <Divider sx={{ mb: 0.5 }} />
+          {filtrosListagem.map((f) => {
+            const isActive = filtrosAtivos.includes(f.key);
+            return (
+              <MenuItem
+                key={f.key}
+                onClick={() => {
+                  if (isActive) {
+                    removerFiltro(f.key);
+                  } else {
+                    adicionarFiltro(f.key);
+                  }
+                }}
+                sx={{
+                  bgcolor: (theme) =>
+                    isActive
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : "transparent",
+                  color: isActive ? "primary.main" : "text.primary",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: "32px !important",
+                    color: isActive ? "primary.main" : "text.disabled",
+                  }}
+                >
+                  {isActive ? (
+                    <IconCheck size={18} />
+                  ) : (
+                    <IconPlus size={18} />
+                  )}
+                </ListItemIcon>
+                <ListItemText primary={f.label} />
+              </MenuItem>
+            );
+          })}
+
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem
+            onClick={() => {
+              handleLimpar();
+              setAnchorEl(null);
+            }}
+            sx={{
+              color: "error.main",
+              "&.MuiMenuItem-root:hover": { // Adicionando a classe para aumentar especificidade
+                bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
+                color: "error.main",
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: "32px !important", color: "error.main" }}>
+              <IconFilterOff size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Resetar" />
+          </MenuItem>
+          {/* <Box sx={{ px: 1, }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<IconFilterOff size={18} />}
+              onClick={() => {
+                handleLimpar();
+                setAnchorEl(null);
+              }}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                py: 0.75,
               }}
             >
-              <Typography
-                variant="caption"
-                fontWeight={600}
-                color="text.secondary"
-                sx={{ px: 2, pt: 1, pb: 0.5, display: "block" }}
-              >
-                Filtros disponíveis
-              </Typography>
-              <Divider sx={{ mb: 0.5 }} />
-              {filtrosListagem.map((f) => {
-                const isActive = filtrosAtivos.includes(f.key);
-                return (
-                  <MenuItem
-                    key={f.key}
-                    onClick={() => {
-                      if (isActive) {
-                        removerFiltro(f.key);
-                      } else {
-                        adicionarFiltro(f.key);
-                      }
-                    }}
-                    sx={{
-                      bgcolor: (theme) =>
-                        isActive
-                          ? alpha(theme.palette.primary.main, 0.08)
-                          : "transparent",
-                      color: isActive ? "primary.main" : "text.primary",
-                      fontWeight: isActive ? 600 : 400,
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: "32px !important",
-                        color: isActive ? "primary.main" : "text.disabled",
-                      }}
-                    >
-                      {isActive ? <IconCheck size={18} /> : <IconPlus size={18} />}
-                    </ListItemIcon>
-                    <ListItemText primary={f.label} />
-                  </MenuItem>
-                );
-              })}
-            </Menu>
-          </Box>
-        )}
+              Resetar Filtros
+            </Button>
+          </Box> */}
+        </Menu>
       </AccordionSummary>
 
       <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-        <form onSubmit={handleSubmit(handleAplicar)}>
+        <form>
           {/* Linha 1 — Filtros fixos + botão adicionar */}
           <Grid container spacing={2} alignItems="flex-end">
             {/* Filtros opcionais ativos */}
@@ -535,33 +633,8 @@ export default function FiltrosAvancados({
                 );
               })}
           </Grid>
-
-
-          {/* Botões de ação */}
-          <Box display="flex" gap={2} mt={2.5}>
-            <Button
-              fullWidth
-              type="submit"
-              variant="contained"
-              startIcon={<IconFilter size={18} />}
-              size="small"
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-            >
-              Aplicar
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<IconFilterOff size={18} />}
-              onClick={handleLimpar}
-              size="small"
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 500 }}
-            >
-              Limpar
-            </Button>
-          </Box>
         </form>
       </AccordionDetails>
-    </Accordion >
+    </Accordion>
   );
 }

@@ -147,9 +147,9 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
           }}
         >
           {row.categoria?.icone &&
-          AVAILABLE_ICONS[
+            AVAILABLE_ICONS[
             row.categoria.icone as keyof typeof AVAILABLE_ICONS
-          ] ? (
+            ] ? (
             AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
           ) : (
             <IconCategory />
@@ -182,13 +182,13 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
           }}
         >
           {(row.despesa?.icone || row.fonteRenda?.icone) &&
-          AVAILABLE_ICONS[
+            AVAILABLE_ICONS[
             (row.despesa?.icone ||
               row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
-          ] ? (
+            ] ? (
             AVAILABLE_ICONS[
-              (row.despesa?.icone ||
-                row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
+            (row.despesa?.icone ||
+              row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
             ]
           ) : (
             <IconCategory />
@@ -431,7 +431,7 @@ export function CustomTable({
                   </Alert>
                 </TableCell>
               </TableRow>
-            ) : (
+            ) : sortedData.length > 0 && !isLoading && (
               sortedData.map((row) => (
                 <CustomRow
                   key={row.id}

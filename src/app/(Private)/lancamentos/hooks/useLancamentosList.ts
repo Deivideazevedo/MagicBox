@@ -1,37 +1,17 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import {
-  useLazyGetLancamentosQuery,
+  useGetLancamentosQuery,
   useBulkDeleteLancamentosMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { SwalToast } from "@/utils/swalert";
 import { FindAllFilters } from "@/dtos";
-
-export interface FiltrosLancamentos {
-  dataInicio?: string;
-  dataFim?: string;
-  categoriaId?: number | null;
-  item?: string | null;
-  observacao?: string;
-  origem?: "despesa" | "renda" | "";
-  tipo?: "pagamento" | "agendamento" | "";
-}
+import { FiltrosLancamentos, getDefaultDates } from "../utils";
 
 interface UseLancamentosListProps {
   lancamentos?: LancamentoResposta[];
 }
 
-// Função para obter primeiro e último dia do mês atual
-const getDefaultDates = () => {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  return {
-    dataInicio: firstDay.toISOString().split("T")[0],
-    dataFim: lastDay.toISOString().split("T")[0],
-  };
-};
 
 export function useLancamentosList({
   lancamentos: lancamentosProps,
@@ -46,16 +26,15 @@ export function useLancamentosList({
     };
   });
 
-  // Se lancamentosProps existir (não é undefined), skip a query RTK
-  const [trigger, { data: responseData, isLoading }] =
-    useLazyGetLancamentosQuery();
+  // Query declarativa e reativa (dispara automaticamente ao mudar filtros)
+  const { 
+    data: responseData, 
+    isLoading, 
+    isFetching 
+  } = useGetLancamentosQuery(filtros);
 
   const [bulkDelete, { isLoading: isBulkDeleting }] =
     useBulkDeleteLancamentosMutation();
-
-  useEffect(() => {
-    trigger(filtros);
-  }, [filtros, trigger]);
 
   const { lancamentosFromQuery, meta } = useMemo(() => {
     return {
@@ -98,12 +77,14 @@ export function useLancamentosList({
 
   // Handlers de Filtros
   const handleSearch = useCallback(
-    (novosFiltros: Partial<FindAllFilters>) => {
-      const finalFiltros = { ...filtros, ...novosFiltros };
-      setFiltros(finalFiltros);
+    (novosFiltros: Partial<FindAllFilters>, replace = false) => {
+      setFiltros((prev) => {
+        if (replace) return novosFiltros as FindAllFilters;
+        return { ...prev, ...novosFiltros };
+      });
       setSelectedIds([]);
     },
-    [filtros],
+    [],
   );
 
   // Handlers de Modais
@@ -206,7 +187,7 @@ export function useLancamentosList({
     // Dados
     lancamentos,
     totais,
-    isLoading,
+    isLoading: isLoading || isFetching,
 
     // Paginação
     page: filtros.page || 0,
