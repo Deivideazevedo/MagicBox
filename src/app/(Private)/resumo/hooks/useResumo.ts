@@ -2,7 +2,8 @@ import {
   ResumoParametros,
   ResumoResposta,
 } from "@/core/lancamentos/resumo/types";
-import { useLazyGetResumoQuery } from "@/services/endpoints/resumoApi";
+import { useGetResumoQuery } from "@/services/endpoints/resumoApi";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Função para obter primeiro e último dia do mês atual
@@ -24,15 +25,10 @@ export function useResumo() {
     };
   });
 
-  // Se extratosProps existir (não é undefined), skip a query RTK
-  const [trigger, { data: responseData, isLoading, isFetching }] =
-    useLazyGetResumoQuery();
+  // Query reativa baseada no estado de filtros
+  const { data: responseData, isLoading, isFetching } = 
+    useGetResumoQuery(filtros);
 
-    console.log('responseData', responseData);
-  useEffect(() => {
-    trigger(filtros, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
 
   // Estados de modais agrupados
@@ -45,11 +41,9 @@ export function useResumo() {
   // Handlers de Filtros
   const handleSearch = useCallback(
     (novosFiltros: Partial<ResumoParametros>) => {
-      const finalFiltros = { ...filtros, ...novosFiltros };
-      trigger(finalFiltros, true);
-      setFiltros(finalFiltros);
+      setFiltros((prev) => ({ ...prev, ...novosFiltros }));
     },
-    [filtros, trigger],
+    [],
   );
 
   // Handlers de Modais
@@ -66,13 +60,9 @@ export function useResumo() {
 
   const onUpdatePaginationParams = useCallback(
     (params: { page?: number; limit?: number }) => {
-      const finalFiltros = {
-        ...filtros,
-      };
-      trigger(finalFiltros, true);
-      setFiltros(finalFiltros);
+      // Futura implementação de paginação se necessário
     },
-    [trigger, filtros],
+    [],
   );
 
   return {

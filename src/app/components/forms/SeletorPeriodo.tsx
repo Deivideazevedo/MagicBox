@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Button,
@@ -9,10 +9,9 @@ import {
   MenuItem,
   Typography,
   alpha,
-  Radio,
-  Tooltip,
   ListItemIcon,
   ListItemText,
+  TextField,
 } from "@mui/material";
 import {
   IconChevronLeft,
@@ -38,9 +37,8 @@ import {
   parseISO,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { UseFormSetValue, UseFormWatch } from "react-hook-form";
-import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
-import { FiltrosLancamentos } from "../utils";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 
 export type TipoPeriodo = "ano" | "mes" | "semana" | "dia";
 
@@ -51,29 +49,39 @@ export const OPCOES_TIPO: { value: TipoPeriodo; label: string }[] = [
   { value: "dia", label: "Dia" },
 ];
 
-interface FiltroRapidoProps {
-  watch: UseFormWatch<FiltrosLancamentos>;
-  setValue: UseFormSetValue<FiltrosLancamentos>;
-  control: any;
-  tipo: TipoPeriodo;
-  setTipo: (tipo: TipoPeriodo) => void;
+export interface Periodo {
+  dataInicio: string;
+  dataFim: string;
 }
 
-export function FiltroRapido({
-  watch,
-  setValue,
-  control,
+interface SeletorPeriodoProps {
+  dataInicio?: string;
+  dataFim?: string;
+  tipo: TipoPeriodo;
+  onTipoChange: (tipo: TipoPeriodo) => void;
+  onChange: (periodo: Periodo) => void;
+}
+
+export function SeletorPeriodo({
+  dataInicio,
+  dataFim,
   tipo,
-  setTipo,
-}: FiltroRapidoProps) {
-  const [dataReferencia, setDataReferencia] = useState(new Date());
+  onTipoChange,
+  onChange,
+}: SeletorPeriodoProps) {
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [pickerAberto, setPickerAberto] = useState(false);
 
-  const dataInicioForm = watch("dataInicio");
-  const dataFimForm = watch("dataFim");
+  // Deriva a data de referência das props para cálculos de navegação
+  const dataRef = useMemo(() => {
+    if (!dataInicio) return new Date();
+    const d = parseISO(dataInicio);
+    return isValid(d) ? d : new Date();
+  }, [dataInicio]);
 
-  // Atualiza as datas no formulário baseado no tipo e data de referência
-  const atualizarDatas = (novoTipo: TipoPeriodo, ref: Date) => {
+  // Função para calcular o período com base no tipo e em uma data de referência
+  const calcularPeriodo = (novoTipo: TipoPeriodo, ref: Date): Periodo => {
     let inicio: Date;
     let fim: Date;
 
@@ -83,8 +91,8 @@ export function FiltroRapido({
         fim = endOfDay(ref);
         break;
       case "semana":
-        inicio = startOfWeek(ref, { weekStartsOn: 1 }); // Segunda
-        fim = endOfWeek(ref, { weekStartsOn: 1 });
+        inicio = startOfWeek(ref, { weekStartsOn: 0 }); // Começa no domingo
+        fim = endOfWeek(ref, { weekStartsOn: 0 });
         break;
       case "mes":
         inicio = startOfMonth(ref);
@@ -95,46 +103,47 @@ export function FiltroRapido({
         fim = endOfYear(ref);
         break;
       default:
-        return;
+        inicio = ref;
+        fim = ref;
     }
 
-    setValue("dataInicio", format(inicio, "yyyy-MM-dd"));
-    setValue("dataFim", format(fim, "yyyy-MM-dd"));
+    return {
+      dataInicio: format(inicio, "yyyy-MM-dd"),
+      dataFim: format(fim, "yyyy-MM-dd"),
+    };
   };
 
-  // Navegação
+  // Navegação para trás ou para frente
   const navegar = (direcao: "anterior" | "proximo") => {
     const delta = direcao === "proximo" ? 1 : -1;
     let novaRef: Date;
 
     switch (tipo) {
       case "dia":
-        novaRef = addDays(dataReferencia, delta);
+        novaRef = addDays(dataRef, delta);
         break;
       case "semana":
-        novaRef = addWeeks(dataReferencia, delta);
+        novaRef = addWeeks(dataRef, delta);
         break;
       case "mes":
-        novaRef = addMonths(dataReferencia, delta);
+        novaRef = addMonths(dataRef, delta);
         break;
       case "ano":
-        novaRef = addYears(dataReferencia, delta);
+        novaRef = addYears(dataRef, delta);
         break;
       default:
-        novaRef = dataReferencia;
+        novaRef = dataRef;
     }
 
-    setDataReferencia(novaRef);
-    atualizarDatas(tipo, novaRef);
+    onChange(calcularPeriodo(tipo, novaRef));
   };
 
-  // Texto formatado
+  // Texto formatado para exibir o período amigavelmente
   const textoPeriodo = useMemo(() => {
-    if (!dataInicioForm || !dataFimForm) return "...";
+    if (!dataInicio || !dataFim) return "...";
 
-    // Tenta usar as datas do formulário se forem válidas e condizerem com a ref
-    const dIni = parseISO(dataInicioForm);
-    const dFim = parseISO(dataFimForm);
+    const dIni = parseISO(dataInicio);
+    const dFim = parseISO(dataFim);
 
     if (!isValid(dIni) || !isValid(dFim)) return "...";
 
@@ -162,33 +171,11 @@ export function FiltroRapido({
     }
 
     return "...";
-  }, [dataInicioForm, dataFimForm, tipo]);
-
-  // Sincroniza a data de referência se as datas do formulário mudarem externamente (ex: Limpar)
-  useEffect(() => {
-    if (dataInicioForm) {
-      const d = parseISO(dataInicioForm);
-      if (isValid(d)) {
-        setDataReferencia(d);
-        if (tipo === "dia") {
-          setValue("dataFim", dataInicioForm);
-        }
-      }
-    }
-  }, [dataInicioForm, tipo, setValue]);
-
-  // Inicializa datas se estiverem vazias
-  useEffect(() => {
-    if (!dataInicioForm || !dataFimForm) {
-      atualizarDatas(tipo, dataReferencia);
-    }
-  }, []);
-
-  const [pickerAberto, setPickerAberto] = useState(false);
+  }, [dataInicio, dataFim, tipo]);
 
   return (
     <Box display="flex" alignItems="center" gap={1}>
-      {/* Seletor de Tipo */}
+      {/* Seletor do Tipo de Granularidade (Ano, Mês, Semana, Dia) */}
       <Button
         variant="outlined"
         onClick={(e) => setAnchorEl(e.currentTarget)}
@@ -243,10 +230,12 @@ export function FiltroRapido({
             <MenuItem
               key={opcao.value}
               onClick={() => {
-                setTipo(opcao.value);
-                atualizarDatas(opcao.value, dataReferencia);
+                onTipoChange(opcao.value);
+                onChange(calcularPeriodo(opcao.value, new Date()));
                 setAnchorEl(null);
               }}
+
+
               sx={{
                 borderRadius: 1,
                 mx: 0.5,
@@ -282,7 +271,7 @@ export function FiltroRapido({
         })}
       </Menu>
 
-      {/* Navegador */}
+      {/* Controles de Navegação do Período */}
       <Box
         display="flex"
         alignItems="center"
@@ -332,14 +321,20 @@ export function FiltroRapido({
                 {textoPeriodo}
               </Typography>
               <Box sx={{ width: 0, height: 0, overflow: 'hidden', position: 'absolute' }}>
-                <HookDatePicker
-                  name="dataInicio"
-                  control={control}
-                  size="small"
-                  actions={["today"]}
+                <DatePicker
                   open={pickerAberto}
                   onOpen={() => setPickerAberto(true)}
                   onClose={() => setPickerAberto(false)}
+                  value={dataInicio ? new Date(dataInicio + "T00:00:00") : null}
+                  onChange={(date: Date | null) => {
+                    if (date && isValid(date)) {
+                      const formatted = fnFormatDateInTimeZone({ date, format: "date" });
+                      if (formatted) {
+                        onChange({ dataInicio: formatted, dataFim: formatted });
+                      }
+                    }
+                  }}
+                  renderInput={(params) => <TextField {...params} />}
                 />
               </Box>
             </Box>

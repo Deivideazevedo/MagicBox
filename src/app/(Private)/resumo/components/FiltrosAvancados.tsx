@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+
 import {
   Box,
   Button,
@@ -23,10 +23,13 @@ import {
   IconCalendar,
 } from "@tabler/icons-react";
 import { FindAllFilters } from "@/dtos";
+import { SeletorPeriodo, TipoPeriodo } from "@/app/components/forms/SeletorPeriodo";
+
 
 // Importe o novo componente que criamos
 import { CustomDateRangePicker } from "./CustomDateRangePicker"; // Ajuste o caminho conforme necessário
 import { ResumoParametros } from "@/core/lancamentos/resumo/types";
+// import { CustomDateRangePicker2 } from "./CustomDateRangePicker";
 
 export interface FiltrosExtrato {
   dataInicio?: string | null;
@@ -51,83 +54,16 @@ export default function FiltrosAvancados({
 }: FiltrosAvancadosProps) {
   const theme = useTheme();
 
-  const [filtroRapido, setFiltroRapido] = useState<"mes" | "ano" | "custom">(
-    "mes",
-  );
+  const [expandido, setExpandido] = useState(false);
+  const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
 
-  const defaultValues: FiltrosExtrato = {
-    dataInicio:
-      filtros.dataInicio ||
-      formatarDataISO(
-        new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      ),
-    dataFim:
-      filtros.dataFim ||
-      formatarDataISO(
-        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-      ),
-  };
 
-  const { handleSubmit, reset, watch, setValue, getValues } =
-    useForm<FiltrosExtrato>({
-      defaultValues,
-    });
-
-  // Atalhos Rápidos
-  // Atalhos Rápidos
-  const aplicarFiltroRapido = (tipo: "mes" | "ano") => {
-    const date = new Date();
-    const anoAtual = date.getFullYear();
-    const mesAtual = date.getMonth();
-
-    let inicio, fim;
-
-    if (tipo === "mes") {
-      inicio = formatarDataISO(new Date(anoAtual, mesAtual, 1));
-      fim = formatarDataISO(new Date(anoAtual, mesAtual + 1, 0));
-    } else {
-      inicio = formatarDataISO(new Date(anoAtual, 0, 1));
-      fim = formatarDataISO(new Date(anoAtual, 11, 31));
-    }
-
-    setValue("dataInicio", inicio);
-    setValue("dataFim", fim);
-    setFiltroRapido(tipo);
-
-    // Convertendo explicitamente para não passar null
-    handleSearch({ dataInicio: inicio, dataFim: fim });
-  };
-
-  // Aplicar do Formulário (Customizado)
-  const handleAplicar = (data: FiltrosExtrato) => {
-    setFiltroRapido("custom");
-    // CORREÇÃO AQUI: Forçando 'undefined' caso a data seja null, satisfazendo a interface
-    handleSearch({
-      dataInicio: data.dataInicio || undefined,
-      dataFim: data.dataFim || undefined,
-    });
-  };
-
-  const handleLimpar = () => {
-    reset();
-    setFiltroRapido("mes");
-    const inicioDefault = formatarDataISO(
-      new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    );
-    const fimDefault = formatarDataISO(
-      new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-    );
-    setValue("dataInicio", inicioDefault);
-    setValue("dataFim", fimDefault);
-
-    handleSearch({ dataInicio: inicioDefault, dataFim: fimDefault });
-  };
 
   return (
     <Accordion
-      defaultExpanded={false}
+      expanded={expandido}
+      onChange={(_, exp) => setExpandido(exp)}
       sx={{
-        minHeight: 20,
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
@@ -140,11 +76,10 @@ export default function FiltrosAvancados({
         expandIcon={<IconChevronDown size={20} />}
         sx={{
           px: 2.5,
-          pb: 0,
-          minHeight: "48px !important",
+          minHeight: "auto",
           "& .MuiAccordionSummary-content.Mui-expanded": {
-            mt: "12px !important", // Garante que não apareça margem ao expandir
-            mb: "6px !important", // Garante que não apareça margem ao expandir
+            mt: "12px !important",
+            mb: "6px !important",
           },
         }}
       >
@@ -165,99 +100,59 @@ export default function FiltrosAvancados({
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={600}>
-              Filtros Rápidos
+              Filtros
             </Typography>
           </Box>
 
-          <Box display="flex" alignItems="center" gap={1}>
-            {[
-              {
-                id: "mes",
-                label: "Mês Atual",
-                icon: <IconCalendarEvent size={16} />,
-              },
-              {
-                id: "ano",
-                label: "Ano Atual",
-                icon: <IconCalendar size={16} />,
-              },
-            ].map((item) => (
-              <Chip
-                key={item.id}
-                size="small"
-                icon={item.icon}
-                label={item.label}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  aplicarFiltroRapido(item.id as "mes" | "ano");
-                }}
-                color="primary"
-                variant={filtroRapido === item.id ? "filled" : "outlined"}
-                sx={{
-                  height: 28,
-                  px: 1,
-                  fontWeight: filtroRapido === item.id ? 600 : 500,
-                  "& .MuiChip-label": { px: 1, fontSize: "0.73rem" },
-                  "& .MuiChip-icon": { ml: 0.5 },
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: 1,
-                  },
-                }}
-              />
-            ))}
-          </Box>
+          {!expandido && (
+            <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start", ml: 4 }}>
+              <Box onClick={(e) => e.stopPropagation()}>
+                <SeletorPeriodo
+                  dataInicio={filtros.dataInicio || ""}
+                  dataFim={filtros.dataFim || ""}
+                  tipo={tipoPeriodo}
+                  onTipoChange={setTipoPeriodo}
+                  onChange={(periodo) => {
+                    handleSearch({
+                      dataInicio: periodo.dataInicio,
+                      dataFim: periodo.dataFim
+                    });
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
         </Box>
       </AccordionSummary>
 
       <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
         <Divider sx={{ mb: 2, opacity: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
-            OU BUSCA CUSTOMIZADA
+            BUSCA CUSTOMIZADA
           </Typography>
         </Divider>
 
-        <form onSubmit={handleSubmit(handleAplicar)}>
-          <Grid container spacing={2} alignItems="center">
-            {/* O NOVO COMPONENTE SUBSTITUINDO OS DOIS DATEPICKERS */}
-            <Grid item xs={12} md={6}>
-              <CustomDateRangePicker
-                startDate={watch("dataInicio") || null}
-                endDate={watch("dataFim") || null}
-                onChange={(start, end) => {
-                  setValue("dataInicio", start);
-                  setValue("dataFim", end);
-                  setFiltroRapido("custom"); // Muda o status para customizado ao interagir com o calendário
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                startIcon={<IconFilter size={18} />}
-                sx={{ height: 40 }}
-              >
-                Aplicar Customizado
-              </Button>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<IconFilterOff size={18} />}
-                onClick={handleLimpar}
-                sx={{ height: 40 }}
-              >
-                Limpar
-              </Button>
-            </Grid>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12}>
+            <CustomDateRangePicker
+              startDate={filtros.dataInicio || null}
+              endDate={filtros.dataFim || null}
+              onChange={(start, end) => {
+                handleSearch({ dataInicio: start || undefined, dataFim: end || undefined });
+              }}
+            />
           </Grid>
-        </form>
+          {/* <Grid item xs={12}>
+            <CustomDateRangePicker
+              startDate={filtros.dataInicio || null}
+              endDate={filtros.dataFim || null}
+              onChange={(start, end) => {
+                handleSearch({ dataInicio: start || undefined, dataFim: end || undefined });
+              }}
+            />
+
+          </Grid> */}
+        </Grid>
       </AccordionDetails>
     </Accordion>
   );

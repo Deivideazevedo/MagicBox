@@ -35,7 +35,9 @@ import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocompl
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { FonteRenda } from "@/core/fontesRenda/types";
-import { FiltroRapido, TipoPeriodo } from "./FiltroRapido";
+import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
+
+
 import { parseISO, isValid } from "date-fns";
 import { FiltrosLancamentos, getDefaultDates } from "../utils";
 
@@ -112,7 +114,8 @@ export default function FiltrosAvancados({
   const menuAberto = Boolean(anchorEl);
 
   // Estados do Filtro Rápido (Controlados)
-  const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
+  const [tipoPeriodo, setTipoPeriodo] = useState<any>("mes");
+
 
   const categoriaIdWatch = watch("categoriaId");
   const origemWatch = watch("origem");
@@ -247,6 +250,7 @@ export default function FiltrosAvancados({
       categoriaId: null,
       observacao: "",
     });
+    setExpandido(false)
     setFiltrosAtivos([]);
     setTipoPeriodo("mes");
     handleSearch({
@@ -371,7 +375,6 @@ export default function FiltrosAvancados({
         expandIcon={<IconChevronDown size={20} />}
         sx={{
           px: 2.5,
-          py: 1,
           minHeight: "auto",
           "&.Mui-expanded": { minHeight: "auto" },
           "& .MuiAccordionSummary-content": {
@@ -381,7 +384,11 @@ export default function FiltrosAvancados({
             alignItems: "center",
             justifyContent: "space-between",
             gap: 1,
-            "&.Mui-expanded": { margin: "12px 0" },
+          },
+          py: 0.5,
+          "& .MuiAccordionSummary-content.Mui-expanded": {
+            mt: "12px !important", // Garante que não apareça margem ao expandir
+            mb: "0px !important", // Garante que não apareça margem ao expandir
           },
         }}
       >
@@ -444,14 +451,18 @@ export default function FiltrosAvancados({
         <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start", ml: { sm: 4 }, mt: { xs: 1, sm: 0 }, order: { xs: 3, sm: 2 } }}>
           {!filtrosAtivos.includes("periodo") && (
             <Box onClick={(e) => e.stopPropagation()}>
-              <FiltroRapido 
-                watch={watch} 
-                setValue={setValue} 
-                control={control}
+              <SeletorPeriodo
+                dataInicio={watch("dataInicio")}
+                dataFim={watch("dataFim")}
                 tipo={tipoPeriodo}
-                setTipo={setTipoPeriodo}
+                onTipoChange={setTipoPeriodo}
+                onChange={(periodo) => {
+                  setValue("dataInicio", periodo.dataInicio);
+                  setValue("dataFim", periodo.dataFim);
+                }}
               />
             </Box>
+
           )}
         </Box>
 
@@ -582,58 +593,63 @@ export default function FiltrosAvancados({
       </AccordionSummary>
 
       <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-        <form>
-          {/* Linha 1 — Filtros fixos + botão adicionar */}
-          <Grid container spacing={2} alignItems="flex-end">
-            {/* Filtros opcionais ativos */}
-            {filtrosAtivos.length > 0 &&
-              filtrosAtivos.map((key) => {
-                const definicao = FILTROS_DISPONIVEIS.find((f) => f.key === key);
-                const isPeriodo = key === "periodo";
 
-                return (
-                  <Grid
-                    item
-                    xs={12}
-                    sm={isPeriodo ? 12 : 6}
-                    md={isPeriodo ? 6 : 3}
-                    key={key}
-                  >
-                    <Box position="relative">
-                      {/* Campo do filtro */}
-                      {renderCampoFiltro(key)}
+        <Divider sx={{ mb: 2, opacity: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            FILTROS ADICIONAIS
+          </Typography>
+        </Divider>
 
-                      {/* Botão de remover */}
-                      <IconButton
-                        size="small"
-                        onClick={() => removerFiltro(key)}
-                        title={`Remover filtro ${definicao?.label}`}
-                        sx={{
-                          position: "absolute",
-                          top: -10,
-                          right: -10,
-                          width: 20,
-                          height: 20,
-                          bgcolor: "background.paper",
-                          border: "1px solid",
-                          borderColor: "divider",
-                          zIndex: 1,
-                          "&:hover": {
-                            bgcolor: "error.main",
-                            borderColor: "error.main",
-                            color: "white",
-                          },
-                          "& svg": { width: 12, height: 12 },
-                        }}
-                      >
-                        <IconX size={12} />
-                      </IconButton>
-                    </Box>
-                  </Grid>
-                );
-              })}
-          </Grid>
-        </form>
+        {/* Linha 1 — Filtros fixos + botão adicionar */}
+        <Grid container spacing={2} alignItems="flex-end">
+          {/* Filtros opcionais ativos */}
+          {filtrosAtivos.length > 0 &&
+            filtrosAtivos.map((key) => {
+              const definicao = FILTROS_DISPONIVEIS.find((f) => f.key === key);
+              const isPeriodo = key === "periodo";
+
+              return (
+                <Grid
+                  item
+                  xs={12}
+                  sm={isPeriodo ? 12 : 6}
+                  md={isPeriodo ? 6 : 3}
+                  key={key}
+                >
+                  <Box position="relative">
+                    {/* Campo do filtro */}
+                    {renderCampoFiltro(key)}
+
+                    {/* Botão de remover */}
+                    <IconButton
+                      size="small"
+                      onClick={() => removerFiltro(key)}
+                      title={`Remover filtro ${definicao?.label}`}
+                      sx={{
+                        position: "absolute",
+                        top: -10,
+                        right: -10,
+                        width: 20,
+                        height: 20,
+                        bgcolor: "background.paper",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        zIndex: 1,
+                        "&:hover": {
+                          bgcolor: "error.main",
+                          borderColor: "error.main",
+                          color: "white",
+                        },
+                        "& svg": { width: 12, height: 12 },
+                      }}
+                    >
+                      <IconX size={12} />
+                    </IconButton>
+                  </Box>
+                </Grid>
+              );
+            })}
+        </Grid>
       </AccordionDetails>
     </Accordion>
   );
