@@ -6,29 +6,37 @@ import {
   CardContent,
   Typography,
   Box,
-  IconButton,
   Chip,
 } from "@mui/material";
 import {
   IconTrendingUp,
   IconTrendingDown,
   IconWallet,
-  IconCreditCard,
   IconPigMoney,
-  IconTarget,
 } from "@tabler/icons-react";
-import { useState, useEffect } from "react";
+import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
+import { startOfMonth, endOfMonth, format } from "date-fns";
+import { CircularProgress } from "@mui/material";
 
 const FinancialSummaryCards = () => {
-  // Mock data - em produção, estes dados viriam de APIs
-  const [financialData, setFinancialData] = useState({
-    totalReceitas: 5420.50,
-    totalCategorias: 3245.75,
-    saldoAtual: 2174.75,
-    economiaDoMes: 892.30,
-    metaMensal: 1500.00,
-    contasAtivas: 4,
+  const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+  const { data: dashboard, isLoading } = useGetDashboardQuery({
+    dataInicio,
+    dataFim,
   });
+  
+  const resumo = dashboard?.cards;
+
+  const financialData = {
+    totalReceitas: resumo?.totalEntradas || 0,
+    totalCategorias: resumo?.totalSaidas || 0,
+    saldoAtual: resumo?.saldoAtual || 0,
+    economiaDoMes: resumo?.saldoAtual || 0, // Fallback placeholder since totalSaldo doesn't directly map, assuming economy matches actual balance loosely right now
+    metaMensal: 1500.00, // mock still for meta because the DTO doesn't include it right now
+    contasAtivas: 4,
+  };
 
   const cards = [
     {
@@ -40,7 +48,7 @@ const FinancialSummaryCards = () => {
       color: "#13DEB9",
     },
     {
-      title: "Categorias do Mês",
+      title: "Despesas do Mês", // Ajustado nome
       value: financialData.totalCategorias,
       change: "-8.2%",
       changeType: "positive" as const,
@@ -58,7 +66,7 @@ const FinancialSummaryCards = () => {
     {
       title: "Economia do Mês",
       value: financialData.economiaDoMes,
-      change: `${((financialData.economiaDoMes / financialData.metaMensal) * 100).toFixed(1)}% da meta`,
+      change: `${((Math.max(0, financialData.economiaDoMes) / financialData.metaMensal) * 100).toFixed(1)}% da meta`,
       changeType: "neutral" as const,
       icon: <IconPigMoney size={24} />,
       color: "#FFAE1F",
@@ -82,6 +90,14 @@ const FinancialSummaryCards = () => {
         return "#49BEFF";
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Grid container spacing={3}>

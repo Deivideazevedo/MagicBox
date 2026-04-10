@@ -6,7 +6,7 @@ import {
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { SwalToast } from "@/utils/swalert";
 import { FindAllFilters } from "@/dtos";
-import { FiltrosLancamentos, getDefaultDates } from "../utils";
+import { FiltrosLancamentos, getDefaultDates, getDefaultFilters } from "../utils";
 
 interface UseLancamentosListProps {
   lancamentos?: LancamentoResposta[];
@@ -18,13 +18,9 @@ export function useLancamentosList({
 }: UseLancamentosListProps = {}) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [filtros, setFiltros] = useState<FindAllFilters>(() => {
-    return {
-      ...getDefaultDates(),
-      page: 0,
-      limit: 10,
-    };
-  });
+  const [filtros, setFiltros] = useState<FindAllFilters>(() => getDefaultFilters());
+
+  console.log("DEBUG: filtros state:", filtros);
 
   // Query declarativa e reativa (dispara automaticamente ao mudar filtros)
   const { 

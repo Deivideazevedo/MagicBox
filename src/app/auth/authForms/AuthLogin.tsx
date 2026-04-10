@@ -34,6 +34,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const [error, setError] = useState(""); // Erro do formulário de credenciais
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   // --- 2. useEffect para tratar erros de OAuth e mensagens de sucesso ---
   useEffect(() => {
@@ -99,6 +100,9 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     if (result?.error) {
       // Mostra erro no formulário
       setError(result.error);
+    } else {
+      // ✅ Redireciona imediatamente após o sucesso para evitar delay do poll de sessão
+      router.replace(callbackUrl);
     }
   };
 

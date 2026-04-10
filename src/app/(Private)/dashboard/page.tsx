@@ -44,9 +44,7 @@ const Dashboard = () => {
     setQuickActionOpen(true);
   };
 
-  // 🔥 ERRO DE RUNTIME PROPOSITAL - Remover após testar
-  const obj: any = undefined;
-  // const teste = obj.propriedades; // ← Vai gerar TypeError e acionar error.tsx
+
 
   const userName = session?.user?.name?.split(" ")[0] || "Usuário";
 
@@ -73,58 +71,11 @@ const Dashboard = () => {
             Aqui está um resumo das suas finanças hoje
           </Typography>
           
-          {/* Quick Actions */}
-          <Stack direction="row" spacing={2} flexWrap="wrap">
-            <Button
-              variant="contained"
-              startIcon={<IconPlus />}
-              onClick={() => handleQuickAction("lancamento")}
-              sx={{
-                borderRadius: 3,
-                textTransform: "none",
-                px: 3,
-                py: 1.5,
-                background: "linear-gradient(45deg, #5D87FF 30%, #49BEFF 90%)",
-                "&:hover": {
-                  background: "linear-gradient(45deg, #4570EA 30%, #2A9BE8 90%)",
-                },
-              }}
-            >
-              Novo Lançamento
-            </Button>
-            
-            <Button
-              variant="outlined"
-              startIcon={<IconWallet />}
-              onClick={() => handleQuickAction("despesa")}
-              sx={{
-                borderRadius: 3,
-                textTransform: "none",
-                px: 3,
-                py: 1.5,
-              }}
-            >
-              Nova Despesa
-            </Button>
-            
-            <Button
-              variant="outlined"
-              startIcon={<IconCreditCard />}
-              onClick={() => handleQuickAction("conta")}
-              sx={{
-                borderRadius: 3,
-                textTransform: "none",
-                px: 3,
-                py: 1.5,
-              }}
-            >
-              Nova Conta
-            </Button>
-          </Stack>
+
         </Box>
 
         {/* Financial Summary Cards */}
-        {/* <FinancialSummaryCards /> */}
+        <FinancialSummaryCards />
 
         {/* Main Content Grid */}
         <Grid container spacing={3} sx={{ mt: 2 }}>

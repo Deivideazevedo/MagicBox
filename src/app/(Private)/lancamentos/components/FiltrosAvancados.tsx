@@ -226,12 +226,12 @@ export default function FiltrosAvancados({
     const mudou =
       novosFiltros.dataInicio !== filtros.dataInicio ||
       novosFiltros.dataFim !== filtros.dataFim ||
-      novosFiltros.origem !== filtros.origem ||
-      novosFiltros.tipo !== filtros.tipo ||
-      novosFiltros.categoriaId !== filtros.categoriaId ||
-      novosFiltros.despesaId !== filtros.despesaId ||
-      novosFiltros.fonteRendaId !== filtros.fonteRendaId ||
-      novosFiltros.observacao !== filtros.observacao;
+      (novosFiltros.origem || "") !== (filtros.origem || "") ||
+      (novosFiltros.tipo || undefined) !== (filtros.tipo || undefined) ||
+      (novosFiltros.categoriaId || undefined) !== (filtros.categoriaId || undefined) ||
+      (novosFiltros.despesaId || undefined) !== (filtros.despesaId || undefined) ||
+      (novosFiltros.fonteRendaId || undefined) !== (filtros.fonteRendaId || undefined) ||
+      (novosFiltros.observacao || undefined) !== (filtros.observacao || undefined);
 
     if (!mudou) return;
 

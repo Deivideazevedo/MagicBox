@@ -1,3 +1,5 @@
+import { FindAllFilters } from "@/dtos";
+
 export interface FiltrosLancamentos {
   dataInicio?: string;
   dataFim?: string;
@@ -17,5 +19,20 @@ export const getDefaultDates = () => {
   return {
     dataInicio: firstDay.toISOString().split("T")[0],
     dataFim: lastDay.toISOString().split("T")[0],
+  };
+};
+
+export const getDefaultFilters = (): FindAllFilters => {
+  const dates = getDefaultDates();
+  return {
+    ...dates,
+    page: 0,
+    limit: 10,
+    origem: "",
+    tipo: undefined,
+    observacao: undefined,
+    categoriaId: undefined,
+    despesaId: undefined,
+    fonteRendaId: undefined,
   };
 };

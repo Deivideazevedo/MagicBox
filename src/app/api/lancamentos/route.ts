@@ -19,9 +19,9 @@ async function listarTodos(requisicao: NextRequest): Promise<NextResponse> {
     role === "admin" ? searchParams.get("userId") || authId : authId;
 
   const filtros = findAllQuerySchema.parse({
-    ...rawFilters,
-    userId: Number(userId),
-  });
+      ...rawFilters,
+      userId: Number(userId),
+    });
 
   const resultado = await servico.listarTodos(filtros);
 

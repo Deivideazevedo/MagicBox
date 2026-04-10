@@ -13,75 +13,49 @@ import {
   Chip,
   Button,
   Alert,
+  CircularProgress,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import {
   IconAlertTriangle,
   IconCalendar,
   IconClock,
   IconArrowRight,
-  IconBolt,
-  IconHome,
-  IconCar,
-  IconPhone,
+  IconCheck,
+  IconEditCircle,
 } from "@tabler/icons-react";
-import { useState, useEffect } from "react";
-
-interface UpcomingBill {
-  id: string;
-  title: string;
-  amount: number;
-  dueDate: string;
-  category: string;
-  status: "pending" | "overdue" | "paid";
-  icon: React.ReactNode;
-}
+import { startOfMonth, endOfMonth, format } from "date-fns";
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
+import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
+import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
+import { SwalToast, Swalert } from "@/utils/swalert";
+// Import for context to open drawer if available, otherwise just log or stub
+// import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 
 const UpcomingBills = () => {
-  // Mock data - em produção, estes dados viriam de APIs
-  const [bills, setBills] = useState<UpcomingBill[]>([
-    {
-      id: "1",
-      title: "Conta de Luz",
-      amount: 185.90,
-      dueDate: "2024-01-20",
-      category: "Utilidades",
-      status: "pending",
-      icon: <IconBolt size={20} />,
-    },
-    {
-      id: "2",
-      title: "Financiamento Casa",
-      amount: 1200.00,
-      dueDate: "2024-01-25",
-      category: "Habitação",
-      status: "pending",
-      icon: <IconHome size={20} />,
-    },
-    {
-      id: "3",
-      title: "Seguro do Carro",
-      amount: 320.50,
-      dueDate: "2024-01-18",
-      category: "Transporte",
-      status: "overdue",
-      icon: <IconCar size={20} />,
-    },
-    {
-      id: "4",
-      title: "Internet + TV",
-      amount: 129.90,
-      dueDate: "2024-01-22",
-      category: "Utilidades",
-      status: "pending",
-      icon: <IconPhone size={20} />,
-    },
-  ]);
+  const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
+
+  const { data: dashboard, isLoading } = useGetDashboardQuery({
+    dataInicio,
+    dataFim,
+  });
+
+  const [createLancamento] = useCreateLancamentoMutation();
+
+  const bills = dashboard?.upcomingBills || [];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value);
+  };
+
+  const getDueDateString = (dia: number | null, mes: number, ano: number) => {
+    if (!dia) return new Date(ano, mes - 1, 1).toISOString();
+    return new Date(ano, mes - 1, dia).toISOString();
   };
 
   const formatDueDate = (dateString: string) => {
@@ -94,7 +68,11 @@ const UpcomingBills = () => {
 
   const getDaysUntilDue = (dueDate: string) => {
     const now = new Date();
+    // zerar horas
+    now.setHours(0, 0, 0, 0);
     const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    
     const diffTime = due.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
@@ -127,18 +105,55 @@ const UpcomingBills = () => {
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      "Utilidades": "#5D87FF",
-      "Habitação": "#13DEB9",
-      "Transporte": "#FA896B",
-      "Alimentação": "#FFAE1F",
-    };
-    return colors[category] || "#757575";
+  const handleQuickPay = async (bill: any) => {
+    const confirm = await Swalert({
+      icon: "question",
+      title: "Pagar Despesa",
+      text: `Deseja pagar a despesa ${bill.nome} com o valor agendado de ${formatCurrency(bill.valorPrevisto)}?`,
+      confirmButtonText: "Sim, pagar agora",
+      cancelButtonText: "Cancelar"
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        await createLancamento({
+          tipo: "pagamento",
+          valor: bill.valorPrevisto,
+          data: new Date().toISOString(), // Today
+          categoriaId: bill.categoriaId || 0, // Fallback, the backend should ideally handle it or fallback inside resolver
+          despesaId: bill.despesaId,
+          observacao: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`
+        }).unwrap();
+
+        SwalToast.fire({
+          icon: "success",
+          title: "Despesa paga com sucesso!",
+        });
+      } catch (error) {
+        SwalToast.fire({
+          icon: "error",
+          title: "Erro ao registrar pagamento.",
+        });
+      }
+    }
   };
 
-  const totalAmount = bills.reduce((sum, bill) => sum + bill.amount, 0);
-  const overdueBills = bills.filter(bill => getDaysUntilDue(bill.dueDate).status === "overdue");
+  const openDrawer = (bill: any) => {
+    // This expects a Drawer State to be toggled.
+    // Replace with correct dispatch or context call.
+    console.log("Open drawer with: ", bill);
+    SwalToast.fire({
+      icon: "info",
+      title: "Drawer de edição abriria aqui",
+      text: `Valores preenchidos: ${bill.nome}, ${bill.valorPrevisto}`,
+    });
+  };
+
+  const totalAmount = bills.reduce((sum, bill) => sum + bill.valorPrevisto, 0);
+  const overdueBills = bills.filter(bill => {
+    const dueDate = getDueDateString(bill.diaVencido, bill.mes, bill.ano);
+    return getDaysUntilDue(dueDate).status === "overdue" || bill.atrasado;
+  });
 
   return (
     <Card
@@ -177,99 +192,150 @@ const UpcomingBills = () => {
               textTransform: "none",
               color: "primary.main",
             }}
+            href="/dashboard/despesas"
           >
             Ver todas
           </Button>
         </Box>
 
-        {overdueBills.length > 0 && (
-          <Alert
-            severity="warning"
-            icon={<IconAlertTriangle size={20} />}
-            sx={{
-              mb: 3,
-              borderRadius: 2,
-              "& .MuiAlert-message": {
-                fontSize: "0.875rem",
-              },
-            }}
-          >
-            Você tem {overdueBills.length} conta{overdueBills.length > 1 ? "s" : ""} em atraso
-          </Alert>
-        )}
-
-        <Box mb={3}>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Total a pagar este mês
-          </Typography>
-          <Typography variant="h4" fontWeight={700} color="primary.main">
-            {formatCurrency(totalAmount)}
-          </Typography>
-        </Box>
-
-        <List disablePadding>
-          {bills.map((bill, index) => {
-            const { status } = getDaysUntilDue(bill.dueDate);
-            
-            return (
-              <ListItem
-                key={bill.id}
+        {isLoading ? (
+          <Box display="flex" justifyContent="center" p={3}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {overdueBills.length > 0 && (
+              <Alert
+                severity="warning"
+                icon={<IconAlertTriangle size={20} />}
                 sx={{
-                  px: 0,
-                  py: 1.5,
-                  borderBottom: index < bills.length - 1 ? "1px solid #f0f0f0" : "none",
+                  mb: 3,
+                  borderRadius: 2,
+                  "& .MuiAlert-message": {
+                    fontSize: "0.875rem",
+                  },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 48 }}>
-                  <Avatar
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      backgroundColor: `${getCategoryColor(bill.category)}20`,
-                      color: getCategoryColor(bill.category),
-                    }}
-                  >
-                    {bill.icon}
-                  </Avatar>
-                </ListItemIcon>
-                
-                <ListItemText
-                  primary={
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body1" fontWeight={500}>
-                        {bill.title}
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600} color="text.primary">
-                        {formatCurrency(bill.amount)}
-                      </Typography>
-                    </Box>
-                  }
-                  secondary={
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
-                      <Chip
-                        label={getStatusLabel(bill.dueDate)}
-                        size="small"
-                        icon={<IconClock size={14} />}
-                        sx={{
-                          backgroundColor: `${getStatusColor(status)}20`,
-                          color: getStatusColor(status),
-                          fontSize: "0.75rem",
-                          height: 20,
-                          "& .MuiChip-icon": {
-                            color: "inherit",
-                          },
-                        }}
+                Você tem {overdueBills.length} conta{overdueBills.length > 1 ? "s" : ""} em atraso
+              </Alert>
+            )}
+
+            <Box mb={3}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Total a pagar pendente este mês
+              </Typography>
+              <Typography variant="h4" fontWeight={700} color="primary.main">
+                {formatCurrency(totalAmount)}
+              </Typography>
+            </Box>
+
+            {bills.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" align="center">
+                Nenhuma conta a pagar pendente.
+              </Typography>
+            ) : (
+              <List disablePadding>
+                {bills.slice(0, 5).map((bill, index) => {
+                  const dueDateString = getDueDateString(bill.diaVencido, bill.mes, bill.ano);
+                  const { status } = getDaysUntilDue(dueDateString);
+                  const billColor = bill.cor || "#757575";
+                  
+                  return (
+                    <ListItem
+                      key={bill.id}
+                      sx={{
+                        px: 0,
+                        py: 1.5,
+                        borderBottom: index < Math.min(bills.length, 5) - 1 ? "1px solid #f0f0f0" : "none",
+                        "&:hover .action-buttons": {
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 48 }}>
+                        <Avatar
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            backgroundColor: `${billColor}20`,
+                            color: billColor,
+                          }}
+                        >
+                          <DynamicIcon name={bill.icone} size={20} fallbackIcon="IconInvoice" color={billColor} />
+                        </Avatar>
+                      </ListItemIcon>
+                      
+                      <ListItemText
+                        primary={
+                          <Box display="flex" justifyContent="space-between" alignItems="center">
+                            <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
+                              {bill.nome}
+                            </Typography>
+                            <Typography variant="body1" fontWeight={600} color="text.primary">
+                              {formatCurrency(bill.valorPrevisto)}
+                            </Typography>
+                          </Box>
+                        }
+                        secondary={
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                            <Tooltip title="Pagar com valor agendado" arrow placement="top">
+                              <Chip
+                                label={getStatusLabel(dueDateString)}
+                                size="small"
+                                icon={<IconClock size={14} />}
+                                onClick={() => handleQuickPay(bill)}
+                                sx={{
+                                  backgroundColor: `${getStatusColor(status)}20`,
+                                  color: getStatusColor(status),
+                                  fontSize: "0.75rem",
+                                  height: 20,
+                                  cursor: "pointer",
+                                  "& .MuiChip-icon": {
+                                    color: "inherit",
+                                  },
+                                  "&:hover": {
+                                    backgroundColor: `${getStatusColor(status)}40`,
+                                  }
+                                }}
+                              />
+                            </Tooltip>
+                            
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatDueDate(dueDateString)}
+                              </Typography>
+
+                              <Box 
+                                className="action-buttons" 
+                                sx={{ 
+                                  opacity: 0, 
+                                  transition: 'opacity 0.2s',
+                                  display: 'flex',
+                                  gap: 0.5 
+                                }}
+                              >
+                                <Tooltip title="Baixa rápida">
+                                  <IconButton size="small" onClick={() => handleQuickPay(bill)} color="success" sx={{ p: 0.5 }}>
+                                    <IconCheck size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Abrir com detalhes preenchidos">
+                                  <IconButton size="small" onClick={() => openDrawer(bill)} color="primary" sx={{ p: 0.5 }}>
+                                    <IconEditCircle size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          </Box>
+                        }
                       />
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDueDate(bill.dueDate)}
-                      </Typography>
-                    </Box>
-                  }
-                />
-              </ListItem>
-            );
-          })}
-        </List>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
