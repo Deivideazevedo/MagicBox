@@ -377,15 +377,29 @@ export default function FiltrosAvancados({
           px: 2.5,
           minHeight: "auto",
           "&.Mui-expanded": { minHeight: "auto" },
+          py: 0.5,
+          position: "relative",
+          "& .MuiAccordionSummary-expandIconWrapper": {
+            position: { xs: "absolute", sm: "static" },
+            top: { xs: 24, sm: "auto" }, // Alinhado ao centro do ícone de filtro (40px)
+            right: { xs: 20, sm: "auto" },
+            color: "primary.main",
+            borderRadius: "50%",
+            p: 0.5,
+            transition: "transform 0.2s", // Adiciona uma transição suave
+            "&:hover": {
+              bgcolor: "primary.light",
+            },
+          },
           "& .MuiAccordionSummary-content": {
             margin: "12px 0",
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 1,
+            justifyContent: "flex-start",
+            gap: 2,
+            width: "100%",
           },
-          py: 0.5,
           "& .MuiAccordionSummary-content.Mui-expanded": {
             mt: "12px !important", // Garante que não apareça margem ao expandir
             mb: "0px !important", // Garante que não apareça margem ao expandir
@@ -396,7 +410,7 @@ export default function FiltrosAvancados({
           display="flex"
           alignItems="center"
           gap={1.5}
-          sx={{ flex: { xs: "1 1 100%", sm: "0 1 auto" } }}
+          sx={{ flex: { xs: "1 1 100%", sm: "0 1 auto" }, mr: 2 }}
         >
           <Tooltip title="Filtros" arrow>
             <Badge
@@ -448,21 +462,19 @@ export default function FiltrosAvancados({
         </Box>
 
         {/* Filtro Rápido aqui agora */}
-        <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start", ml: { sm: 4 }, mt: { xs: 1, sm: 0 }, order: { xs: 3, sm: 2 } }}>
+        <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
           {!filtrosAtivos.includes("periodo") && (
-            <Box onClick={(e) => e.stopPropagation()}>
-              <SeletorPeriodo
-                dataInicio={watch("dataInicio")}
-                dataFim={watch("dataFim")}
-                tipo={tipoPeriodo}
-                onTipoChange={setTipoPeriodo}
-                onChange={(periodo) => {
-                  setValue("dataInicio", periodo.dataInicio);
-                  setValue("dataFim", periodo.dataFim);
-                }}
-              />
-            </Box>
-
+            <SeletorPeriodo
+              onClick={(e) => e.stopPropagation()}
+              dataInicio={watch("dataInicio")}
+              dataFim={watch("dataFim")}
+              tipo={tipoPeriodo}
+              onTipoChange={setTipoPeriodo}
+              onChange={(periodo) => {
+                setValue("dataInicio", periodo.dataInicio);
+                setValue("dataFim", periodo.dataFim);
+              }}
+            />
           )}
         </Box>
 

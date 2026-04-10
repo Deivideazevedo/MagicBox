@@ -7,7 +7,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useSelector } from "@/store/hooks";
 import { IconPower } from "@tabler/icons-react";
 import { AppState } from "@/store/store";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Profile = () => {
   const customizer = useSelector((state: AppState) => state.customizer);
@@ -15,7 +15,7 @@ export const Profile = () => {
   const hideMenu = lgUp
     ? customizer.isCollapse && !customizer.isSidebarHover
     : "";
-  const { data: session } = useSession();
+  const { session, logout } = useAuth();
 
   return (
     <Box
@@ -40,7 +40,7 @@ export const Profile = () => {
             <Tooltip title="Logout" placement="top">
               <IconButton
                 color="primary"
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={logout}
                 aria-label="logout"
                 size="small"
               >

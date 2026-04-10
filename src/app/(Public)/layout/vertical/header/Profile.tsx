@@ -7,13 +7,13 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import Typography from '@mui/material/Typography';
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { IconDashboard, IconUser } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
-  const { data: session } = useSession();
+  const { session, logout } = useAuth();
 
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
@@ -98,7 +98,7 @@ const Profile = () => {
             variant="outlined" 
             color="primary" 
             fullWidth 
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={logout}
           >
             Logout
           </Button>

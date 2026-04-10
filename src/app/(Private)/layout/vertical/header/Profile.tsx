@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   IconMail,
   IconUser,
@@ -33,7 +33,7 @@ const Profile = () => {
     setAnchorEl2(null);
   };
 
-  const { data: session } = useSession();
+  const { session, logout } = useAuth();
   const dispatch = useDispatch();
 
   const profileMenuItems = [
@@ -244,7 +244,7 @@ const Profile = () => {
             startIcon={<IconLogout size={18} />}
             onClick={() => {
               handleClose2();
-              signOut({ callbackUrl: '/' });
+              logout();
             }}
             sx={{
               borderRadius: 2,

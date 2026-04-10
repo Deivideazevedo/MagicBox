@@ -12,6 +12,9 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
+  Grid,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   IconChevronLeft,
@@ -59,7 +62,7 @@ interface SeletorPeriodoProps {
   dataFim?: string;
   tipo: TipoPeriodo;
   onTipoChange: (tipo: TipoPeriodo) => void;
-  onChange: (periodo: Periodo) => void;
+  onChange: (periodo: Periodo) => void; onClick?: (e: React.MouseEvent) => void;
 }
 
 export function SeletorPeriodo({
@@ -68,6 +71,7 @@ export function SeletorPeriodo({
   tipo,
   onTipoChange,
   onChange,
+  onClick,
 }: SeletorPeriodoProps) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -139,6 +143,9 @@ export function SeletorPeriodo({
   };
 
   // Texto formatado para exibir o período amigavelmente
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const textoPeriodo = useMemo(() => {
     if (!dataInicio || !dataFim) return "...";
 
@@ -174,39 +181,43 @@ export function SeletorPeriodo({
   }, [dataInicio, dataFim, tipo]);
 
   return (
-    <Box display="flex" alignItems="center" gap={1}>
+    <Grid container spacing={1} alignItems="center" onClick={onClick} sx={{ cursor: 'auto' }}>
       {/* Seletor do Tipo de Granularidade (Ano, Mês, Semana, Dia) */}
-      <Button
-        variant="outlined"
-        onClick={(e) => setAnchorEl(e.currentTarget)}
-        endIcon={<IconChevronDown size={18} />}
-        sx={{
-          borderRadius: 2,
-          textTransform: "none",
-          minWidth: 100,
-          borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-          color: "text.primary",
-          fontSize: 13,
-          fontWeight: 600,
-          bgcolor: (theme) => theme.palette.background.paper,
-          "& .MuiButton-endIcon": {
-            p: 0.6,
-            borderRadius: "50%",
-            color: "primary.main",
-            "&:hover": {
-              color: "primary.main !important",
-              bgcolor: "primary.light",
-            },
-          },
-          "&:hover": {
-            color: "primary.main",
+      <Grid item xs={12} sm={'auto'}>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          endIcon={<IconChevronDown size={18} />}
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            minWidth: 100,
+            borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            color: "text.primary",
+            fontSize: 13,
+            fontWeight: 600,
+            p: 0.65,
             bgcolor: (theme) => theme.palette.background.paper,
-            borderColor: "primary.main",
-          },
-        }}
-      >
-        {OPCOES_TIPO.find((o) => o.value === tipo)?.label}
-      </Button>
+            "& .MuiButton-endIcon": {
+              p: 0.6,
+              borderRadius: "50%",
+              color: "primary.main",
+              "&:hover": {
+                color: "primary.main !important",
+                bgcolor: "primary.light",
+              },
+            },
+            "&:hover": {
+              color: "text.primary",
+              bgcolor: (theme) => theme.palette.background.paper,
+              borderColor: "primary.main",
+            },
+          }}
+        >
+          {OPCOES_TIPO.find((o) => o.value === tipo)?.label}
+        </Button>
+      </Grid>
 
       <Menu
         anchorEl={anchorEl}
@@ -272,83 +283,109 @@ export function SeletorPeriodo({
       </Menu>
 
       {/* Controles de Navegação do Período */}
-      <Box
-        display="flex"
-        alignItems="center"
-        sx={{
-          bgcolor: (theme) => theme.palette.background.paper,
-          border: "1px solid",
-          borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-          borderRadius: 2,
-          p: 0.5,
-        }}
-      >
-        <IconButton size="small" onClick={() => navegar("anterior")} sx={{ color: "primary.main" }}>
-          <IconChevronLeft size={20} />
-        </IconButton>
+      <Grid item xs={12} sm={'auto'}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{
+            bgcolor: (theme) => theme.palette.background.paper,
+            border: "1px solid",
+            borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            borderRadius: 2,
+            p: 0.5,
+            width: { xs: "100%", md: "fit-content" },
+            transition: "all 0.2s",
+            "&:hover": {
+              cursor: "auto",
+              color: "text.primary",
+              bgcolor: (theme) => theme.palette.background.paper,
+              borderColor: "primary.main",
+            },
+          }}
+        >
+          <IconButton size="small" onClick={() => navegar("anterior")} sx={{ color: "primary.main" }}>
+            <IconChevronLeft size={20} />
+          </IconButton>
 
-        <Box sx={{ px: 1, minWidth: "fit-content", textAlign: "center", position: "relative" }}>
-          {tipo === 'dia' ? (
-            <Box
-              onClick={(e) => {
-                e.stopPropagation();
-                setPickerAberto(true);
-              }}
-              sx={{
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                height: '100%',
-                minHeight: '32px',
-                px: 0.5,
-                borderRadius: 1,
-                transition: 'background-color 0.2s',
-                '&:hover': {
-                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
-                }
-              }}
-            >
-              <Typography
-                variant="body2"
-                fontWeight={600}
+          <Box>
+            {tipo === 'dia' ? (
+              <Box
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Só abre se não estiver aberto para evitar conflitos de clique que reabrem o picker
+                  if (!pickerAberto) {
+                    setPickerAberto(true);
+                  }
+                }}
                 sx={{
-                  whiteSpace: "nowrap",
-                  userSelect: "none"
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  minHeight: '32px',
+                  px: 1,
+                  borderRadius: 1,
+                  transition: 'background-color 0.2s',
+                  '&:hover': {
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                  }
                 }}
               >
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{
+                    whiteSpace: "nowrap",
+                    userSelect: "none"
+                  }}
+                >
+                  {textoPeriodo}
+                </Typography>
+                <Box sx={{ visibility: 'hidden', height: 0, width: 0 }}>
+                  <DatePicker
+                    open={pickerAberto}
+                    onOpen={() => setPickerAberto(true)}
+                    onClose={() => setPickerAberto(false)}
+                    onAccept={() => {
+                      // O timeout garante que o clique no dia no calendário seja processado
+                      // completamente antes de alterarmos o estado de abertura.
+                      setTimeout(() => setPickerAberto(false), 10);
+                    }}
+                    closeOnSelect={!isMobile} // Fecha ao selecionar apenas no Desktop
+                    value={dataInicio ? new Date(dataInicio + "T00:00:00") : null}
+                    onChange={(date: Date | null) => {
+                      if (date && isValid(date)) {
+                        const formatted = fnFormatDateInTimeZone({ date, format: "date" });
+                        if (formatted) {
+                          onChange({ dataInicio: formatted, dataFim: formatted });
+                        }
+                      }
+                    }}
+                    renderInput={(params: any) => (
+                      <TextField
+                        {...params}
+                        variant="standard"
+                        sx={{ width: 0, height: 0, '& .MuiInput-underline:before': { borderBottom: 'none' } }}
+                      />
+                    )}
+                  />
+                </Box>
+              </Box>
+            ) : (
+              <Typography variant="body2" fontWeight={600} fontSize={13} sx={{ whiteSpace: "nowrap", textAlign: 'center', mx: 0.5 }}>
                 {textoPeriodo}
               </Typography>
-              <Box sx={{ width: 0, height: 0, overflow: 'hidden', position: 'absolute' }}>
-                <DatePicker
-                  open={pickerAberto}
-                  onOpen={() => setPickerAberto(true)}
-                  onClose={() => setPickerAberto(false)}
-                  value={dataInicio ? new Date(dataInicio + "T00:00:00") : null}
-                  onChange={(date: Date | null) => {
-                    if (date && isValid(date)) {
-                      const formatted = fnFormatDateInTimeZone({ date, format: "date" });
-                      if (formatted) {
-                        onChange({ dataInicio: formatted, dataFim: formatted });
-                      }
-                    }
-                  }}
-                  renderInput={(params) => <TextField {...params} />}
-                />
-              </Box>
-            </Box>
-          ) : (
-            <Typography variant="body2" fontWeight={600} fontSize={13} sx={{ whiteSpace: "nowrap" }}>
-              {textoPeriodo}
-            </Typography>
-          )}
-        </Box>
+            )}
+          </Box>
 
-        <IconButton size="small" onClick={() => navegar("proximo")} sx={{ color: "primary.main" }}>
-          <IconChevronRight size={20} />
-        </IconButton>
-      </Box>
-    </Box>
+          <IconButton size="small" onClick={() => navegar("proximo")} sx={{ color: "primary.main" }}>
+            <IconChevronRight size={20} />
+          </IconButton>
+        </Box>
+      </Grid>
+    </Grid>
   );
 }

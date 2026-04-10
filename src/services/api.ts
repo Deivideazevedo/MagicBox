@@ -95,7 +95,8 @@ const baseQueryInterceptor: BaseQueryFn<
 // API base do RTK Query com interceptor
 export const api = createApi({
   reducerPath: "api",
-  keepUnusedDataFor: 300, // Mantém dados por 60 segundos para evitar refetchs desnecessários
+  keepUnusedDataFor: 600, // Mantém dados por 10 minutos para evitar refetchs desnecessários
+  refetchOnMountOrArgChange: 600, // Revalida dados se o cache for mais antigo que 10 minutos ao montar componente
   baseQuery: baseQueryInterceptor,
   tagTypes: [
     "Categorias",

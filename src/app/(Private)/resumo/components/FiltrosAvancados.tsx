@@ -67,9 +67,9 @@ export default function FiltrosAvancados({
         borderRadius: 3,
         border: "1px solid",
         borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        boxShadow: 1,
-        mb: "0px !important",
         "&:before": { display: "none" },
+        boxShadow: "none",
+        mb: 3,
       }}
     >
       <AccordionSummary
@@ -77,13 +77,42 @@ export default function FiltrosAvancados({
         sx={{
           px: 2.5,
           minHeight: "auto",
+          "&.Mui-expanded": { minHeight: "auto" },
+          py: 0.5,
+          position: "relative",
+          "& .MuiAccordionSummary-expandIconWrapper": {
+            position: { xs: "absolute", sm: "static" },
+            top: { xs: 24, sm: "auto" }, // Alinhado ao centro do ícone de filtro (40px)
+            right: { xs: 20, sm: "auto" },
+            color: "primary.main",
+            borderRadius: "50%",
+            p: 0.5,
+            transition: "transform 0.2s", // Adiciona uma transição suave
+            "&:hover": {
+              bgcolor: "primary.light",
+            },
+          },
+          "& .MuiAccordionSummary-content": {
+            margin: "12px 0",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 2,
+            width: "100%",
+          },
           "& .MuiAccordionSummary-content.Mui-expanded": {
-            mt: "12px !important",
-            mb: "6px !important",
+            mt: "12px !important", // Garante que não apareça margem ao expandir
+            mb: "0px !important", // Garante que não apareça margem ao expandir
           },
         }}
       >
-        <Box display="flex" alignItems="center" gap={1.5} width="100%">
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1.5}
+          sx={{ flex: { xs: "1 1 100%", sm: "0 1 auto" }, mr: 2 }}
+        >
           <Box
             sx={{
               width: 40,
@@ -103,26 +132,25 @@ export default function FiltrosAvancados({
               Filtros
             </Typography>
           </Box>
-
-          {!expandido && (
-            <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-start", ml: 4 }}>
-              <Box onClick={(e) => e.stopPropagation()}>
-                <SeletorPeriodo
-                  dataInicio={filtros.dataInicio || ""}
-                  dataFim={filtros.dataFim || ""}
-                  tipo={tipoPeriodo}
-                  onTipoChange={setTipoPeriodo}
-                  onChange={(periodo) => {
-                    handleSearch({
-                      dataInicio: periodo.dataInicio,
-                      dataFim: periodo.dataFim
-                    });
-                  }}
-                />
-              </Box>
-            </Box>
-          )}
         </Box>
+
+        {!expandido && (
+          <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
+            <SeletorPeriodo
+              onClick={(e) => e.stopPropagation()}
+              dataInicio={filtros.dataInicio || ""}
+              dataFim={filtros.dataFim || ""}
+              tipo={tipoPeriodo}
+              onTipoChange={setTipoPeriodo}
+              onChange={(periodo) => {
+                handleSearch({
+                  dataInicio: periodo.dataInicio,
+                  dataFim: periodo.dataFim
+                });
+              }}
+            />
+          </Box>
+        )}
       </AccordionSummary>
 
       <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
