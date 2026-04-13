@@ -1,44 +1,31 @@
-// src/core/categorias/service.ts
-import { Categoria, CategoriaPayload } from "./types";
+import { Categoria } from "./types";
 import { categoriaRepository as repositorio } from "./repository";
-import { NotFoundError, ValidationError } from "@/lib/errors";
-import { prisma } from "@/lib/prisma";
+import { NotFoundError } from "@/lib/errors";
+import { CreateCategoriaDTO, UpdateCategoriaDTO } from "./categoria.dto";
 
 export const categoriaService = {
-  async listarTodos(filtros: any) {
+  async listarTodos(filtros: Partial<Categoria>): Promise<Categoria[]> {
     return await repositorio.listarTodos(filtros);
   },
 
-  async listarPorUsuario(userId: string | number) {
+  async listarPorUsuario(userId: number): Promise<Categoria[]> {
     return await repositorio.listarPorUsuario(userId);
   },
 
-  async criar(dados: CategoriaPayload) {
-    if (!dados.userId) {
-      throw new ValidationError("Usuário é obrigatório");
-    }
-    // Verificar se o usuário existe
-    const userExists = await prisma.user.findUnique({
-      where: { id: Number(dados.userId) },
-    });
-    if (!userExists) {
-      throw new NotFoundError("Usuário não encontrado");
-    }
-
+  async criar(dados: CreateCategoriaDTO): Promise<Categoria> {
     return await repositorio.criar(dados);
   },
 
-  async remover(categoriaId: string | number) {
+  async remover(categoriaId: number): Promise<boolean> {
     const categoria = await repositorio.buscarPorId(categoriaId);
     if (!categoria) throw new NotFoundError("Categoria não encontrada");
 
     return await repositorio.remover(categoriaId);
   },
 
-  async atualizar(categoriaId: number, categoria: CategoriaPayload) {
+  async atualizar(categoriaId: number, categoria: UpdateCategoriaDTO): Promise<Categoria> {
     const hasCategoria = await repositorio.buscarPorId(categoriaId);
     if (!hasCategoria) throw new NotFoundError("Categoria não encontrada");
-    if (!categoria.nome) throw new ValidationError("Nome é obrigatório");
 
     return await repositorio.atualizar(categoriaId, categoria);
   },

@@ -1,86 +1,142 @@
-// src/core/auth/repositorio.ts
 import { prisma } from "@/lib/prisma";
-import { User as PrismaUser } from "@prisma/client";
-import { UserPayload } from "./types";
+import { Prisma, User as PrismaUser } from "@prisma/client";
+import { PaginatedResult } from "../types/global";
+import { ListUsersDTO, RegisterUserDTO, UpdateUserDTO } from "./user.dto";
+import { User } from "next-auth";
 
 export const authRepository = {
-  async listarTodos(filtros: Partial<PrismaUser>) {
-    return await prisma.user.findMany({
-      where: { 
-        ...filtros,
-        deletedAt: null, // Exclui registros deletados
+  async listarTodos(
+    filtros: ListUsersDTO
+  ): Promise<PaginatedResult<User>> {
+    const {
+      page = 0,
+      limit = 10,
+      nome,
+      email,
+      username,
+      status,
+      dataInicio,
+      dataFim,
+      deletedAt,
+    } = filtros;
+
+    let whereClause: Prisma.UserWhereInput = {
+      deletedAt: deletedAt !== undefined ? deletedAt : null,
+    };
+
+    if (nome) {
+      whereClause.name = { contains: nome, mode: "insensitive" };
+    }
+    if (email) {
+      whereClause.email = { contains: email, mode: "insensitive" };
+    }
+    if (username) {
+      whereClause.username = { contains: username, mode: "insensitive" };
+    }
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (dataInicio || dataFim) {
+      whereClause.createdAt = {};
+      if (dataInicio) {
+        whereClause.createdAt.gte = new Date(dataInicio);
+      }
+      if (dataFim) {
+        whereClause.createdAt.lte = new Date(dataFim);
+      }
+    }
+
+    const [total, data] = await prisma.$transaction([
+      prisma.user.count({ where: whereClause }),
+      prisma.user.findMany({
+        where: whereClause,
+        take: limit,
+        skip: page * limit,
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        limit,
       },
-    });
+    };
   },
 
-  async buscarPorId(id: string | number) {
-    const numericId = Number(id);
-    if (isNaN(numericId)) return null;
-
+  async buscarPorId(id: number): Promise<User | null> {
     return await prisma.user.findUnique({
-      where: { 
-        id: numericId,
-        deletedAt: null, // Exclui registros deletados
+      where: {
+        id,
+        deletedAt: null,
       },
     });
   },
 
-  async criar(data: UserPayload) {
+  async criar(data: Prisma.UserCreateInput): Promise<User> {
     return await prisma.user.create({
       data: {
-        username: data.username,
         email: data.email,
-        password: data.password,
+        username: data.username,
+        password: data.password, 
         name: data.name,
         image: data.image,
-        role: data.role || "usuario",
+        origem: data.origem,
+        role: data.role,
+        status: data.status,
       },
     });
   },
 
-  async remover(id: string | number): Promise<boolean> {
-    const numericId = Number(id);
-    if (isNaN(numericId)) return false;
-
+  async remover(id: number): Promise<boolean> {
     try {
-      // Soft delete: apenas marca como deletado
       await prisma.user.update({
-        where: { id: numericId },
+        where: { id },
         data: { deletedAt: new Date() },
       });
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   },
 
-  async atualizar(
-    id: string | number,
-    dados: Partial<UserPayload>
-  ) {
-    const numericId = Number(id);
-    if (isNaN(numericId)) throw new Error("ID inválido");
-
+  async atualizar(id: number, data: Prisma.UserUpdateInput): Promise<User> {
     return await prisma.user.update({
-      where: { id: numericId },
-      data: dados,
+      where: { id },
+      data,
     });
   },
 
-  async findByUsernameOrEmail(dados: { username?: string; email?: string | null }) {
+  async findByUsernameOrEmail(dados: { username?: string; email?: string }): Promise<User | null> {
     if (!dados.username && !dados.email) return null;
 
-    const where: any = { 
-      OR: [],
-      deletedAt: null, // Exclui registros deletados
-    };
-    if (dados.username) where.OR.push({ username: dados.username });
-    if (dados.email) where.OR.push({ email: dados.email });
+    const orConditions: Prisma.UserWhereInput[] = [];
 
-    if (where.OR.length === 0) return null;
+    if (dados.username?.trim()) orConditions.push({ username: dados.username });
+    if (dados.email?.trim()) orConditions.push({ email: dados.email });
+
+    if (orConditions.length === 0) return null;
 
     return await prisma.user.findFirst({
-      where,
+      where: {
+        OR: orConditions,
+        deletedAt: null,
+      },
+    });
+  },
+
+  async bulkExcluir(ids: number[]): Promise<void> {
+    await prisma.user.updateMany({
+      where: {
+        id: { in: ids },
+      },
+      data: {
+        deletedAt: new Date()
+      }
     });
   },
 };

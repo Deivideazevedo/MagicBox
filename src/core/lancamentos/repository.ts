@@ -1,4 +1,3 @@
-// src/core/lancamentos/repositorio.ts
 import { prisma } from "@/lib/prisma";
 import {
   Prisma,
@@ -8,6 +7,7 @@ import {
 import { PaginatedResult } from "../types/global";
 import { FindAllFilters } from "./lancamento.dto";
 import { LancamentoPayload } from "./types";
+
 export const lancamentoRepository = {
   /**
    * Busca lançamentos com suporte a filtros dinâmicos
@@ -25,7 +25,7 @@ export const lancamentoRepository = {
       userId,
       categoriaId,
       despesaId,
-      fonteRendaId,
+      receitaId,
       origem,
     } = filtros;
 
@@ -33,22 +33,22 @@ export const lancamentoRepository = {
 
     // Adicionar filtros válidos manualmente
     if (userId) {
-      whereClause.user_id = Number(userId);
+      whereClause.userId = Number(userId);
     }
     if (categoriaId) {
-      whereClause.categoria_id = Number(categoriaId);
+      whereClause.categoriaId = Number(categoriaId);
     }
     if (despesaId) {
-      whereClause.despesa_id = Number(despesaId);
+      whereClause.despesaId = Number(despesaId);
     }
-    if (fonteRendaId) {
-      whereClause.fonte_renda_id = Number(fonteRendaId);
+    if (receitaId) {
+      whereClause.receitaId = Number(receitaId);
     }
     if (origem) {
       if (origem === "despesa") {
-        whereClause.despesa_id = { not: null };
-      } else if (origem === "renda") {
-        whereClause.fonte_renda_id = { not: null };
+        whereClause.despesaId = { not: null };
+      } else if (origem === "renda" || origem === "receita") {
+        whereClause.receitaId = { not: null };
       }
     }
 
@@ -102,7 +102,7 @@ export const lancamentoRepository = {
               cor: true,
             },
           },
-          fonteRenda: {
+          receita: {
             select: {
               id: true,
               nome: true,
@@ -117,10 +117,7 @@ export const lancamentoRepository = {
     ]);
 
     return {
-      data: data.map((lancamento) => ({
-        ...lancamento,
-        // statusDinamico: "", // calcularStatusDinamico(lancamento),
-      })),
+      data: data as any,
       meta: {
         total,
         page,
@@ -134,103 +131,46 @@ export const lancamentoRepository = {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
-    const lancamento = await prisma.lancamento.findUnique({
-      where: {
-        id: numericId,
-      },
+    return await prisma.lancamento.findUnique({
+      where: { id: numericId },
       include: {
-        categoria: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-        despesa: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaVencimento: true,
-          },
-        },
-        fonteRenda: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaRecebimento: true,
-          },
-        },
+        categoria: { select: { id: true, nome: true } },
+        despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
+        receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
       },
     });
-
-    if (!lancamento) return null;
-
-    return lancamento;
   },
 
   async listarPorUsuario(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
 
-    const lancamentos = await prisma.lancamento.findMany({
-      where: {
-        user_id: numericId,
-      },
+    return await prisma.lancamento.findMany({
+      where: { userId: numericId },
       orderBy: { data: "desc" },
       include: {
-        categoria: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-        despesa: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaVencimento: true,
-          },
-        },
-        fonteRenda: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaRecebimento: true,
-          },
-        },
+        categoria: { select: { id: true, nome: true } },
+        despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
+        receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
       },
     });
-
-    return lancamentos;
   },
 
   async criar(data: any) {
-    // Cria o lançamento sem buscar as relações (economiza 2 queries desnecessárias)
-    const lancamento = await prisma.lancamento.create({
+    return await prisma.lancamento.create({
       data: {
-        user_id: Number(data.userId),
+        userId: Number(data.userId),
         tipo: data.tipo,
         valor: Number(data.valor),
         data: new Date(data.data),
         observacao: data.observacao,
-        observacao_automatica: data.observacaoAutomatica,
-        categoria_id: Number(data.categoriaId),
-        despesa_id: data.despesaId ? Number(data.despesaId) : null,
-        fonte_renda_id: data.fonteRendaId ? Number(data.fonteRendaId) : null,
+        observacaoAutomatica: data.observacaoAutomatica,
+        categoriaId: Number(data.categoriaId),
+        despesaId: data.despesaId ? Number(data.despesaId) : null,
+        receitaId: data.receitaId ? Number(data.receitaId) : null,
+        metaId: data.metaId ? Number(data.metaId) : null,
       },
-      // REMOVIDO include para otimização de performance
-      // Se precisar das relações, faça um buscarPorId logo após
     });
-
-    return {
-      ...lancamento,
-      despesa: null, // Mantém compatibilidade com o tipo esperado
-      fonteRenda: null,
-      // statusDinamico: calcularStatusDinamico(lancamento),
-    };
   },
 
   async remover(id: string | number): Promise<boolean> {
@@ -238,7 +178,6 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return false;
 
     try {
-      // Delete permanente (sem soft delete)
       await prisma.lancamento.delete({
         where: { id: numericId },
       });
@@ -248,14 +187,11 @@ export const lancamentoRepository = {
     }
   },
 
-  async removerEmMassa(
-    ids: number[],
-    userId: number,
-  ): Promise<{ count: number }> {
+  async removerEmMassa(ids: number[], userId: number): Promise<{ count: number }> {
     const resultado = await prisma.lancamento.deleteMany({
       where: {
         id: { in: ids },
-        user_id: userId,
+        userId: userId,
       },
     });
 
@@ -266,29 +202,16 @@ export const lancamentoRepository = {
     const numericId = Number(id);
     if (isNaN(numericId)) throw new Error("ID inválido");
 
-    const lancamento = await prisma.lancamento.update({
+    return await prisma.lancamento.update({
       where: { id: numericId },
       data: {
         tipo: data.tipo ? (data.tipo as TipoLancamento) : undefined,
         valor: data.valor ? Number(data.valor) : undefined,
         data: data.data ? new Date(data.data) : undefined,
         observacao: data.observacao,
-        despesa_id: data.despesaId !== undefined 
-          ? (data.despesaId ? Number(data.despesaId) : null) 
-          : undefined,
-        fonte_renda_id: data.fonteRendaId !== undefined 
-          ? (data.fonteRendaId ? Number(data.fonteRendaId) : null) 
-          : undefined,
+        despesaId: data.despesaId !== undefined ? (data.despesaId ? Number(data.despesaId) : null) : undefined,
+        receitaId: data.receitaId !== undefined ? (data.receitaId ? Number(data.receitaId) : null) : undefined,
       },
-      // REMOVIDO include para otimização de performance
-      // Se precisar das relações, faça um buscarPorId logo após
     });
-
-    return {
-      ...lancamento,
-      despesa: null, // Mantém compatibilidade com o tipo esperado
-      fonteRenda: null,
-      // statusDinamico: calcularStatusDinamico(lancamento),
-    };
   },
 };

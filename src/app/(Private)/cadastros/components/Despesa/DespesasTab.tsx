@@ -24,30 +24,12 @@ export default function DespesasTab({
     categorias,
   });
 
-  const formRef = useRef<HTMLDivElement>(null);
-
-  const scrollToForm = () => {
-    if (formRef.current) {
-      const elementPosition = formRef.current.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - 180;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  const handleEditWithScroll = (despesa: Despesa) => {
-    handleEdit(despesa);
-  };
-
   return (
     <Box sx={{ px: 3, pb: 3 }}>
       <Grid container spacing={3}>
         {/* Formulário de Cadastro */}
         <Grid item xs={12} md={4}>
-          <Formulario {...formProps} formRef={formRef} />
+          <Formulario {...formProps} />
         </Grid>
 
         {/* Lista de Despesas */}

@@ -29,14 +29,14 @@ import { ptBR } from "date-fns/locale";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 
 interface ModalVisualizacaoProps {
   open: boolean;
   lancamento: LancamentoResposta | null;
   categorias: Categoria[];
   despesas: Despesa[];
-  fontesRenda: FonteRenda[];
+  receitas: Receita[];
   onClose: () => void;
 }
 
@@ -45,7 +45,7 @@ export default function ModalVisualizacao({
   lancamento,
   categorias,
   despesas,
-  fontesRenda,
+  receitas,
   onClose,
 }: ModalVisualizacaoProps) {
   if (!lancamento) return null;
@@ -53,7 +53,7 @@ export default function ModalVisualizacao({
   // Usar dados do Prisma (categoria, despesa, fonteRenda já vêm populados)
   const categoria = lancamento.categoria;
   const despesa = lancamento.despesa;
-  const fonteRenda = lancamento.fonteRenda;
+  const receita = lancamento.receita;
 
   const isPagamento = lancamento.tipo === "pagamento";
   const isDespesa = Boolean(lancamento.despesa);
@@ -206,8 +206,8 @@ export default function ModalVisualizacao({
             <Grid item xs={12}>
               <InfoItem
                 icon={IconReceipt}
-                label={isDespesa ? "Despesa" : "Fonte de Renda"}
-                value={despesa?.nome || fonteRenda?.nome || "-"}
+                label={isDespesa ? "Despesa" : "Receita"}
+                value={despesa?.nome || receita?.nome || "-"}
                 color={isDespesa ? "error" : "success"}
               />
             </Grid>

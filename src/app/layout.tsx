@@ -1,4 +1,5 @@
 import React from "react";
+import "./global.css";
 import { Providers } from "@/store/providers";
 import MyApp from "./app";
 // 🎯 Importa configuração global do Zod (servidor + cliente)

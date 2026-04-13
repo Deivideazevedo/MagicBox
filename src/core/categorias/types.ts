@@ -4,23 +4,16 @@ export interface Categoria { // Representação no DB/Frontend completa
   nome: string;
   icone: string | null;
   cor: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  deletedAt: string | Date | null;
 }
 
-// Interface apenas para envio de dados
+// Interface apenas para envio de dados (usada pelo Front-end para Create/Update)
 export interface CategoriaPayload {
-  nome: string; 
-  icone?: string | null;
-  cor?: string | null;
-  userId?: number;
-}
-
-// Interface específica para formulários no frontend (estado interno do react-hook-form)
-export interface CategoriaForm {
   id?: number;
   nome: string;
   icone?: string | null;
   cor?: string | null;
+  userId?: number;
 }

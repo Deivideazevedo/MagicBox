@@ -22,14 +22,44 @@ export const PROTECTED_API_ROUTES = [
   "/api/auth/oauth-token",
 ];
 
+// Rotas administrativas (requerem role admin)
+const ADMIN_ROUTES = ["/usuarios"];
+
+// Padrões de rotas de API administrativas (requerem role admin)
+const ADMIN_API_PATTERNS = ["/api/usuarios"];
+
 // Verificadores de rota
 const isPublicRoute = (path: string) => PUBLIC_ROUTES.includes(path);
 const isAuthRoute = (path: string) => path.startsWith(AUTH_ROUTES[0]);
 const isApiRoute = (path: string) => path.startsWith("/api");
+
+const isAdminPageRoute = (path: string) =>
+  ADMIN_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
+
+const isAdminApiRoute = (path: string) =>
+  ADMIN_API_PATTERNS.some((pattern) => path.startsWith(pattern));
+
 const isProtectedApiRoute = (path: string) =>
   PROTECTED_API_ROUTES.some((route) => path.startsWith(route));
+
 const isPublicNextAuthRoute = (path: string) =>
   path.startsWith("/api/auth") && !isProtectedApiRoute(path);
+
+/**
+ * Verifica se o usuário tem a permissão necessária
+ * Atualmente apenas role admin, mas expansível no futuro
+ */
+export function hasPermission(token: JWT | null, requiredRole = "admin") {
+  if (!token) return false;
+  // Admin tem acesso a tudo
+  if (token.user?.role === "admin") return true;
+
+  // Verificações futuras de lista de permissões granulares:
+  // const userPermissions = token.user?.permissions || [];
+  // return userPermissions.includes(requiredPermission);
+
+  return token.user?.role === requiredRole;
+}
 
 export {
   isPublicRoute,
@@ -37,6 +67,8 @@ export {
   isProtectedApiRoute,
   isPublicNextAuthRoute,
   isApiRoute,
+  isAdminPageRoute,
+  isAdminApiRoute,
 };
 
 // Autenticação por cookie de sessão (requisições do sistema)

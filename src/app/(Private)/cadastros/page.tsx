@@ -11,16 +11,19 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { IconBuilding, IconCreditCard, IconWallet } from "@tabler/icons-react";
+import { IconCreditCard, IconWallet } from "@tabler/icons-react";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 
 // Components
 import DespesasTab from "./components/Despesa/DespesasTab";
-import FontesRendaTab from "./components/FonteRenda/FontesRendaTab";
-import { IconCategory } from "@tabler/icons-react";
+import ReceitasTab from "./components/Receita/ReceitasTab";
+import MetasTab from "./components/Meta/MetasTab";
+import { IconCategory, IconTarget } from "@tabler/icons-react";
 import CategoriasTab from "./components/Categoria/CategoriasTab";
+import DividasTab from "./components/Divida/DividasTab";
+import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -57,17 +60,22 @@ export default function CadastrosPage() {
     error: errorDespesas,
   } = useGetDespesasQuery();
   const {
-    data: fontesRenda = [],
-    isLoading: loadingFontesRenda,
-    error: errorFontesRenda,
-  } = useGetFontesRendaQuery();
+    data: receitas = [],
+    isLoading: loadingReceitas,
+    error: errorReceitas,
+  } = useGetReceitasQuery();
+  const {
+    data: metas = [],
+    isLoading: loadingMetas,
+    error: errorMetas,
+  } = useGetMetasQuery();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
 
-  const isLoading = loadingCategorias || loadingDespesas || loadingFontesRenda;
-  const error = errorCategorias || errorDespesas || errorFontesRenda;
+  const isLoading = loadingCategorias || loadingDespesas || loadingReceitas || loadingMetas;
+  const error = errorCategorias || errorDespesas || errorReceitas || errorMetas;
 
   if (isLoading) {
     return (
@@ -101,8 +109,7 @@ export default function CadastrosPage() {
           Cadastros
         </Typography>
         <Typography variant="h6" color="textSecondary">
-          Gerencie suas categorias, despesas e fontes de renda de forma
-          organizada
+          Gerencie suas categorias, receitas, metas e dívidas
         </Typography>
       </Box>
 
@@ -130,8 +137,20 @@ export default function CadastrosPage() {
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
             <Tab
-              label="Fontes de Renda"
+              label="Receitas"
               icon={<IconWallet size={20} />}
+              iconPosition="start"
+              sx={{ minHeight: 48, fontWeight: 600 }}
+            />
+            <Tab
+              label="Metas"
+              icon={<IconTarget size={20} />}
+              iconPosition="start"
+              sx={{ minHeight: 48, fontWeight: 600 }}
+            />
+            <Tab
+              label="Dívidas"
+              icon={<IconCreditCard size={20} />}
               iconPosition="start"
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
@@ -147,7 +166,15 @@ export default function CadastrosPage() {
         </TabPanel>
 
         <TabPanel value={currentTab} index={2}>
-          <FontesRendaTab fontesRenda={fontesRenda} />
+          <ReceitasTab receitas={receitas} />
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={3}>
+          <MetasTab />
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={4}>
+          <DividasTab despesas={despesas} categorias={categorias} />
         </TabPanel>
       </Paper>
     </Container>

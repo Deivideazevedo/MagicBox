@@ -39,7 +39,7 @@
     "@react-input/mask": "^2.0.4",
     "@react-input/number-format": "^2.0.3",
     "@reduxjs/toolkit": "^1.9.7",
-    "@tabler/icons-react": "^2.39.0",
+    "@tabler/icons-react": "^3.41.1",
     "apexcharts": "^5.3.5",
     "axios": "^1.5.1",
     "axios-mock-adapter": "^1.22.0",

@@ -59,6 +59,8 @@ export function parseError(error: unknown) {
       P2025: "Registro não encontrado",
       P2014: "A operação viola uma restrição de integridade",
       P2021: "Tabela não encontrada no banco. Execute as migrations no banco atual",
+      P2024: "O servidor de banco de dados demorou muito para responder (Connection Timeout).",
+      P2028: "A transação expirou ou a conexão foi perdida devido ao tempo de espera (Timeout).",
     };
 
     body = {
@@ -69,6 +71,11 @@ export function parseError(error: unknown) {
         meta: error.meta,
       },
     };
+
+    // Ajusta o status para timeout se for o caso
+    if (error.code === "P2024" || error.code === "P2028") {
+      status = 408; // Request Timeout
+    }
   }
 
   // Erros do Prisma - Validação
@@ -82,11 +89,18 @@ export function parseError(error: unknown) {
 
   // Error genérico do JavaScript
   else if (error instanceof Error) {
+    const isTimeout = error.message.toLowerCase().includes("timeout") || 
+                     error.message.toLowerCase().includes("connection terminated");
+
+    status = isTimeout ? 503 : 500;
     body = {
-      error: error.name,
-      message: error.message,
+      error: isTimeout ? "DatabaseTimeout" : error.name,
+      message: isTimeout 
+        ? "O servidor de banco de dados está temporariamente indisponível ou demorou muito para responder. Tente novamente em instantes." 
+        : error.message,
     };
   }
+
 
   return { status, body };
 }

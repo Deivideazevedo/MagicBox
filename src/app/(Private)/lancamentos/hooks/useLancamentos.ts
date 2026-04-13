@@ -26,7 +26,7 @@ const lancamentoSchema = z.object({
   userId: z.union([z.string(), z.number()]).optional(),
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
-  fonteRendaId: z.union([z.string(), z.number(), z.null()]).optional(),
+  receitaId: z.union([z.string(), z.number(), z.null()]).optional(),
   tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.number(),
   data: z.string().min(1, "Data é obrigatória"),
@@ -85,19 +85,20 @@ export function useLancamentos({
   const onSubmit = useCallback(
     async (payload: LancamentoForm) => {
       const { id, ...formData } = payload;
+      const userId = Number(session?.user?.id);
 
       try {
         // Converter FormData para Payload (converter strings para numbers)
         const data: LancamentoPayload = {
-          ...formData,
-          userId: Number(formData.userId),
+          userId: userId,
           valor: Number(formData.valor),
           parcelas: formData.parcelas ? Number(formData.parcelas) : null,
           despesaId: formData.despesaId ? Number(formData.despesaId) : null,
-          categoriaId: formData.categoriaId,
-          fonteRendaId: formData.fonteRendaId
-            ? Number(formData.fonteRendaId)
-            : null,
+          categoriaId: Number(formData.categoriaId),
+          receitaId: formData.receitaId ? Number(formData.receitaId) : null,
+          tipo: formData.tipo,
+          data: formData.data,
+          observacao: formData.observacao || "",
         };
 
         const lancamentoData: LancamentoPayload = {
@@ -133,6 +134,7 @@ export function useLancamentos({
           userId: session?.user?.id || "",
           tipo: "pagamento",
           despesaId: "",
+          receitaId: "",
           categoriaId: 0,
           valor: 0,
           data: new Date().toISOString().split("T")[0],
@@ -160,6 +162,7 @@ export function useLancamentos({
       setValue("id", lancamento.id);
       setValue("userId", lancamento.userId);
       setValue("despesaId", lancamento.despesa?.id);
+      setValue("receitaId", lancamento.receita?.id);
       setValue("categoriaId", Number(lancamento?.categoria?.id));
       setValue("tipo", lancamento.tipo);
       setValue("valor", lancamento.valor);

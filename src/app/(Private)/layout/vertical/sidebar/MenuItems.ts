@@ -13,21 +13,18 @@ interface MenuitemsType {
   chipColor?: string;
   variant?: string;
   external?: boolean;
+  permissions?: string[];
 }
 
 import {
   IconHome,
-  IconChartLine,
-  IconPlus,
   IconList,
+  IconPlus,
   IconReportAnalytics,
-  IconCreditCard,
-  IconReceipt,
-  IconWallet,
   IconSettings,
-  IconCalculator,
-  IconTrendingUp,
-  IconPigMoney,
+  IconUser,
+  IconTarget,
+  IconCreditCard
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -43,7 +40,7 @@ const Menuitems: MenuitemsType[] = [
     chip: "Principal",
     chipColor: "primary",
   },
-  
+
   {
     navlabel: true,
     subheader: "Gestão Financeira",
@@ -58,6 +55,18 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
+    title: "Dívidas",
+    icon: IconCreditCard,
+    href: "/cadastros/dividas",
+  },
+  {
+    id: uniqueId(),
+    title: "Metas",
+    icon: IconTarget,
+    href: "/cadastros/metas",
+  },
+  {
+    id: uniqueId(),
     title: "Resumo",
     icon: IconList,
     href: "/resumo",
@@ -68,10 +77,17 @@ const Menuitems: MenuitemsType[] = [
     icon: IconReportAnalytics,
     href: "/relatorios",
   },
-  
+
   {
     navlabel: true,
     subheader: "Configurações",
+  },
+  {
+    id: uniqueId(),
+    title: "Usuários",
+    icon: IconUser,
+    href: "/usuarios",
+    permissions: ["admin"],
   },
   {
     id: uniqueId(),

@@ -1,26 +1,25 @@
-// ============================================
-// MODEL: USER - Usuários do sistema
-// ============================================
-
 model User {
-  id        Int       @id @default(autoincrement())
-  username  String    @unique
-  email     String?   @unique
-  password  String
-  name      String?
-  image     String?
-  role      String?   @default("user")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  // Relacionamentos
+  id          Int          @id @default(autoincrement())
+  username    String?      @unique
+  email       String       @unique
+  password    String?
+  name        String?
+  image       String?
+  role        String?      @default("usuario")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  origem      String       @default("credenciais")
+  status      String       @default("A")
+  
   categorias  Categoria[]
   despesas    Despesa[]
-  fontesRenda FonteRenda[]
+  receitas    Receita[]
   lancamentos Lancamento[]
+  metas       Meta[]
 
   @@index([username])
   @@index([email])
-  @@map("users")
+  @@map("user")
 }
+

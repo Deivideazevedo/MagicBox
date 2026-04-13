@@ -1,47 +1,41 @@
 import { Categoria } from "../categorias/types";
 
-export interface Despesa { // DB/Frontend type
+export type TipoDespesa = "FIXA" | "VARIAVEL" | "DIVIDA";
+
+export interface Despesa {
   id: number;
   userId: number;
   categoriaId: number;
   nome: string;
+  tipo: TipoDespesa;
+  valorEstimado: number | null;
+  valorTotal: number | null;
+  totalParcelas: number | null;
+  diaVencimento: number | null;
+  dataInicio: string | Date | null;
+  status: "A" | "I";
   icone: string | null;
   cor: string | null;
-  mensalmente: boolean;
-  valorEstimado: number | null;
-  diaVencimento: number | null;
-  status: boolean;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  categoria: Categoria | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  deletedAt: string | Date | null;
+
+  // Relacionamentos
+  categoria?: Categoria;
 }
 
-// Payload for Backend interactions
 export interface DespesaPayload {
   id?: number;
-  userId: number;
-  categoriaId: number;
   nome: string;
-  icone?: string | null;
-  cor?: string | null;
-  mensalmente: boolean;
-  status: boolean;
+  categoriaId: number;
+  tipo?: TipoDespesa;
   valorEstimado?: number | null;
+  valorTotal?: number | null;
+  totalParcelas?: number | null;
   diaVencimento?: number | null;
-  categoria?: Categoria;
-} 
-
-// Interface específica para formulários no frontend
-export interface DespesaForm {
-  id?: number;
-  userId?: number;
-  categoriaId: number;
-  nome: string;
+  dataInicio?: string | Date | null;
+  status?: "A" | "I";
   icone?: string | null;
   cor?: string | null;
-  mensalmente: boolean;
-  status: boolean;
-  valorEstimado: number | null;
-  diaVencimento: number | null;
+  userId?: number | null;
 }

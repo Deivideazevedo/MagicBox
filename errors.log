@@ -1,0 +1,64 @@
+.next/types/app/api/fontes-renda/[id]/route.ts(2,24): error TS2307: Cannot find module '../../../../../../src/app/api/fontes-renda/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/fontes-renda/[id]/route.ts(5,29): error TS2307: Cannot find module '../../../../../../src/app/api/fontes-renda/[id]/route.js' or its corresponding type declarations.
+.next/types/app/api/fontes-renda/route.ts(2,24): error TS2307: Cannot find module '../../../../../src/app/api/fontes-renda/route.js' or its corresponding type declarations.
+.next/types/app/api/fontes-renda/route.ts(5,29): error TS2307: Cannot find module '../../../../../src/app/api/fontes-renda/route.js' or its corresponding type declarations.
+prisma/seed.ts(155,37): error TS2322: Type '{ userId: number; categoriaId: number; nome: string; tipo: string; valorEstimado: string | null; diaVencimento: number | null; status: any; createdAt: Date; updatedAt: Date; }[]' is not assignable to type 'DespesaCreateManyInput | DespesaCreateManyInput[]'.
+  Type '{ userId: number; categoriaId: number; nome: string; tipo: string; valorEstimado: string | null; diaVencimento: number | null; status: any; createdAt: Date; updatedAt: Date; }[]' is not assignable to type 'DespesaCreateManyInput[]'.
+    Type '{ userId: number; categoriaId: number; nome: string; tipo: string; valorEstimado: string | null; diaVencimento: number | null; status: any; createdAt: Date; updatedAt: Date; }' is not assignable to type 'DespesaCreateManyInput'.
+      Types of property 'tipo' are incompatible.
+        Type 'string' is not assignable to type 'TipoDespesa | undefined'.
+src/app/(Private)/cadastros/components/Meta/Listagem.tsx(50,8): error TS2304: Cannot find name 'Card'.
+src/app/(Private)/cadastros/components/Meta/Listagem.tsx(72,9): error TS2304: Cannot find name 'Card'.
+src/app/(Private)/cadastros/hooks/useMetas.ts(61,51): error TS2322: Type 'MetaPayload' is not assignable to type 'Partial<Meta>'.
+  Types of property 'dataAlvo' are incompatible.
+    Type 'string | Date | undefined' is not assignable to type 'string | undefined'.
+      Type 'Date' is not assignable to type 'string'.
+src/app/(Private)/cadastros/hooks/useMetas.ts(64,28): error TS2345: Argument of type 'MetaPayload' is not assignable to parameter of type 'Partial<Meta>'.
+src/app/(Private)/lancamentos/components/DataGridLancamentos.tsx(33,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/DataGridLancamentos.tsx(214,17): error TS2339: Property 'fonteRenda' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/components/DataGridLancamentos.tsx(214,46): error TS2339: Property 'fonteRenda' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/components/FiltrosAvancados.tsx(37,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/FiltrosAvancados.tsx(203,7): error TS2353: Object literal may only specify known properties, and 'fonteRendaId' does not exist in type 'Partial<{ page: number; limit: number; userId?: number | undefined; dataInicio?: string | undefined; dataFim?: string | undefined; categoriaId?: number | undefined; despesaId?: number | undefined; ... 4 more ...; origem?: string | undefined; }>'.
+src/app/(Private)/lancamentos/components/FiltrosAvancados.tsx(233,21): error TS2339: Property 'fonteRendaId' does not exist on type 'Partial<{ page: number; limit: number; userId?: number | undefined; dataInicio?: string | undefined; dataFim?: string | undefined; categoriaId?: number | undefined; despesaId?: number | undefined; ... 4 more ...; origem?: string | undefined; }>'.
+src/app/(Private)/lancamentos/components/FiltrosAvancados.tsx(233,61): error TS2339: Property 'fonteRendaId' does not exist on type '{ page: number; limit: number; userId?: number | undefined; dataInicio?: string | undefined; dataFim?: string | undefined; categoriaId?: number | undefined; despesaId?: number | undefined; ... 4 more ...; origem?: string | undefined; }'.
+src/app/(Private)/lancamentos/components/Formulario.tsx(45,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/LancamentoDrawer.tsx(5,32): error TS2307: Cannot find module '@/app/(Private)/cadastros/hooks/useFontesRenda' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/ModalVisualizacao.tsx(32,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/ModalVisualizacao.tsx(56,33): error TS2339: Property 'fonteRenda' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(38,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(177,39): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(178,50): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(180,44): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(184,39): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(187,19): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/components/customTable/index.tsx(191,19): error TS2339: Property 'fonteRenda' does not exist on type 'OrigemType'.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(3,28): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(11,40): error TS2307: Cannot find module '@/services/endpoints/fontesRendaApi' or its corresponding type declarations.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(116,31): error TS2339: Property 'fonteRendaId' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(116,68): error TS2339: Property 'fonte_renda_id' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(165,8): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/app/(Private)/lancamentos/hooks/useLancamentoForm.ts(182,11): error TS2353: Object literal may only specify known properties, and 'fonteRendaId' does not exist in type 'LancamentoPayload'.
+src/app/(Private)/lancamentos/hooks/useLancamentos.ts(98,11): error TS2353: Object literal may only specify known properties, and 'fonteRendaId' does not exist in type 'LancamentoPayload'.
+src/app/(Private)/lancamentos/hooks/useLancamentos.ts(98,34): error TS2339: Property 'fonteRendaId' does not exist on type '{ userId?: string | number | undefined; tipo: TipoLancamento; valor: number; data: string; categoriaId: number; observacao?: string | undefined; despesaId?: string | number | null | undefined; receitaId?: string | ... 2 more ... | undefined; metaId?: string | ... 2 more ... | undefined; parcelas?: string | ... 2 mor...'.
+src/app/(Private)/lancamentos/hooks/useLancamentos.ts(98,65): error TS2339: Property 'fonteRendaId' does not exist on type '{ userId?: string | number | undefined; tipo: TipoLancamento; valor: number; data: string; categoriaId: number; observacao?: string | undefined; despesaId?: string | number | null | undefined; receitaId?: string | ... 2 more ... | undefined; metaId?: string | ... 2 more ... | undefined; parcelas?: string | ... 2 mor...'.
+src/app/(Private)/lancamentos/page.tsx(22,40): error TS2307: Cannot find module '@/services/endpoints/fontesRendaApi' or its corresponding type declarations.
+src/app/(Private)/lancamentos/page.tsx(54,54): error TS2339: Property 'fonteRenda' does not exist on type 'LancamentoResposta'.
+src/app/(Private)/lancamentos/utils.ts(36,5): error TS2353: Object literal may only specify known properties, and 'fonteRendaId' does not exist in type '{ page: number; limit: number; userId?: number | undefined; dataInicio?: string | undefined; dataFim?: string | undefined; categoriaId?: number | undefined; despesaId?: number | undefined; ... 4 more ...; origem?: string | undefined; }'.
+src/app/(Private)/resumo/page.tsx(20,40): error TS2307: Cannot find module '@/services/endpoints/fontesRendaApi' or its corresponding type declarations.
+src/app/api/receitas/[id]/route.ts(1,46): error TS2307: Cannot find module '@/core/fontesRenda/service' or its corresponding type declarations.
+src/app/api/receitas/[id]/route.ts(2,40): error TS2307: Cannot find module '@/core/fontesRenda/fonte-renda.dto' or its corresponding type declarations.
+src/app/api/receitas/[id]/route.ts(3,35): error TS2307: Cannot find module '@/core/fontesRenda/types' or its corresponding type declarations.
+src/app/api/receitas/route.ts(3,46): error TS2307: Cannot find module '@/core/fontesRenda/service' or its corresponding type declarations.
+src/app/api/receitas/route.ts(6,40): error TS2307: Cannot find module '@/core/fontesRenda/fonte-renda.dto' or its corresponding type declarations.
+src/core/despesas/service.ts(45,9): error TS2353: Object literal may only specify known properties, and 'observacaoAutomatica' does not exist in type 'LancamentoPayload'.
+src/core/lancamentos/model.ts(22,30): error TS2339: Property 'fonteRendaId' does not exist on type 'LancamentoResposta'.
+src/core/lancamentos/model.ts(42,7): error TS2353: Object literal may only specify known properties, and 'fonteRendaId' does not exist in type 'LancamentoResposta'.
+src/core/lancamentos/resumo/types.ts(3,28): error TS2307: Cannot find module '../../fontesRenda/types' or its corresponding type declarations.
+src/core/metas/service.ts(2,10): error TS2724: '"./repository"' has no exported member named 'metaRepository'. Did you mean 'metasRepository'?
+src/core/metas/service.ts(32,9): error TS2353: Object literal may only specify known properties, and 'observacaoAutomatica' does not exist in type 'LancamentoPayload'.
+src/core/receitas/model.ts(2,10): error TS2305: Module '"./types"' has no exported member 'FonteRenda'.
+src/core/receitas/model.ts(2,22): error TS2305: Module '"./types"' has no exported member 'FonteRendaPayload'.
+src/core/receitas/service.ts(4,10): error TS2305: Module '"./repository"' has no exported member 'fonteRendaRepository'.
+src/core/receitas/service.ts(5,10): error TS2305: Module '"./types"' has no exported member 'FonteRenda'.
+src/core/receitas/service.ts(5,22): error TS2305: Module '"./types"' has no exported member 'FonteRendaPayload'.
+src/dtos/index.ts(8,15): error TS2307: Cannot find module '../core/fontesRenda/fonte-renda.dto' or its corresponding type declarations.

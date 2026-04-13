@@ -39,22 +39,28 @@ async function login(requisicao: NextRequest): Promise<NextResponse> {
 
   // Adapta o usuário para o formato esperado pelo token
   const userForToken = {
-    id: usuario.id, // ✅ Já é number do Prisma
+    id: Number(usuario.id), // ✅ Já é number do Prisma
     name: usuario.name,
     username: usuario.username,
     email: usuario.email,
     image: usuario.image,
     role: usuario.role,
-    createdAt: usuario.createdAt.toISOString(),
-    updatedAt: usuario.updatedAt.toISOString(),
+    status: usuario.status,
+    origem: usuario.origem,
+    createdAt: (usuario.createdAt instanceof Date ? usuario.createdAt : new Date(usuario.createdAt)).toISOString(),
+    updatedAt: (usuario.updatedAt instanceof Date ? usuario.updatedAt : new Date(usuario.updatedAt)).toISOString(),
   };
+
+
 
   // Gera JWT customizado para uso externo
   const token = await generateAccessToken(userForToken);
 
+
   return NextResponse.json({
     token,
     usuario: userForToken,
+
     expiresIn: "7d",
   });
 }

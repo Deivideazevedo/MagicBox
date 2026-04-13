@@ -1,42 +1,32 @@
-// ============================================
-// MODEL: LANÇAMENTO - Transações financeiras
-// ============================================
-
 model Lancamento {
-  id                    Int            @id @default(autoincrement())
-  user_id               Int
+  id                    Int             @id @default(autoincrement())
+  userId                Int
+  categoriaId           Int
+  despesaId             Int?
+  receitaId             Int?
+  metaId                Int?
   tipo                  TipoLancamento
-  data                  DateTime // Data do lançamento/agendamento
-  observacao            String?        @db.VarChar(255)
-  observacao_automatica String?        @db.VarChar(500) // Descrição automática para parcelamentos
+  valor                 Decimal         @db.Decimal(10, 2)
+  data                  DateTime
+  observacao            String?
+  observacaoAutomatica  String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
-  categoria_id   Int
-  despesa_id     Int?
-  fonte_renda_id Int?
+  categoria             Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  despesa               Despesa?        @relation(fields: [despesaId], references: [id], onDelete: Cascade)
+  receita               Receita?        @relation(fields: [receitaId], references: [id], onDelete: Cascade)
+  meta                  Meta?           @relation(fields: [metaId], references: [id], onDelete: Cascade)
 
-  // Campo de valor
-  valor Decimal @db.Decimal(10, 2) // Valor do lançamento
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  // Relacionamentos
-  user       User        @relation(fields: [user_id], references: [id], onDelete: Restrict)
-  categoria  Categoria   @relation(fields: [categoria_id], references: [id], onDelete: Restrict)
-  despesa    Despesa?    @relation(fields: [despesa_id], references: [id], onDelete: Restrict)
-  fonteRenda FonteRenda? @relation(fields: [fonte_renda_id], references: [id], onDelete: Restrict)
-
-  // Índices simples
-  @@index([user_id])
-  @@index([despesa_id])
-  @@index([fonte_renda_id])
-  @@index([data])
-  @@index([categoria_id])
-  @@index([tipo])
-  // Índices compostos para otimização de queries comuns
-  @@index([user_id, data(sort: Desc)]) // Listagem de lançamentos por usuário ordenado por data
-  @@index([user_id, tipo]) // Filtro por tipo de lançamento
-  @@index([user_id, categoria_id, data]) // Filtro por categoria
-  @@index([user_id, despesa_id, data]) // Filtro por despesa
-  @@map("lancamentos")
+  @@index([userId, data])
+  @@index([despesaId])
+  @@index([receitaId])
+  @@index([categoriaId])
+  @@index([metaId])
+  @@map("lancamento")
 }
+
+
+

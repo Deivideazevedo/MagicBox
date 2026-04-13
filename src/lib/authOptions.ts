@@ -34,28 +34,34 @@ export const authOptions: AuthOptions = {
         try {
           // return credentials as User;
           const user = await authService.authenticate(credentials as AuthPayload);
-          
+
           if (user) {
             return {
               ...user,
               id: user.id, // ✅ Já é number do Prisma
-              createdAt: user.createdAt.toISOString(),
-              updatedAt: user.updatedAt.toISOString(),
-              deletedAt: user.deletedAt ? user.deletedAt.toISOString() : null,
-            } as User;
+              createdAt: new Date(user.createdAt).toISOString(),
+              updatedAt: new Date(user.updatedAt).toISOString(),
+              deletedAt: user.deletedAt ? new Date(user.deletedAt).toISOString() : null,
+
+              origem: user.origem,
+              status: user.status,
+              hasPassword: user.hasPassword,
+            } as any as User;
           }
+
+
           return null;
         } catch (error) {
           // 🎯 Usa a mesma lógica de tratamento de erros do error-handler
           const { status, body } = parseError(error);
-          
+
           // 🎨 Usa o formatador visual de logs
           consoleErrorLogger({
             url: "/api/auth/callback/credentials",
             method: "POST",
             ...body,
           });
-          
+
           // NextAuth espera um Error com message string
           throw new Error(body.message);
         }
@@ -78,16 +84,17 @@ export const authOptions: AuthOptions = {
                 email: user.email,
                 name: user.name || "",
                 image: user.image || undefined,
+                provider: account.provider,
               });
 
               // Substitui o usuário do provider pelo usuário do banco
               token.user = {
                 ...dbUser,
                 id: dbUser.id, // ✅ Já é number do Prisma
-                createdAt: dbUser.createdAt.toISOString(),
-                updatedAt: dbUser.updatedAt.toISOString(),
+                createdAt: new Date(dbUser.createdAt).toISOString(),
+                updatedAt: new Date(dbUser.updatedAt).toISOString(),
               } as User;
-            } catch (error) {
+            } catch (error: any) {
               const { body } = parseError(error);
               consoleErrorLogger({
                 url: "/api/auth/oauth",
@@ -96,6 +103,7 @@ export const authOptions: AuthOptions = {
               });
             }
           }
+
         } else {
           // Credentials login (user já formatado no authorize)
           // user aqui já é User (não AdapterUser) pois vem do authorize

@@ -30,13 +30,13 @@ import { ptBR as ptBRDate } from "date-fns/locale";
 import { Lancamento } from "@/core/lancamentos/types";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 
 interface DataGridLancamentosProps {
   lancamentos: Lancamento[];
   categorias: Categoria[];
   despesas: Despesa[];
-  fontesRenda: FonteRenda[];
+  receitas: Receita[];
   onVisualizar: (lancamento: Lancamento) => void;
   onEditar: (lancamento: Lancamento) => void;
   onExcluir: (lancamento: Lancamento) => void;
@@ -53,7 +53,7 @@ export default function DataGridLancamentos({
   lancamentos,
   categorias,
   despesas,
-  fontesRenda,
+  receitas,
   onVisualizar,
   onEditar,
   onExcluir,
@@ -101,15 +101,15 @@ export default function DataGridLancamentos({
     );
   }, [despesas]);
 
-  const fontesRendaMap = useMemo(() => {
-    return fontesRenda.reduce(
-      (acc, fonte) => {
-        acc[fonte.id] = fonte.nome;
+  const receitasMap = useMemo(() => {
+    return receitas.reduce(
+      (acc, rec) => {
+        acc[rec.id] = rec.nome;
         return acc;
       },
       {} as Record<number, string>,
     );
-  }, [fontesRenda]);
+  }, [receitas]);
 
   const columns: GridColDef[] = [
     {
@@ -211,7 +211,7 @@ export default function DataGridLancamentos({
         if (!row) return "-";
         // Verificar propriedades aninhadas retornadas pelo Prisma
         if (row.despesa?.nome) return row.despesa.nome;
-        if (row.fonteRenda?.nome) return row.fonteRenda.nome;
+        if (row.receita?.nome) return row.receita.nome;
         return "-";
       },
       renderCell: (params) => (

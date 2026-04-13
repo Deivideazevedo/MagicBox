@@ -42,7 +42,7 @@ import {
   UseFormSetValue,
 } from "react-hook-form";
 import { Categoria } from "@/core/categorias/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 import { LancamentoFormData } from "../hooks/useLancamentoForm";
 
 interface FormularioProps {
@@ -58,7 +58,7 @@ interface FormularioProps {
     newTipo: "pagamento" | "agendamento" | null,
   ) => void;
   isCreating: boolean;
-  itens: FonteRenda[] | Categoria[];
+  itens: Receita[] | Categoria[];
   reset: UseFormReset<LancamentoFormData>;
   defaultValues: LancamentoFormData;
   setFocus: UseFormSetFocus<LancamentoFormData>;
@@ -166,7 +166,7 @@ export default function Formulario({
             </Box>
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                Lançamento de {isDespesa ? "Despesa" : "Fonte de Renda"}
+                Lançamento de {isDespesa ? "Despesa" : "Receita"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {isDespesa
@@ -275,12 +275,12 @@ export default function Formulario({
                 name="itemId"
                 control={control}
                 options={itens}
-                label={isDespesa ? "Despesa" : "Fonte de Renda"}
+                label={isDespesa ? "Despesa" : "Receita"}
                 placeholder="Selecione"
                 displayEmpty
                 disabled={!categoriaId}
-                getValue={(obj: Categoria | FonteRenda) => obj.id}
-                getLabel={(obj: Categoria | FonteRenda) => obj.nome}
+                getValue={(obj: Categoria | Receita) => obj.id}
+                getLabel={(obj: Categoria | Receita) => obj.nome}
                 onChange={() => setFocus("valor")}
               />
             </Grid>

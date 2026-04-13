@@ -34,7 +34,7 @@ import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker"
 import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 
 
@@ -46,8 +46,8 @@ import { FindAllFilters } from "@/dtos";
 import { debounce } from "lodash";
 
 // Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | FonteRenda) & {
-  origem: "despesa" | "renda";
+type ItemComOrigem = (Despesa | Receita) & {
+  origem: "despesa" | "receita";
   uniqueId: string;
 };
 
@@ -78,7 +78,7 @@ interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
   categorias: Categoria[];
   despesas: Despesa[];
-  fontesRenda: FonteRenda[];
+  receitas: Receita[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
 }
 
@@ -86,7 +86,7 @@ export default function FiltrosAvancados({
   filtros,
   categorias,
   despesas,
-  fontesRenda,
+  receitas,
   handleSearch,
 }: FiltrosAvancadosProps) {
   const defaultValues: FiltrosLancamentos = {
@@ -161,14 +161,14 @@ export default function FiltrosAvancados({
     [despesas],
   );
 
-  const fontesRendaComOrigem: ItemComOrigem[] = useMemo(
+  const receitasComOrigem: ItemComOrigem[] = useMemo(
     () =>
-      fontesRenda.map((f) => ({
+      receitas.map((f) => ({
         ...f,
-        origem: "renda" as const,
-        uniqueId: `renda-${f.id}`,
+        origem: "receita" as const,
+        uniqueId: `receita-${f.id}`,
       })),
-    [fontesRenda],
+    [receitas],
   );
 
   const despesasFiltradas =
@@ -176,17 +176,17 @@ export default function FiltrosAvancados({
       ? despesasComOrigem.filter((d) => d.categoria?.id === categoriaIdWatch)
       : despesasComOrigem;
 
-  const fontesRendaFiltradas =
+  const receitasFiltradas =
     categoriaIdWatch && typeof categoriaIdWatch === "number"
-      ? fontesRendaComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
-      : fontesRendaComOrigem;
+      ? receitasComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
+      : receitasComOrigem;
 
   const opcoesNome =
     origemWatch === "despesa"
       ? despesasFiltradas
-      : origemWatch === "renda"
-        ? fontesRendaFiltradas
-        : [...despesasFiltradas, ...fontesRendaComOrigem];
+      : origemWatch === "receita"
+        ? receitasFiltradas
+        : [...despesasFiltradas, ...receitasComOrigem];
 
   const onConvert = useCallback((rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
     const { item, origem, tipo, ...rest } = rawFilters;
@@ -194,13 +194,13 @@ export default function FiltrosAvancados({
     const spllitedItem = item ? item.split("-") : [];
     const despesaId =
       spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
-    const fonteRendaId =
-      spllitedItem[0] === "renda" ? Number(spllitedItem[1]) : undefined;
+    const receitaId =
+      spllitedItem[0] === "receita" ? Number(spllitedItem[1]) : undefined;
 
     const result: Partial<FindAllFilters> = {
       ...rest,
       despesaId,
-      fonteRendaId,
+      receitaId,
       origem,
       observacao: rest.observacao || undefined,
       tipo: tipo || undefined,
@@ -230,7 +230,7 @@ export default function FiltrosAvancados({
       (novosFiltros.tipo || undefined) !== (filtros.tipo || undefined) ||
       (novosFiltros.categoriaId || undefined) !== (filtros.categoriaId || undefined) ||
       (novosFiltros.despesaId || undefined) !== (filtros.despesaId || undefined) ||
-      (novosFiltros.fonteRendaId || undefined) !== (filtros.fonteRendaId || undefined) ||
+      (novosFiltros.receitaId || undefined) !== (filtros.receitaId || undefined) ||
       (novosFiltros.observacao || undefined) !== (filtros.observacao || undefined);
 
     if (!mudou) return;
@@ -296,7 +296,7 @@ export default function FiltrosAvancados({
           >
             <MenuItem value="">Todas</MenuItem>
             <MenuItem value="despesa">Despesa</MenuItem>
-            <MenuItem value="renda">Renda</MenuItem>
+            <MenuItem value="receita">Receita</MenuItem>
           </HookSelect>
         );
       case "tipo":

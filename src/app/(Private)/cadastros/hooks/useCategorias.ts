@@ -1,6 +1,5 @@
 import {
   Categoria,
-  CategoriaForm,
   CategoriaPayload,
 } from "@/core/categorias/types";
 import {
@@ -9,6 +8,7 @@ import {
   useGetCategoriasQuery,
   useUpdateCategoriaMutation,
 } from "@/services/endpoints/categoriasApi";
+import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -51,7 +51,7 @@ export const useCategorias = ({
   const [deleteCategoria, { isLoading: isDeleting }] =
     useDeleteCategoriaMutation();
 
-  const defaultValues: CategoriaForm = useMemo(
+  const defaultValues: CategoriaPayload = useMemo(
     () => ({
       id: undefined,
       nome: "",
@@ -69,7 +69,7 @@ export const useCategorias = ({
     setValue,
     watch,
     setFocus,
-  } = useForm<CategoriaForm>({
+  } = useForm<CategoriaPayload>({
     defaultValues,
     resolver: zodResolver(categoriaSchema),
   });
@@ -77,15 +77,9 @@ export const useCategorias = ({
   const isEditing = Boolean(watch("id"));
 
   const onSubmit = useCallback(
-    async (payload: CategoriaForm) => {
-      // Converter FormData para Payload
-      const data: CategoriaPayload = {
-        nome: payload.nome,
-        icone: payload.icone,
-        cor: payload.cor,
-      };
+    async (payload: CategoriaPayload) => {
 
-      console.log('payload', payload);
+      const data = fnCleanObject({ params: payload });
 
       try {
         if (payload.id) {
@@ -104,7 +98,7 @@ export const useCategorias = ({
           icon: "success",
           title: "Categoria salva com sucesso!",
         });
-      } catch {}
+      } catch { }
     },
     [updateCategoria, createCategoria, reset, setFocus, defaultValues]
   );
@@ -147,14 +141,14 @@ export const useCategorias = ({
     try {
       await deleteCategoria(String(row.id)).unwrap();
       setValue("id", undefined);
-      setRow(null); 
+      setRow(null);
       setDeleteDialog(false);
 
       SwalToast.fire({
         icon: "success",
         title: "Categoria excluída com sucesso!",
       });
-    } catch {}
+    } catch { }
   }, [deleteCategoria, row, setValue]);
 
   // submit é o handler que o <form> espera

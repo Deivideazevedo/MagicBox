@@ -13,7 +13,7 @@ export const dashboardRepository = {
     // 2. Obter Transações Recentes (Últimos 10 lançamentos do período)
     const recentLancamentos = await prisma.lancamento.findMany({
       where: {
-        user_id: userId,
+        userId: userId,
         data: {
           gte: new Date(dataInicio),
           lte: new Date(dataFim),
@@ -28,28 +28,28 @@ export const dashboardRepository = {
         despesa: {
           select: { nome: true, icone: true, cor: true, categoriaId: true },
         },
-        fonteRenda: {
+        receita: {
           select: { nome: true, icone: true, cor: true },
         },
       },
     });
 
-    const transacoesRecentes: TransacaoRecente[] = recentLancamentos.map((l) => {
-      const isReceita = l.fonte_renda_id != null || Number(l.valor) > 0;
-      const icone = l.despesa?.icone || l.fonteRenda?.icone || l.categoria?.icone || null;
-      const cor = l.despesa?.cor || l.fonteRenda?.cor || l.categoria?.cor || null;
+    const transacoesRecentes: TransacaoRecente[] = recentLancamentos.map((l: any) => {
+      const isReceita = l.receitaId != null || Number(l.valor) > 0;
+      const icone = l.despesa?.icone || l.receita?.icone || l.categoria?.icone || null;
+      const cor = l.despesa?.cor || l.receita?.cor || l.categoria?.cor || null;
 
       return {
         id: l.id,
-        descricao: l.despesa?.nome || l.fonteRenda?.nome || l.observacao || l.observacao_automatica || "Transação",
+        descricao: l.despesa?.nome || l.receita?.nome || l.observacao || l.observacaoAutomatica || "Transação",
         valor: Number(l.valor),
         tipo: isReceita ? "receita" : "despesa",
         categoria: l.categoria?.nome || "Sem categoria",
         data: l.data.toISOString(),
         icone,
         cor,
-        fonteRendaId: l.fonte_renda_id,
-        despesaId: l.despesa_id,
+        receitaId: l.receitaId,
+        despesaId: l.despesaId,
       };
     });
 
@@ -60,7 +60,7 @@ export const dashboardRepository = {
       .filter((p) => p.origem === "despesa" && (p.status === "pendente" || p.atrasado))
       .map((p) => {
         // Encontra a categoria da despesa na listagem pra ajudar na UI (extra info)
-        const lancDespesaMatch = recentLancamentos.find(r => r.despesa_id === p.origemId)?.despesa;
+        const lancDespesaMatch = recentLancamentos.find(r => r.despesaId === p.origemId)?.despesa;
         return {
           id: p.id,
           despesaId: p.origemId,
@@ -88,6 +88,8 @@ export const dashboardRepository = {
         saidasAgendadas: cards.saidasAgendadas,
         saldoAtual: cards.saldoAtual,
         saldoProjetado: cards.saldoProjetado,
+        saldoBloqueado: cards.saldoBloqueado,
+        saldoLivre: cards.saldoLivre,
       },
       transacoesRecentes,
       upcomingBills,

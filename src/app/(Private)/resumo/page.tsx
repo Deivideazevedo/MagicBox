@@ -17,7 +17,7 @@ import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDial
 import { useResumo } from "./hooks/useResumo";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useMemo } from "react";
 
 export default function ResumoPage() {

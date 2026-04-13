@@ -17,10 +17,10 @@ export const DynamicIcon: React.FC<DynamicIconProps> = ({
   fallbackIcon = "IconCategory", // Se o nome não existir, usa esse como padrão
 }) => {
   // Pega o componente pelo nome, se não achar tenta o fallback, se não achar tenta o padrão básico
-  let IconComponent = name ? (TablerIcons as any)[name] : null;
+  let IconComponent = name ? (TablerIcons as Record<string, any>)[name] : null;
 
   if (!IconComponent) {
-    IconComponent = (TablerIcons as any)[fallbackIcon];
+    IconComponent = (TablerIcons as Record<string, any>)[fallbackIcon];
   }
 
   if (!IconComponent) {

@@ -7,12 +7,14 @@ import {
   Typography,
   Box,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import {
   IconTrendingUp,
   IconTrendingDown,
   IconWallet,
-  IconPigMoney,
+  IconLock,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { startOfMonth, endOfMonth, format } from "date-fns";
@@ -29,47 +31,36 @@ const FinancialSummaryCards = () => {
   
   const resumo = dashboard?.cards;
 
-  const financialData = {
-    totalReceitas: resumo?.totalEntradas || 0,
-    totalCategorias: resumo?.totalSaidas || 0,
-    saldoAtual: resumo?.saldoAtual || 0,
-    economiaDoMes: resumo?.saldoAtual || 0, // Fallback placeholder since totalSaldo doesn't directly map, assuming economy matches actual balance loosely right now
-    metaMensal: 1500.00, // mock still for meta because the DTO doesn't include it right now
-    contasAtivas: 4,
-  };
-
   const cards = [
     {
-      title: "Receitas do Mês",
-      value: financialData.totalReceitas,
-      change: "+12.5%",
-      changeType: "positive" as const,
-      icon: <IconTrendingUp size={24} />,
+      title: "Saldo Disponível",
+      value: resumo?.saldoLivre || 0,
+      subtitle: "Livre para gastar",
+      icon: <IconWallet size={24} />,
       color: "#13DEB9",
+      tooltip: "Saldo Atual menos o valor reservado em Metas ativas."
     },
     {
-      title: "Despesas do Mês", // Ajustado nome
-      value: financialData.totalCategorias,
-      change: "-8.2%",
-      changeType: "positive" as const,
+      title: "Receitas do Mês",
+      value: resumo?.totalEntradas || 0,
+      subtitle: "Total de entradas",
+      icon: <IconTrendingUp size={24} />,
+      color: "#5D87FF",
+    },
+    {
+      title: "Despesas do Mês",
+      value: resumo?.totalSaidas || 0,
+      subtitle: "Total de saídas",
       icon: <IconTrendingDown size={24} />,
       color: "#FA896B",
     },
     {
-      title: "Saldo Atual",
-      value: financialData.saldoAtual,
-      change: "+15.3%",
-      changeType: "positive" as const,
-      icon: <IconWallet size={24} />,
-      color: "#5D87FF",
-    },
-    {
-      title: "Economia do Mês",
-      value: financialData.economiaDoMes,
-      change: `${((Math.max(0, financialData.economiaDoMes) / financialData.metaMensal) * 100).toFixed(1)}% da meta`,
-      changeType: "neutral" as const,
-      icon: <IconPigMoney size={24} />,
+      title: "Saldo em Metas",
+      value: resumo?.saldoBloqueado || 0,
+      subtitle: "Valor reservado",
+      icon: <IconLock size={24} />,
       color: "#FFAE1F",
+      tooltip: "Somatório do valor atual acumulado em todas as suas Metas financeiras."
     },
   ];
 
@@ -78,17 +69,6 @@ const FinancialSummaryCards = () => {
       style: "currency",
       currency: "BRL",
     }).format(value);
-  };
-
-  const getChangeColor = (type: "positive" | "negative" | "neutral") => {
-    switch (type) {
-      case "positive":
-        return "#13DEB9";
-      case "negative":
-        return "#FA896B";
-      default:
-        return "#49BEFF";
-    }
   };
 
   if (isLoading) {
@@ -130,24 +110,27 @@ const FinancialSummaryCards = () => {
                 >
                   {card.icon}
                 </Box>
-                <Chip
-                  label={card.change}
-                  size="small"
-                  sx={{
-                    backgroundColor: `${getChangeColor(card.changeType)}20`,
-                    color: getChangeColor(card.changeType),
-                    fontWeight: 600,
-                    border: "none",
-                  }}
-                />
+                {card.tooltip && (
+                  <Tooltip title={card.tooltip}>
+                    <IconInfoCircle size={18} style={{ color: "rgba(0,0,0,0.3)" }} />
+                  </Tooltip>
+                )}
               </Box>
               
-              <Typography variant="h4" fontWeight={700} gutterBottom color="text.primary">
+              <Typography variant="h4" fontWeight={700} gutterBottom sx={{ 
+                color: index === 0 ? card.color : "text.primary",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
                 {formatCurrency(card.value)}
               </Typography>
               
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="subtitle2" fontWeight={600} color="text.primary">
                 {card.title}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {card.subtitle}
               </Typography>
             </CardContent>
           </Card>

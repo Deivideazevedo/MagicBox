@@ -6,7 +6,8 @@ import {
   HookTextField,
   IconColorMenuPicker,
 } from "@/app/components/forms/hooksForm";
-import { Despesa, DespesaForm } from "@/core/despesas/types";
+import { Despesa } from "@/core/despesas/types";
+import { DespesaFormData } from "../../hooks/useDespesas";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -22,33 +23,33 @@ import {
   useTheme,
 } from "@mui/material";
 import { Categoria } from "@/core/categorias/types";
-import { IconCalendar, IconRepeat } from "@tabler/icons-react";
-import { IconPlus } from "@tabler/icons-react";
-import { IconX } from "@tabler/icons-react";
-import { IconCurrencyDollar } from "@tabler/icons-react";
-import { IconCategory } from "@tabler/icons-react";
-import { IconCreditCard } from "@tabler/icons-react";
-import { RefObject } from "react";
+import {
+  IconCalendar,
+  IconRepeat,
+  IconPlus,
+  IconX,
+  IconCurrencyDollar,
+  IconCategory,
+  IconCreditCard,
+} from "@tabler/icons-react";
 import { Control, useWatch } from "react-hook-form";
 
 interface FormProps {
-  isEdditing: boolean;
+  isEditing: boolean;
   isCollapsed: boolean;
   row: Despesa | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-  control: Control<DespesaForm>;
+  control: Control<DespesaFormData>;
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
-  formRef: RefObject<HTMLDivElement>;
 }
 
 export const Formulario = (formProps: FormProps) => {
   const theme = useTheme();
   const {
-    isEdditing,
-    isCollapsed,
+    isEditing,
     row,
     handleSubmit,
     control,
@@ -56,16 +57,15 @@ export const Formulario = (formProps: FormProps) => {
     isUpdating,
     categorias,
     handleCancelEdit,
-    formRef,
   } = formProps;
 
   const watchIcon = useWatch({ control, name: "icone" });
   const watchColor = useWatch({ control, name: "cor" });
   const watchNome = useWatch({ control, name: "nome" });
+  const watchTipo = useWatch({ control, name: "tipo" });
 
   return (
     <Card
-      ref={formRef}
       elevation={0}
       sx={{
         borderRadius: 3,
@@ -82,23 +82,19 @@ export const Formulario = (formProps: FormProps) => {
             colorName="cor"
             watchIcon={watchIcon}
             watchColor={watchColor}
-            fallbackIcon="IconCreditCard"
+            fallbackIcon="IconShoppingCart"
             fallbackColor={theme.palette.error.main}
           />
           <Box>
-            <Typography
-              variant="subtitle2"
-              fontWeight={600}
-              color="text.primary"
-            >
-              {isEdditing ? `Editando Despesa:` : "Nova Despesa"}
+            <Typography variant="subtitle2" fontWeight={600} color="text.primary">
+              {isEditing ? "Editando Despesa:" : "Nova Despesa"}
             </Typography>
             <Typography
               variant="body2"
-              fontWeight={isEdditing ? 600 : 400}
-              color={isEdditing ? "error.main" : "text.secondary"}
+              fontWeight={isEditing ? 600 : 400}
+              color={isEditing ? "error.main" : "text.secondary"}
             >
-              {watchNome || (isEdditing ? row?.nome : "Adicione uma nova despesa")}
+              {watchNome || (isEditing ? row?.nome : "Adicione uma nova despesa")}
             </Typography>
           </Box>
         </Box>
@@ -150,9 +146,10 @@ export const Formulario = (formProps: FormProps) => {
             </Grid>
 
 
-            {/* Campos condicionais - aparecem quando "mensalmente" está ativo */}
+
+            {/* Campos condicionais - aparecem quando tem nome */}
             <Grid item xs={12} sx={{ pt: "0px !important" }}>
-              <Collapse in={!!isCollapsed || isEdditing} timeout={400}>
+              <Collapse in={!!watchNome || isEditing} timeout={400}>
                 <Box sx={{ pt: 2.5 }}>
                   <Grid container spacing={2.5}>
                     <Grid item xs={12}>
@@ -205,56 +202,41 @@ export const Formulario = (formProps: FormProps) => {
               </Collapse>
             </Grid>
 
-            {/* Controles - Repetir Mensalmente e Status */}
+            {/* Repetir Mensalmente (Label da UI vinculada ao Tipo) - Agora sempre visível acima do status */}
             <Grid item xs={12}>
-              <Stack spacing={1.5}>
-                {/* Toggle Repetir Mensalmente */}
-                <CustomToggle
-                  control={control}
-                  name="mensalmente"
-                  color="error"
-                  variant="checkbox"
-                  iconActive={
-                    <IconRepeat size={12} color="white" strokeWidth={3} />
-                  }
-                  titleActive="Repetir mensalmente"
-                  titleInactive="Repetir mensalmente"
-                  descriptionActive="Despesa recorrente todo mês"
-                  descriptionInactive="Ativar para despesas mensais"
-                />
+              <CustomToggle
+                control={control}
+                name="tipo"
+                activeValue="FIXA"
+                inactiveValue="VARIAVEL"
+                color="error"
+                variant="checkbox"
+                iconActive={<IconRepeat size={12} color="white" strokeWidth={3} />}
+                titleActive="Repetir mensalmente"
+                titleInactive="Repetir mensalmente"
+                descriptionActive="Despesa recorrente todo mês"
+                descriptionInactive="Ativar para despesas mensais"
+              />
+            </Grid>
 
-                {/* Toggle Status */}
-                <CustomToggle
-                  control={control}
-                  name="status"
-                  color="success"
-                  variant="switch"
-                  iconActive={
-                    <Box
-                      component="svg"
-                      viewBox="0 0 24 24"
-                      sx={{ width: 12, height: 12 }}
-                    >
-                      <path
-                        d="M20 6L9 17l-5-5"
-                        stroke="white"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                      />
-                    </Box>
-                  }
-                  titleActive="Despesa Ativa"
-                  titleInactive="Despesa Inativa"
-                  descriptionActive="Disponível para lançamentos"
-                  descriptionInactive="Não será exibida"
-                />
-              </Stack>
+            {/* Status ativada manualmente na UI */}
+            <Grid item xs={12} mt={-1}>
+              <CustomToggle
+                control={control}
+                name="status"
+                activeValue="A"
+                inactiveValue="I"
+                color="success"
+                variant="switch"
+                titleActive="Despesa Ativa"
+                titleInactive="Despesa Inativa"
+                descriptionActive="Disponível para lançamentos"
+                descriptionInactive="Não será exibida"
+              />
             </Grid>
 
             {/* Botões de Ação */}
-            <Grid item xs={12}>
+            <Grid item xs={12} sx={{ pt: 2 }}>
               <Stack spacing={1.5}>
                 <LoadingButton
                   type="submit"
@@ -264,16 +246,11 @@ export const Formulario = (formProps: FormProps) => {
                   color="error"
                   startIcon={<IconPlus size={16} />}
                 >
-                  {isEdditing ? "Atualizar" : "Adicionar"}
+                  {isEditing ? "Atualizar" : "Adicionar"}
                 </LoadingButton>
 
-                {isEdditing && (
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={handleCancelEdit}
-                    startIcon={<IconX size={16} />}
-                  >
+                {isEditing && (
+                  <Button variant="outlined" fullWidth onClick={handleCancelEdit} startIcon={<IconX size={16} />}>
                     Cancelar
                   </Button>
                 )}
@@ -285,3 +262,5 @@ export const Formulario = (formProps: FormProps) => {
     </Card>
   );
 };
+
+export default Formulario;

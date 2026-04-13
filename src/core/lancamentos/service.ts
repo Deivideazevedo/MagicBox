@@ -47,13 +47,13 @@ export const lancamentoService = {
       throw new ValidationError("Usuário é obrigatório");
     }
     
-    // Regra: Deve ter despesaId OU fonteRendaId (XOR)
-    if (!dados.despesaId && !dados.fonteRendaId) {
-      throw new ValidationError("Lançamento deve estar vinculado a uma despesa ou fonte de renda");
+    // Regra: Deve ter despesaId, receitaId OU metaId
+    if (!dados.despesaId && !dados.receitaId && !dados.metaId) {
+      throw new ValidationError("Lançamento deve estar vinculado a uma despesa, receita ou meta");
     }
 
-    if (dados.despesaId && dados.fonteRendaId) {
-      throw new ValidationError("Lançamento não pode ter despesa e fonte de renda ao mesmo tempo");
+    if (dados.despesaId && dados.receitaId) {
+      throw new ValidationError("Lançamento não pode ter despesa e receita ao mesmo tempo");
     }
 
     if (Number(dados.valor) <= 0) {
@@ -80,7 +80,8 @@ export const lancamentoService = {
         observacaoAutomatica: null,
         categoriaId: dados.categoriaId,
         despesaId: dados.despesaId || null,
-        fonteRendaId: dados.fonteRendaId || null,
+        receitaId: dados.receitaId || null,
+        metaId: dados.metaId || null,
       };
 
       return await repositorio.criar(data);
@@ -107,7 +108,8 @@ export const lancamentoService = {
         observacaoAutomatica,
         categoriaId: dados.categoriaId,
         despesaId: dados.despesaId || null,
-        fonteRendaId: dados.fonteRendaId || null,
+        receitaId: dados.receitaId || null,
+        metaId: dados.metaId || null,
       };
 
       const lancamento = await repositorio.criar(data);
@@ -127,9 +129,9 @@ export const lancamentoService = {
       throw new ValidationError("Valor deve ser maior que zero");
     }
 
-    // Validar XOR despesa/fonte de renda
-    if (dados.despesaId && dados.fonteRendaId) {
-      throw new ValidationError("Lançamento não pode ter despesa e fonte de renda ao mesmo tempo");
+    // Validar XOR despesa/receita
+    if (dados.despesaId && dados.receitaId) {
+      throw new ValidationError("Lançamento não pode ter despesa e receita ao mesmo tempo");
     }
 
     return await repositorio.atualizar(id, dados);

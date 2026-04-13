@@ -1,43 +1,9 @@
-import { useState, useEffect } from "react";
+"use client";
 
-interface Goal {
-  id: string;
-  title: string;
-  current: number;
-  target: number;
-  color: string;
-  deadline: string;
-}
+import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 
 export const useGoalsProgress = () => {
-  // Por enquanto mantemos mock até termos uma API de metas
-  // Em produção isso viria de uma API específica para metas financeiras
-  const [goals, setGoals] = useState<Goal[]>([
-    {
-      id: "1",
-      title: "Reserva de Emergência",
-      current: 3500,
-      target: 10000,
-      color: "#13DEB9",
-      deadline: "2024-12-31",
-    },
-    {
-      id: "2",
-      title: "Viagem para Europa",
-      current: 2800,
-      target: 8000,
-      color: "#5D87FF",
-      deadline: "2024-08-31",
-    },
-    {
-      id: "3",
-      title: "Novo Notebook",
-      current: 1200,
-      target: 2500,
-      color: "#FFAE1F",
-      deadline: "2024-06-30",
-    },
-  ]);
+  const { data: metas = [], isLoading } = useGetMetasQuery();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -47,19 +13,13 @@ export const useGoalsProgress = () => {
   };
 
   const calculateProgress = (current: number, target: number) => {
+    if (!target || target === 0) return 0;
     return Math.min((current / target) * 100, 100);
   };
 
-  const formatDeadline = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const getTimeRemaining = (deadline: string) => {
+  const getTimeRemaining = (deadline: string | Date | null) => {
+    if (!deadline) return "Sem prazo";
+    
     const now = new Date();
     const target = new Date(deadline);
     const diffTime = target.getTime() - now.getTime();
@@ -74,13 +34,25 @@ export const useGoalsProgress = () => {
     return diffMonths === 1 ? "1 mês" : `${diffMonths} meses`;
   };
 
-  const overallProgress = goals.reduce((acc, goal) => acc + calculateProgress(goal.current, goal.target), 0) / goals.length;
+  // Mapeia para o formato esperado pelo componente GoalsProgress (Legacy support)
+  const goals = metas.map(meta => ({
+    id: meta.id,
+    title: meta.nome,
+    current: meta.valorAcumulado || 0,
+    target: meta.valorMeta,
+    deadline: meta.dataAlvo,
+    color: meta.cor || "#5D87FF",
+  }));
+
+  const overallProgress = goals.length > 0 
+    ? goals.reduce((acc, goal) => acc + calculateProgress(goal.current, goal.target), 0) / goals.length 
+    : 0;
 
   return {
     goals,
+    isLoading,
     formatCurrency,
     calculateProgress,
-    formatDeadline,
     getTimeRemaining,
     overallProgress
   };

@@ -1,6 +1,6 @@
 import { Categoria } from "../../categorias/types";
 import { Despesa } from "../../despesas/types";
-import { FonteRenda } from "../../fontesRenda/types";
+import { Receita } from "../../receitas/types";
 import { ResumoFiltros } from "./resumo.dto";
 
 export type TipoLancamento = "pagamento" | "agendamento";
@@ -8,7 +8,7 @@ export type TipoLancamento = "pagamento" | "agendamento";
 export interface ResumoResposta {
   id: string;
   origemId: number;
-  origem: "renda" | "despesa";
+  origem: "receita" | "despesa";
   nome: string;
   valorPrevisto: number;
   valorPago: number;
@@ -42,11 +42,10 @@ export interface ResumoTodosResposta {
   updatedAt: string;
   categoriaId: number;
   despesaId?: number | null;
-  fonteRendaId?: number | null;
-
+  receitaId?: number | null;
   categoria?: Categoria;
   despesa?: Despesa;
-  fonteRenda?: FonteRenda;
+  receita?: Receita;
   statusDinamico?: string;
 }
 
@@ -57,12 +56,16 @@ export interface ResumoMiniCardsProps {
   totalEntradas: number;
   entradasPagas: number;
   entradasAgendadas: number;
+  diferencaEntradas: number;
   totalSaidas: number;
   saidasPagas: number;
   saidasAgendadas: number;
+  diferencaSaidas: number;
   totalSaldo: number;
   saldoAtual: number;
   saldoProjetado: number;
+  saldoBloqueado: number; // Valor reservado em metas ativas
+  saldoLivre: number;     // Saldo Atual - Saldo Bloqueado
 }
 
 export type ResumoParametros = ResumoFiltros;

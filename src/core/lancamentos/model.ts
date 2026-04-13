@@ -5,7 +5,7 @@ export class LancamentoModel implements Lancamento {
   userId: number;
   despesaId?: number | null;
   categoriaId: number;
-  fonteRendaId?: number | null;
+  receitaId?: number | null;
   tipo: TipoLancamento;
   valor: number;
   data: string;
@@ -19,7 +19,7 @@ export class LancamentoModel implements Lancamento {
     this.userId = data.userId;
     this.despesaId = data.despesaId;
     this.categoriaId = data.categoriaId;
-    this.fonteRendaId = data.fonteRendaId;
+    this.receitaId = data.receitaId;
     this.tipo = data.tipo;
     this.valor = data.valor;
     this.data = data.data;
@@ -39,7 +39,7 @@ export class LancamentoModel implements Lancamento {
       userId: this.userId,
       despesaId: this.despesaId,
       categoriaId: this.categoriaId,
-      fonteRendaId: this.fonteRendaId,
+      receitaId: this.receitaId,
       tipo: this.tipo,
       valor: this.valor,
       data: this.data,

@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import { styled, useTheme } from "@mui/material/styles";
 import React from "react";
-import Header from "./layout/vertical/header/Header";
+import Header from "@/app/(Public)/layout/header";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 import { alpha } from "@mui/system";
@@ -30,7 +30,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   const customizer = useSelector((state: AppState) => state.customizer);
-  
+
   return (
     <MainWrapper>
       <PageWrapper className="page-wrapper">

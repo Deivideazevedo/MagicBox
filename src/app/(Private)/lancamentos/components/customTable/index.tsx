@@ -35,7 +35,7 @@ import { ptBR as ptBRDate } from "date-fns/locale";
 import { Lancamento } from "@/core/lancamentos/types";
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 
 // Hooks e componentes internos
 import { MultiSortIcon } from "./components/MultiSortIcon";
@@ -174,21 +174,21 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
             width: 28,
             height: 28,
             bgcolor:
-              row.despesa?.cor || row.fonteRenda?.cor
-                ? alpha((row.despesa?.cor || row.fonteRenda?.cor)!, 0.15)
+              row.despesa?.cor || row.receita?.cor
+                ? alpha((row.despesa?.cor || row.receita?.cor)!, 0.15)
                 : "primary.light",
-            color: row.despesa?.cor || row.fonteRenda?.cor || "primary.main",
+            color: row.despesa?.cor || row.receita?.cor || "primary.main",
             "& svg": { width: 16, height: 16 },
           }}
         >
-          {(row.despesa?.icone || row.fonteRenda?.icone) &&
+          {(row.despesa?.icone || row.receita?.icone) &&
             AVAILABLE_ICONS[
             (row.despesa?.icone ||
-              row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
+              row.receita?.icone) as keyof typeof AVAILABLE_ICONS
             ] ? (
             AVAILABLE_ICONS[
             (row.despesa?.icone ||
-              row.fonteRenda?.icone) as keyof typeof AVAILABLE_ICONS
+              row.receita?.icone) as keyof typeof AVAILABLE_ICONS
             ]
           ) : (
             <IconCategory />

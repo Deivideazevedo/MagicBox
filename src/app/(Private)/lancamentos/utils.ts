@@ -6,7 +6,7 @@ export interface FiltrosLancamentos {
   categoriaId?: number | null;
   item?: string | null;
   observacao?: string;
-  origem?: "despesa" | "renda" | "";
+  origem?: "despesa" | "receita" | "";
   tipo?: "pagamento" | "agendamento" | "";
 }
 
@@ -33,6 +33,6 @@ export const getDefaultFilters = (): FindAllFilters => {
     observacao: undefined,
     categoriaId: undefined,
     despesaId: undefined,
-    fonteRendaId: undefined,
+    receitaId: undefined,
   };
 };

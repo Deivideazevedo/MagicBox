@@ -1,8 +1,16 @@
-// ============================================
-// ENUMS - Tipos enumerados compartilhados
-// ============================================
-
 enum TipoLancamento {
-  pagamento // Pagamento único realizado
-  agendamento // Agendamento futuro (pode ter parcelas)
+  pagamento
+  agendamento
 }
+
+enum TipoDespesa {
+  FIXA
+  VARIAVEL
+  DIVIDA
+}
+
+enum TipoReceita {
+  FIXA
+  VARIAVEL
+}
+

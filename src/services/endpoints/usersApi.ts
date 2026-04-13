@@ -1,4 +1,5 @@
-import { User } from "@/core/users/types";
+import { CoreUser as User } from "@/core/users/types";
+
 import { RegisterUserDTO } from "@/core/users/user.dto";
 import { api } from "../api";
 

@@ -77,9 +77,9 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     key: "despesa",
     label: "Nome",
     align: "right",
-    render: (row) => row.despesa?.nome || row.fonteRenda?.nome || "-",
-    sortValue: (row) => row?.despesa?.nome || row?.fonteRenda?.nome || "",
-    filterValue: (row) => row?.despesa?.nome || row?.fonteRenda?.nome || "-",
+    render: (row) => row.despesa?.nome || row.receita?.nome || "-",
+    sortValue: (row) => row?.despesa?.nome || row?.receita?.nome || "",
+    filterValue: (row) => row?.despesa?.nome || row?.receita?.nome || "-",
   },
   {
     key: "valor",

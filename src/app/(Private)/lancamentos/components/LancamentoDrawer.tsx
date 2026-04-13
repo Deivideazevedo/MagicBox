@@ -2,7 +2,7 @@
 
 import { useCategorias } from "@/app/(Private)/cadastros/hooks/useCategorias";
 import { useDespesas } from "@/app/(Private)/cadastros/hooks/useDespesas";
-import { useFontesRenda } from "@/app/(Private)/cadastros/hooks/useFontesRenda";
+import { useReceitas } from "@/app/(Private)/cadastros/hooks/useReceitas";
 import { useLancamentoForm } from "../hooks/useLancamentoForm";
 import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
 import Formulario from "./Formulario";
@@ -28,17 +28,17 @@ export default function LancamentoDrawer() {
   // Hooks de dados
   const { formProps: categoriasFormProps } = useCategorias();
   const { listProps: despesasListProps } = useDespesas();
-  const { listProps: fontesRendaListProps } = useFontesRenda();
+  const { listProps: receitasListProps } = useReceitas();
 
   const categoriasList = categoriasFormProps?.categorias || [];
   const despesasList = despesasListProps?.despesas || [];
-  const fontesRendaList = fontesRendaListProps?.fontesRenda || [];
+  const receitasList = receitasListProps?.receitas || [];
 
   // Hook do formulário
   const formProps = useLancamentoForm({
     categorias: categoriasList,
     despesas: despesasList,
-    fontesRenda: fontesRendaList,
+    receitas: receitasList,
   });
 
   const { setFocus } = formProps;

@@ -88,10 +88,10 @@ export default function DeleteConfirmationDialog<T>({
         {children}
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Grid container spacing={2} justifyContent="center">
+      <DialogActions sx={{ px: 3, pb: 3 }}>
+        <Grid container spacing={1.5}>
           {visible && (
-            <Grid item xs={6}>
+            <Grid item xs={12} sm={6}>
               <Button
                 onClick={onClose}
                 variant="outlined"
@@ -102,11 +102,14 @@ export default function DeleteConfirmationDialog<T>({
                 sx={{
                   fontWeight: 600,
                   borderRadius: 2,
-                  px: 4,
+                  px: 2,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                   "&:focus": {
                     outline: `2px solid ${theme.palette.primary.main}`,
                     outlineOffset: "2px",
-                    boxShadow: "none", // Remove o "círculo branco" do tema atual
+                    boxShadow: "none",
                   },
                 }}
               >
@@ -114,7 +117,7 @@ export default function DeleteConfirmationDialog<T>({
               </Button>
             </Grid>
           )}
-          <Grid item xs={6}>
+          <Grid item xs={12} sm={visible ? 6 : 12}>
             <LoadingButton
               onClick={handleConfirm}
               color={color}
@@ -127,8 +130,13 @@ export default function DeleteConfirmationDialog<T>({
               sx={{
                 fontWeight: 600,
                 borderRadius: 2,
-                px: 4,
+                px: 2,
                 py: 1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                boxShadow: "none",
+                "&:hover": { boxShadow: "none" },
                 "&:focus": {
                   outline: `2px solid ${theme.palette[color].main}`,
                   outlineOffset: "2px",

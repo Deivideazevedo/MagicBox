@@ -1,6 +1,6 @@
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { FonteRenda } from "@/core/fontesRenda/types";
+import { Receita } from "@/core/receitas/types";
 import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
 import {
   useCreateLancamentoMutation,
@@ -8,7 +8,7 @@ import {
 } from "@/services/endpoints/lancamentosApi";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -16,13 +16,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-type TipoLancamentoOrigem = "despesa" | "fonteRenda";
+type TipoLancamentoOrigem = "despesa" | "receita";
 type TipoLancamento = "pagamento" | "agendamento";
 
 const lancamentoSchema = z.object({
   id: z.number().optional(),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
-  itemId: z.number().min(1, "Selecione uma despesa ou fonte de renda"),
+  itemId: z.number().min(1, "Selecione uma despesa ou receita"),
   tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.number().min(0.01, "Valor é obrigatório"),
   data: z.string().min(1, "Data é obrigatória"),
@@ -36,7 +36,7 @@ export type LancamentoFormData = z.infer<typeof lancamentoSchema>;
 interface UseLancamentoFormProps {
   categorias?: Categoria[];
   despesas?: Despesa[];
-  fontesRenda?: FonteRenda[];
+  receitas?: Receita[];
   lancamentoParaEditar?: LancamentoResposta | null;
   onSuccess?: () => void;
 }
@@ -44,7 +44,7 @@ interface UseLancamentoFormProps {
 export function useLancamentoForm({
   categorias: categoriasProps,
   despesas: despesasProps,
-  fontesRenda: fontesRendaProps,
+  receitas: receitasProps,
   lancamentoParaEditar,
   onSuccess,
 }: UseLancamentoFormProps) {
@@ -53,7 +53,7 @@ export function useLancamentoForm({
 
   const { data: categoriasApi = [] } = useGetCategoriasQuery();
   const { data: despesasApi = [] } = useGetDespesasQuery();
-  const { data: fontesRendaApi = [] } = useGetFontesRendaQuery();
+  const { data: receitasApi = [] } = useGetReceitasQuery();
 
   const categoriasList = useMemo(
     () => categoriasProps ?? categoriasApi,
@@ -63,9 +63,9 @@ export function useLancamentoForm({
     () => despesasProps ?? despesasApi,
     [despesasProps, despesasApi],
   );
-  const fontesRendaList = useMemo(
-    () => fontesRendaProps ?? fontesRendaApi,
-    [fontesRendaProps, fontesRendaApi],
+  const receitasList = useMemo(
+    () => receitasProps ?? receitasApi,
+    [receitasProps, receitasApi],
   );
 
   const [createLancamento, { isLoading: isCreating }] =
@@ -112,18 +112,18 @@ export function useLancamentoForm({
     if (lancamentoParaEditar) {
       const despesaId =
         lancamentoParaEditar?.despesaId ?? lancamentoParaEditar.despesa_id;
-      const fonteRendaId =
-        lancamentoParaEditar?.fonteRendaId ?? lancamentoParaEditar.fonte_renda_id;
+      const receitaId =
+        lancamentoParaEditar?.receitaId ?? lancamentoParaEditar.receita_id;
       const categoriaId =
         lancamentoParaEditar?.categoriaId ?? lancamentoParaEditar.categoria_id;
 
-      const novaOrigem = despesaId ? "despesa" : "fonteRenda";
+      const novaOrigem = despesaId ? "despesa" : "receita";
       setOrigem(novaOrigem);
 
       // Popular campos
       setValue("id", lancamentoParaEditar.id);
       setValue("categoriaId", categoriaId);
-      setValue("itemId", Number(despesaId || fonteRendaId));
+      setValue("itemId", Number(despesaId || receitaId));
       setValue("tipo", lancamentoParaEditar.tipo);
       setValue("valor", Number(lancamentoParaEditar.valor));
 
@@ -161,10 +161,10 @@ export function useLancamentoForm({
     if (origem === "despesa") {
       return despesasList.filter((d) => Number(d.categoriaId) === Number(categoriaId));
     }
-    return fontesRendaList.filter(
+    return receitasList.filter(
       (f) => Number(f.categoria?.id) === Number(categoriaId),
     );
-  }, [origem, categoriaId, despesasList, fontesRendaList]);
+  }, [origem, categoriaId, despesasList, receitasList]);
 
   // Calcular valor total com parcelas
   const valorTotal = useMemo(() => {
@@ -179,7 +179,7 @@ export function useLancamentoForm({
           userId: Number(session?.user?.id),
           categoriaId: payload.categoriaId,
           despesaId: origem === "despesa" ? payload.itemId : null,
-          fonteRendaId: origem === "fonteRenda" ? payload.itemId : null,
+          receitaId: origem === "receita" ? payload.itemId : null,
           tipo: payload.tipo,
           valor: payload.valor,
           data: payload.data,
@@ -193,7 +193,7 @@ export function useLancamentoForm({
           SwalToast.fire({
             icon: "success",
             title: `${
-              origem === "fonteRenda" ? "Renda" : "Despesa"
+              origem === "receita" ? "Receita" : "Despesa"
             } atualizado com sucesso`,
           });
         } else {
@@ -202,7 +202,7 @@ export function useLancamentoForm({
           SwalToast.fire({
             icon: "success",
             title: `${
-              origem === "fonteRenda" ? "Renda" : "Despesa"
+              origem === "receita" ? "Receita" : "Despesa"
             } lançado com sucesso`,
           });
         }
@@ -235,7 +235,7 @@ export function useLancamentoForm({
   );
 
   const toggleOrigem = useCallback(() => {
-    setOrigem((prev) => (prev === "despesa" ? "fonteRenda" : "despesa"));
+    setOrigem((prev) => (prev === "despesa" ? "receita" : "despesa"));
   }, []);
 
   const isDespesa = origem === "despesa";

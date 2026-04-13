@@ -8,6 +8,9 @@ import {
   redirectToDashboard,
   redirectToLogin,
   unauthorizedResponse,
+  isAdminPageRoute,
+  isAdminApiRoute,
+  hasPermission,
 } from "@/lib/middleware-utils";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -55,11 +58,16 @@ export async function middleware(request: NextRequest) {
   if (isApiRoute(pathname)) {
     if (!isAuthenticated) return unauthorizedResponse();
 
+    // 🔒 Restrição Administrativa Centralizada
+    if (isAdminApiRoute(pathname) && !hasPermission(authResult?.token ?? null)) {
+      return unauthorizedResponse();
+    }
+
     // Usuário autenticado - injeta headers de debug e libera acesso à API
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-url", request.url);
     requestHeaders.set("x-method", request.method);
-    
+
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -75,18 +83,23 @@ export async function middleware(request: NextRequest) {
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
-  
-  // 5.2 Usuário autenticado tentando acessar páginas de auth (login/register)
+
+  // 🔒 5.2 Restrição Administrativa para Páginas
+  if (isAdminPageRoute(pathname) && !hasPermission(authResult?.token ?? null)) {
+    return redirectToDashboard(request);
+  }
+
+  // 5.3 Usuário autenticado tentando acessar páginas de auth (login/register)
   if (isAuthenticated && isAuthRoute(pathname)) {
     return redirectToDashboard(request);
   }
 
-  // 5.3 Usuário não autenticado tentando acessar páginas privadas
+  // 5.4 Usuário não autenticado tentando acessar páginas privadas
   if (!isAuthenticated && !isAuthRoute(pathname)) {
     return redirectToLogin(request);
   }
 
-  // 5.4 Libera o acesso (rotas de auth para não autenticados)
+  // 5.5 Libera o acesso (rotas de auth para não autenticados)
   return NextResponse.next();
 }
 

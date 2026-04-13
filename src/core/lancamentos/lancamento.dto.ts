@@ -20,7 +20,8 @@ export const lancamentoSchema = z.object({
   observacaoAutomatica: z.string().nullable(),
   categoriaId: z.number().int().positive(),
   despesaId: z.number().int().positive().nullable(),
-  fonteRendaId: z.number().int().positive().nullable(),
+  receitaId: z.number().int().positive().nullable(),
+  metaId: z.number().int().positive().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -37,9 +38,10 @@ export const findAllQuerySchema = z.object({
 
   categoriaId: z.coerce.number().optional(),
   despesaId: z.coerce.number().optional(),
-  fonteRendaId: z.coerce.number().optional(),
+  receitaId: z.coerce.number().optional(),
+  metaId: z.coerce.number().optional(),
 
-  tipo: z.enum(["pagamento", "agendamento"]).optional(), // Exemplo: Valida apenas valores permitidos
+  tipo: z.enum(["pagamento", "agendamento"]).optional(),
   observacao: z.string().optional(),
   origem: z.string().optional(),
 }).strict();
@@ -60,7 +62,8 @@ export const createLancamentoSchema = z
 
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
-    fonteRendaId: z.number().int().positive().nullable().optional(),
+    receitaId: z.number().int().positive().nullable().optional(),
+    metaId: z.number().int().positive().nullable().optional(),
 
     // Parcelas (usado para criar múltiplos registros)
     parcelas: z
@@ -73,18 +76,24 @@ export const createLancamentoSchema = z
   })
   .refine(
     (data) => {
-      // REGRA 1: Deve ter despesaId OU fonteRendaId, nunca ambos ou nenhum
-      const temDespesa = !!data.despesaId;
-      const temFonteRenda = !!data.fonteRendaId;
-
-      // XOR: um ou outro, não ambos, não nenhum
-      return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
+      // REGRA: Deve ter AO MENOS UM vínculo (despesa, receita ou meta)
+      return !!data.despesaId || !!data.receitaId || !!data.metaId;
     },
     {
       message:
-        "Lançamento deve ter uma despesa OU uma fonte de renda, nunca ambos ou nenhum",
+        "Lançamento deve estar vinculado a uma despesa, receita ou meta",
       path: ["despesaId"],
     },
+  )
+  .refine(
+    (data) => {
+      // REGRA XOR: Nunca despesa E receita ao mesmo tempo
+      return !(data.despesaId && data.receitaId);
+    },
+    {
+      message: "Lançamento não pode ter despesa e receita ao mesmo tempo",
+      path: ["receitaId"],
+    }
   );
 
 // Schema para ATUALIZAR lançamento
@@ -98,21 +107,18 @@ export const updateLancamentoSchema = z
       .optional(),
     observacao: z.string().min(1).max(255).trim().optional(),
     despesaId: z.number().int().positive().nullable().optional(),
-    fonteRendaId: z.number().int().positive().nullable().optional(),
+    receitaId: z.number().int().positive().nullable().optional(),
+    metaId: z.number().int().positive().nullable().optional(),
   })
   .refine(
     (data) => {
-      // Se estiver alterando relacionamentos, validar XOR
-      if (data.despesaId !== undefined || data.fonteRendaId !== undefined) {
-        const temDespesa = !!data.despesaId;
-        const temFonteRenda = !!data.fonteRendaId;
-        return (temDespesa && !temFonteRenda) || (!temDespesa && temFonteRenda);
-      }
+      // Impede despesa e receita simultâneos se informados
+      if (data.despesaId && data.receitaId) return false;
       return true;
     },
     {
-      message: "Lançamento deve ter despesa OU fonte de renda, nunca ambos",
-      path: ["despesaId"],
+      message: "Lançamento não pode ter despesa e receita ao mesmo tempo",
+      path: ["receitaId"],
     },
   );
 
@@ -125,7 +131,7 @@ export const lancamentoIdSchema = z.object({
 export const lancamentoQuerySchema = z.object({
   tipo: tipoLancamentoEnum.optional(),
   despesaId: z.coerce.number().int().positive().optional(),
-  fonteRendaId: z.coerce.number().int().positive().optional(),
+  receitaId: z.coerce.number().int().positive().optional(),
   dataInicio: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)

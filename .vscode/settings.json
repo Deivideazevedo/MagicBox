@@ -1,5 +1,12 @@
 {
+  "terminal.integrated.commandsToSkipShell": [
+    "antigravity.approve"
+  ],
   "chat.tools.terminal.autoApprove": {
-    "**": true
+    "**": true,
+    "mv": true,
+    "cp": true,
+    "rm": true,
+    "mkdir": true
   }
 }

@@ -1,5 +1,5 @@
 import { Categoria } from "../categorias/types";
-import { Despesa, DespesaPayload } from "./types";
+import { Despesa, DespesaPayload, TipoDespesa } from "./types";
 
 export class DespesaModel implements Despesa {
   id: number;
@@ -8,14 +8,17 @@ export class DespesaModel implements Despesa {
   nome: string;
   icone: string | null;
   cor: string | null;
-  mensalmente: boolean;
+  tipo: TipoDespesa;
+  valorTotal: number | null;
+  totalParcelas: number | null;
+  dataInicio: string | Date | null;
   valorEstimado: number | null;
   diaVencimento: number | null;
-  status: boolean;
+  status: "A" | "I";
   createdAt: string;
   updatedAt: string;
-  deletedAt: string | null; 
-  categoria: Categoria | null;
+  deletedAt: string | null;
+  categoria?: Categoria;
 
   constructor(props: DespesaPayload, id?: number) {
     this.id = id ?? 0;
@@ -24,8 +27,12 @@ export class DespesaModel implements Despesa {
     this.nome = props.nome;
     this.icone = props.icone ?? null;
     this.cor = props.cor ?? null;
-    this.mensalmente = props.mensalmente ?? false;
-    this.status = props.status;
+    this.tipo = props.tipo ?? "FIXA";
+    this.status = props.status ?? "A";
+
+    this.valorTotal = props.valorTotal ?? null;
+    this.totalParcelas = props.totalParcelas ?? null;
+    this.dataInicio = props.dataInicio ?? null;
 
     // Garante a integridade: se undefined, vira null
     this.valorEstimado = typeof props.valorEstimado === 'string' ? parseFloat(props.valorEstimado) : props.valorEstimado ?? null;
@@ -36,6 +43,5 @@ export class DespesaModel implements Despesa {
     this.updatedAt = now;
     this.deletedAt = null;
 
-    this.categoria = props.categoria ?? null;
   }
 }

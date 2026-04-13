@@ -1,35 +1,14 @@
-import { useRef } from "react";
+import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
+import { Categoria } from "@/core/categorias/types";
 import {
-  alpha,
   Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Divider,
   Grid,
-  IconButton,
-  InputAdornment,
-  List,
-  ListItem,
-  ListItemSecondaryAction,
-  ListItemText,
-  Stack,
-  Tooltip,
-  Typography,
-  useTheme,
+  Typography
 } from "@mui/material";
 import {
-  IconCategory,
-  IconEdit,
-  IconPlus,
-  IconTrash,
+  IconTrash
 } from "@tabler/icons-react";
-import { HookTextField } from "@/app/components/forms/hooksForm";
-import { LoadingButton } from "@mui/lab";
-import { Categoria, CategoriaForm } from "@/core/categorias/types";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
-import { IconX } from "@tabler/icons-react";
+import { useRef } from "react";
 import { useCategorias } from "../../hooks/useCategorias";
 import { Formulario } from "./Formulario";
 import { Listagem } from "./Listagem";

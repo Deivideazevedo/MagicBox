@@ -1,95 +1,67 @@
-// src/core/despesas/repositorio.ts
 import { prisma } from "@/lib/prisma";
-import { Despesa as PrismaDespesa } from "@prisma/client";
-import { DespesaPayload } from "./types";
+import { CreateDespesaDTO, UpdateDespesaDTO } from "./despesa.dto";
+import { Despesa } from "./types";
+import { Prisma } from "@prisma/client";
+
+type DespesaComCategoria = Prisma.DespesaGetPayload<{
+  include: { categoria: true }
+}>;
 
 export const despesaRepository = {
-  async listarTodos(filtros: Partial<PrismaDespesa>) {
+  async listarTodos(filtros: Partial<Prisma.DespesaWhereInput>): Promise<DespesaComCategoria[]> {
     return await prisma.despesa.findMany({
       where: {
         ...filtros,
-        deletedAt: null, // Exclui registros deletados
+        deletedAt: filtros.deletedAt !== undefined ? filtros.deletedAt : null,
       },
       orderBy: { nome: "asc" },
       include: { categoria: true },
     });
   },
 
-  async buscarPorId(id: string | number) {
-    const numericId = Number(id);
-    if (isNaN(numericId)) return null;
-
+  async buscarPorId(id: number) {
     return await prisma.despesa.findUnique({
-      where: { 
-        id: numericId,
-        deletedAt: null, // Exclui registros deletados
+      where: {
+        id,
+        deletedAt: null,
       },
       include: { categoria: true },
     });
   },
 
-  async listarPorUsuario(userId: string | number) {
-    const numericId = Number(userId);
-    if (isNaN(numericId)) return [];
-
+  async listarPorUsuario(userId: number) {
     return await prisma.despesa.findMany({
-      where: { 
-        userId: numericId,
-        deletedAt: null, // Exclui registros deletados
+      where: {
+        userId,
+        deletedAt: null,
       },
       orderBy: { nome: "asc" },
       include: { categoria: true },
     });
   },
 
-  async criar(data: DespesaPayload & { userId: number }) {
+  async criar(data: CreateDespesaDTO & { userId: number }) {
+    const { valorInicial, ...dadosParaSalvar } = data;
+
     return await prisma.despesa.create({
-      data: {
-        nome: data.nome,
-        icone: data.icone,
-        cor: data.cor,
-        userId: data.userId,
-        categoriaId: Number(data.categoriaId),
-        mensalmente: data.mensalmente,
-        status: data.status,
-        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
-        diaVencimento: data.diaVencimento ? Number(data.diaVencimento) : null,
-      },
+      data: dadosParaSalvar,
+      include: { categoria: true },
     });
   },
 
-  async remover(id: string | number): Promise<boolean> {
-    const numericId = Number(id);
-    if (isNaN(numericId)) return false;
-
-    try {
-      // Soft delete: apenas marca como deletado
-      await prisma.despesa.update({
-        where: { id: numericId },
-        data: { deletedAt: new Date() },
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
+  async remover(id: number): Promise<boolean> {
+    await prisma.despesa.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    return true;
   },
 
-  async atualizar(id: string | number, data: Partial<DespesaPayload>) {
-    const numericId = Number(id);
-    if (isNaN(numericId)) throw new Error("ID inválido");
-
+  async atualizar(id: number, data: UpdateDespesaDTO) {
     return await prisma.despesa.update({
-      where: { id: numericId },
-      data: {
-        nome: data.nome,
-        icone: data.icone,
-        cor: data.cor,
-        categoriaId: data.categoriaId ? Number(data.categoriaId) : undefined,
-        mensalmente: data.mensalmente,
-        status: data.status,
-        valorEstimado: data.valorEstimado ? Number(data.valorEstimado) : null,
-        diaVencimento: data.diaVencimento ? Number(data.diaVencimento) : null,
-      },
+      where: { id },
+      data,
+      include: { categoria: true },
     });
   },
 };

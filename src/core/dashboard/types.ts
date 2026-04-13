@@ -7,6 +7,8 @@ export interface DashboardReceitasDespesas {
   saidasAgendadas: number;
   saldoAtual: number;
   saldoProjetado: number;
+  saldoBloqueado: number;
+  saldoLivre: number;
 }
 
 export interface TransacaoRecente {

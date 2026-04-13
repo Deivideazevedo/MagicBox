@@ -1,30 +1,26 @@
 import { despesaService as servico } from "@/core/despesas/service";
-import { DespesaPayload } from "@/core/despesas/types";
-import { updateDespesaSchema } from "@/dtos";
+import { despesaIdSchema, updateDespesaSchema } from "@/core/despesas/despesa.dto";
 import { errorHandler } from "@/lib/error-handler";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
  * PATCH /api/despesas/[id]
- * Atualiza uma despesa existente
- * Body: { nome: string }
  */
 export const PATCH = errorHandler(atualizar);
 
 /**
  * DELETE /api/despesas/[id]
- * Remove uma despesa
  */
 export const DELETE = errorHandler(remover);
-
 
 async function remover(
   requisicao: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const usuario = await getAuthUser();
-  const { id } = params;
+): Promise<NextResponse> {
+  // Autentica o usuário (middleware já garante acesso, aqui apenas pegamos os dados se necessário)
+  await getAuthUser(requisicao);
+  const { id } = despesaIdSchema.parse(params);
 
   await servico.remover(id);
   return NextResponse.json({ success: true });
@@ -33,20 +29,20 @@ async function remover(
 async function atualizar(
   requisicao: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const { id: despesaId } = params;
-  const corpo: DespesaPayload = await requisicao.json();
-  const usuario = await getAuthUser();
+): Promise<NextResponse> {
+  const { id: despesaId } = despesaIdSchema.parse(params);
+  const corpo = await requisicao.json();
+  
+  // Validação com Zod
+  const dados = updateDespesaSchema.parse(corpo);
 
+  // A autenticação já nos provê o userId efetivo (dono ou via admin override)
+  const { userId } = await getAuthUser(requisicao, dados.userId);
 
-  const validacao = updateDespesaSchema.parse(corpo);
-
-  const dados = {
-    ...validacao,
-    userId: validacao.idUsuario ?? Number(usuario.id), // Garante que userId seja number
-  };
-
-  const despesaAtualizada = await servico.atualizar(Number(despesaId), dados);
+  const despesaAtualizada = await servico.atualizar(despesaId, {
+    ...dados,
+    userId,
+  });
 
   return NextResponse.json(despesaAtualizada);
 }

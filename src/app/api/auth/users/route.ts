@@ -46,10 +46,11 @@ async function findUser(requisicao: NextRequest): Promise<NextResponse> {
     throw new NotFoundError("Usuário não encontrado");
   }
 
-  // Retorna usuário sem senha
-  const { password, ...userWithoutPassword } = usuario;
+  // @ts-ignore - password é opcional em CoreUser
+  const { password: _, ...userWithoutPassword } = usuario;
   return NextResponse.json(userWithoutPassword);
 }
+
 
 async function createUser(requisicao: NextRequest): Promise<NextResponse> {
   const corpo = await requisicao.json();
@@ -70,14 +71,16 @@ async function createUser(requisicao: NextRequest): Promise<NextResponse> {
   // Cria usuário
   const newUser = await servico.criar({
     username: validatedData.username,
-    email: validatedData.email || null,
+    email: validatedData.email,
+
     password: validatedData.password,
     name: validatedData.name || null,
     image: validatedData.image || null,
     role: "usuario",
   });
 
-  const { password, ...userWithoutPassword } = newUser;
+  // @ts-ignore - password é opcional em CoreUser
+  const { password: _, ...userWithoutPassword } = newUser;
 
   return NextResponse.json(userWithoutPassword, { status: 201 });
 }

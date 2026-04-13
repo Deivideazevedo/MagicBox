@@ -1,0 +1,26 @@
+model Receita {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  categoriaId    Int
+  nome           String
+  tipo           TipoReceita  @default(FIXA)
+  valorEstimado  Decimal?     @db.Decimal(10, 2)
+  diaRecebimento Int?
+  status         String       @default("A") // A: Ativo, I: Inativo
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  icone          String?
+  cor            String?
+  categoria      Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lancamentos    Lancamento[]
+
+  @@index([userId, status, deletedAt, tipo])
+  @@index([userId])
+  @@index([categoriaId])
+  @@index([status])
+  @@map("receita")
+}
+
+

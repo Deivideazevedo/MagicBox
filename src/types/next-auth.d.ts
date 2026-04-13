@@ -1,40 +1,30 @@
-import { DefaultSession, DefaultUser } from "next-auth";
-import { JWT as DefaultJWT } from "next-auth/jwt";
+import { CoreUser } from "@/core/users/types";
+import { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   /**
-   * Extensão da interface User
-   * Adiciona propriedades customizadas ao objeto user
-   * 
-   * ⚠️ IMPORTANTE: id é number porque usamos Prisma com autoincrement
-   * OAuth providers retornam string, mas convertemos para number no callback
+   * Sobrescreve a interface User do NextAuth para usar a infraestrutura do CoreUser
    */
-  interface User extends DefaultUser {
-    id: number; // ✅ Sobrescreve string do DefaultUser
-    username: string;
-    role?: string | null;
-    password?: string;
-    updatedAt?: string;
-    createdAt?: string;
+  interface User extends CoreUser {
+    id: number;
   }
 
   /**
-   * Extensão da interface Session
-   * Adiciona propriedades customizadas ao objeto session
+   * Garante que a sessão utilize a nossa interface User com ID numérico
    */
-  interface Session {
+  interface Session extends DefaultSession {
     user: User;
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
   }
 }
 
-  /**
-   * Extensão da interface JWT
-   * Adiciona propriedades customizadas ao token JWT
-   */
+/**
+ * Extensão da interface JWT
+ * Adiciona propriedades customizadas ao token JWT
+ */
 declare module "next-auth/jwt" {
-  import { User } from "next-auth"; 
-  
+  import { User } from "next-auth";
+
   interface JWT extends DefaultJWT {
     user?: User;
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
@@ -47,7 +37,7 @@ declare module "next-auth/jwt" {
  */
 declare module "jose" {
   import { User } from "next-auth"; // ✅ Importa o User dentro do módulo
-  
+
   interface JWTPayload {
     user?: User;
   }

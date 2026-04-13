@@ -1,6 +1,6 @@
 import { Categoria } from "../categorias/types";
 import { Despesa } from "../despesas/types";
-import { FonteRenda } from "../fontesRenda/types";
+import { Receita } from "../receitas/types";
 
 export type TipoLancamento = "pagamento" | "agendamento";
 
@@ -16,18 +16,20 @@ export interface LancamentoResposta {
   updatedAt: string;
   categoriaId: number;
   despesaId?: number | null;
-  fonteRendaId?: number | null;
+  receitaId?: number | null;
+  metaId?: number | null;
 
   categoria?: Categoria;
   despesa?: Despesa;
-  fonteRenda?: FonteRenda;
+  receita?: Receita;
   statusDinamico?: string;
 
   // Compatibilidade com retorno em snake_case (Prisma/raw SQL)
   user_id?: number;
   categoria_id?: number;
   despesa_id?: number | null;
-  fonte_renda_id?: number | null;
+  receita_id?: number | null;
+  meta_id?: number | null;
   observacao_automatica?: string;
   created_at?: string;
   updated_at?: string;
@@ -44,7 +46,9 @@ export interface LancamentoPayload {
   observacao?: string;
   categoriaId: number;
   despesaId?: number | null;
-  fonteRendaId?: number | null;
+  receitaId?: number | null;
+  metaId?: number | null;
+  observacaoAutomatica?: string | null;
   parcelas?: number | null; // Usado apenas no dados para gerar múltiplos registros
 }
 
@@ -58,12 +62,13 @@ export interface LancamentoForm {
   categoriaId: number;
   observacao?: string;
   despesaId?: string | number | null;
-  fonteRendaId?: string | number | null;
+  receitaId?: string | number | null;
+  metaId?: string | number | null;
   parcelas?: string | number | null; // Para formulários com parcelamento
 }
 
 export type LancamentoParams = Partial<
-  Omit<LancamentoResposta, "categoria" | "despesa" | "fonteRenda"> & {
+  Omit<LancamentoResposta, "categoria" | "despesa" | "receita"> & {
     page: number;
     limit: number;
     dataInicio?: string;

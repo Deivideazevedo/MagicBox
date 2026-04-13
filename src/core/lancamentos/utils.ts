@@ -67,48 +67,48 @@
 //   switch (status) {
 //     case "EM_ABERTO":
 //       sql = `
-//         SELECT id FROM lancamentos 
-//         WHERE (valor_pago IS NULL OR valor_pago = 0) 
+//         SELECT id FROM lancamento 
+//         WHERE ("valorPago" IS NULL OR "valorPago" = 0) 
 //         AND data >= '${hojeSql}'
-//         ${userId ? `AND user_id = ${userId}` : ''}
+//         ${userId ? `AND "userId" = ${userId}` : ''}
 //       `;
 //       break;
       
 //     case "VENCIDO":
 //       sql = `
-//         SELECT id FROM lancamentos 
-//         WHERE (valor_pago IS NULL OR valor_pago = 0) 
+//         SELECT id FROM lancamento 
+//         WHERE ("valorPago" IS NULL OR "valorPago" = 0) 
 //         AND data < '${hojeSql}'
-//         ${userId ? `AND user_id = ${userId}` : ''}
+//         ${userId ? `AND "userId" = ${userId}` : ''}
 //       `;
 //       break;
       
 //     case "PAGO":
 //       sql = `
-//         SELECT id FROM lancamentos 
-//         WHERE valor_pago IS NOT NULL 
-//         AND valor_pago > 0
-//         AND valor_pago = valor
-//         ${userId ? `AND user_id = ${userId}` : ''}
+//         SELECT id FROM lancamento 
+//         WHERE "valorPago" IS NOT NULL 
+//         AND "valorPago" > 0
+//         AND "valorPago" = valor
+//         ${userId ? `AND "userId" = ${userId}` : ''}
 //       `;
 //       break;
       
 //     case "INCOMPLETO":
 //       sql = `
-//         SELECT id FROM lancamentos 
-//         WHERE valor_pago IS NOT NULL 
-//         AND valor_pago > 0 
-//         AND valor_pago < valor
-//         ${userId ? `AND user_id = ${userId}` : ''}
+//         SELECT id FROM lancamento 
+//         WHERE "valorPago" IS NOT NULL 
+//         AND "valorPago" > 0 
+//         AND "valorPago" < valor
+//         ${userId ? `AND "userId" = ${userId}` : ''}
 //       `;
 //       break;
       
 //     case "EXCEDENTE":
 //       sql = `
-//         SELECT id FROM lancamentos 
-//         WHERE valor_pago IS NOT NULL 
-//         AND valor_pago > valor
-//         ${userId ? `AND user_id = ${userId}` : ''}
+//         SELECT id FROM lancamento 
+//         WHERE "valorPago" IS NOT NULL 
+//         AND "valorPago" > valor
+//         ${userId ? `AND "userId" = ${userId}` : ''}
 //       `;
 //       break;
       

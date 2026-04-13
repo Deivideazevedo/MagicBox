@@ -42,7 +42,7 @@ import {
   IconChecks,
   IconCategory,
 } from "@tabler/icons-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ActionsIconMode } from "./components/ActionsIconMode";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
@@ -408,6 +408,7 @@ const CustomRow = memo(
       [row, columns],
     );
 
+    console.log('row.detalhe', row.detalhes)
     return (
       <>
         <TableRow
@@ -503,8 +504,8 @@ const CustomRow = memo(
                     color: "text.secondary",
                   }}
                 >
-                  <IconCalendar size={18} stroke={2.5} /> Histórico de
-                  Movimentações
+                  <IconCalendar size={18} stroke={2.5} />
+                  Histórico de Movimentações
                 </Typography>
 
                 <Box sx={{ position: "relative" }}>
@@ -522,7 +523,7 @@ const CustomRow = memo(
                   />
 
                   <Stack spacing={1.5} sx={{ position: "relative", zIndex: 1 }}>
-                    {row.detalhes?.map((detalhe: any) => {
+                    {row.detalhes?.map((detalhe) => {
                       const isPagamento = detalhe.tipo === "pagamento";
                       const temObservacao = !!detalhe.observacao;
 
@@ -583,7 +584,7 @@ const CustomRow = memo(
                                 transition: "all 0.2s ease",
                               }}
                             >
-                              {format(new Date(detalhe.data), "dd/MM")}
+                              {format(parseISO(detalhe.data), "dd/MM")}
                             </Typography>
 
                             {/* Dot - O centro deste componente é o eixo da linha */}

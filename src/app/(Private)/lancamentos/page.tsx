@@ -19,13 +19,13 @@ import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDial
 import { useLancamentosList } from "./hooks/useLancamentosList";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetFontesRendaQuery } from "@/services/endpoints/fontesRendaApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useMemo } from "react";
 
 export default function LancamentosPage() {
   const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: despesas = [] } = useGetDespesasQuery();
-  const { data: fontesRenda = [] } = useGetFontesRendaQuery();
+  const { data: receitas = [] } = useGetReceitasQuery();
 
   const {
     lancamentos,
@@ -50,8 +50,8 @@ export default function LancamentosPage() {
     return lancamentos.map((lancamento) => {
       return {
         ...lancamento,
-        origem: lancamento.despesa ? "Despesa" : "Renda",
-        nome: lancamento.despesa?.nome || lancamento.fonteRenda?.nome || "-",
+        origem: lancamento.despesa ? "Despesa" : "Receita",
+        nome: lancamento.despesa?.nome || lancamento.receita?.nome || "-",
       };
     });
   }, [lancamentos]);
@@ -73,7 +73,7 @@ export default function LancamentosPage() {
           filtros={filtros}
           categorias={categorias}
           despesas={despesas}
-          fontesRenda={fontesRenda}
+          receitas={receitas}
           handleSearch={handleSearch}
         />
 
@@ -165,7 +165,7 @@ export default function LancamentosPage() {
         lancamento={modais.visualizar}
         categorias={categorias}
         despesas={despesas}
-        fontesRenda={fontesRenda}
+        receitas={receitas}
         onClose={modalHandlers.visualizar.fechar}
       />
 

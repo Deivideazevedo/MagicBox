@@ -1,5 +1,5 @@
 import { HookTextField, IconColorMenuPicker } from "@/app/components/forms/hooksForm";
-import { Categoria, CategoriaForm } from "@/core/categorias/types";
+import { Categoria, CategoriaPayload } from "@/core/categorias/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -20,7 +20,7 @@ interface FormProps {
   row: Categoria | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>; // Tipo do handler de submit do React Hook Form
-  control: Control<CategoriaForm>; // Controle tipado com o schema do formulário
+  control: Control<CategoriaPayload>; // Controle tipado com o schema do formulário
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
@@ -86,7 +86,7 @@ export const Formulario = (formProps: FormProps) => {
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container gap={1}>
             <Grid item xs={12}>
-              <HookTextField<CategoriaForm>
+              <HookTextField
                 control={control}
                 name="nome"
                 label="Nome da Categoria"

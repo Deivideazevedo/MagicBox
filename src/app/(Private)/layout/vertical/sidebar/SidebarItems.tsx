@@ -9,10 +9,14 @@ import NavCollapse from './NavCollapse';
 import NavGroup from './NavGroup/NavGroup';
 import { AppState } from '@/store/store'
 import { toggleMobileSidebar, setDarkMode } from '@/store/customizer/CustomizerSlice';
+import { useSession } from "next-auth/react";
 
 
 const SidebarItems = () => {
-  const  pathname  = usePathname();
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "usuario";
+
+  const pathname = usePathname();
   const pathDirect = pathname;
   const pathWithoutLastPart = pathname.slice(0, pathname.lastIndexOf('/'));
   const customizer = useSelector((state: AppState) => state.customizer);
@@ -22,7 +26,7 @@ const SidebarItems = () => {
   return (
     <Box sx={{ px: 3 }}>
       <List sx={{ pt: 0 }} className="sidebarNav">
-        {Menuitems.map((item) => {
+        {Menuitems.filter(item => !item.permissions || item.permissions.includes(userRole)).map((item) => {
           // {/********SubHeader**********/}
           if (item.subheader) {
             return <NavGroup item={item} hideMenu={hideMenu} key={item.subheader} />;

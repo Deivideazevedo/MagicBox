@@ -23,6 +23,8 @@ interface CustomToggleProps {
   titleInactive: string;
   descriptionActive?: string;
   descriptionInactive?: string;
+  activeValue?: any;
+  inactiveValue?: any;
 }
 
 export default function CustomToggle({
@@ -35,27 +37,36 @@ export default function CustomToggle({
   titleInactive,
   descriptionActive,
   descriptionInactive,
+  activeValue = true,
+  inactiveValue = false,
 }: CustomToggleProps) {
   return (
     <Controller
       name={name}
       control={control}
-      render={({ field }) => (
-        <Box
-          // AQUI ESTÁ A MÁGICA:
-          // tabIndex={0} torna o elemento focável na ordem natural
-          tabIndex={0}
-          role="button"
-          onClick={() => field.onChange(!field.value)}
-          onKeyDown={(e) => {
-            // Permite ativar com Espaço ou Enter
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              field.onChange(!field.value);
-            }
-          }}
-          sx={{
-            display: "flex",
+      render={({ field }) => {
+        // Verifica se o valor atual é o valor ativo. 
+        // Se o valor for undefined ou null, assume o valor inativo por padrão.
+        const isActive = field.value === activeValue;
+        
+        const handleToggle = () => {
+          const nextValue = isActive ? inactiveValue : activeValue;
+          field.onChange(nextValue);
+        };
+
+        return (
+          <Box
+            tabIndex={0}
+            role="button"
+            onClick={handleToggle}
+            onKeyDown={(e) => {
+              if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                handleToggle();
+              }
+            }}
+            sx={{
+              display: "flex",
             alignItems: "center",
             gap: 1.5,
             py: 1,
@@ -64,10 +75,10 @@ export default function CustomToggle({
             cursor: "pointer",
             transition: 'ease-in-out 0.2s ease',
             border: "1px solid",
-            borderColor: field.value
+            borderColor: isActive
               ? (theme) => alpha(theme.palette[color].main, 0.3)
               : "divider",
-            backgroundColor: field.value
+            backgroundColor: isActive
               ? (theme) => alpha(theme.palette[color].main, 0.04)
               : "transparent",
             // Estilos de foco visual para acessibilidade
@@ -91,8 +102,8 @@ export default function CustomToggle({
                 height: 18,
                 borderRadius: 0.5,
                 border: "2px solid",
-                borderColor: field.value ? `${color}.main` : "grey.400",
-                backgroundColor: field.value ? `${color}.main` : "transparent",
+                borderColor: isActive ? `${color}.main` : "grey.400",
+                backgroundColor: isActive ? `${color}.main` : "transparent",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -108,16 +119,16 @@ export default function CustomToggle({
                 },
               }}
             >
-              {field.value && iconActive}
+              {isActive && iconActive}
             </Box>
           ) : (
             <Switch
-              checked={field.value}
+              checked={isActive}
               color={color}
               size="small"
               // Removemos o foco do switch interno para focar apenas no container Box
-              tabIndex={-1} 
-              readOnly 
+              tabIndex={-1}
+              readOnly
               sx={{ ml: -0.5, pointerEvents: 'none' }} // Deixa o clique passar para o Box pai
             />
           )}
@@ -126,9 +137,9 @@ export default function CustomToggle({
             <Typography
               variant="body2"
               fontWeight={500}
-              color={field.value ? `${color}.main` : "text.primary"}
+              color={isActive ? `${color}.main` : "text.primary"}
             >
-              {field.value ? titleActive : titleInactive}
+              {isActive ? titleActive : titleInactive}
             </Typography>
             {(descriptionActive || descriptionInactive) && (
               <Typography
@@ -136,12 +147,13 @@ export default function CustomToggle({
                 color="text.secondary"
                 sx={{ display: "block", lineHeight: 1.3 }}
               >
-                {field.value ? descriptionActive : descriptionInactive}
+                {isActive ? descriptionActive : descriptionInactive}
               </Typography>
             )}
           </Box>
         </Box>
-      )}
-    />
+      );
+    }}
+  />
   );
 }

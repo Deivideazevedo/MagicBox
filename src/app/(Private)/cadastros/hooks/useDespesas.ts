@@ -1,5 +1,5 @@
 import { Categoria } from "@/core/categorias/types";
-import { Despesa, DespesaPayload, DespesaForm } from "@/core/despesas/types";
+import { Despesa, DespesaPayload, TipoDespesa } from "@/core/despesas/types";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import {
   useCreateDespesaMutation,
@@ -7,56 +7,50 @@ import {
   useGetDespesasQuery,
   useUpdateDespesaMutation,
 } from "@/services/endpoints/despesasApi";
-import { Swalert, SwalToast } from "@/utils/swalert";
+import { fnCleanObject } from "@/utils/functions/fnCleanObject";
+import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTheme } from "@mui/material";
 import { useSession } from "next-auth/react";
-import { useCallback, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-const despesaSchemaZod = z
-  .object({
-    id: z.number().optional(),
-    userId: z.number().optional(),
-    categoriaId: z.number().min(1, "Categoria é obrigatória"),
-    mensalmente: z.boolean(),
-    nome: z.string().min(1, "Nome é obrigatório"),
-    icone: z.string().optional().nullable(),
-    cor: z.string().optional().nullable(),
-    valorEstimado: z.number().nullable(),
-    diaVencimento: z.number().nullable(),
-    status: z.boolean(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.mensalmente) {
-      // Valida Valor Estimado
-      if (!data.valorEstimado || data.valorEstimado < 1) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Valor é obrigatório para despesa mensal",
-          path: ["valorEstimado"],
-        });
-      }
-
-      // Valida Dia de Vencimento
-      if (
-        !data.diaVencimento ||
-        data.diaVencimento < 1 ||
-        data.diaVencimento > 31
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Dia (1-31) obrigatório para despesa mensal",
-          path: ["diaVencimento"],
-        });
-      }
+const despesaSchemaZod = z.object({
+  id: z.union([z.string(), z.number()]).optional(),
+  userId: z.union([z.string(), z.number()]).optional(),
+  categoriaId: z.number().min(1, "Categoria é obrigatória"),
+  nome: z.string().min(1, "Nome é obrigatório"),
+  icone: z.string().optional().nullable(),
+  cor: z.string().optional().nullable(),
+  tipo: z.enum(["FIXA", "VARIAVEL", "DIVIDA"]),
+  status: z.enum(["A", "I"]),
+  valorEstimado: z.number().nullable().optional(),
+  diaVencimento: z.number().min(1, "O dia deve estar entre 1 e 31").max(31, "O dia deve estar entre 1 e 31").nullable().optional(),
+  valorTotal: z.number().nullable().optional(),
+  totalParcelas: z.number().min(1).nullable().optional(),
+  dataInicio: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+  // Se for FIXA ou DIVIDA, o dia de vencimento e valor estimado são obrigatórios
+  if (data.tipo === "FIXA" || data.tipo === "DIVIDA") {
+    if (data.valorEstimado === null || data.valorEstimado === undefined || data.valorEstimado <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Valor estimado é obrigatório",
+        path: ["valorEstimado"],
+      });
     }
-  }) satisfies z.ZodType<DespesaForm>;
+    if (data.diaVencimento === null || data.diaVencimento === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Dia do vencimento é obrigatório",
+        path: ["diaVencimento"],
+      });
+    }
+  }
+});
 
-interface DeleteDialog {
-  open: boolean;
-  despesa: Despesa | null;
-}
+export type DespesaFormData = z.infer<typeof despesaSchemaZod>;
 
 interface UseDespesasProps {
   despesas?: Despesa[];
@@ -64,12 +58,12 @@ interface UseDespesasProps {
 }
 
 export function useDespesas(params?: UseDespesasProps) {
+  const theme = useTheme();
   const { despesas: despesasProps, categorias: categoriasProps } = params || {};
 
   const { data: session } = useSession();
   const userId = Number(session?.user?.id);
 
-  // Se props existirem (não são undefined), skip as queries RTK
   const { data: despesasQuery = [] } = useGetDespesasQuery(undefined, {
     skip: despesasProps !== undefined,
   });
@@ -78,67 +72,60 @@ export function useDespesas(params?: UseDespesasProps) {
     skip: categoriasProps !== undefined,
   });
 
-  // Usa props se fornecido, senão usa resultado da query
   const despesasList = despesasProps ?? despesasQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
   const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Despesa | null>(null);
 
-  // RTK Query mutations
   const [createDespesa, { isLoading: isCreating }] = useCreateDespesaMutation();
   const [updateDespesa, { isLoading: isUpdating }] = useUpdateDespesaMutation();
   const [deleteDespesa, { isLoading: isDeleting }] = useDeleteDespesaMutation();
 
-  // Extrair defaultValues para reutilizar no reset
-  const defaultValues: DespesaForm = useMemo(
+  const defaultValues = useMemo<DespesaFormData>(
     () => ({
-      id: undefined,
       userId: userId,
-      status: true,
+      status: "A" as const,
       categoriaId: 0,
       nome: "",
-      icone: "",
-      cor: "",
-      mensalmente: false,
+      icone: "IconCreditCard",
+      cor: theme.palette.error.main,
+      tipo: "VARIAVEL" as const,
       valorEstimado: null,
       diaVencimento: null,
+      valorTotal: null,
+      totalParcelas: null,
+      dataInicio: new Date().toISOString().split('T')[0],
     }),
-    [userId]
+    [userId, theme.palette.error.main]
   );
 
   const {
     handleSubmit: handleSubmitForm,
     reset,
-    getValues,
     setValue,
     control,
     watch,
+    formState: { errors },
     setFocus,
-  } = useForm<DespesaForm>({
+  } = useForm<DespesaFormData>({
     resolver: zodResolver(despesaSchemaZod),
     defaultValues,
   });
 
-  const onSubmit = useCallback(
-    async (payload: DespesaForm) => {
-      const { id, ...formData } = payload;
+  console.log('errors', errors);
 
-      // Converter FormData para Payload
-      // userId e categoriaId vêm como string do formulário, mas o backend espera number
-      const data: DespesaPayload = {
-        ...formData,
-        userId: Number(formData.userId),
-        categoriaId: Number(formData.categoriaId),
-        valorEstimado: formData.valorEstimado
-          ? Number(formData.valorEstimado)
-          : null,
-        diaVencimento: formData.diaVencimento
-          ? Number(formData.diaVencimento)
-          : null,
-        icone: formData.icone,
-        cor: formData.cor,
-      };
+  const onSubmit = useCallback(
+    async (formData: DespesaFormData) => {
+      const { id, ...rest } = formData;
+
+      const data: DespesaPayload = fnCleanObject({
+        params: {
+          ...rest,
+          userId: rest.userId ? Number(rest.userId) : null,
+          status: rest.status as "A" | "I",
+        }
+      });
 
       try {
         if (id) {
@@ -146,49 +133,41 @@ export function useDespesas(params?: UseDespesasProps) {
             id: String(id),
             data,
           }).unwrap();
-          reset(defaultValues);
+          SwalToast.fire({ icon: "success", title: "Atualizado!" });
         } else {
           await createDespesa(data).unwrap();
-          reset({ ...defaultValues, categoriaId: data.categoriaId });
+          SwalToast.fire({ icon: "success", title: "Criado!" });
         }
-        // Foca no campo nome após o cadastro
-        setTimeout(() => setFocus("categoriaId"), 100);
-      } catch {}
+        reset(defaultValues);
+      } catch { }
     },
-    [updateDespesa, createDespesa, reset, setFocus, defaultValues]
+    [updateDespesa, createDespesa, reset, defaultValues]
   );
 
   const handleEdit = useCallback(
     (despesa: Despesa) => {
-      const data = {
-        id: Number(despesa.id),
-        userId,
-        categoriaId: Number(despesa.categoriaId),
+      const data: DespesaFormData = {
+        id: despesa.id,
+        userId: despesa.userId,
+        categoriaId: despesa.categoriaId,
         nome: despesa.nome,
-        mensalmente: despesa.mensalmente,
-        valorEstimado: despesa.valorEstimado
-          ? Number(despesa.valorEstimado)
-          : null,
-        diaVencimento: despesa.diaVencimento
-          ? Number(despesa.diaVencimento)
-          : null,
-        status: despesa.status,
+        tipo: despesa.tipo as "FIXA" | "VARIAVEL" | "DIVIDA",
+        valorTotal: despesa.valorTotal,
+        totalParcelas: despesa.totalParcelas,
+        dataInicio: despesa.dataInicio ? String(despesa.dataInicio) : null,
+        valorEstimado: despesa.valorEstimado,
+        diaVencimento: despesa.diaVencimento,
+        status: despesa.status as "A" | "I",
         icone: despesa.icone,
         cor: despesa.cor,
       };
 
-      setRow({ ...despesa, ...data });
+      setRow(despesa);
       reset(data);
-
-      // Foca no campo nome
       setTimeout(() => setFocus("nome"), 100);
     },
-    [userId, setFocus, reset, setRow]
+    [reset, setFocus]
   );
-
-  const handleCancelEdit = useCallback(() => {
-    reset(defaultValues);
-  }, [reset, defaultValues]);
 
   const handleOpenDialog = useCallback((despesa: Despesa) => {
     setRow(despesa);
@@ -204,50 +183,14 @@ export function useDespesas(params?: UseDespesasProps) {
     if (!row) return;
     try {
       await deleteDespesa(row.id).unwrap();
-      setValue("id", undefined);
       setRow(null);
       setDeleteDialog(false);
+      SwalToast.fire({ icon: "success", title: "Excluído!" });
+    } catch { }
+  }, [deleteDespesa, row]);
 
-      SwalToast.fire({
-        icon: "success",
-        title: "Despesa excluída com sucesso!",
-      });
-    } catch {}
-  }, [deleteDespesa, row, setValue]);
-
-  // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
-
-  const isEdditing = Boolean(watch("id"));
-  const isCollapsed = !!watch("nome") || !!watch("mensalmente");
-
-
-  const formProps = {
-    isEdditing,
-    handleSubmit,
-    handleCancelEdit,
-    control,
-    row,
-    isCreating,
-    isUpdating,
-    isCollapsed,
-    categorias: categoriasList,
-    despesas: despesasList,
-  };
-
-  const listProps = {
-    despesas: despesasList,
-    handleOpenDialog,
-    handleEdit,
-  };
-
-  const deleteProps = {
-    open: openDelete,
-    name: row?.nome,
-    onConfirm: handleDelete,
-    onClose: handleCloseDialog,
-    isLoading: isDeleting,
-  };
+  const isEditing = Boolean(watch("id"));
 
   return {
     isDeleting,
@@ -255,8 +198,28 @@ export function useDespesas(params?: UseDespesasProps) {
     handleOpenDialog,
     handleDelete,
     row,
-    formProps,
-    listProps,
-    deleteProps,
+    formProps: {
+      isEditing,
+      handleSubmit,
+      handleCancelEdit: () => reset(defaultValues),
+      control,
+      row,
+      isCreating,
+      isUpdating,
+      isCollapsed: !!watch("nome") || watch("tipo") === "FIXA",
+      categorias: categoriasList,
+    },
+    listProps: {
+      despesas: despesasList,
+      handleOpenDialog,
+      handleEdit,
+    },
+    deleteProps: {
+      open: openDelete,
+      name: row?.nome,
+      onConfirm: handleDelete,
+      onClose: handleCloseDialog,
+      isLoading: isDeleting,
+    },
   };
 }

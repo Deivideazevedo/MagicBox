@@ -1,8 +1,6 @@
-// src/core/lancamentos/repository.ts
 import { prisma } from "@/lib/prisma";
 import { ResumoMiniCardsProps, ResumoResposta } from "./types";
 import { Prisma, Lancamento as PrismaResumo } from "@prisma/client";
-import { PaginatedResult } from "@/core/types/global";
 import {
   ResumoCardFiltros,
   ResumoFiltros,
@@ -12,16 +10,28 @@ import { calcularStatus } from "./utils";
 
 export const resumoRepository = {
 
-  async obterResumo({ userId, dataInicio, dataFim }: ResumoFiltros) {
+  async obterResumo({ userId, dataInicio, dataFim }: ResumoFiltros): Promise<ResumoResposta[]> {
     const response = await prisma.$queryRaw<ResumoResposta[]>`
       WITH meses_do_periodo AS (
-        SELECT generate_series(
+        SELECT 
+          mes_referencia::date,
+          EXTRACT(DAY FROM (mes_referencia + interval '1 month - 1 day')) as ultimo_dia_mes
+        FROM generate_series(
           date_trunc('month', ${dataInicio}::date),
           date_trunc('month', ${dataFim}::date),
           '1 month'::interval
-        )::date as mes_referencia
+        ) as mes_referencia
+      ),
+      saldos_devedores AS (
+        SELECT 
+          "despesaId",
+          SUM(valor) as total_pago
+        FROM lancamento
+        WHERE "userId" = ${userId} AND tipo = 'pagamento' AND "despesaId" IS NOT NULL
+        GROUP BY "despesaId"
       ),
       itens_recorrentes_base AS (
+        -- DESPESAS FIXAS
         SELECT 
           d.id as "origemId",
           'despesa' as "origem",
@@ -30,28 +40,68 @@ export const resumoRepository = {
           d."diaVencimento" as "diaVencido",
           d.icone,
           d.cor,
-          m.mes_referencia
-        FROM despesas d
+          EXTRACT(MONTH FROM m.mes_referencia) as "mes",
+          EXTRACT(YEAR FROM m.mes_referencia) as "ano",
+          (date_trunc('month', m.mes_referencia) + (LEAST(d."diaVencimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
+        FROM despesa d
         CROSS JOIN meses_do_periodo m
-        WHERE d."userId" = ${userId} AND d.status = true AND d.mensalmente = true AND d."deletedAt" IS NULL
+        WHERE d."userId" = ${userId} 
+          AND d.status = 'A' 
+          AND d.tipo = 'FIXA' 
+          AND d."deletedAt" IS NULL
+          AND m.mes_referencia >= date_trunc('month', d."createdAt")
+        
         UNION ALL
+
+        -- DÍVIDAS (Amortizadas)
+        SELECT 
+          d.id as "origemId",
+          'despesa' as "origem",
+          d.nome,
+          d."valorEstimado" as "valorPrevisto",
+          d."diaVencimento" as "diaVencido",
+          d.icone,
+          d.cor,
+          EXTRACT(MONTH FROM m.mes_referencia) as "mes",
+          EXTRACT(YEAR FROM m.mes_referencia) as "ano",
+          (date_trunc('month', m.mes_referencia) + (LEAST(d."diaVencimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
+        FROM despesa d
+        LEFT JOIN saldos_devedores s ON s."despesaId" = d.id
+        CROSS JOIN meses_do_periodo m
+        WHERE d."userId" = ${userId} 
+          AND d.status = 'A' 
+          AND d.tipo = 'DIVIDA' 
+          AND d."deletedAt" IS NULL
+          AND m.mes_referencia >= date_trunc('month', COALESCE(d."dataInicio", d."createdAt"))
+          -- Só projeta se ainda houver saldo devedor
+          AND (COALESCE(d."valorTotal", 0) - COALESCE(s.total_pago, 0)) > 0
+        
+        UNION ALL
+        
+        -- RENDAS MENSAIS (RECEITAS)
         SELECT 
           f.id as "origemId",
-          'renda' as "origem",
+          'receita' as "origem",
           f.nome,
           f."valorEstimado" as "valorPrevisto",
           f."diaRecebimento" as "diaVencido",
           f.icone,
           f.cor,
-          m.mes_referencia
-        FROM fontes_renda f
+          EXTRACT(MONTH FROM m.mes_referencia) as "mes",
+          EXTRACT(YEAR FROM m.mes_referencia) as "ano",
+          (date_trunc('month', m.mes_referencia) + (LEAST(f."diaRecebimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
+        FROM receita f
         CROSS JOIN meses_do_periodo m
-        WHERE f."userId" = ${userId} AND f.status = true AND f.mensalmente = true AND f."deletedAt" IS NULL
+        WHERE f."userId" = ${userId} 
+          AND f.status = 'A' 
+          AND f.tipo = 'FIXA' 
+          AND f."deletedAt" IS NULL
+          AND m.mes_referencia >= date_trunc('month', f."createdAt")
       ),
       lancamentos_reais_agrupados AS (
           SELECT
-              COALESCE(l.fonte_renda_id, l.despesa_id) as "origemId",
-              CASE WHEN l.fonte_renda_id IS NOT NULL THEN 'renda' ELSE 'despesa' END as "origem",
+              COALESCE(l."receitaId", l."despesaId") as "origemId",
+              CASE WHEN l."receitaId" IS NOT NULL THEN 'receita' ELSE 'despesa' END as "origem",
               EXTRACT(MONTH FROM l.data) as "mes",
               EXTRACT(YEAR FROM l.data) as "ano",
               SUM(CASE WHEN l.tipo = 'agendamento' THEN valor ELSE 0 END) as "valorPrevisto",
@@ -62,54 +112,54 @@ export const resumoRepository = {
                   'data', l.data, 
                   'valor', l.valor, 
                   'tipo', l.tipo, 
-                  'observacao', COALESCE(l.observacao, l.observacao_automatica)
+                  'observacao', COALESCE(l.observacao, l."observacaoAutomatica")
                 ) ORDER BY l.data DESC
               ) as "detalhes"
-          FROM lancamentos l
-          WHERE l.user_id = ${userId} AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
+          FROM lancamento l
+          LEFT JOIN despesa d ON l."despesaId" = d.id
+          LEFT JOIN receita r ON l."receitaId" = r.id
+          LEFT JOIN meta m ON l."metaId" = m.id
+          WHERE l."userId" = ${userId} 
+            AND l.data >= ${dataInicio}::date 
+            AND l.data <= ${dataFim}::date
+            AND (
+              (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
+              (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
+              (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL) OR
+              (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."metaId" IS NULL)
+            )
           GROUP BY 1, 2, 3, 4
       ),
       uniao_de_dados AS (
-          -- Mantém o que já existe no banco (lançamentos reais)
           SELECT 
-              real."origemId", real."origem", real."mes", real."ano", real."valorPrevisto", real."valorPago", real."detalhes",
-              CASE WHEN real."origem" = 'despesa' THEN d.nome ELSE f.nome END as "nome",
-              CASE WHEN real."origem" = 'despesa' THEN d."diaVencimento" ELSE f."diaRecebimento" END as "diaVencido",
-              CASE WHEN real."origem" = 'despesa' THEN d.icone ELSE f.icone END as "icone",
-              CASE WHEN real."origem" = 'despesa' THEN d.cor ELSE f.cor END as "cor"
-          FROM lancamentos_reais_agrupados real
-          LEFT JOIN despesas d ON real."origemId" = d.id AND real."origem" = 'despesa'
-          LEFT JOIN fontes_renda f ON real."origemId" = f.id AND real."origem" = 'renda'
-          
-          UNION ALL
-          
-          -- Adiciona o que é recorrente e está faltando no período
-          SELECT 
-              rec."origemId", rec."origem", 
-              EXTRACT(MONTH FROM rec.mes_referencia) as "mes", 
-              EXTRACT(YEAR FROM rec.mes_referencia) as "ano",
-              rec."valorPrevisto", 
-              0 as "valorPago", 
-              JSON_BUILD_ARRAY(
-                JSON_BUILD_OBJECT(
-                  'id', -1,
-                  'data', rec.mes_referencia,
-                  'valor', rec."valorPrevisto",
-                  'tipo', 'agendamento',
-                  'observacao', 'Agendamento recorrente mensal'
+              COALESCE(real."origemId", rec."origemId") as "origemId",
+              COALESCE(real."origem", rec."origem") as "origem",
+              COALESCE(real."mes", rec."mes") as "mes",
+              COALESCE(real."ano", rec."ano") as "ano",
+              COALESCE(rec."valorPrevisto", real."valorPrevisto") as "valorPrevisto",
+              COALESCE(real."valorPago", 0) as "valorPago",
+              COALESCE(real."detalhes", 
+                JSON_BUILD_ARRAY(
+                  JSON_BUILD_OBJECT(
+                    'id', rec."origem" || '-' || rec."origemId",
+                    'data', rec."data_referencia",
+                    'valor', rec."valorPrevisto",
+                    'tipo', 'agendamento',
+                    'observacao', 'Agendamento recorrente mensal'
+                  )
                 )
               ) as "detalhes",
-              rec.nome, 
-              rec."diaVencido",
-              rec.icone,
-              rec.cor
+              COALESCE(rec.nome, d.nome, f.nome) as "nome",
+              COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento") as "diaVencido",
+              COALESCE(rec.icone, d.icone, f.icone) as "icone",
+              COALESCE(rec.cor, d.cor, f.cor) as "cor"
+          -- União de dados: Cruza o planejado (recorrências) com o realizado (lançamentos)
           FROM itens_recorrentes_base rec
-          WHERE NOT EXISTS (
-              SELECT 1 FROM lancamentos_reais_agrupados real 
-              WHERE real."origemId" = rec."origemId" AND real."origem" = rec."origem" 
-              AND real."mes" = EXTRACT(MONTH FROM rec.mes_referencia) 
-              AND real."ano" = EXTRACT(YEAR FROM rec.mes_referencia)
-          )
+          FULL OUTER JOIN lancamentos_reais_agrupados real 
+            ON rec."origemId" = real."origemId" AND rec."origem" = real."origem" 
+            AND rec."mes" = real."mes" AND rec."ano" = real."ano"
+          LEFT JOIN despesa d ON real."origemId" = d.id AND real."origem" = 'despesa'
+          LEFT JOIN receita f ON real."origemId" = f.id AND real."origem" = 'receita'
       )
       SELECT * FROM uniao_de_dados ORDER BY "ano", "mes", "nome";
     `;
@@ -120,7 +170,6 @@ export const resumoRepository = {
       const mes = Number(item.mes);
       const ano = Number(item.ano);
 
-      // Chamada da utilitária
       const { label, isAtrasado } = calcularStatus(
         valorPago,
         valorPrevisto,
@@ -143,163 +192,184 @@ export const resumoRepository = {
     });
   },
 
-  async obterCardResumo({ userId, dataInicio, dataFim }: ResumoCardFiltros) {
-    type ResumoCardResumo = {
-      transacoesPagas: number;
-      transacoesAgendadas: number;
+  async obterCardResumo({ userId, dataInicio, dataFim }: ResumoCardFiltros): Promise<ResumoMiniCardsProps> {
+    type ResumoCardDB = {
+      pagoCount: number;
+      agendadoCount: number;
       entradasPagas: number;
       entradasAgendadas: number;
       saidasPagas: number;
       saidasAgendadas: number;
+      total_projetado: number;
+      entradas_projetadas: number;
+      saidas_projetadas: number;
+      saldoBloqueado: number;
     };
 
-    const [res] = await prisma.$queryRaw<ResumoCardResumo[]>`
+    const [res] = await prisma.$queryRaw<ResumoCardDB[]>`
       WITH meses_do_periodo AS (
-        SELECT generate_series(
+        SELECT 
+          mes_referencia::date,
+          EXTRACT(DAY FROM (mes_referencia + interval '1 month - 1 day')) as ultimo_dia_mes
+        FROM generate_series(
           date_trunc('month', ${dataInicio}::date),
           date_trunc('month', ${dataFim}::date),
           '1 month'::interval
-        )::date as mes_referencia
+        ) as mes_referencia
+      ),
+      saldos_devedores AS (
+        SELECT "despesaId", SUM(valor) as total_pago FROM lancamento
+        WHERE "userId" = ${userId} AND tipo = 'pagamento' AND "despesaId" IS NOT NULL GROUP BY "despesaId"
       ),
       recorrencias_faltantes AS (
-        -- Busca despesas recorrentes sem lançamento em cada mês
+        -- DESPESAS FIXAS E DÍVIDAS
         SELECT 
-          d.id,
-          d."valorEstimado" as valor,
-          'despesa' as origem
-        FROM despesas d
+          d.id, d."valorEstimado" as valor, 'despesa' as origem
+        FROM despesa d
+        LEFT JOIN saldos_devedores s ON s."despesaId" = d.id
         CROSS JOIN meses_do_periodo m
-        WHERE d."userId" = ${userId} AND d.status = true AND d.mensalmente = true AND d."deletedAt" IS NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM lancamentos l 
-          WHERE l.despesa_id = d.id 
-          AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
-          AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
-          AND l.user_id = ${userId}
-        )
+        WHERE d."userId" = ${userId} 
+          AND d.status = 'A' 
+          AND d."deletedAt" IS NULL
+          AND (
+            (d.tipo = 'FIXA' AND m.mes_referencia >= date_trunc('month', d."createdAt"))
+            OR
+            (d.tipo = 'DIVIDA' AND m.mes_referencia >= date_trunc('month', COALESCE(d."dataInicio", d."createdAt")) AND (COALESCE(d."valorTotal", 0) - COALESCE(s.total_pago, 0)) > 0)
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM lancamento l 
+            WHERE l."despesaId" = d.id 
+            AND l.tipo = 'agendamento'
+            AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
+            AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
+            AND l."userId" = ${userId}
+          )
         UNION ALL
-        -- Busca fontes de renda recorrentes sem lançamento em cada mês
+        -- RENDAS (RECEITAS)
         SELECT 
-          f.id,
-          f."valorEstimado" as valor,
-          'renda' as origem
-        FROM fontes_renda f
+          f.id, f."valorEstimado" as valor, 'receita' as origem
+        FROM receita f
         CROSS JOIN meses_do_periodo m
-        WHERE f."userId" = ${userId} AND f.status = true AND f.mensalmente = true AND f."deletedAt" IS NULL
+        WHERE f."userId" = ${userId} AND f.status = 'A' AND f.tipo = 'FIXA' AND f."deletedAt" IS NULL
+        AND m.mes_referencia >= date_trunc('month', f."createdAt")
         AND NOT EXISTS (
-          SELECT 1 FROM lancamentos l 
-          WHERE l.fonte_renda_id = f.id 
+          SELECT 1 FROM lancamento l 
+          WHERE l."receitaId" = f.id 
+          AND l.tipo = 'agendamento'
           AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
           AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
-          AND l.user_id = ${userId}
+          AND l."userId" = ${userId}
         )
       ),
-      totais_dos_lancamentos AS (
-        SELECT
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' THEN 1 ELSE 0 END), 0) as "pagoCount",
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' THEN 1 ELSE 0 END), 0) as "agendadoCount",
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) as "entradasPagas",
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND fonte_renda_id IS NOT NULL THEN valor ELSE 0 END), 0) as "entradasAgendadas",
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) as "saidasPagas",
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND despesa_id IS NOT NULL THEN valor ELSE 0 END), 0) as "saidasAgendadas"
-        FROM lancamentos
-        WHERE user_id = ${userId} AND data >= ${dataInicio}::date AND data <= ${dataFim}::date
-      ),
-      totais_das_projecoes AS (
-        SELECT
-          COUNT(*) as total_projetado,
-          COALESCE(SUM(CASE WHEN origem = 'renda' THEN valor ELSE 0 END), 0) as entradas_projetadas,
-          COALESCE(SUM(CASE WHEN origem = 'despesa' THEN valor ELSE 0 END), 0) as saidas_projetadas
-        FROM recorrencias_faltantes
+      metas_ativas AS (
+        -- Saldo Bloqueado: Dinheiro já aportado em metas que o usuário não deve "tocar"
+        SELECT 
+          COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
+        FROM lancamento l
+        INNER JOIN meta m ON l."metaId" = m.id
+        WHERE m."userId" = ${userId} 
+          AND m.status = 'A' 
+          AND m."deletedAt" IS NULL
+          AND l.tipo = 'pagamento'
       )
       SELECT
-        real."pagoCount"::float as "transacoesPagas",
-        (real."agendadoCount" + proj.total_projetado)::float as "transacoesAgendadas",
-        real."entradasPagas"::float as "entradasPagas",
-        (real."entradasAgendadas" + proj.entradas_projetadas)::float as "entradasAgendadas",
-        real."saidasPagas"::float as "saidasPagas",
-        (real."saidasAgendadas" + proj.saidas_projetadas)::float as "saidasAgendadas"
-      FROM totais_dos_lancamentos real, totais_das_projecoes proj;
+        real.*,
+        proj.*,
+        metas.saldo_bloqueado::float as "saldoBloqueado"
+      FROM (
+        SELECT
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' THEN 1 ELSE 0 END), 0)::float as "pagoCount",
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' THEN 1 ELSE 0 END), 0)::float as "agendadoCount",
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND "receitaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "entradasPagas",
+          -- entradasAgendadas: Valores de lançamentos manuais do tipo agendamento
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND "receitaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "entradasAgendadas",
+          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND "despesaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "saidasPagas",
+          -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
+          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND "despesaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "saidasAgendadas"
+        FROM lancamento l
+        LEFT JOIN despesa d ON l."despesaId" = d.id
+        LEFT JOIN receita r ON l."receitaId" = r.id
+        LEFT JOIN meta m ON l."metaId" = m.id
+        WHERE l."userId" = ${userId} 
+          AND l.data >= ${dataInicio}::date 
+          AND l.data <= ${dataFim}::date
+          AND (
+            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
+            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
+            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL) OR
+            (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."metaId" IS NULL)
+          )
+      ) real,
+      (
+        SELECT
+          COUNT(*)::float as total_projetado,
+          -- entradas_projetadas: Valores estimados das recorrências automáticas faltantes
+          COALESCE(SUM(CASE WHEN origem = 'receita' THEN valor ELSE 0 END), 0)::float as entradas_projetadas,
+          -- saidas_projetadas: Valores estimados das recorrências automáticas faltantes
+          COALESCE(SUM(CASE WHEN origem = 'despesa' THEN valor ELSE 0 END), 0)::float as saidas_projetadas
+        FROM recorrencias_faltantes
+      ) proj,
+      metas_ativas metas;
     `;
 
+    const resData = res;
+
     const totais = {
-      transacoes: Number(res.transacoesPagas) + Number(res.transacoesAgendadas),
-      entradas: Number(res.entradasPagas) + Number(res.entradasAgendadas),
-      saidas: Number(res.saidasPagas) + Number(res.saidasAgendadas),
+      transacoes: Number(resData.pagoCount) + Number(resData.agendadoCount) + Number(resData.total_projetado),
+      entradas: Number(resData.entradasPagas) + Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas),
+      saidas: Number(resData.saidasPagas) + Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas),
     };
 
-    const result: ResumoMiniCardsProps = {
-      totalTransacoes: totais.transacoes,
-      transacoesPagas: Number(res.transacoesPagas),
-      transacoesAgendadas: Number(res.transacoesAgendadas),
+    // LÓGICA DE CÁLCULO ESTABELECIDA
+    const saidasPagas = Number(resData.saidasPagas);
+    const saidasPrevistas = Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas);
+    
+    const entradasPagas = Number(resData.entradasPagas);
+    const entradasPrevistas = Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas);
 
-      totalEntradas: totais.entradas,
-      entradasPagas: Number(res.entradasPagas),
-      entradasAgendadas: Number(res.entradasAgendadas),
+    return {
+      // CONTADORES TOTAIS
+      totalTransacoes: (Number(resData.pagoCount)) + (Number(resData.agendadoCount) + Number(resData.total_projetado)),
+      transacoesPagas: Number(resData.pagoCount),
+      transacoesAgendadas: Number(resData.agendadoCount) + Number(resData.total_projetado),
 
-      totalSaidas: totais.saidas,
-      saidasPagas: Number(res.saidasPagas),
-      saidasAgendadas: Number(res.saidasAgendadas),
+      // ENTRADAS (RECEITAS)
+      totalEntradas: entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas,
+      entradasPagas: entradasPagas,
+      entradasAgendadas: entradasPrevistas, 
+      diferencaEntradas: entradasPrevistas - entradasPagas, // Positivo: Pendente, Negativo: Excedente
 
-      totalSaldo: totais.entradas - totais.saidas,
-      saldoAtual: Number(res.entradasPagas) - Number(res.saidasPagas),
-      saldoProjetado:
-        Number(res.entradasAgendadas) - Number(res.saidasAgendadas),
+      // SAÍDAS (DESPESAS)
+      totalSaidas: saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas,
+      saidasPagas: saidasPagas,
+      saidasAgendadas: saidasPrevistas,
+      diferencaSaidas: saidasPrevistas - saidasPagas, // Positivo: Pendente, Negativo: Excedente
+
+      // SALDOS
+      totalSaldo: (entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas) - (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas),
+      saldoAtual: entradasPagas - saidasPagas,
+      saldoProjetado: entradasPrevistas - saidasPrevistas,
+      saldoBloqueado: Number(resData.saldoBloqueado),
+      saldoLivre: (entradasPagas - saidasPagas) - Number(resData.saldoBloqueado)
     };
-
-    return result;
   },
 
-
-  /**
-   * Busca lançamentos com suporte a filtros dinâmicos
-   */
   async listarTodos(filtros: ResumoTodosFiltros): Promise<PrismaResumo[]> {
     const { dataInicio, dataFim, ...restoDosFiltros } = filtros;
-
     return await prisma.lancamento.findMany({
       where: {
-        ...restoDosFiltros, // Espalha IDs e outros campos já tipados pelo Zod
-        data:
-          dataInicio || dataFim
-            ? {
-                ...(dataInicio && { gte: dataInicio }),
-                ...(dataFim && { lte: dataFim }),
-              }
-            : undefined,
+        ...restoDosFiltros,
+        data: dataInicio || dataFim ? {
+          ...(dataInicio && { gte: dataInicio }),
+          ...(dataFim && { lte: dataFim }),
+        } : undefined,
       },
       orderBy: { data: "desc" },
       include: {
-        categoria: {
-          select: {
-            id: true,
-            nome: true,
-            icone: true,
-            cor: true,
-          },
-        },
-        despesa: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaVencimento: true,
-            icone: true,
-            cor: true,
-          },
-        },
-        fonteRenda: {
-          select: {
-            id: true,
-            nome: true,
-            valorEstimado: true,
-            diaRecebimento: true,
-            icone: true,
-            cor: true,
-          },
-        },
+        categoria: { select: { id: true, nome: true, icone: true, cor: true } },
+        despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true, icone: true, cor: true } },
+        receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true, icone: true, cor: true } },
       },
     });
   },
-
 };
