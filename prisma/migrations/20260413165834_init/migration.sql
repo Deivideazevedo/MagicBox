@@ -124,6 +124,9 @@ CREATE INDEX "categorias_userId_idx" ON "categorias"("userId");
 CREATE INDEX "categorias_nome_idx" ON "categorias"("nome");
 
 -- CreateIndex
+CREATE INDEX "despesa_userId_status_deletedAt_tipo_idx" ON "despesa"("userId", "status", "deletedAt", "tipo");
+
+-- CreateIndex
 CREATE INDEX "despesa_userId_idx" ON "despesa"("userId");
 
 -- CreateIndex
@@ -148,10 +151,16 @@ CREATE INDEX "lancamento_categoriaId_idx" ON "lancamento"("categoriaId");
 CREATE INDEX "lancamento_metaId_idx" ON "lancamento"("metaId");
 
 -- CreateIndex
+CREATE INDEX "meta_userId_status_deletedAt_idx" ON "meta"("userId", "status", "deletedAt");
+
+-- CreateIndex
 CREATE INDEX "meta_userId_idx" ON "meta"("userId");
 
 -- CreateIndex
 CREATE INDEX "meta_status_idx" ON "meta"("status");
+
+-- CreateIndex
+CREATE INDEX "receita_userId_status_deletedAt_tipo_idx" ON "receita"("userId", "status", "deletedAt", "tipo");
 
 -- CreateIndex
 CREATE INDEX "receita_userId_idx" ON "receita"("userId");
