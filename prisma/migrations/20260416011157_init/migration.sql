@@ -48,7 +48,6 @@ CREATE TABLE "despesa" (
 CREATE TABLE "lancamento" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "categoriaId" INTEGER NOT NULL,
     "despesaId" INTEGER,
     "receitaId" INTEGER,
     "metaId" INTEGER,
@@ -67,6 +66,7 @@ CREATE TABLE "lancamento" (
 CREATE TABLE "meta" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
+    "categoriaId" INTEGER,
     "nome" TEXT NOT NULL,
     "valorMeta" DECIMAL(10,2) NOT NULL,
     "dataAlvo" TIMESTAMP(3) NOT NULL,
@@ -145,9 +145,6 @@ CREATE INDEX "lancamento_despesaId_idx" ON "lancamento"("despesaId");
 CREATE INDEX "lancamento_receitaId_idx" ON "lancamento"("receitaId");
 
 -- CreateIndex
-CREATE INDEX "lancamento_categoriaId_idx" ON "lancamento"("categoriaId");
-
--- CreateIndex
 CREATE INDEX "lancamento_metaId_idx" ON "lancamento"("metaId");
 
 -- CreateIndex
@@ -158,6 +155,9 @@ CREATE INDEX "meta_userId_idx" ON "meta"("userId");
 
 -- CreateIndex
 CREATE INDEX "meta_status_idx" ON "meta"("status");
+
+-- CreateIndex
+CREATE INDEX "meta_categoriaId_idx" ON "meta"("categoriaId");
 
 -- CreateIndex
 CREATE INDEX "receita_userId_status_deletedAt_tipo_idx" ON "receita"("userId", "status", "deletedAt", "tipo");
@@ -193,9 +193,6 @@ ALTER TABLE "despesa" ADD CONSTRAINT "despesa_categoriaId_fkey" FOREIGN KEY ("ca
 ALTER TABLE "despesa" ADD CONSTRAINT "despesa_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_despesaId_fkey" FOREIGN KEY ("despesaId") REFERENCES "despesa"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -209,6 +206,9 @@ ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_userId_fkey" FOREIGN KEY ("u
 
 -- AddForeignKey
 ALTER TABLE "meta" ADD CONSTRAINT "meta_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "meta" ADD CONSTRAINT "meta_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "receita" ADD CONSTRAINT "receita_categoriaId_fkey" FOREIGN KEY ("categoriaId") REFERENCES "categorias"("id") ON DELETE CASCADE ON UPDATE CASCADE;

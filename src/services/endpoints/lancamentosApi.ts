@@ -3,6 +3,7 @@ import { api } from "../api";
 import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
 import { FindAllFilters } from "@/dtos";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
+import { LANCAMENTO_INVALIDATION_TAGS } from "@/constants/rtkTags";
 
 export interface BulkDeletePayload {
   ids: number[];
@@ -24,7 +25,7 @@ export const lancamentosApi = api.injectEndpoints({
         method: "POST",
         body: newLancamento,
       }),
-      invalidatesTags: ["Lancamentos", "Resumo"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
 
     updateLancamento: builder.mutation<
@@ -36,7 +37,7 @@ export const lancamentosApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Lancamentos", "Resumo"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
 
     deleteLancamento: builder.mutation<{ success: boolean }, string>({
@@ -44,7 +45,7 @@ export const lancamentosApi = api.injectEndpoints({
         url: `/lancamentos/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Lancamentos", "Resumo"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
 
     bulkDeleteLancamentos: builder.mutation<{ deletedCount: number }, BulkDeletePayload>({
@@ -53,7 +54,7 @@ export const lancamentosApi = api.injectEndpoints({
         method: "DELETE",
         body: payload,
       }),
-      invalidatesTags: ["Lancamentos", "Resumo"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
   }),
 });

@@ -22,9 +22,6 @@ export const dashboardRepository = {
       orderBy: { data: "desc" },
       take: 10,
       include: {
-        categoria: {
-          select: { nome: true, icone: true, cor: true },
-        },
         despesa: {
           select: { nome: true, icone: true, cor: true, categoriaId: true },
         },
@@ -34,17 +31,15 @@ export const dashboardRepository = {
       },
     });
 
-    const transacoesRecentes: TransacaoRecente[] = recentLancamentos.map((l: any) => {
-      const isReceita = l.receitaId != null || Number(l.valor) > 0;
-      const icone = l.despesa?.icone || l.receita?.icone || l.categoria?.icone || null;
-      const cor = l.despesa?.cor || l.receita?.cor || l.categoria?.cor || null;
+    const transacoesRecentes: TransacaoRecente[] = recentLancamentos.map((l) => {
+      const icone = l.despesa?.icone || l.receita?.icone || null;
+      const cor = l.despesa?.cor || l.receita?.cor || null;
 
       return {
         id: l.id,
         descricao: l.despesa?.nome || l.receita?.nome || l.observacao || l.observacaoAutomatica || "Transação",
         valor: Number(l.valor),
-        tipo: isReceita ? "receita" : "despesa",
-        categoria: l.categoria?.nome || "Sem categoria",
+        tipo: l.receitaId != null ? "receita" : "despesa",
         data: l.data.toISOString(),
         icone,
         cor,
@@ -59,8 +54,8 @@ export const dashboardRepository = {
     const upcomingBills: UpcomingBillItem[] = projecoes
       .filter((p) => p.origem === "despesa" && (p.status === "pendente" || p.atrasado))
       .map((p) => {
-        // Encontra a categoria da despesa na listagem pra ajudar na UI (extra info)
-        const lancDespesaMatch = recentLancamentos.find(r => r.despesaId === p.origemId)?.despesa;
+        // categoriaId vem de despesa.categoriaId (campo da tabela despesa, não do lancamento)
+        const lancDespesa = recentLancamentos.find((r) => r.despesaId === p.origemId)?.despesa;
         return {
           id: p.id,
           despesaId: p.origemId,
@@ -73,7 +68,7 @@ export const dashboardRepository = {
           atrasado: p.atrasado,
           icone: p.icone,
           cor: p.cor,
-          categoriaId: lancDespesaMatch?.categoriaId,
+          categoriaId: lancDespesa?.categoriaId,
         };
       })
       .sort((a, b) => (a.diaVencido || 0) - (b.diaVencido || 0));

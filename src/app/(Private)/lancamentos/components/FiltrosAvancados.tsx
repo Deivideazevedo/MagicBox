@@ -56,7 +56,6 @@ type FiltroKey =
   | "periodo"
   | "origem"
   | "tipo"
-  | "categoriaId"
   | "item"
   | "observacao";
 
@@ -69,14 +68,12 @@ const FILTROS_DISPONIVEIS: FiltroDefinicao[] = [
   { key: "periodo", label: "Período" },
   { key: "origem", label: "Origem" },
   { key: "tipo", label: "Tipo" },
-  { key: "categoriaId", label: "Categoria" },
   { key: "item", label: "Nome" },
   { key: "observacao", label: "Observação" },
 ];
 
 interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
-  categorias: Categoria[];
   despesas: Despesa[];
   receitas: Receita[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
@@ -84,7 +81,6 @@ interface FiltrosAvancadosProps {
 
 export default function FiltrosAvancados({
   filtros,
-  categorias,
   despesas,
   receitas,
   handleSearch,
@@ -95,7 +91,6 @@ export default function FiltrosAvancados({
     origem: "",
     tipo: "",
     observacao: "",
-    categoriaId: null,
     item: null,
   };
 
@@ -117,7 +112,6 @@ export default function FiltrosAvancados({
   const [tipoPeriodo, setTipoPeriodo] = useState<any>("mes");
 
 
-  const categoriaIdWatch = watch("categoriaId");
   const origemWatch = watch("origem");
 
   // Filtros disponíveis para adicionar (todos agora aparecem)
@@ -135,8 +129,7 @@ export default function FiltrosAvancados({
     const novosAtivos = filtrosAtivos.filter((k) => k !== key);
     setFiltrosAtivos(novosAtivos);
 
-    if (key === "categoriaId") setValue("categoriaId", null);
-    else if (key === "item") setValue("item", null);
+    if (key === "item") setValue("item", null);
     else if (key === "origem") setValue("origem", "");
     else if (key === "tipo") setValue("tipo", "");
     else if (key === "observacao") setValue("observacao", "");
@@ -171,15 +164,9 @@ export default function FiltrosAvancados({
     [receitas],
   );
 
-  const despesasFiltradas =
-    categoriaIdWatch && typeof categoriaIdWatch === "number"
-      ? despesasComOrigem.filter((d) => d.categoria?.id === categoriaIdWatch)
-      : despesasComOrigem;
+  const despesasFiltradas = despesasComOrigem;
 
-  const receitasFiltradas =
-    categoriaIdWatch && typeof categoriaIdWatch === "number"
-      ? receitasComOrigem.filter((f) => f.categoria?.id === categoriaIdWatch)
-      : receitasComOrigem;
+  const receitasFiltradas = receitasComOrigem;
 
   const opcoesNome =
     origemWatch === "despesa"
@@ -204,7 +191,6 @@ export default function FiltrosAvancados({
       origem,
       observacao: rest.observacao || undefined,
       tipo: tipo || undefined,
-      categoriaId: rawFilters.categoriaId || undefined,
     };
     return result;
   }, []);
@@ -228,7 +214,6 @@ export default function FiltrosAvancados({
       novosFiltros.dataFim !== filtros.dataFim ||
       (novosFiltros.origem || "") !== (filtros.origem || "") ||
       (novosFiltros.tipo || undefined) !== (filtros.tipo || undefined) ||
-      (novosFiltros.categoriaId || undefined) !== (filtros.categoriaId || undefined) ||
       (novosFiltros.despesaId || undefined) !== (filtros.despesaId || undefined) ||
       (novosFiltros.receitaId || undefined) !== (filtros.receitaId || undefined) ||
       (novosFiltros.observacao || undefined) !== (filtros.observacao || undefined);
@@ -247,7 +232,6 @@ export default function FiltrosAvancados({
       ...getDefaultDates(),
       origem: "",
       tipo: "",
-      categoriaId: null,
       observacao: "",
     });
     setExpandido(false)
@@ -314,21 +298,6 @@ export default function FiltrosAvancados({
             <MenuItem value="pagamento">Pagamento</MenuItem>
             <MenuItem value="agendamento">Agendamento</MenuItem>
           </HookSelect>
-        );
-      case "categoriaId":
-        return (
-          <HookSelect
-            name="categoriaId"
-            control={control}
-            label="Categoria"
-            placeholder="Todas"
-            options={categorias}
-            getValue={(cat) => cat.id}
-            getLabel={(cat) => cat.nome}
-            size="small"
-            displayEmpty
-            onChange={() => setValue("item", null)}
-          />
         );
       case "item":
         return (

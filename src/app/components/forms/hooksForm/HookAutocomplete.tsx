@@ -369,20 +369,41 @@ export function HookAutocomplete<
         renderTags || (props.multiple ? defaultRenderTags : undefined)
       }
       disableCloseOnSelect={props.disableCloseOnSelect ?? props.multiple}
-      renderInput={(params) => (
-        <CustomTextField
-          {...params}
-          inputRef={ref}
-          label={label}
-          placeholder={placeholder}
-          error={!!error}
-          helperText={error?.message}
-          InputLabelProps={{
-            shrink: shrinkLabel,
-          }}
-          {...textFieldProps}
-        />
-      )}
+      openOnFocus
+      slotProps={{
+        popper: {
+          sx: {
+            zIndex: (theme) => theme.zIndex.modal + 100,
+          },
+        },
+      }}
+      renderInput={(params) => {
+        const { InputProps, ...restTextFieldProps } = textFieldProps || {};
+        return (
+          <CustomTextField
+            {...params}
+            inputRef={ref}
+            label={label}
+            placeholder={placeholder}
+            error={!!error}
+            helperText={error?.message}
+            InputLabelProps={{
+              shrink: shrinkLabel,
+            }}
+            {...restTextFieldProps}
+            InputProps={{
+              ...params.InputProps,
+              ...InputProps,
+              endAdornment: (
+                <>
+                  {params.InputProps.endAdornment}
+                  {InputProps?.endAdornment}
+                </>
+              ),
+            }}
+          />
+        );
+      }}
       {...props}
     />
   );

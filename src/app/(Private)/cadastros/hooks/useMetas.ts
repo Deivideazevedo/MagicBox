@@ -22,7 +22,7 @@ const metaSchema = z.object({
   cor: z.string().optional().nullable(),
 });
 
-type MetaFormData = z.infer<typeof metaSchema>;
+export type MetaFormData = z.infer<typeof metaSchema>;
 
 export function useMetas() {
   const { data: session } = useSession();
@@ -40,8 +40,8 @@ export function useMetas() {
     control,
     watch,
     setFocus,
-  } = useForm<MetaPayload>({
-    resolver: zodResolver(metaSchema) as any,
+  } = useForm<MetaFormData>({
+    resolver: zodResolver(metaSchema),
     defaultValues: {
       nome: "",
       valorMeta: 0,
@@ -49,9 +49,9 @@ export function useMetas() {
   });
 
   const onSubmit = useCallback(
-    async (data: MetaPayload) => {
+    async (data: z.infer<typeof metaSchema>) => {
       try {
-        const payload = fnCleanObject({ params: data });
+        const payload = fnCleanObject({ params: data }) as unknown as MetaPayload;
 
         if (data.id) {
           await updateMeta({ id: Number(data.id), data: payload }).unwrap();

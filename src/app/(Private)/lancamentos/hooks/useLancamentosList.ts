@@ -20,8 +20,6 @@ export function useLancamentosList({
   const [isDeleting, setIsDeleting] = useState(false);
   const [filtros, setFiltros] = useState<FindAllFilters>(() => getDefaultFilters());
 
-  console.log("DEBUG: filtros state:", filtros);
-
   // Query declarativa e reativa (dispara automaticamente ao mudar filtros)
   const { 
     data: responseData, 
@@ -45,7 +43,6 @@ export function useLancamentosList({
   // Estados de modais agrupados
   const [modals, setModals] = useState({
     visualizar: null as LancamentoResposta | null,
-    editar: null as LancamentoResposta | null,
     excluir: null as LancamentoResposta | null,
   });
 
@@ -90,11 +87,6 @@ export function useLancamentosList({
         abrir: (lancamento: LancamentoResposta) =>
           setModals((prev) => ({ ...prev, visualizar: lancamento })),
         fechar: () => setModals((prev) => ({ ...prev, visualizar: null })),
-      },
-      editar: {
-        abrir: (lancamento: LancamentoResposta) =>
-          setModals((prev) => ({ ...prev, editar: lancamento })),
-        fechar: () => setModals((prev) => ({ ...prev, editar: null })),
       },
       excluir: {
         abrir: (lancamento: LancamentoResposta) =>

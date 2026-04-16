@@ -8,4 +8,5 @@ export interface IActionConfig<T> {
   title: string;
   color?: 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
   callback: (row: T) => void;
+  show?: (row: T) => boolean;
 }

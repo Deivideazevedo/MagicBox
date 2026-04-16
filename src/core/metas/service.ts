@@ -28,7 +28,6 @@ export const metaService = {
         data: new Date(),
         observacao: `Aporte inicial - ${novaMeta.nome}`,
         observacaoAutomatica: `Aporte inicial automático para a meta: ${novaMeta.nome}`,
-        categoriaId: dados.categoriaId ?? 1, // Fallback fixo para 'Outros' se não informado
         metaId: novaMeta.id
       });
     }

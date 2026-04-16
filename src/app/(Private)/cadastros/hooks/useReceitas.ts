@@ -24,20 +24,13 @@ const receitaSchemaZod = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
-  valorEstimado: z.number().nullable().optional(),
+  valorEstimado: z.number().min(0.01, "Valor estimado é obrigatório"),
   diaRecebimento: z.number().min(1, "O dia deve estar entre 1 e 31").max(31, "O dia deve estar entre 1 e 31").nullable().optional(),
   status: z.enum(["A", "I"]),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   tipo: z.enum(["FIXA", "VARIAVEL"]),
 }).superRefine(({ tipo, valorEstimado, diaRecebimento }, ctx) => {
   if (tipo === "FIXA") {
-    if (!valorEstimado || valorEstimado <= 0) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Valor estimado é obrigatório",
-        path: ["valorEstimado"],
-      });
-    }
     if (!diaRecebimento) {
       ctx.addIssue({
         code: "custom",
@@ -84,7 +77,7 @@ export const useReceitas = ({
       icone: "IconWallet",
       cor: "",
       categoriaId: 0,
-      valorEstimado: null,
+      valorEstimado: 0,
       diaRecebimento: null,
       status: "A" as const,
       tipo: "VARIAVEL" as const,
@@ -157,9 +150,7 @@ export const useReceitas = ({
         userId: Number(session?.user?.id ?? receita.userId),
         categoriaId: receita.categoriaId || 0,
         nome: receita.nome,
-        valorEstimado: receita.valorEstimado
-          ? Number(receita.valorEstimado)
-          : null,
+        valorEstimado: Number(receita.valorEstimado || 0),
         diaRecebimento: receita.diaRecebimento
           ? Number(receita.diaRecebimento)
           : null,

@@ -15,12 +15,13 @@ import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDial
 
 // Hooks
 import { useResumo } from "./hooks/useResumo";
-import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useMemo } from "react";
+import { useDispatch } from "@/store/hooks";
+import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { IconChecks } from "@tabler/icons-react";
 
 export default function ResumoPage() {
+  const dispatch = useDispatch();
   const {
     resumo,
     isLoading,
@@ -71,6 +72,13 @@ export default function ResumoPage() {
             title: "Visualizar",
             callback: modalHandlers.visualizar.abrir,
             color: "info",
+          },
+          {
+            title: "Pagar",
+            icon: <IconChecks size={18} />,
+            callback: (row) => dispatch(abrirDrawer({ modo: "pagar", dados: row })),
+            color: "success",
+            show: (row) => row.status !== "Pago",
           },
         ]}
         pagination={{

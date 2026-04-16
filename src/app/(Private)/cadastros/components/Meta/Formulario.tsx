@@ -16,14 +16,21 @@ import {
   Stack,
   Typography,
   useTheme,
+  IconButton,
 } from "@mui/material";
-import { IconCalendar, IconTarget, IconPlus, IconX } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconTarget,
+  IconPlus,
+  IconX,
+  IconArrowLeft,
+  IconDeviceFloppy,
+} from "@tabler/icons-react";
 import { RefObject } from "react";
 import { Control, useWatch } from "react-hook-form";
 
 interface FormProps {
   isEditing: boolean;
-  isCollapsed: boolean;
   row: Meta | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
@@ -55,15 +62,48 @@ export const Formulario = (formProps: FormProps) => {
       ref={formRef}
       elevation={0}
       sx={{
-        borderRadius: 3,
+        borderRadius: 4,
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-        backgroundColor: (theme) => alpha(theme.palette.primary.light, 0.05),
-        mb: 3
+        borderColor: "divider",
+        backgroundColor: "background.paper",
+        boxShadow: theme.shadows[8],
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <CardContent sx={{ px: 2, py: 2 }}>
-        <Box display="flex" alignItems="center" gap={2} mb={3}>
+      {/* Header do Formulário com botão Voltar */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.primary.main, 0.02),
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton 
+            onClick={handleCancelEdit}
+            sx={{ 
+              color: "text.secondary",
+              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main" }
+            }}
+          >
+            <IconArrowLeft size={20} />
+          </IconButton>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {isEditing ? "Editar Objetivo" : "Novo Objetivo"}
+          </Typography>
+        </Stack>
+        <IconButton size="small" onClick={handleCancelEdit}>
+          <IconX size={18} />
+        </IconButton>
+      </Box>
+
+      <CardContent sx={{ p: 3 }}>
+        <Box display="flex" alignItems="center" gap={2} mb={4}>
           <IconColorMenuPicker
             control={control}
             iconName="icone"
@@ -136,10 +176,15 @@ export const Formulario = (formProps: FormProps) => {
                   variant="contained"
                   loading={isCreating || isUpdating}
                   color="primary"
-                  startIcon={<IconPlus size={16} />}
-                  sx={{ borderRadius: 2 }}
+                  startIcon={<IconDeviceFloppy size={18} />}
+                  sx={{ 
+                    borderRadius: 3, 
+                    py: 1.5,
+                    fontWeight: 700,
+                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`
+                  }}
                 >
-                  {isEditing ? "Atualizar Meta" : "Criar Meta"}
+                  {isEditing ? "Salvar Alterações" : "Confirmar Meta"}
                 </LoadingButton>
 
                 {isEditing && (
@@ -147,8 +192,7 @@ export const Formulario = (formProps: FormProps) => {
                     variant="outlined"
                     fullWidth
                     onClick={handleCancelEdit}
-                    startIcon={<IconX size={16} />}
-                    sx={{ borderRadius: 2 }}
+                    sx={{ borderRadius: 3, py: 1.5, fontWeight: 600 }}
                   >
                     Cancelar
                   </Button>

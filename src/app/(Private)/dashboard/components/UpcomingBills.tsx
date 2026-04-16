@@ -29,11 +29,12 @@ import { startOfMonth, endOfMonth, format } from "date-fns";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
+import { useDispatch } from "@/store/hooks";
+import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
 import { SwalToast, Swalert } from "@/utils/swalert";
-// Import for context to open drawer if available, otherwise just log or stub
-// import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 
 const UpcomingBills = () => {
+  const dispatch = useDispatch();
   const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
   const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
@@ -120,7 +121,6 @@ const UpcomingBills = () => {
           tipo: "pagamento",
           valor: bill.valorPrevisto,
           data: new Date().toISOString(), // Today
-          categoriaId: bill.categoriaId || 0, // Fallback, the backend should ideally handle it or fallback inside resolver
           despesaId: bill.despesaId,
           observacao: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`
         }).unwrap();
@@ -139,14 +139,13 @@ const UpcomingBills = () => {
   };
 
   const openDrawer = (bill: any) => {
-    // This expects a Drawer State to be toggled.
-    // Replace with correct dispatch or context call.
-    console.log("Open drawer with: ", bill);
-    SwalToast.fire({
-      icon: "info",
-      title: "Drawer de edição abriria aqui",
-      text: `Valores preenchidos: ${bill.nome}, ${bill.valorPrevisto}`,
-    });
+    dispatch(abrirDrawer({ 
+      modo: "pagar", 
+      dados: {
+        ...bill,
+        origem: "despesa" // No dashboard de UpcomingBills são sempre despesas
+      } 
+    }));
   };
 
   const totalAmount = bills.reduce((sum, bill) => sum + bill.valorPrevisto, 0);

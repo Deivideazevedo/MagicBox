@@ -11,7 +11,7 @@ model Categoria {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   despesas    Despesa[]
   receitas    Receita[]
-  lancamentos Lancamento[]
+  metas       Meta[]
 
   @@index([userId])
   @@index([nome])

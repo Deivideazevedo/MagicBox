@@ -1,7 +1,6 @@
 model Lancamento {
   id                    Int             @id @default(autoincrement())
   userId                Int
-  categoriaId           Int
   despesaId             Int?
   receitaId             Int?
   metaId                Int?
@@ -13,7 +12,6 @@ model Lancamento {
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
-  categoria             Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
   despesa               Despesa?        @relation(fields: [despesaId], references: [id], onDelete: Cascade)
   receita               Receita?        @relation(fields: [receitaId], references: [id], onDelete: Cascade)
   meta                  Meta?           @relation(fields: [metaId], references: [id], onDelete: Cascade)
@@ -23,10 +21,6 @@ model Lancamento {
   @@index([userId, data])
   @@index([despesaId])
   @@index([receitaId])
-  @@index([categoriaId])
   @@index([metaId])
   @@map("lancamento")
 }
-
-
-

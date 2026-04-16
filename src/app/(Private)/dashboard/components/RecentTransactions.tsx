@@ -83,7 +83,7 @@ const RecentTransactions = () => {
               const title = transaction.descricao || "Transação";
               const iconName = transaction.icone;
               const color = transaction.cor || (isReceita ? "#13DEB9" : "#FA896B");
-              const categoryName = transaction.categoria || "Sem categoria";
+              const categoryName = isReceita ? "Receita" : "Despesa";
 
               return (
                 <ListItem

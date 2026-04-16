@@ -33,7 +33,6 @@ import { ptBR as ptBRDate } from "date-fns/locale";
 
 // Types
 import { Lancamento } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
 
@@ -127,40 +126,6 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     },
     filterValue: (row) =>
       row.tipo === "pagamento" ? "Pagamento" : "Agendamento",
-  },
-  {
-    key: "categoria",
-    label: "Categoria",
-    align: "left",
-    sortValue: (row) => row.categoria?.nome || "-",
-    render: (row) => (
-      <Stack direction="row" spacing={1.2} alignItems="center">
-        <Avatar
-          sx={{
-            width: 28,
-            height: 28,
-            bgcolor: row.categoria?.cor
-              ? alpha(row.categoria.cor, 0.15)
-              : "primary.light",
-            color: row.categoria?.cor || "primary.main",
-            "& svg": { width: 16, height: 16 },
-          }}
-        >
-          {row.categoria?.icone &&
-            AVAILABLE_ICONS[
-            row.categoria.icone as keyof typeof AVAILABLE_ICONS
-            ] ? (
-            AVAILABLE_ICONS[row.categoria.icone as keyof typeof AVAILABLE_ICONS]
-          ) : (
-            <IconCategory />
-          )}
-        </Avatar>
-        <Typography variant="body2" fontWeight={500} noWrap>
-          {row.categoria?.nome || "-"}
-        </Typography>
-      </Stack>
-    ),
-    filterValue: (row) => row.categoria?.nome || "-",
   },
   {
     key: "nome",

@@ -104,8 +104,8 @@ export const resumoRepository = {
               CASE WHEN l."receitaId" IS NOT NULL THEN 'receita' ELSE 'despesa' END as "origem",
               EXTRACT(MONTH FROM l.data) as "mes",
               EXTRACT(YEAR FROM l.data) as "ano",
-              SUM(CASE WHEN l.tipo = 'agendamento' THEN valor ELSE 0 END) as "valorPrevisto",
-              SUM(CASE WHEN l.tipo = 'pagamento' THEN valor ELSE 0 END) as "valorPago",
+              SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as "valorPrevisto",
+              SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as "valorPago",
               JSON_AGG(
                 JSON_BUILD_OBJECT(
                   'id', l.id, 
@@ -278,14 +278,14 @@ export const resumoRepository = {
         metas.saldo_bloqueado::float as "saldoBloqueado"
       FROM (
         SELECT
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' THEN 1 ELSE 0 END), 0)::float as "pagoCount",
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' THEN 1 ELSE 0 END), 0)::float as "agendadoCount",
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND "receitaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "entradasPagas",
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN 1 ELSE 0 END), 0)::float as "pagoCount",
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN 1 ELSE 0 END), 0)::float as "agendadoCount",
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasPagas",
           -- entradasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND "receitaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "entradasAgendadas",
-          COALESCE(SUM(CASE WHEN tipo = 'pagamento' AND "despesaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "saidasPagas",
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasAgendadas",
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasPagas",
           -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          COALESCE(SUM(CASE WHEN tipo = 'agendamento' AND "despesaId" IS NOT NULL THEN valor ELSE 0 END), 0)::float as "saidasAgendadas"
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasAgendadas"
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
@@ -366,7 +366,6 @@ export const resumoRepository = {
       },
       orderBy: { data: "desc" },
       include: {
-        categoria: { select: { id: true, nome: true, icone: true, cor: true } },
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true, icone: true, cor: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true, icone: true, cor: true } },
       },

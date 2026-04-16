@@ -16,7 +16,6 @@ export interface TransacaoRecente {
   descricao: string;
   valor: number;
   tipo: "receita" | "despesa";
-  categoria: string;
   data: string;
   icone: string | null;
   cor: string | null;

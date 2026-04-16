@@ -23,7 +23,6 @@ export const lancamentoRepository = {
       tipo,
       observacao,
       userId,
-      categoriaId,
       despesaId,
       receitaId,
       origem,
@@ -31,12 +30,8 @@ export const lancamentoRepository = {
 
     let whereClause: Prisma.LancamentoWhereInput = {};
 
-    // Adicionar filtros válidos manualmente
     if (userId) {
       whereClause.userId = Number(userId);
-    }
-    if (categoriaId) {
-      whereClause.categoriaId = Number(categoriaId);
     }
     if (despesaId) {
       whereClause.despesaId = Number(despesaId);
@@ -68,7 +63,7 @@ export const lancamentoRepository = {
       whereClause.tipo = tipo as TipoLancamento;
     }
 
-    // Filtro por busca (descrição)
+    // Filtro por observação
     if (observacao) {
       whereClause.observacao = {
         contains: observacao,
@@ -84,14 +79,6 @@ export const lancamentoRepository = {
         skip: page * limit,
         orderBy: { data: "desc" },
         include: {
-          categoria: {
-            select: {
-              id: true,
-              nome: true,
-              icone: true,
-              cor: true,
-            },
-          },
           despesa: {
             select: {
               id: true,
@@ -117,7 +104,7 @@ export const lancamentoRepository = {
     ]);
 
     return {
-      data: data as any,
+      data: data as PrismaLancamento[],
       meta: {
         total,
         page,
@@ -134,7 +121,6 @@ export const lancamentoRepository = {
     return await prisma.lancamento.findUnique({
       where: { id: numericId },
       include: {
-        categoria: { select: { id: true, nome: true } },
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
       },
@@ -149,23 +135,21 @@ export const lancamentoRepository = {
       where: { userId: numericId },
       orderBy: { data: "desc" },
       include: {
-        categoria: { select: { id: true, nome: true } },
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
       },
     });
   },
 
-  async criar(data: any) {
+  async criar(data: LancamentoPayload) {
     return await prisma.lancamento.create({
       data: {
         userId: Number(data.userId),
-        tipo: data.tipo,
+        tipo: data.tipo as TipoLancamento,
         valor: Number(data.valor),
-        data: new Date(data.data),
-        observacao: data.observacao,
-        observacaoAutomatica: data.observacaoAutomatica,
-        categoriaId: Number(data.categoriaId),
+        data: new Date(data.data as string),
+        observacao: data.observacao ?? null,
+        observacaoAutomatica: data.observacaoAutomatica ?? null,
         despesaId: data.despesaId ? Number(data.despesaId) : null,
         receitaId: data.receitaId ? Number(data.receitaId) : null,
         metaId: data.metaId ? Number(data.metaId) : null,
@@ -207,7 +191,7 @@ export const lancamentoRepository = {
       data: {
         tipo: data.tipo ? (data.tipo as TipoLancamento) : undefined,
         valor: data.valor ? Number(data.valor) : undefined,
-        data: data.data ? new Date(data.data) : undefined,
+        data: data.data ? new Date(data.data as string) : undefined,
         observacao: data.observacao,
         despesaId: data.despesaId !== undefined ? (data.despesaId ? Number(data.despesaId) : null) : undefined,
         receitaId: data.receitaId !== undefined ? (data.receitaId ? Number(data.receitaId) : null) : undefined,

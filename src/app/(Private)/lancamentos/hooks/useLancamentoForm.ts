@@ -1,4 +1,5 @@
-import { Categoria } from "@/core/categorias/types";
+"use client";
+
 import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
 import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
@@ -6,7 +7,6 @@ import {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
-import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { SwalToast } from "@/utils/swalert";
@@ -21,11 +21,11 @@ type TipoLancamento = "pagamento" | "agendamento";
 
 const lancamentoSchema = z.object({
   id: z.number().optional(),
-  categoriaId: z.number().min(1, "Categoria é obrigatória"),
+  // itemId armazena o ID da despesa ou receita selecionada
   itemId: z.number().min(1, "Selecione uma despesa ou receita"),
   tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.number().min(0.01, "Valor é obrigatório"),
-  data: z.string().min(1, "Data é obrigatória"),
+  valor: z.number().min(0.01, "Valor obrigatório"),
+  data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
   parcelas: z.number().nullable().optional(),
   parcelar: z.boolean(),
@@ -34,39 +34,20 @@ const lancamentoSchema = z.object({
 export type LancamentoFormData = z.infer<typeof lancamentoSchema>;
 
 interface UseLancamentoFormProps {
-  categorias?: Categoria[];
-  despesas?: Despesa[];
-  receitas?: Receita[];
   lancamentoParaEditar?: LancamentoResposta | null;
   onSuccess?: () => void;
 }
 
 export function useLancamentoForm({
-  categorias: categoriasProps,
-  despesas: despesasProps,
-  receitas: receitasProps,
   lancamentoParaEditar,
   onSuccess,
-}: UseLancamentoFormProps) {
+}: UseLancamentoFormProps = {}) {
   const { data: session } = useSession();
   const [origem, setOrigem] = useState<TipoLancamentoOrigem>("despesa");
 
-  const { data: categoriasApi = [] } = useGetCategoriasQuery();
-  const { data: despesasApi = [] } = useGetDespesasQuery();
-  const { data: receitasApi = [] } = useGetReceitasQuery();
-
-  const categoriasList = useMemo(
-    () => categoriasProps ?? categoriasApi,
-    [categoriasProps, categoriasApi],
-  );
-  const despesasList = useMemo(
-    () => despesasProps ?? despesasApi,
-    [despesasProps, despesasApi],
-  );
-  const receitasList = useMemo(
-    () => receitasProps ?? receitasApi,
-    [receitasProps, receitasApi],
-  );
+  // Queries internas — agora só disparam quando houver sessão
+  const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
+  const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
 
   const [createLancamento, { isLoading: isCreating }] =
     useCreateLancamentoMutation();
@@ -76,7 +57,6 @@ export function useLancamentoForm({
   const defaultValues: LancamentoFormData = useMemo(
     () => ({
       id: undefined,
-      categoriaId: 0,
       itemId: 0,
       tipo: "pagamento",
       valor: 0,
@@ -100,12 +80,12 @@ export function useLancamentoForm({
     defaultValues,
   });
 
-  const categoriaId = watch("categoriaId");
   const tipo = watch("tipo");
   const parcelar = watch("parcelar");
   const parcelas = watch("parcelas");
   const valor = watch("valor");
   const id = watch("id");
+  const itemId = watch("itemId");
 
   // Popular form quando houver lançamento para editar
   useEffect(() => {
@@ -114,20 +94,15 @@ export function useLancamentoForm({
         lancamentoParaEditar?.despesaId ?? lancamentoParaEditar.despesa_id;
       const receitaId =
         lancamentoParaEditar?.receitaId ?? lancamentoParaEditar.receita_id;
-      const categoriaId =
-        lancamentoParaEditar?.categoriaId ?? lancamentoParaEditar.categoria_id;
 
       const novaOrigem = despesaId ? "despesa" : "receita";
       setOrigem(novaOrigem);
 
-      // Popular campos
       setValue("id", lancamentoParaEditar.id);
-      setValue("categoriaId", categoriaId);
       setValue("itemId", Number(despesaId || receitaId));
       setValue("tipo", lancamentoParaEditar.tipo);
       setValue("valor", Number(lancamentoParaEditar.valor));
 
-      // Formatar data corretamente
       const dataLancamento =
         typeof lancamentoParaEditar.data === "string"
           ? lancamentoParaEditar.data.split("T")[0]
@@ -135,7 +110,7 @@ export function useLancamentoForm({
       setValue("data", dataLancamento);
 
       setValue("observacao", lancamentoParaEditar.observacao || "");
-      setValue("parcelar", false); // Edição não permite parcelamento
+      setValue("parcelar", false);
       setValue("parcelas", null);
     }
   }, [lancamentoParaEditar, setValue]);
@@ -147,24 +122,19 @@ export function useLancamentoForm({
     }
   }, [parcelar, setValue]);
 
+  // Lista de itens conforme origem (sem filtro por categoria)
+  const itensFiltrados = useMemo<Despesa[] | Receita[]>(() => {
+    if (origem === "despesa") return despesasApi;
+    return receitasApi;
+  }, [origem, despesasApi, receitasApi]);
 
-  // Foca no itemId quando shouldFocusItem é true e o campo não está disabled
-  useEffect(() => {
-    if (categoriaId && categoriaId > 0) {
-      setFocus("itemId");
-    }
-  }, [categoriaId, setFocus]);
-
-  // Filtrar itens pela categoria selecionada
-  const itensFiltrados = useMemo(() => {
-    if (!categoriaId) return [];
-    if (origem === "despesa") {
-      return despesasList.filter((d) => Number(d.categoriaId) === Number(categoriaId));
-    }
-    return receitasList.filter(
-      (f) => Number(f.categoria?.id) === Number(categoriaId),
-    );
-  }, [origem, categoriaId, despesasList, receitasList]);
+  // Item selecionado atualmente — usado para exibir ícone no formulário
+  const selectedItem = useMemo<Despesa | Receita | null>(() => {
+    if (!itemId) return null;
+    return (itensFiltrados as (Despesa | Receita)[]).find(
+      (item) => item.id === itemId,
+    ) ?? null;
+  }, [itemId, itensFiltrados]);
 
   // Calcular valor total com parcelas
   const valorTotal = useMemo(() => {
@@ -177,7 +147,6 @@ export function useLancamentoForm({
       try {
         const data: LancamentoPayload = {
           userId: Number(session?.user?.id),
-          categoriaId: payload.categoriaId,
           despesaId: origem === "despesa" ? payload.itemId : null,
           receitaId: origem === "receita" ? payload.itemId : null,
           tipo: payload.tipo,
@@ -188,36 +157,29 @@ export function useLancamentoForm({
         };
 
         if (payload.id) {
-          // Update
           await updateLancamento({ id: String(payload.id), data }).unwrap();
           SwalToast.fire({
             icon: "success",
-            title: `${
-              origem === "receita" ? "Receita" : "Despesa"
-            } atualizado com sucesso`,
+            title: `${origem === "receita" ? "Receita" : "Despesa"} atualizado com sucesso`,
           });
         } else {
-          // Create
           await createLancamento(data).unwrap();
           SwalToast.fire({
             icon: "success",
-            title: `${
-              origem === "receita" ? "Receita" : "Despesa"
-            } lançado com sucesso`,
+            title: `${origem === "receita" ? "Receita" : "Despesa"} lançado com sucesso`,
           });
         }
 
-        // Reset mantendo categoria e tipo
+        // Reset mantendo tipo
         reset({
           ...defaultValues,
-          categoriaId: payload.categoriaId,
           tipo: payload.tipo,
         });
 
-
-        // Callback de sucesso
         onSuccess?.();
-      } catch {}
+      } catch {
+        // Erro tratado pelo interceptor da API
+      }
     },
     [session, origem, parcelar, createLancamento, updateLancamento, reset, defaultValues, onSuccess],
   );
@@ -236,18 +198,16 @@ export function useLancamentoForm({
 
   const toggleOrigem = useCallback(() => {
     setOrigem((prev) => (prev === "despesa" ? "receita" : "despesa"));
-  }, []);
+    setValue("itemId", 0);
+  }, [setValue]);
 
   const isDespesa = origem === "despesa";
   const corTema = isDespesa ? "error" : "success";
-
-  // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
 
   return {
     handleSubmit,
     control,
-    categoriaId,
     tipo,
     parcelar,
     parcelas,
@@ -255,8 +215,8 @@ export function useLancamentoForm({
     valorTotal,
     handleTipoChange,
     isCreating: isCreating || isUpdating,
-    categorias: categoriasList,
     itens: itensFiltrados,
+    selectedItem,
     reset,
     defaultValues,
     setFocus,

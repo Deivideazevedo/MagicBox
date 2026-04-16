@@ -11,7 +11,6 @@ import {
 import {
   Lancamento,
   LancamentoPayload,
-  LancamentoForm,
 } from "@/core/lancamentos/types";
 import { useSession } from "next-auth/react";
 import { Swalert } from "@/utils/swalert";
@@ -25,7 +24,6 @@ const lancamentoSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
   userId: z.union([z.string(), z.number()]).optional(),
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  categoriaId: z.number().min(1, "Categoria é obrigatória"),
   receitaId: z.union([z.string(), z.number(), z.null()]).optional(),
   tipo: z.enum(["pagamento", "agendamento"]),
   valor: z.number(),
@@ -68,7 +66,7 @@ export function useLancamentos({
     control,
     setValue,
     formState: { errors, isValid },
-  } = useForm<LancamentoForm>({
+  } = useForm<z.infer<typeof lancamentoSchema>>({
     resolver: zodResolver(lancamentoSchema),
   });
 
@@ -83,7 +81,7 @@ export function useLancamentos({
       : watchedValues.valor;
 
   const onSubmit = useCallback(
-    async (payload: LancamentoForm) => {
+    async (payload: z.infer<typeof lancamentoSchema>) => {
       const { id, ...formData } = payload;
       const userId = Number(session?.user?.id);
 
@@ -94,7 +92,6 @@ export function useLancamentos({
           valor: Number(formData.valor),
           parcelas: formData.parcelas ? Number(formData.parcelas) : null,
           despesaId: formData.despesaId ? Number(formData.despesaId) : null,
-          categoriaId: Number(formData.categoriaId),
           receitaId: formData.receitaId ? Number(formData.receitaId) : null,
           tipo: formData.tipo,
           data: formData.data,
@@ -135,7 +132,6 @@ export function useLancamentos({
           tipo: "pagamento",
           despesaId: "",
           receitaId: "",
-          categoriaId: 0,
           valor: 0,
           data: new Date().toISOString().split("T")[0],
           observacao: "",
@@ -163,7 +159,6 @@ export function useLancamentos({
       setValue("userId", lancamento.userId);
       setValue("despesaId", lancamento.despesa?.id);
       setValue("receitaId", lancamento.receita?.id);
-      setValue("categoriaId", Number(lancamento?.categoria?.id));
       setValue("tipo", lancamento.tipo);
       setValue("valor", lancamento.valor);
       setValue("data", lancamento.data);
@@ -230,7 +225,7 @@ export function useLancamentos({
 
   // Função para submit com callback de sucesso (para fechar drawer, por exemplo)
   const submitWithClose = (onSuccess?: () => void) => {
-    return handleSubmitForm(async (formData) => {
+    return handleSubmitForm(async (formData: z.infer<typeof lancamentoSchema>) => {
       const success = await onSubmit(formData);
       if (success === true && onSuccess) {
         onSuccess();

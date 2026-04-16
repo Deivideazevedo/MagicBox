@@ -28,13 +28,11 @@ import {
 import { format } from "date-fns";
 import { ptBR as ptBRDate } from "date-fns/locale";
 import { Lancamento } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
 
 interface DataGridLancamentosProps {
   lancamentos: Lancamento[];
-  categorias: Categoria[];
   despesas: Despesa[];
   receitas: Receita[];
   onVisualizar: (lancamento: Lancamento) => void;
@@ -51,7 +49,6 @@ interface DataGridLancamentosProps {
 
 export default function DataGridLancamentos({
   lancamentos,
-  categorias,
   despesas,
   receitas,
   onVisualizar,
@@ -79,17 +76,6 @@ export default function DataGridLancamentos({
       return data;
     }
   };
-
-  // Mapear IDs para nomes
-  const categoriasMap = useMemo(() => {
-    return categorias.reduce(
-      (acc, cat) => {
-        acc[cat.id] = cat.nome;
-        return acc;
-      },
-      {} as Record<number, string>,
-    );
-  }, [categorias]);
 
   const despesasMap = useMemo(() => {
     return despesas.reduce(
@@ -180,24 +166,6 @@ export default function DataGridLancamentos({
           />
         );
       },
-    },
-    {
-      field: "categoria",
-      headerName: "Categoria",
-      flex: 1,
-      minWidth: 130,
-      maxWidth: 200,
-      valueGetter: (params: GridValueGetterParams) => {
-        const row = params.row as Lancamento;
-        // Fallback seguro para evitar erro quando categoria é undefined
-        if (!row || !row.categoria) return "-";
-        return row.categoria.nome || "-";
-      },
-      renderCell: (params) => (
-        <Typography variant="body2" fontWeight={500} noWrap>
-          {params.value}
-        </Typography>
-      ),
     },
     {
       field: "item",

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MetasDashboard } from "./MetasDashboard";
 import { Listagem } from "./Listagem";
-import { MetaDrawerForm } from "./MetaDrawerForm";
+import { Formulario } from "./Formulario";
 import { useMetas } from "../../hooks/useMetas";
 import { Meta } from "@/core/metas/types";
-import { Box } from "@mui/material";
+import { Box, Grid, Slide, useTheme } from "@mui/material";
 
 export const MetasTab = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
+  const theme = useTheme();
+  const formRef = useRef<HTMLDivElement>(null);
+  const [exibirFormulario, setExibirFormulario] = useState(false);
 
   const {
     metas,
@@ -25,53 +26,57 @@ export const MetasTab = () => {
 
   const handleOpenNew = () => {
     handleCancelEdit();
-    setSelectedMeta(null);
-    setDrawerOpen(true);
+    setExibirFormulario(true);
   };
 
   const handleOpenEdit = (meta: Meta) => {
     handleEdit(meta);
-    setSelectedMeta(meta);
-    setDrawerOpen(true);
+    setExibirFormulario(true);
   };
 
-  const onFormSubmit = async (e?: React.BaseSyntheticEvent) => {
-    await handleSubmit(e);
-    setDrawerOpen(false);
-    setSelectedMeta(null);
+  const handleFecharFormulario = () => {
+    handleCancelEdit();
+    setExibirFormulario(false);
   };
 
   const handleAporte = (meta: Meta) => {
-    // TODO: Implementar modal de aporte rápido se necessário
-    console.log("Aporte em:", meta.nome);
-    handleOpenEdit(meta); // Por enquanto abre edição
+    handleOpenEdit(meta);
   };
+
+  useEffect(() => {
+    if (isEditing) setExibirFormulario(true);
+  }, [isEditing]);
 
   return (
     <Box>
       <MetasDashboard metas={metas} onNew={handleOpenNew}>
-        <Listagem
-          metas={metas}
-          isLoading={isLoading}
-          onEdit={handleOpenEdit}
-          onDelete={handleDelete}
-          onAporte={handleAporte}
-        />
-      </MetasDashboard>
+        <Grid container spacing={3}>
+          <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+            <Grid item xs={12} md={4}>
+              <Formulario
+                isEditing={isEditing}
+                row={null}
+                control={control}
+                handleSubmit={handleSubmit}
+                isCreating={isCreating}
+                isUpdating={isUpdating}
+                handleCancelEdit={handleFecharFormulario}
+                formRef={formRef}
+              />
+            </Grid>
+          </Slide>
 
-      <MetaDrawerForm
-        open={drawerOpen}
-        onClose={() => {
-          setDrawerOpen(false);
-          handleCancelEdit();
-        }}
-        isEditing={isEditing}
-        row={selectedMeta}
-        handleSubmit={onFormSubmit}
-        control={control}
-        isCreating={isCreating}
-        isUpdating={isUpdating}
-      />
+          <Grid item xs={12} md={exibirFormulario ? 8 : 12}>
+            <Listagem
+              metas={metas}
+              isLoading={isLoading}
+              onEdit={handleOpenEdit}
+              onDelete={handleDelete}
+              onAporte={handleAporte}
+            />
+          </Grid>
+        </Grid>
+      </MetasDashboard>
     </Box>
   );
 };

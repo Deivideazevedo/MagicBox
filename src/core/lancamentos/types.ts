@@ -1,4 +1,3 @@
-import { Categoria } from "../categorias/types";
 import { Despesa } from "../despesas/types";
 import { Receita } from "../receitas/types";
 
@@ -14,19 +13,16 @@ export interface LancamentoResposta {
   valor: number;
   createdAt: string;
   updatedAt: string;
-  categoriaId: number;
   despesaId?: number | null;
   receitaId?: number | null;
   metaId?: number | null;
 
-  categoria?: Categoria;
   despesa?: Despesa;
   receita?: Receita;
   statusDinamico?: string;
 
   // Compatibilidade com retorno em snake_case (Prisma/raw SQL)
   user_id?: number;
-  categoria_id?: number;
   despesa_id?: number | null;
   receita_id?: number | null;
   meta_id?: number | null;
@@ -44,12 +40,11 @@ export interface LancamentoPayload {
   valor: number | string;
   data: Date | string;
   observacao?: string;
-  categoriaId: number;
   despesaId?: number | null;
   receitaId?: number | null;
   metaId?: number | null;
   observacaoAutomatica?: string | null;
-  parcelas?: number | null; // Usado apenas no dados para gerar múltiplos registros
+  parcelas?: number | null; // Usado apenas no criar para gerar múltiplos registros
 }
 
 // Interface específica para formulários no frontend
@@ -59,7 +54,6 @@ export interface LancamentoForm {
   tipo: TipoLancamento;
   valor: number;
   data: string;
-  categoriaId: number;
   observacao?: string;
   despesaId?: string | number | null;
   receitaId?: string | number | null;
@@ -68,7 +62,7 @@ export interface LancamentoForm {
 }
 
 export type LancamentoParams = Partial<
-  Omit<LancamentoResposta, "categoria" | "despesa" | "receita"> & {
+  Omit<LancamentoResposta, "despesa" | "receita"> & {
     page: number;
     limit: number;
     dataInicio?: string;

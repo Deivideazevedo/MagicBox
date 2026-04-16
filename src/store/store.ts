@@ -3,6 +3,7 @@ import { combineReducers } from "redux";
 import { persistReducer, persistStore, createTransform } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import CustomizerReducer from "./customizer/CustomizerSlice";
+import LancamentoUiReducer from "./apps/lancamentos/LancamentoSlice";
 import { api } from "../services/api";
 
 /**
@@ -43,6 +44,7 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   customizer: CustomizerReducer,
+  lancamentoUi: LancamentoUiReducer,
   [api.reducerPath]: api.reducer,
 });
 

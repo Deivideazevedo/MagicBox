@@ -26,17 +26,21 @@ export function ActionsIconMode<T>({ row, actions }: ActionsIconModeProps<T>) {
 
   return (
     <Stack direction="row" spacing={0.5} justifyContent="center">
-      {actions.map((action, index) => (
-        <Tooltip key={index} title={action.title} placement="top" arrow>
-          <IconButton
-            size="small"
-            onClick={() => action.callback(row)}
-            color={action.color || 'primary'}
-          >
-            {action.icon || defaultIcons[index]}
-          </IconButton>
-        </Tooltip>
-      ))}
+      {actions.map((action, index) => {
+        if (action.show && !action.show(row)) return null;
+
+        return (
+          <Tooltip key={index} title={action.title} placement="top" arrow>
+            <IconButton
+              size="small"
+              onClick={() => action.callback(row)}
+              color={action.color || 'primary'}
+            >
+              {action.icon || defaultIcons[index]}
+            </IconButton>
+          </Tooltip>
+        );
+      })}
     </Stack>
   );
 }

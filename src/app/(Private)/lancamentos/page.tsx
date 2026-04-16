@@ -8,11 +8,9 @@ export const dynamic = "force-dynamic";
 
 // Components
 import LancamentoDrawer from "./components/LancamentoDrawer";
-import MiniCardsResumo from "./components/MiniCardsResumo";
 import FiltrosAvancados from "./components/FiltrosAvancados";
 import { CustomTable } from "./components/customTable";
 import ModalVisualizacao from "./components/ModalVisualizacao";
-import ModalEdicao from "./components/ModalEdicao";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
 // Hooks
@@ -20,16 +18,19 @@ import { useLancamentosList } from "./hooks/useLancamentosList";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { useDispatch } from "@/store/hooks";
+import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { LancamentoResposta } from "@/core/lancamentos/types";
 
 export default function LancamentosPage() {
+  const dispatch = useDispatch();
   const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: despesas = [] } = useGetDespesasQuery();
   const { data: receitas = [] } = useGetReceitasQuery();
 
   const {
     lancamentos,
-    totais,
     isLoading,
     page,
     pageSize,
@@ -45,6 +46,14 @@ export default function LancamentosPage() {
     selectedIds,
     onSelectionChange,
   } = useLancamentosList();
+
+  // Handler de "Editar" — agora abre o Drawer Único Global
+  const handleEditarLancamento = useCallback(
+    (lancamento: LancamentoResposta) => {
+      dispatch(abrirDrawer({ modo: "editar", dados: lancamento }));
+    },
+    [dispatch],
+  );
 
   const fullLancamentos = useMemo(() => {
     return lancamentos.map((lancamento) => {
@@ -71,7 +80,6 @@ export default function LancamentosPage() {
         {/* Filtros avançados */}
         <FiltrosAvancados
           filtros={filtros}
-          categorias={categorias}
           despesas={despesas}
           receitas={receitas}
           handleSearch={handleSearch}
@@ -129,7 +137,7 @@ export default function LancamentosPage() {
                   },
                   {
                     title: "Editar",
-                    callback: modalHandlers.editar.abrir,
+                    callback: handleEditarLancamento,
                     color: "primary",
                   },
                   {
@@ -156,24 +164,15 @@ export default function LancamentosPage() {
         </Grid>
       </Container>
 
-      {/* Drawer para novo lançamento */}
-      <LancamentoDrawer />
+      {/* O Drawer agora é global, instanciado no Layout */}
 
       {/* Modal de Visualização */}
       <ModalVisualizacao
         open={Boolean(modais.visualizar)}
         lancamento={modais.visualizar}
-        categorias={categorias}
         despesas={despesas}
         receitas={receitas}
         onClose={modalHandlers.visualizar.fechar}
-      />
-
-      {/* Modal de Edição */}
-      <ModalEdicao
-        open={Boolean(modais.editar)}
-        lancamento={modais.editar}
-        onClose={modalHandlers.editar.fechar}
       />
 
       {/* Dialog de Exclusão */}
@@ -194,7 +193,7 @@ export default function LancamentosPage() {
             fontSize={15}
             color="text.primary"
           >
-            "{lancamentoParaExcluirNome}"
+            &quot;{lancamentoParaExcluirNome}&quot;
           </Box>
           <br />
           <Typography variant="body2" color="textSecondary" mt={1}>

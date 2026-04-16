@@ -1,6 +1,7 @@
 model Meta {
   id           Int          @id @default(autoincrement())
   userId       Int
+  categoriaId  Int?
   nome         String
   valorMeta    Decimal      @db.Decimal(10, 2)
   dataAlvo     DateTime
@@ -12,11 +13,12 @@ model Meta {
   deletedAt    DateTime?
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoria    Categoria?   @relation(fields: [categoriaId], references: [id])
   lancamentos  Lancamento[]
 
   @@index([userId, status, deletedAt])
   @@index([userId])
   @@index([status])
+  @@index([categoriaId])
   @@map("meta")
 }
-

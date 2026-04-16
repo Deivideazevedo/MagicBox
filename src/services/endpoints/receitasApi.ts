@@ -1,5 +1,6 @@
 import { Receita, ReceitaPayload } from "@/core/receitas/types";
 import { api } from "../api";
+import { RECEITA_INVALIDATION_TAGS } from "@/constants/rtkTags";
 
 export const receitasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -15,7 +16,7 @@ export const receitasApi = api.injectEndpoints({
         method: "POST",
         body: newReceita,
       }),
-      invalidatesTags: ["Receita"],
+      invalidatesTags: RECEITA_INVALIDATION_TAGS,
     }),
 
     updateReceita: builder.mutation<
@@ -27,7 +28,7 @@ export const receitasApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Receita"],
+      invalidatesTags: RECEITA_INVALIDATION_TAGS,
     }),
 
     deleteReceita: builder.mutation<{ message: string }, string>({
@@ -35,7 +36,7 @@ export const receitasApi = api.injectEndpoints({
         url: `/receitas/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Receita"],
+      invalidatesTags: RECEITA_INVALIDATION_TAGS,
     }),
   }),
 });

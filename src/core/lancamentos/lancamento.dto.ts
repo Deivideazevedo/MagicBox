@@ -14,11 +14,10 @@ export const lancamentoSchema = z.object({
   id: z.number().int().positive(),
   userId: z.number().int().positive(),
   tipo: tipoLancamentoEnum,
-  valor: z.number().positive(), // Decimal como string
+  valor: z.number().positive(),
   data: z.date(),
   observacao: z.string().nullable(),
   observacaoAutomatica: z.string().nullable(),
-  categoriaId: z.number().int().positive(),
   despesaId: z.number().int().positive().nullable(),
   receitaId: z.number().int().positive().nullable(),
   metaId: z.number().int().positive().nullable(),
@@ -29,14 +28,13 @@ export const lancamentoSchema = z.object({
 // Schema para validar os Query Params
 export const findAllQuerySchema = z.object({
   page: z.coerce.number().min(0).default(0),
-  limit: z.coerce.number().min(1).max(1000).default(10), // Trave um limite máximo por segurança
+  limit: z.coerce.number().min(1).max(1000).default(10),
 
-  // Filtros opcionais (transformam string vazia em undefined se necessário)
+  // Filtros opcionais
   userId: z.coerce.number().optional(),
-  dataInicio: z.string().optional(), 
+  dataInicio: z.string().optional(),
   dataFim: z.string().optional(),
 
-  categoriaId: z.coerce.number().optional(),
   despesaId: z.coerce.number().optional(),
   receitaId: z.coerce.number().optional(),
   metaId: z.coerce.number().optional(),
@@ -56,9 +54,6 @@ export const createLancamentoSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
     observacao: z.string().max(255).trim().optional(),
-
-    // Categoria (obrigatória)
-    categoriaId: z.number().int().positive("Categoria é obrigatória"),
 
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
@@ -143,7 +138,6 @@ export const lancamentoQuerySchema = z.object({
 });
 
 // Types exportados
-
 export type FindAllFilters = z.infer<typeof findAllQuerySchema>;
 export type Lancamento = z.infer<typeof lancamentoSchema>;
 export type CreateLancamentoDTO = z.infer<typeof createLancamentoSchema>;

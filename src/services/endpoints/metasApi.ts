@@ -1,5 +1,6 @@
 import { api } from "../api";
 import { Meta, MetaPayload } from "@/core/metas/types";
+import { META_INVALIDATION_TAGS } from "@/constants/rtkTags";
 
 export const metasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -14,7 +15,7 @@ export const metasApi = api.injectEndpoints({
         method: "POST",
         body: newMeta,
       }),
-      invalidatesTags: ["Metas", "Resumo"],
+      invalidatesTags: META_INVALIDATION_TAGS,
     }),
 
     updateMeta: builder.mutation<
@@ -26,7 +27,7 @@ export const metasApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Metas", "Resumo"],
+      invalidatesTags: META_INVALIDATION_TAGS,
     }),
 
     deleteMeta: builder.mutation<{ success: boolean }, number>({
@@ -34,7 +35,7 @@ export const metasApi = api.injectEndpoints({
         url: `/metas/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Metas", "Resumo"],
+      invalidatesTags: META_INVALIDATION_TAGS,
     }),
   }),
 });

@@ -32,7 +32,6 @@ export const despesaService = {
         data: novaDespesa.dataInicio ? new Date(novaDespesa.dataInicio) : new Date(),
         observacao: `Pagamento inicial - ${novaDespesa.nome}`,
         observacaoAutomatica: `Pagamento inicial automático para a dívida: ${novaDespesa.nome}`,
-        categoriaId: novaDespesa.categoriaId,
         despesaId: novaDespesa.id
       });
     }

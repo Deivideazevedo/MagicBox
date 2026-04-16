@@ -3,7 +3,6 @@ import { FindAllFilters } from "@/dtos";
 export interface FiltrosLancamentos {
   dataInicio?: string;
   dataFim?: string;
-  categoriaId?: number | null;
   item?: string | null;
   observacao?: string;
   origem?: "despesa" | "receita" | "";
@@ -31,7 +30,6 @@ export const getDefaultFilters = (): FindAllFilters => {
     origem: "",
     tipo: undefined,
     observacao: undefined,
-    categoriaId: undefined,
     despesaId: undefined,
     receitaId: undefined,
   };

@@ -1,5 +1,5 @@
 // src/core/lancamentos/service.ts
-import { Lancamento, LancamentoPayload } from "./types";
+import { LancamentoPayload } from "./types";
 import { lancamentoRepository as repositorio } from "./repository";
 import { ValidationError, NotFoundError } from "@/lib/errors";
 import { format, addMonths } from "date-fns";
@@ -29,7 +29,6 @@ function gerarObservacaoAutomatica(
 
 export const lancamentoService = {
   async listarTodos(filtros: FindAllFilters) {
-    // Sempre usa listarTodos com paginação
     return await repositorio.listarTodos(filtros);
   },
 
@@ -42,7 +41,6 @@ export const lancamentoService = {
   },
 
   async criar(dados: LancamentoPayload) {
-    // Validações de negócio
     if (!dados.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
@@ -76,9 +74,8 @@ export const lancamentoService = {
         tipo: dados.tipo,
         valor: valorNumerico,
         data: dataBase,
-        observacao: dados.observacao || null,
-        observacaoAutomatica: null,
-        categoriaId: dados.categoriaId,
+        observacao: dados.observacao || undefined,
+        observacaoAutomatica: undefined,
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
         metaId: dados.metaId || null,
@@ -90,7 +87,7 @@ export const lancamentoService = {
     // Se houver parcelas, cria múltiplos registros
     const lancamentosCriados = [];
     for (let i = 0; i < parcelas; i++) {
-      const dataParcela = addMonths(dataBase, i);
+      const dataParcela = addMonths(dataBase as Date, i);
       const observacaoAutomatica = gerarObservacaoAutomatica(
         dados.observacao,
         i + 1,
@@ -104,9 +101,8 @@ export const lancamentoService = {
         tipo: dados.tipo,
         valor: valorNumerico,
         data: dataParcela,
-        observacao: dados.observacao || null,
+        observacao: dados.observacao || undefined,
         observacaoAutomatica,
-        categoriaId: dados.categoriaId,
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
         metaId: dados.metaId || null,
@@ -129,7 +125,6 @@ export const lancamentoService = {
       throw new ValidationError("Valor deve ser maior que zero");
     }
 
-    // Validar XOR despesa/receita
     if (dados.despesaId && dados.receitaId) {
       throw new ValidationError("Lançamento não pode ter despesa e receita ao mesmo tempo");
     }
@@ -142,7 +137,6 @@ export const lancamentoService = {
     if (!lancamento) {
       throw new NotFoundError("Lançamento não encontrado");
     }
-    // Agora deleta permanentemente (sem soft delete)
     return await repositorio.remover(id);
   },
 

@@ -27,14 +27,12 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LancamentoResposta } from "@/core/lancamentos/types";
-import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
 
 interface ModalVisualizacaoProps {
   open: boolean;
   lancamento: LancamentoResposta | null;
-  categorias: Categoria[];
   despesas: Despesa[];
   receitas: Receita[];
   onClose: () => void;
@@ -43,15 +41,13 @@ interface ModalVisualizacaoProps {
 export default function ModalVisualizacao({
   open,
   lancamento,
-  categorias,
   despesas,
   receitas,
   onClose,
 }: ModalVisualizacaoProps) {
   if (!lancamento) return null;
 
-  // Usar dados do Prisma (categoria, despesa, fonteRenda já vêm populados)
-  const categoria = lancamento.categoria;
+  // Usar dados do Prisma (despesa, fonteRenda já vêm populados)
   const despesa = lancamento.despesa;
   const receita = lancamento.receita;
 
@@ -194,14 +190,6 @@ export default function ModalVisualizacao({
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <InfoItem
-                icon={IconTag}
-                label="Categoria"
-                value={categoria?.nome || "-"}
-                color="primary"
-              />
-            </Grid>
 
             <Grid item xs={12}>
               <InfoItem

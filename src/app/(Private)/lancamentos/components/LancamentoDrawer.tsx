@@ -1,11 +1,15 @@
 "use client";
 
-import { useCategorias } from "@/app/(Private)/cadastros/hooks/useCategorias";
-import { useDespesas } from "@/app/(Private)/cadastros/hooks/useDespesas";
-import { useReceitas } from "@/app/(Private)/cadastros/hooks/useReceitas";
 import { useLancamentoForm } from "../hooks/useLancamentoForm";
 import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
 import Formulario from "./Formulario";
+import { useDispatch, useSelector } from "@/store/hooks";
+import { SwalToast, Swalert } from "@/utils/swalert";
+import { AppState } from "@/store/store";
+import {
+  abrirDrawer,
+  fecharDrawer,
+} from "@/store/apps/lancamentos/LancamentoSlice";
 import {
   Box,
   Divider,
@@ -17,47 +21,54 @@ import {
   useTheme,
 } from "@mui/material";
 import { IconPlus, IconX } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect } from "react";
 
 const DrawerWidth = "420px";
 
 export default function LancamentoDrawer() {
   const theme = useTheme();
-  const [showDrawer, setShowDrawer] = useState(false);
+  const dispatch = useDispatch();
+  
+  // Estado Global do Drawer
+  const { estaAberto, modo, dadosIniciais } = useSelector((state: AppState) => state.lancamentoUi);
 
-  // Hooks de dados
-  const { formProps: categoriasFormProps } = useCategorias();
-  const { listProps: despesasListProps } = useDespesas();
-  const { listProps: receitasListProps } = useReceitas();
-
-  const categoriasList = categoriasFormProps?.categorias || [];
-  const despesasList = despesasListProps?.despesas || [];
-  const receitasList = receitasListProps?.receitas || [];
-
-  // Hook do formulário
+  // Hook do formulário — agora passamos o initialData vindo do Redux
   const formProps = useLancamentoForm({
-    categorias: categoriasList,
-    despesas: despesasList,
-    receitas: receitasList,
+    lancamentoParaEditar: modo === "editar" ? dadosIniciais : null,
+    onSuccess: () => dispatch(fecharDrawer()),
   });
+  
+  const { setFocus, setOrigem, reset, defaultValues, setValue } = formProps;
 
-  const { setFocus } = formProps;
-
-  const handleOpenDrawer = useCallback(() => {
-    setShowDrawer(true);
-  }, []);
+  // Se o modo for 'pay', precisamos pré-configurar o formulário
+  useEffect(() => {
+    if (estaAberto && modo === "pagar" && dadosIniciais) {
+      // Configura a origem (despesa ou receita)
+      setOrigem(dadosIniciais.origem);
+      
+      // Reseta com valores da projeção
+      reset({
+        ...defaultValues,
+        itemId: dadosIniciais.origemId,
+        valor: dadosIniciais.valorPrevisto,
+        data: new Date().toISOString().split("T")[0], // Data de hoje para pagamento
+        tipo: "pagamento",
+        observacao: `Pagamento: ${dadosIniciais.nome}`,
+      });
+    }
+  }, [estaAberto, modo, dadosIniciais, reset, defaultValues, setOrigem]);
 
   const handleCloseDrawer = useCallback(() => {
-    setShowDrawer(false);
-    formProps.setOrigem("despesa");
+    dispatch(fecharDrawer());
     setTimeout(() => {
-      formProps.reset(formProps.defaultValues);
+      setOrigem("despesa");
+      reset(defaultValues);
     }, 300);
-  }, [formProps]);
+  }, [dispatch, reset, defaultValues, setOrigem]);
 
   return (
     <>
-      {/* Botão Flutuante */}
+      {/* Botão Flutuante (Usando Redux) */}
       <Tooltip title="Novo Lançamento">
         <Fab
           color="primary"
@@ -67,7 +78,7 @@ export default function LancamentoDrawer() {
             right: "25px",
             bottom: "15px",
           }}
-          onClick={handleOpenDrawer}
+          onClick={() => dispatch(abrirDrawer({ modo: "novo" }))}
         >
           <IconPlus stroke={1.5} />
         </Fab>
@@ -76,10 +87,10 @@ export default function LancamentoDrawer() {
       {/* Drawer Lateral */}
       <Drawer
         anchor="right"
-        open={showDrawer}
+        open={estaAberto}
         onClose={handleCloseDrawer}
         sx={{
-          zIndex: 999,
+          zIndex: (theme) => theme.zIndex.drawer,
         }}
         PaperProps={{
           sx: {
@@ -93,7 +104,7 @@ export default function LancamentoDrawer() {
           },
         }}
         SlideProps={{
-          onEntered: () => setFocus("categoriaId"),
+          onEntered: () => setFocus("itemId"),
         }}
       >
         <Scrollbar
@@ -113,7 +124,7 @@ export default function LancamentoDrawer() {
             }}
           >
             <Typography variant="h4" fontWeight={600} color="primary">
-              Novo Lançamento
+              {modo === "editar" ? "Editar Lançamento" : modo === "pagar" ? "Efetuar Pagamento" : "Novo Lançamento"}
             </Typography>
 
             <IconButton color="inherit" onClick={handleCloseDrawer}>

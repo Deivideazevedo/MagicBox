@@ -19,12 +19,16 @@ import {
   IconTarget,
   IconChevronDown,
   IconChevronUp,
+  IconPlus,
 } from "@tabler/icons-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import TransactionModal from "../components/Common/TransactionModal";
 import { Formulario } from "../components/Meta/Formulario";
 import { Listagem } from "../components/Meta/Listagem";
+import { MetasDashboard } from "../components/Meta/MetasDashboard";
 import { useMetas } from "../hooks/useMetas";
+import Slide from "@mui/material/Slide";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 export default function MetasPage() {
   const theme = useTheme();
@@ -42,7 +46,8 @@ export default function MetasPage() {
     handleCancelEdit,
   } = useMetas();
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [exibirFormulario, setExibirFormulario] = useState(false);
   const [aporteState, setAporteState] = useState<{
     open: boolean;
     target: Meta | null;
@@ -60,75 +65,76 @@ export default function MetasPage() {
     setAporteState({ open: true, target: meta });
   };
 
+  const handleNovaMeta = () => {
+    handleCancelEdit();
+    setExibirFormulario(true);
+  };
+
+  const handleEditarMeta = (meta: Meta) => {
+    handleEdit(meta);
+    setExibirFormulario(true);
+  };
+
+  const handleFecharFormulario = () => {
+    handleCancelEdit();
+    setExibirFormulario(false);
+  };
+
+  // Se entrar em modo de edição por fora (se possível), garantir que o form apareça
+  useEffect(() => {
+    if (isEditing) setExibirFormulario(true);
+  }, [isEditing]);
+
   return (
     <PageContainer title="Metas" description="Gerencie seus objetivos financeiros">
       <Breadcrumb title="Metas" items={BREADCRUMBS} />
 
-      <Box mb={3} display="flex" justifyContent="flex-end">
-        <Button
-          variant="text"
-          color="primary"
-          startIcon={isCollapsed ? <IconChevronDown /> : <IconChevronUp />}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? "Mostrar Formulário" : "Recolher Formulário"}
-        </Button>
+      {/* Dashboard de Totalizadores */}
+      <Box mb={4}>
+        <MetasDashboard metas={metas} onNew={handleNovaMeta}>
+          <Grid container spacing={3}>
+            {/* Formulário lateral deslizante */}
+            <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+              <Grid item xs={12} md={4}>
+                <Formulario
+                  isEditing={isEditing}
+                  row={null}
+                  control={control}
+                  handleSubmit={handleSubmit}
+                  isCreating={isCreating}
+                  isUpdating={isUpdating}
+                  handleCancelEdit={handleFecharFormulario}
+                  formRef={formRef}
+                />
+              </Grid>
+            </Slide>
+
+            {/* Listagem (Expandida ou Lado a Lado) */}
+            <Grid item xs={12} md={exibirFormulario ? 8 : 12}>
+              <Card 
+                elevation={0} 
+                sx={{ 
+                  borderRadius: 4, 
+                  border: "1px solid", 
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                  minHeight: "400px"
+                }}
+              >
+                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                  <Listagem
+                    metas={metas}
+                    isLoading={isLoading}
+                    onEdit={handleEditarMeta}
+                    onDelete={handleDelete as any}
+                    onAporte={handleOpenAporte}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </MetasDashboard>
       </Box>
-
-      <Grid container spacing={3}>
-        {/* Formulário */}
-        <Grid item xs={12} md={4}>
-          <Collapse in={!isCollapsed}>
-            <Formulario
-              isEditing={isEditing}
-              isCollapsed={isCollapsed}
-              row={null} // O hook gerencia o estado do formulário interno
-              control={control}
-              handleSubmit={handleSubmit}
-              isCreating={isCreating}
-              isUpdating={isUpdating}
-              handleCancelEdit={handleCancelEdit}
-              formRef={formRef}
-            />
-          </Collapse>
-        </Grid>
-
-        {/* Listagem */}
-        <Grid item xs={12} md={isCollapsed ? 12 : 8}>
-          <Card elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 2,
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: "primary.main",
-                  }}
-                >
-                  <IconTarget size={24} />
-                </Box>
-                <Box>
-                  <Typography variant="h5" fontWeight={700}>
-                    Meus Objetivos
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Acompanhe o progresso das suas metas financeiras
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Listagem
-                metas={metas}
-                isLoading={isLoading}
-                onEdit={handleEdit}
-                onDelete={handleDelete as any}
-                onAporte={handleOpenAporte}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
 
       {/* Modal de Aporte */}
       {aporteState.target ? (
