@@ -25,7 +25,6 @@ import { LancamentoResposta } from "@/core/lancamentos/types";
 
 export default function LancamentosPage() {
   const dispatch = useDispatch();
-  const { data: categorias = [] } = useGetCategoriasQuery();
   const { data: despesas = [] } = useGetDespesasQuery();
   const { data: receitas = [] } = useGetReceitasQuery();
 

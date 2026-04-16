@@ -27,10 +27,8 @@ import {
 import {
   IconCalendarEvent,
   IconCoin,
-  IconCreditCard,
   IconDeviceFloppy,
   IconSwitchHorizontal,
-  IconWallet,
 } from "@tabler/icons-react";
 import {
   Control,
@@ -40,7 +38,7 @@ import {
 } from "react-hook-form";
 import { LancamentoFormData } from "../hooks/useLancamentoForm";
 import { useMemo } from "react";
-import * as TablerIcons from "@tabler/icons-react";
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 
 interface FormularioProps {
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
@@ -65,40 +63,37 @@ interface FormularioProps {
   corTema: string;
   toggleOrigem: () => void;
   id?: number;
+  itemId?: number;
 }
 
 /** Renderiza o ícone do item selecionado (Tabler icon por nome string ou fallback) */
 function ItemIconAdornment({ item, isDespesa }: { item: Despesa | Receita | null; isDespesa: boolean }) {
   const theme = useTheme();
   const color = isDespesa ? theme.palette.error.main : theme.palette.success.main;
-
-  if (!item) return null;
-
-  const iconName = item.icone as keyof typeof TablerIcons | undefined;
-  const IconComponent = iconName ? (TablerIcons[iconName] as React.ComponentType<{ size?: number; color?: string }> | undefined) : undefined;
+  const itemColor = item?.cor || color;
 
   return (
     <InputAdornment position="end">
       <Box
         sx={{
-          width: 32,
-          height: 32,
+          width: 28,
+          height: 28,
+          p: 0.1,
           borderRadius: 1.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: alpha(item.cor || color, 0.12),
-          color: item.cor || color,
+          // backgroundColor: alpha(itemColor, 0.12),
+          color: itemColor,
           flexShrink: 0,
         }}
       >
-        {IconComponent ? (
-          <IconComponent size={18} color={item.cor || color} />
-        ) : isDespesa ? (
-          <IconCreditCard size={18} />
-        ) : (
-          <IconWallet size={18} />
-        )}
+        <DynamicIcon
+          name={item?.icone}
+          size={18}
+          color={itemColor}
+          fallbackIcon={isDespesa ? "IconCreditCard" : "IconWallet"}
+        />
       </Box>
     </InputAdornment>
   );
@@ -124,9 +119,9 @@ export default function Formulario({
   corTema,
   toggleOrigem,
   id,
+  itemId,
 }: FormularioProps) {
   const theme = useTheme();
-
   return (
     <Box py={2} px={3} component="form" onSubmit={handleSubmit}>
       <Box
@@ -134,7 +129,7 @@ export default function Formulario({
           borderRadius: 3,
           border: "1px solid",
           borderColor: alpha(theme.palette.primary.main, 0.2),
-          p: 1.5,
+          p: 3,
           pb: "27px",
         }}
       >
@@ -145,16 +140,18 @@ export default function Formulario({
               borderRadius: 2,
               p: 1,
               display: "flex",
-              backgroundColor: `${corTema}.main`,
+              backgroundColor: selectedItem?.cor || `${corTema}.main`,
               color: "white",
               position: "relative",
+              transition: "background-color 0.3s ease",
             }}
           >
-            {isDespesa ? (
-              <IconCreditCard size={24} />
-            ) : (
-              <IconWallet size={24} />
-            )}
+            <DynamicIcon
+              name={selectedItem?.icone}
+              size={24}
+              fallbackIcon={isDespesa ? "IconCreditCard" : "IconWallet"}
+              color="white"
+            />
 
             {/* Botão de Switch */}
             <Tooltip
@@ -286,15 +283,28 @@ export default function Formulario({
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
+              forcePopupIcon={false}
               textFieldProps={{
                 InputProps: {
-                  endAdornment: (
+                  startAdornment: (
                     <ItemIconAdornment
                       item={selectedItem}
                       isDespesa={isDespesa}
                     />
                   ),
                 },
+              }}
+              sx={{
+                // Remove o margin negativo que você estava tentando usar e foca no padding do input
+                "& .MuiOutlinedInput-root": {
+                  paddingLeft: "0px",
+                },
+                "& .MuiOutlinedInput-adornmentStart": {
+                  marginRight: "4px", // Espaço entre o ícone e o texto
+                },
+              }}
+              onChange={(_, value) => {
+                value && setTimeout(() => setFocus("valor"), 0);
               }}
             />
           </Grid>

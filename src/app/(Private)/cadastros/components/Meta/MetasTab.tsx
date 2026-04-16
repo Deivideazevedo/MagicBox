@@ -48,7 +48,7 @@ export const MetasTab = () => {
   }, [isEditing]);
 
   return (
-    <Box>
+    <Box px={3}>
       <MetasDashboard metas={metas} onNew={handleOpenNew}>
         <Grid container spacing={3}>
           <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>

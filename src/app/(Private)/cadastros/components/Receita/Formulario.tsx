@@ -32,7 +32,7 @@ import {
   IconCurrencyDollar,
   IconWallet,
 } from "@tabler/icons-react";
-import { Control, useWatch } from "react-hook-form";
+import { Control, useWatch, UseFormSetFocus } from "react-hook-form";
 
 interface FormProps {
   isEditing: boolean;
@@ -44,6 +44,7 @@ interface FormProps {
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
+  setFocus: UseFormSetFocus<ReceitaFormData>;
 }
 
 export const Formulario = (formProps: FormProps) => {
@@ -57,6 +58,7 @@ export const Formulario = (formProps: FormProps) => {
     isCreating,
     isUpdating,
     handleCancelEdit,
+    setFocus,
   } = formProps;
 
   const watchIcon = useWatch({ control, name: "icone" });
@@ -123,6 +125,9 @@ export const Formulario = (formProps: FormProps) => {
                   "& .MuiOutlinedInput-input": {
                     paddingLeft: "0px",
                   },
+                }}
+                onChange={(value) => {
+                  value && setTimeout(() => setFocus("nome"), 0);
                 }}
               />
             </Grid>

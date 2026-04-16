@@ -210,6 +210,7 @@ export const useReceitas = ({
     row,
     isCollapsed,
     categorias: categoriasList,
+    setFocus,
   };
 
   const listProps = {

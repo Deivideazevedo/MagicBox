@@ -9,10 +9,10 @@ import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone
 
 type HookYearPickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<
-      DatePickerProps<Date | null, Date>,
-      "value" | "onChange" | "renderInput" | "views" | "openTo"
-    >;
+  Omit<
+    DatePickerProps<Date | null, Date>,
+    "value" | "onChange" | "renderInput" | "views" | "openTo"
+  >;
 
 /**
  * HookYearPicker - Seletor de Ano integrado com React Hook Form

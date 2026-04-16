@@ -203,6 +203,7 @@ export function useDespesas(params?: UseDespesasProps) {
       handleSubmit,
       handleCancelEdit: () => reset(defaultValues),
       control,
+      setFocus,
       row,
       isCreating,
       isUpdating,

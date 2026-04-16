@@ -32,7 +32,7 @@ import {
   IconCategory,
   IconCreditCard,
 } from "@tabler/icons-react";
-import { Control, useWatch } from "react-hook-form";
+import { Control, useForm, UseFormSetFocus, useFormState, useWatch } from "react-hook-form";
 
 interface FormProps {
   isEditing: boolean;
@@ -44,6 +44,7 @@ interface FormProps {
   isCreating: boolean;
   isUpdating: boolean;
   categorias: Categoria[];
+  setFocus: UseFormSetFocus<Categoria>;
 }
 
 export const Formulario = (formProps: FormProps) => {
@@ -57,12 +58,13 @@ export const Formulario = (formProps: FormProps) => {
     isUpdating,
     categorias,
     handleCancelEdit,
+    setFocus,
   } = formProps;
 
   const watchIcon = useWatch({ control, name: "icone" });
   const watchColor = useWatch({ control, name: "cor" });
   const watchNome = useWatch({ control, name: "nome" });
-  const watchTipo = useWatch({ control, name: "tipo" });
+
 
   return (
     <Card
@@ -121,6 +123,9 @@ export const Formulario = (formProps: FormProps) => {
                   "& .MuiOutlinedInput-input": {
                     paddingLeft: "0px",
                   },
+                }}
+                onChange={(value) => {
+                  value && setTimeout(() => setFocus("nome"), 0);
                 }}
               />
             </Grid>

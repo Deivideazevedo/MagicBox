@@ -41,7 +41,7 @@ export const Listagem = ({
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-         <Typography variant="body2" color="text.secondary">Carregando seus objetivos...</Typography>
+        <Typography variant="body2" color="text.secondary">Carregando seus objetivos...</Typography>
       </Box>
     );
   }
@@ -113,13 +113,13 @@ export const Listagem = ({
                           {meta.dataAlvo ? new Date(meta.dataAlvo).toLocaleDateString() : "Sem data"}
                         </Typography>
                       </Stack>
-                      <Box 
-                        sx={{ 
-                          px: 1, 
-                          py: 0.2, 
-                          borderRadius: 1, 
-                          bgcolor: alpha(cor, 0.1), 
-                          color: cor 
+                      <Box
+                        sx={{
+                          px: 1,
+                          py: 0.2,
+                          borderRadius: 1,
+                          bgcolor: alpha(cor, 0.1),
+                          color: cor
                         }}
                       >
                         <Typography variant="caption" fontWeight={700}>
@@ -134,7 +134,7 @@ export const Listagem = ({
                       <IconButton
                         size="small"
                         onClick={() => onAporte(meta)}
-                        sx={{ 
+                        sx={{
                           color: 'success.main',
                           '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.1) }
                         }}
@@ -143,10 +143,10 @@ export const Listagem = ({
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Editar">
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         onClick={() => onEdit(meta)}
-                        sx={{ 
+                        sx={{
                           color: 'primary.main',
                           '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
                         }}
@@ -155,10 +155,10 @@ export const Listagem = ({
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Excluir">
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         onClick={() => onDelete(meta.id)}
-                        sx={{ 
+                        sx={{
                           color: 'error.main',
                           '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
                         }}
@@ -210,10 +210,10 @@ export const Listagem = ({
                       {progresso >= 100 ? "Meta atingida! 🎉" : `${formatCurrency(faltante)} restantes`}
                     </Typography>
                     {progresso >= 100 && (
-                       <Stack direction="row" spacing={0.5} alignItems="center" color="success.main">
-                          <IconTrendingUp size={14} />
-                          <Typography variant="caption" fontWeight={700}>Excelente!</Typography>
-                       </Stack>
+                      <Stack direction="row" spacing={0.5} alignItems="center" color="success.main">
+                        <IconTrendingUp size={14} />
+                        <Typography variant="caption" fontWeight={700}>Excelente!</Typography>
+                      </Stack>
                     )}
                   </Stack>
                 </Box>

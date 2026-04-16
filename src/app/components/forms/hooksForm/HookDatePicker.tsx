@@ -10,14 +10,14 @@ import { PickersDay } from "@mui/x-date-pickers";
 
 type HookDatePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<
-      DatePickerProps<Date | null, Date>,
-      "value" | "onChange" | "renderInput"
-    > & {
-      shrinkLabel?: boolean;
-      size?: TextFieldProps["size"];
-      actions?: Array<"today" | "clear" | "accept">;
-    };
+  Omit<
+    DatePickerProps<Date | null, Date>,
+    "value" | "onChange" | "renderInput"
+  > & {
+    shrinkLabel?: boolean;
+    size?: TextFieldProps["size"];
+    actions?: Array<"today" | "clear" | "accept">;
+  };
 
 export function HookDatePicker<TFieldValues extends FieldValues>({
   name,
@@ -56,7 +56,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           helperText={error?.message}
           InputLabelProps={{
             ...params.InputLabelProps,
-            shrink: shrinkLabel, 
+            shrink: shrinkLabel,
           }}
         />
       )}
@@ -83,17 +83,17 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
               : actions || ["today", "clear"],
         },
       }}
-    //   renderDay={(day, _value, DayComponentProps) => {
-    //     return (
-    //       <Badge
-    //         key={day.toString()}
-    //         overlap="circular"
-    //         badgeContent={day.getDate() === 25 ? `💸` : undefined}
-    //       >
-    //         <PickersDay {...DayComponentProps} />
-    //       </Badge>
-    //     );
-    //   }}
+      //   renderDay={(day, _value, DayComponentProps) => {
+      //     return (
+      //       <Badge
+      //         key={day.toString()}
+      //         overlap="circular"
+      //         badgeContent={day.getDate() === 25 ? `💸` : undefined}
+      //       >
+      //         <PickersDay {...DayComponentProps} />
+      //       </Badge>
+      //     );
+      //   }}
       {...datePickerProps}
     />
   );

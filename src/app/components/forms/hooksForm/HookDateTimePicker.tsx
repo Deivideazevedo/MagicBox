@@ -18,10 +18,10 @@ import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone
  */
 type HookDateTimePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<
-      DateTimePickerProps<Date | null, Date>,
-      "value" | "onChange" | "renderInput"
-    >;
+  Omit<
+    DateTimePickerProps<Date | null, Date>,
+    "value" | "onChange" | "renderInput"
+  >;
 
 export function HookDateTimePicker<TFieldValues extends FieldValues>({
   name,
@@ -36,7 +36,7 @@ export function HookDateTimePicker<TFieldValues extends FieldValues>({
 
   return (
     <DateTimePicker
-    //   {...dateTimePickerProps}
+      //   {...dateTimePickerProps}
       inputFormat="dd/MM/yyyy HH:mm"
       value={field.value ? new Date(field.value) : null}
       onChange={(date) => {

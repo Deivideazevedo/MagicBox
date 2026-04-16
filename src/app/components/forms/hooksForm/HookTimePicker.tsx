@@ -9,10 +9,10 @@ import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone
 
 type HookTimePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<
-      TimePickerProps<Date | null, Date>,
-      "value" | "onChange" | "renderInput"
-    >;
+  Omit<
+    TimePickerProps<Date | null, Date>,
+    "value" | "onChange" | "renderInput"
+  >;
 
 /**
  * HookTimePicker - TimePicker integrado com React Hook Form
@@ -36,11 +36,11 @@ export function HookTimePicker<TFieldValues extends FieldValues>({
       value={
         field.value
           ? (() => {
-              const [hours, minutes] = field.value.split(":");
-              const date = new Date();
-              date.setHours(Number(hours), Number(minutes), 0, 0);
-              return date;
-            })()
+            const [hours, minutes] = field.value.split(":");
+            const date = new Date();
+            date.setHours(Number(hours), Number(minutes), 0, 0);
+            return date;
+          })()
           : null
       }
       onChange={(date) => {
@@ -70,7 +70,7 @@ export function HookTimePicker<TFieldValues extends FieldValues>({
         sx: {
           borderRadius: 2, // Opcional: arredondar as bordas do menu
         },
-      }}PopperProps={{
+      }} PopperProps={{
         placement: "bottom-end", // Alinha a direita do menu com a direita do input
         disablePortal: true,     // <--- OBRIGATÓRIO: Mantém o menu preso ao input no DOM
         popperOptions: {
@@ -82,7 +82,7 @@ export function HookTimePicker<TFieldValues extends FieldValues>({
                 // Se quiser empurrar mais para a direita (fora do input), use valor negativo no primeiro item.
                 // Ex: [-45, 0] empurra 45px para a direita.
                 // Se quiser apenas alinhado, deixe [0, 0].
-                offset: [45, 0], 
+                offset: [45, 0],
               },
             },
           ],
