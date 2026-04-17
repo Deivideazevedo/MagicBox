@@ -1,8 +1,11 @@
 import { Meta } from "@/core/metas/types";
+import { useSelector } from "@/store/hooks";
+import { AppState } from "@/store/store";
 import {
   alpha,
   Box,
   Card,
+  CardContent,
   IconButton,
   LinearProgress,
   Stack,
@@ -19,7 +22,6 @@ import {
   IconCalendar,
   IconTrendingUp,
 } from "@tabler/icons-react";
-import DashboardCard from "@/app/components/shared/DashboardCard";
 
 interface ListagemProps {
   metas: Meta[];
@@ -37,6 +39,7 @@ export const Listagem = ({
   onAporte,
 }: ListagemProps) => {
   const theme = useTheme();
+  const customizer = useSelector((state: AppState) => state.customizer);
 
   if (isLoading) {
     return (
@@ -87,10 +90,58 @@ export const Listagem = ({
 
         return (
           <Grid item xs={12} md={6} key={meta.id}>
-            <DashboardCard>
-              <Box p={3}>
+            <Card
+              sx={{ padding: 0, border: !customizer.isCardShadow ? `1px solid ${theme.palette.divider}` : 'none' }}
+              elevation={customizer.isCardShadow ? 9 : 0}
+              variant={!customizer.isCardShadow ? 'outlined' : undefined}
+            >
+              <CardContent sx={{ p: "36px", position: "relative" }}>
+
+                {/* Ícones de Ação posicionados no topo direito absoluto do Card */}
+                <Stack direction="row" spacing={0.5} sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+                  <Tooltip title="Fazer Aporte">
+                    <IconButton
+                      size="small"
+                      onClick={() => onAporte(meta)}
+                      sx={{
+                        color: 'success.main',
+                        '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.1) }
+                      }}
+                    >
+                      <IconCoins size={20} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Editar">
+                    <IconButton
+                      size="small"
+                      onClick={() => onEdit(meta)}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                      }}
+                    >
+                      <IconEdit size={20} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Excluir">
+                    <IconButton
+                      size="small"
+                      onClick={() => onDelete(meta.id)}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
+                      }}
+                    >
+                      <IconTrash size={20} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
                 {/* Header do Card */}
-                <Stack direction="row" spacing={2} alignItems="flex-start" mb={3}>
+                {/* <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', mb: 3, width: '100%', pr: 8 }}> */}
+
+                {/* Bloco da Esquerda: Ícone alvo e Nome/Dados */}
+                <Box sx={{ display: 'flex', gap: 2, flexGrow: 1, minWidth: 0, mb: 3 }}>
                   <Box
                     sx={{
                       p: 1.5,
@@ -98,15 +149,26 @@ export const Listagem = ({
                       bgcolor: alpha(cor, 0.1),
                       color: cor,
                       boxShadow: `0 4px 12px ${alpha(cor, 0.2)}`,
+                      flexShrink: 0
                     }}
                   >
                     <IconTarget size={28} />
                   </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2, mb: 0.5 }}>
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="h6"
+                      fontWeight={700}
+                      sx={{
+                        lineHeight: 1.2,
+                        mb: 0.5,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                      }}
+                    >
                       {meta.nome}
                     </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: 'text.secondary' }}>
                         <IconCalendar size={14} />
                         <Typography variant="caption" fontWeight={500}>
@@ -128,46 +190,9 @@ export const Listagem = ({
                       </Box>
                     </Stack>
                   </Box>
+                </Box>
 
-                  <Stack direction="row" spacing={0.5}>
-                    <Tooltip title="Fazer Aporte">
-                      <IconButton
-                        size="small"
-                        onClick={() => onAporte(meta)}
-                        sx={{
-                          color: 'success.main',
-                          '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.1) }
-                        }}
-                      >
-                        <IconCoins size={20} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="small"
-                        onClick={() => onEdit(meta)}
-                        sx={{
-                          color: 'primary.main',
-                          '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
-                        }}
-                      >
-                        <IconEdit size={20} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        size="small"
-                        onClick={() => onDelete(meta.id)}
-                        sx={{
-                          color: 'error.main',
-                          '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
-                        }}
-                      >
-                        <IconTrash size={20} />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Stack>
+                {/* </Box> */}
 
                 {/* Info de Valores */}
                 <Grid container spacing={2} mb={2.5}>
@@ -217,8 +242,8 @@ export const Listagem = ({
                     )}
                   </Stack>
                 </Box>
-              </Box>
-            </DashboardCard>
+              </CardContent>
+            </Card>
           </Grid>
         );
       })}

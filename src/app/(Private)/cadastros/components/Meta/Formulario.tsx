@@ -141,7 +141,7 @@ export const Formulario = (formProps: FormProps) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <HookCurrencyField
                 name="valorMeta"
                 control={control}
@@ -151,7 +151,7 @@ export const Formulario = (formProps: FormProps) => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <HookTextField
                 name="dataAlvo"
                 control={control}
