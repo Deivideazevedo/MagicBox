@@ -15,12 +15,12 @@ import { NumberFormatOptions } from "./types";
 
 type HookCurrencyFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-    Omit<TextFieldProps, "name" | "value" | "onChange"> & {
-      /** Opções de formatação do número */
-      formatOptions?: NumberFormatOptions;
-      /** Se true, retorna o valor como number, se false retorna como string formatada */
-      returnAsNumber?: boolean;
-    };
+  Omit<TextFieldProps, "name" | "value" | "onChange"> & {
+    /** Opções de formatação do número */
+    formatOptions?: NumberFormatOptions;
+    /** Se true, retorna o valor como number, se false retorna como string formatada */
+    returnAsNumber?: boolean;
+  };
 
 export function HookCurrencyField<TFieldValues extends FieldValues>({
   name,
@@ -64,7 +64,7 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
     }
   };
 
-  const visualValue = field.value
+  const visualValue = field.value !== undefined && field.value !== null && field.value !== ""
     ? format(String(field.value), defaultFormatOptions as any)
     : "";
 
@@ -79,6 +79,9 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
       inputProps={{
         inputMode: "decimal",
         ...textFieldProps.inputProps, // Mantém outros props se passados
+      }}
+      InputLabelProps={{
+        shrink: true,
       }}
       inputRef={(ref) => {
         if (ref) {

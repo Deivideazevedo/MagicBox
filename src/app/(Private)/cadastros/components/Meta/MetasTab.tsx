@@ -8,8 +8,8 @@ import { Box, Grid, Slide, useTheme } from "@mui/material";
 
 export const MetasTab = () => {
   const theme = useTheme();
-  const formRef = useRef<HTMLDivElement>(null);
   const [exibirFormulario, setExibirFormulario] = useState(false);
+  const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
 
   const {
     metas,
@@ -17,11 +17,18 @@ export const MetasTab = () => {
     isCreating,
     isUpdating,
     isEditing,
+    isAporte,
+    isRetirada,
+    isAportando,
     control,
     handleSubmit,
     handleEdit,
+    handleAporte,
+    handleRetirada,
     handleDelete,
+    handleToggleStatus,
     handleCancelEdit,
+    targetMeta,
   } = useMetas();
 
   const handleOpenNew = () => {
@@ -39,40 +46,54 @@ export const MetasTab = () => {
     setExibirFormulario(false);
   };
 
-  const handleAporte = (meta: Meta) => {
-    handleOpenEdit(meta);
+  const handleAporteInterno = (meta: Meta) => {
+    handleAporte(meta);
+    setExibirFormulario(true);
   };
 
-  useEffect(() => {
-    if (isEditing) setExibirFormulario(true);
-  }, [isEditing]);
+  const handleRetiradaInterno = (meta: Meta) => {
+    handleRetirada(meta);
+    setExibirFormulario(true);
+  };
+
+  const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
 
   return (
     <Box px={3}>
-      <MetasDashboard metas={metas} onNew={handleOpenNew}>
+      <MetasDashboard
+        metas={metas}
+        onNew={handleOpenNew}
+        mostrarConcluidas={mostrarConcluidas}
+        onToggleConcluidas={setMostrarConcluidas}
+      >
         <Grid container spacing={3}>
           <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
             <Grid item xs={12} md={4}>
               <Formulario
                 isEditing={isEditing}
+                isAporte={isAporte}
+                isRetirada={isRetirada}
+                isAportando={isAportando}
                 row={null}
                 control={control}
                 handleSubmit={handleSubmit}
                 isCreating={isCreating}
                 isUpdating={isUpdating}
                 handleCancelEdit={handleFecharFormulario}
-                formRef={formRef}
+                targetMeta={targetMeta}
               />
             </Grid>
           </Slide>
 
           <Grid item xs={12} md={exibirFormulario ? 8 : 12}>
             <Listagem
-              metas={metas}
+              metas={metasFiltradas}
               isLoading={isLoading}
               onEdit={handleOpenEdit}
               onDelete={handleDelete}
-              onAporte={handleAporte}
+              onAporte={handleAporteInterno}
+              onRetirada={handleRetiradaInterno}
+              onToggleStatus={handleToggleStatus}
             />
           </Grid>
         </Grid>

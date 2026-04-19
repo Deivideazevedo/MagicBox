@@ -5,7 +5,9 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/system";
 import {
   IconBolt,
   IconBriefcase,
@@ -85,6 +87,7 @@ export const AVAILABLE_ICONS = {
 type HookIconPickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> & {
     label?: string;
+    iconColor?: string;
   };
 
 export function HookIconPicker<TFieldValues extends FieldValues>({
@@ -92,7 +95,9 @@ export function HookIconPicker<TFieldValues extends FieldValues>({
   control,
   rules,
   label = "Escolha um Ícone",
+  iconColor,
 }: HookIconPickerProps<TFieldValues>) {
+  const theme = useTheme();
   const {
     field,
     fieldState: { error },
@@ -134,31 +139,32 @@ export function HookIconPicker<TFieldValues extends FieldValues>({
           // overflowY: "auto", // Adiciona a barra de rolagem vertical
         }}
       >
-        {filteredIcons.map(([key, iconComponent]) => (
-          // <Tooltip title={key.replace("Icon", "")} key={key}>
+        {filteredIcons.map(([key, iconComponent]) => {
+          const isSelected = field.value === key;
+          return (
             <IconButton
               key={key}
               onClick={() => field.onChange(key)}
               size="small"
-              color={field.value === key ? "primary" : "default"}
               sx={{
-                backgroundColor:
-                  field.value === key ? "primary.light" : "transparent",
-                border:
-                  field.value === key ? "1px solid" : "1px solid transparent",
-                borderColor:
-                  field.value === key ? "primary.main" : "transparent",
+                color: isSelected ? (iconColor || "primary.main") : "text.secondary",
+                backgroundColor: isSelected ? alpha(iconColor || "#000", 0.1) : "transparent",
+                border: "1px solid",
+                // borderRadius: 2,
+                borderColor: isSelected ? (iconColor || "primary.main") : "transparent",
                 "&:hover": {
-                  color: field.value === key ? "primary.dark" : "primary.main",
-                  backgroundColor:
-                    field.value === key ? "primary.light" : "action.hover",
+                  color: isSelected ? (iconColor || "primary.main") : "primary.main",
+                  backgroundColor: isSelected ? alpha(iconColor || "#000", 0.15) : alpha(theme.palette.primary.main, 0.05),
                 },
               }}
             >
-              {iconComponent}
+              {React.cloneElement(iconComponent as React.ReactElement, {
+                size: 20,
+                color: isSelected ? (iconColor || "currentColor") : "currentColor"
+              })}
             </IconButton>
-          // </Tooltip>
-        ))}
+          );
+        })}
       </Box>
       {error && (
         <FormHelperText error sx={{ mt: 1, mx: 1 }}>

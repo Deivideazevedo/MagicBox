@@ -54,8 +54,8 @@ export const lancamentoService = {
       throw new ValidationError("Lançamento não pode ter despesa e receita ao mesmo tempo");
     }
 
-    if (Number(dados.valor) <= 0) {
-      throw new ValidationError("Valor deve ser maior que zero");
+    if (Number(dados.valor) === 0) {
+      throw new ValidationError("Valor não pode ser zero");
     }
 
     // Validação: agendamento só pode ter despesaId
@@ -121,8 +121,8 @@ export const lancamentoService = {
       throw new NotFoundError("Lançamento não encontrado");
     }
 
-    if (dados.valor && Number(dados.valor) <= 0) {
-      throw new ValidationError("Valor deve ser maior que zero");
+    if (dados.valor !== undefined && Number(dados.valor) === 0) {
+      throw new ValidationError("Valor não pode ser zero");
     }
 
     if (dados.despesaId && dados.receitaId) {

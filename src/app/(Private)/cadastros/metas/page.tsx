@@ -32,22 +32,28 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 
 export default function MetasPage() {
   const theme = useTheme();
-  const formRef = useRef<HTMLDivElement>(null);
   const {
     metas,
     isLoading,
     isCreating,
     isUpdating,
     isEditing,
+    isAporte,
+    isRetirada,
+    isAportando,
     control,
     handleSubmit,
     handleEdit,
+    handleAporte,
+    handleRetirada,
     handleDelete,
+    handleToggleStatus,
     handleCancelEdit,
   } = useMetas();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [exibirFormulario, setExibirFormulario] = useState(false);
+  const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
   const [aporteState, setAporteState] = useState<{
     open: boolean;
     target: Meta | null;
@@ -62,7 +68,8 @@ export default function MetasPage() {
   ];
 
   const handleOpenAporte = (meta: Meta) => {
-    setAporteState({ open: true, target: meta });
+    handleAporte(meta);
+    setExibirFormulario(true);
   };
 
   const handleNovaMeta = () => {
@@ -80,10 +87,12 @@ export default function MetasPage() {
     setExibirFormulario(false);
   };
 
-  // Se entrar em modo de edição por fora (se possível), garantir que o form apareça
-  useEffect(() => {
-    if (isEditing) setExibirFormulario(true);
-  }, [isEditing]);
+  const handleOpenRetirada = (meta: Meta) => {
+    handleRetirada(meta);
+    setExibirFormulario(true);
+  };
+
+  const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
 
   return (
     <PageContainer title="Metas" description="Gerencie seus objetivos financeiros">
@@ -91,64 +100,69 @@ export default function MetasPage() {
 
       {/* Dashboard de Totalizadores */}
       <Box mb={4}>
-        <MetasDashboard metas={metas} onNew={handleNovaMeta}>
-          <Grid container spacing={3}>
+        <MetasDashboard
+          metas={metas}
+          onNew={handleNovaMeta}
+          mostrarConcluidas={mostrarConcluidas}
+          onToggleConcluidas={setMostrarConcluidas}
+        >
+          <Grid
+            container
+            spacing={3}
+            sx={{
+              flexWrap: isMobile ? 'wrap' : 'nowrap',
+              // overflow: 'hidden',
+              alignItems: 'flex-start'
+            }}
+          >
             {/* Formulário lateral deslizante */}
             <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
                 <Formulario
                   isEditing={isEditing}
+                  isAporte={isAporte}
+                  isRetirada={isRetirada}
+                  isAportando={isAportando}
                   row={null}
                   control={control}
                   handleSubmit={handleSubmit}
                   isCreating={isCreating}
                   isUpdating={isUpdating}
                   handleCancelEdit={handleFecharFormulario}
-                  formRef={formRef}
                 />
               </Grid>
             </Slide>
 
-            {/* Listagem (Expandida ou Lado a Lado) */}
-            <Grid item xs={12} md={exibirFormulario ? 8 : 12}>
-              <Card 
-                elevation={0} 
-                sx={{ 
-                  borderRadius: 4, 
-                  border: "1px solid", 
-                  borderColor: "divider",
-                  bgcolor: "background.paper",
-                  minHeight: "400px"
-                }}
-              >
-                <CardContent sx={{ p: isMobile ? 2 : 3 }}>
-                  <Listagem
-                    metas={metas}
-                    isLoading={isLoading}
-                    onEdit={handleEditarMeta}
-                    onDelete={handleDelete as any}
-                    onAporte={handleOpenAporte}
-                  />
-                </CardContent>
-              </Card>
+            {/* Listagem (Expandida ou Lado a Lado com Animação) */}
+            <Grid
+              item
+              xs={12}
+              sx={{
+                flexGrow: 1,
+                minWidth: 0,
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                width: '100%',
+                // Estilização dinâmica para crescimento suave
+                ...(!isMobile && {
+                  flexBasis: exibirFormulario ? '66.66% !important' : '100% !important',
+                  maxWidth: exibirFormulario ? '66.66% !important' : '100% !important',
+                })
+              }}
+            >
+              <Listagem
+                metas={metasFiltradas}
+                isLoading={isLoading}
+                onEdit={handleEditarMeta}
+                onDelete={handleDelete}
+                onAporte={handleOpenAporte}
+                onRetirada={handleOpenRetirada}
+                onToggleStatus={handleToggleStatus}
+              />
             </Grid>
           </Grid>
         </MetasDashboard>
       </Box>
 
-      {/* Modal de Aporte */}
-      {aporteState.target ? (
-        <TransactionModal
-          open={aporteState.open}
-          onClose={() => setAporteState({ ...aporteState, open: false })}
-          type="meta"
-          targetId={aporteState.target.id}
-          targetName={aporteState.target.nome}
-          categoriaId={1} // ID Padrão para Metas
-        />
-      ) : (
-        <></>
-      )}
     </PageContainer>
   );
 }

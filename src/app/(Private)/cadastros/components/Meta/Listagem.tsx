@@ -1,6 +1,7 @@
 import { Meta } from "@/core/metas/types";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
+import { ReplayCircleFilled } from "@mui/icons-material";
 import {
   alpha,
   Box,
@@ -13,6 +14,12 @@ import {
   Typography,
   useTheme,
   Grid,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider as MuiDivider,
+  Chip,
 } from "@mui/material";
 import {
   IconEdit,
@@ -21,7 +28,15 @@ import {
   IconTarget,
   IconCalendar,
   IconTrendingUp,
+  IconBan,
+  IconCircleCheck,
+  IconDotsVertical,
+  IconTrendingDown,
+  IconHistory,
 } from "@tabler/icons-react";
+import { useState } from "react";
+import HistoricoMetasModal from "./HistoricoMetasModal";
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 
 interface ListagemProps {
   metas: Meta[];
@@ -29,6 +44,8 @@ interface ListagemProps {
   onEdit: (meta: Meta) => void;
   onDelete: (id: number) => void;
   onAporte: (meta: Meta) => void;
+  onRetirada: (meta: Meta) => void;
+  onToggleStatus: (meta: Meta) => void;
 }
 
 export const Listagem = ({
@@ -37,9 +54,34 @@ export const Listagem = ({
   onEdit,
   onDelete,
   onAporte,
+  onRetirada,
+  onToggleStatus,
 }: ListagemProps) => {
   const theme = useTheme();
   const customizer = useSelector((state: AppState) => state.customizer);
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
+  const [metaHistorico, setMetaHistorico] = useState<Meta | null>(null);
+  const [historicoOpen, setHistoricoOpen] = useState(false);
+  const openMenu = Boolean(anchorEl);
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, meta: Meta) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedMeta(meta);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setSelectedMeta(null);
+  };
+
+  const handleAction = (callback: (meta: Meta) => void) => {
+    if (selectedMeta) {
+      callback(selectedMeta);
+    }
+    handleCloseMenu();
+  };
 
   if (isLoading) {
     return (
@@ -58,8 +100,8 @@ export const Listagem = ({
           textAlign: "center",
           borderRadius: 4,
           border: "2px dashed",
-          borderColor: "divider",
-          bgcolor: alpha(theme.palette.background.paper, 0.5),
+          borderColor: alpha(theme.palette.primary.main, 0.2),
+          bgcolor: alpha(theme.palette.background.paper, 0.8),
         }}
       >
         <Stack spacing={2} alignItems="center">
@@ -83,91 +125,80 @@ export const Listagem = ({
   return (
     <Grid container spacing={3}>
       {metas.map((meta) => {
-        const progresso = meta.progresso || 0;
-        const cor = meta.cor || theme.palette.primary.main;
         const acumulado = meta.valorAcumulado || 0;
-        const faltante = Math.max(meta.valorMeta - acumulado, 0);
+        const metaValor = meta.valorMeta || 1;
+        const progresso = (acumulado / metaValor) * 100;
+        const cor = meta.cor || theme.palette.primary.main;
+        const faltante = Math.max(metaValor - acumulado, 0);
 
         return (
           <Grid item xs={12} md={6} key={meta.id}>
             <Card
-              sx={{ padding: 0, border: !customizer.isCardShadow ? `1px solid ${theme.palette.divider}` : 'none' }}
-              elevation={customizer.isCardShadow ? 9 : 0}
-              variant={!customizer.isCardShadow ? 'outlined' : undefined}
+              sx={{
+                padding: 0,
+                borderRadius: 4,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                opacity: meta.status === 'I' ? 0.8 : 1,
+                filter: meta.status === 'I' ? 'grayscale(0.3)' : 'none',
+                transition: 'all 0.3s ease-in-out',
+                position: "relative",
+                overflow: "visible" // Permite check flutuante
+              }}
+              elevation={1}
             >
-              <CardContent sx={{ p: "36px", position: "relative" }}>
-
-                {/* Ícones de Ação posicionados no topo direito absoluto do Card */}
-                <Stack direction="row" spacing={0.5} sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
-                  <Tooltip title="Fazer Aporte">
-                    <IconButton
-                      size="small"
-                      onClick={() => onAporte(meta)}
-                      sx={{
-                        color: 'success.main',
-                        '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.1) }
-                      }}
-                    >
-                      <IconCoins size={20} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Editar">
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(meta)}
-                      sx={{
-                        color: 'primary.main',
-                        '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
-                      }}
-                    >
-                      <IconEdit size={20} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Excluir">
-                    <IconButton
-                      size="small"
-                      onClick={() => onDelete(meta.id)}
-                      sx={{
-                        color: 'error.main',
-                        '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.1) }
-                      }}
-                    >
-                      <IconTrash size={20} />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-
-                {/* Header do Card */}
-                {/* <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-start', mb: 3, width: '100%', pr: 8 }}> */}
-
-                {/* Bloco da Esquerda: Ícone alvo e Nome/Dados */}
-                <Box sx={{ display: 'flex', gap: 2, flexGrow: 1, minWidth: 0, mb: 3 }}>
-                  <Box
+              <CardContent sx={{ p: "36px" }}>
+                <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleOpenMenu(e, meta)}
                     sx={{
-                      p: 1.5,
-                      borderRadius: 3,
-                      bgcolor: alpha(cor, 0.1),
-                      color: cor,
-                      boxShadow: `0 4px 12px ${alpha(cor, 0.2)}`,
-                      flexShrink: 0
+                      color: "text.secondary",
+                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.05) }
                     }}
                   >
-                    <IconTarget size={28} />
+                    <IconDotsVertical size={18} />
+                  </IconButton>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, minWidth: 0, mb: 3 }}>
+                  <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: 2,
+                      bgcolor: alpha(cor, 0.1),
+                      color: cor,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      display: "flex",
+                    }}
+                  >
+                    <DynamicIcon name={meta.icone || "IconTarget"} size={28} stroke={1.5} />
                   </Box>
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="h6"
-                      fontWeight={700}
-                      sx={{
-                        lineHeight: 1.2,
-                        mb: 0.5,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis"
-                      }}
-                    >
-                      {meta.nome}
-                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        sx={{
+                          lineHeight: 1.2,
+                          mb: 0.5,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}
+                      >
+                        {meta.nome}
+                      </Typography>
+                      {meta.status === 'I' && (
+                        <Chip
+                          label="Concluída"
+                          size="small"
+                          color="success"
+                          variant="filled"
+                          sx={{ height: 20, fontSize: '10px', fontWeight: 700 }}
+                        />
+                      )}
+                    </Stack>
                     <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: 'text.secondary' }}>
                         <IconCalendar size={14} />
@@ -175,19 +206,6 @@ export const Listagem = ({
                           {meta.dataAlvo ? new Date(meta.dataAlvo).toLocaleDateString() : "Sem data"}
                         </Typography>
                       </Stack>
-                      <Box
-                        sx={{
-                          px: 1,
-                          py: 0.2,
-                          borderRadius: 1,
-                          bgcolor: alpha(cor, 0.1),
-                          color: cor
-                        }}
-                      >
-                        <Typography variant="caption" fontWeight={700}>
-                          {progresso.toFixed(0)}%
-                        </Typography>
-                      </Box>
                     </Stack>
                   </Box>
                 </Box>
@@ -214,22 +232,41 @@ export const Listagem = ({
                   </Grid>
                 </Grid>
 
-                {/* Barra de Progresso */}
+                {/* Barra de Progresso com Porcentagem ao final */}
                 <Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={progresso}
-                    sx={{
-                      height: 10,
-                      borderRadius: 5,
-                      bgcolor: alpha(cor, 0.1),
-                      "& .MuiLinearProgress-bar": {
-                        bgcolor: cor,
-                        borderRadius: 5,
-                        boxShadow: `0 2px 4px ${alpha(cor, 0.3)}`,
-                      },
-                    }}
-                  />
+                  <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(progresso, 100)}
+                        sx={{
+                          height: 10,
+                          borderRadius: 5,
+                          bgcolor: alpha(cor, 0.1),
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: cor,
+                            borderRadius: 5,
+                            boxShadow: `0 2px 4px ${alpha(cor, 0.3)}`,
+                          },
+                        }}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        px: 1.2,
+                        py: 0.4,
+                        borderRadius: "6px",
+                        bgcolor: alpha(cor, 0.1),
+                        color: cor,
+                        minWidth: "45px",
+                        textAlign: "center"
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight={800}>
+                        {progresso.toFixed(0)}%
+                      </Typography>
+                    </Box>
+                  </Stack>
                   <Stack direction="row" justifyContent="space-between" mt={1}>
                     <Typography variant="caption" color="text.secondary">
                       {progresso >= 100 ? "Meta atingida! 🎉" : `${formatCurrency(faltante)} restantes`}
@@ -242,11 +279,137 @@ export const Listagem = ({
                     )}
                   </Stack>
                 </Box>
+
+                {/* Badge de meta batida (Atalho rápido para concluir) */}
+                {progresso >= 100 && meta.status === 'A' && (
+                  <Tooltip title="Meta batida! Clique para concluir" arrow>
+                    <IconButton
+                      onClick={() => onToggleStatus(meta)}
+                      sx={{
+                        position: "absolute",
+                        bottom: -18,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        bgcolor: "success.main",
+                        color: "white",
+                        width: 36,
+                        height: 36,
+                        p: 0,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: `0 4px 14px ${alpha(theme.palette.success.main, 0.5)}`,
+                        border: "3px solid",
+                        borderColor: "background.paper",
+                        zIndex: 2,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          color: "success.light",
+                          bgcolor: "success.main",
+                          transform: "translateX(-50%) scale(1.1)",
+                          boxShadow: `0 6px 20px ${alpha(theme.palette.success.main, 0.6)}`,
+                        }
+                      }}
+                    >
+                      <IconCircleCheck size={24} stroke={2.5} />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </CardContent>
             </Card>
           </Grid>
         );
       })}
+
+      {/* Menu Global para as Metas */}
+      <Menu
+        anchorEl={anchorEl}
+        open={openMenu}
+        onClose={handleCloseMenu}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: 180,
+            boxShadow: theme.shadows[10],
+            mt: 0.5,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        {selectedMeta?.status === 'A' && (
+          <>
+            <MenuItem onClick={() => handleAction(onAporte)}>
+              <ListItemIcon sx={{ color: 'success.main' }}>
+                <IconCoins size={18} />
+              </ListItemIcon>
+              <ListItemText primary="Novo Aporte" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+            </MenuItem>
+            <MenuItem onClick={() => handleAction(onRetirada)}>
+              <ListItemIcon sx={{ color: 'error.main' }}>
+                <IconTrendingDown size={18} />
+              </ListItemIcon>
+              <ListItemText primary="Retirada" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+            </MenuItem>
+            <MuiDivider sx={{ my: 1, opacity: 0.6 }} />
+          </>
+        )}
+
+        <MenuItem onClick={() => handleAction(onEdit)}>
+          <ListItemIcon sx={{ color: 'primary.main' }}>
+            <IconEdit size={18} />
+          </ListItemIcon>
+          <ListItemText primary="Editar Meta" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </MenuItem>
+
+        <MenuItem onClick={() => {
+          if (selectedMeta) {
+            setMetaHistorico(selectedMeta);
+            setHistoricoOpen(true);
+          }
+          handleCloseMenu();
+        }}>
+          <ListItemIcon>
+            <IconHistory size={18} />
+          </ListItemIcon>
+          <ListItemText primary="Exibir Histórico" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+        </MenuItem>
+
+        <MuiDivider sx={{ my: 1, opacity: 0.6 }} />
+
+        <MenuItem onClick={() => handleAction(onToggleStatus)}>
+          <ListItemIcon sx={{ color: selectedMeta?.status === 'A' ? 'success.main' : 'warning.main' }}>
+            {selectedMeta?.status === 'A' ? <IconCircleCheck size={18} /> : <IconTarget size={18} />}
+          </ListItemIcon>
+          <ListItemText
+            primary={selectedMeta?.status === 'A' ? 'Concluir Meta' : 'Reativar Meta'}
+            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+          />
+        </MenuItem>
+
+        {selectedMeta?.status === 'I' && (
+          <MenuItem onClick={() => handleAction(() => selectedMeta && onDelete(selectedMeta.id))}>
+            <ListItemIcon sx={{ color: 'error.main' }}>
+              <IconTrash size={18} />
+            </ListItemIcon>
+            <ListItemText primary="Excluir Meta" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+          </MenuItem>
+        )}
+      </Menu>
+
+      {/* Modal de Histórico */}
+      {metaHistorico && (
+        <HistoricoMetasModal
+          open={historicoOpen}
+          onClose={() => {
+            setHistoricoOpen(false);
+            setMetaHistorico(null);
+          }}
+          metaId={metaHistorico.id}
+          metaNome={metaHistorico.nome}
+        />
+      )}
     </Grid>
   );
 };

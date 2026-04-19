@@ -23,7 +23,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   name,
   control,
   rules,
-  shrinkLabel,
+  shrinkLabel = true,
   size = "medium",
   actions,
   ...datePickerProps

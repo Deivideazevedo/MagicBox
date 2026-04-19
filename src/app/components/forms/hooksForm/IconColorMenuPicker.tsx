@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Box, Popover, IconButton, Typography, Divider, alpha, useTheme } from "@mui/material";
+import { Box, Popover, IconButton, Typography, Divider, alpha, useTheme, Button, Stack } from "@mui/material";
 import { Control, FieldValues, Path } from "react-hook-form";
 import { DynamicIcon } from "../../shared/DynamicIcon";
 import { HookIconPicker } from "./HookIconPicker";
 import { HookColorPicker } from "./HookColorPicker";
+import { IconCheck, IconX } from "@tabler/icons-react";
 
 interface IconColorMenuPickerProps<TFieldValues extends FieldValues> {
   control: Control<TFieldValues>;
@@ -63,7 +64,7 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
           backgroundColor: alpha(currentColor, 0.15),
           color: currentColor,
           cursor: "pointer",
-          border: "2px solid",
+          border: "4px solid",
           borderColor: alpha(currentColor, 0.3),
           transition: "all 0.2s ease-in-out",
           "&:hover": {
@@ -99,20 +100,39 @@ export function IconColorMenuPicker<TFieldValues extends FieldValues>({
               boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
               border: "1px solid",
               borderColor: "divider",
-            backgroundColor: "background.default",
+              backgroundColor: "background.default",
             },
           },
         }}
       >
-        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 2 }}>
-          Personalizar Aparência
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700}>
+            Personalizar Aparência
+          </Typography>
+          <IconButton size="small" onClick={handleClose}>
+            <IconX size={18} />
+          </IconButton>
+        </Stack>
 
-        <HookIconPicker control={control} name={iconName} label="Escolha um Ícone" />
+        <HookIconPicker control={control} name={iconName} label="Escolha um Ícone" iconColor={currentColor} />
 
         <Divider sx={{ my: 2 }} />
 
         <HookColorPicker control={control} name={colorName} label="Escolha uma Cor" />
+
+        <Box sx={{ mt: 3 }}>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            size="small"
+            startIcon={<IconCheck size={18} />}
+            onClick={handleClose}
+            sx={{ borderRadius: 2 }}
+          >
+            Confirmar Seleção
+          </Button>
+        </Box>
       </Popover>
     </Box>
   );

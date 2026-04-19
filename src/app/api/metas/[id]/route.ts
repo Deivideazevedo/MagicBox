@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { metaIdSchema, updateMetaSchema } from "@/core/metas/meta.dto";
 
 export const GET = errorHandler(buscarPorId);
-export const PUT = errorHandler(atualizar);
+export const PATCH = errorHandler(atualizar);
 export const DELETE = errorHandler(remover);
 
 async function buscarPorId(

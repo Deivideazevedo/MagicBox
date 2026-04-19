@@ -19,9 +19,9 @@ export interface Meta {
 
 export interface MetaPayload {
   id?: number;
-  nome: string;
-  valorMeta: number;
-  dataAlvo: string | Date;
+  nome?: string;
+  valorMeta?: number;
+  dataAlvo?: string | Date | null;
   status?: string;
   icone?: string | null;
   cor?: string | null;

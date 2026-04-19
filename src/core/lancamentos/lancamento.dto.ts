@@ -49,7 +49,7 @@ export const findAllQuerySchema = z.object({
 export const createLancamentoSchema = z
   .object({
     tipo: tipoLancamentoEnum,
-    valor: z.number().positive("Valor deve ser positivo"),
+    valor: z.number().refine((v) => v !== 0, "Valor não pode ser zero"),
     data: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
