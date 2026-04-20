@@ -44,6 +44,8 @@ export const lancamentoRepository = {
         whereClause.despesaId = { not: null };
       } else if (origem === "renda" || origem === "receita") {
         whereClause.receitaId = { not: null };
+      } else if (origem === "meta") {
+        whereClause.metaId = { not: null };
       }
     }
 
@@ -99,6 +101,14 @@ export const lancamentoRepository = {
               cor: true,
             },
           },
+          meta: {
+            select: {
+              id: true,
+              nome: true,
+              icone: true,
+              cor: true,
+            },
+          },
         },
       }),
     ]);
@@ -123,6 +133,7 @@ export const lancamentoRepository = {
       include: {
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
+        meta: { select: { id: true, nome: true, valorMeta: true } },
       },
     });
   },

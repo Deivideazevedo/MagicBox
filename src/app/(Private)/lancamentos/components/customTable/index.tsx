@@ -27,8 +27,14 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconCategory,
+  IconPig,
+  IconTrendingUp,
+  IconTarget,
+  IconTrendingDown,
+  IconTrash,
 } from "@tabler/icons-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { ptBR as ptBRDate } from "date-fns/locale";
 
 // Types
@@ -69,11 +75,8 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => new Date(row.data).getTime(),
     render: (row) => {
-      try {
-        return format(new Date(row.data), "dd/MM/yyyy", { locale: ptBRDate });
-      } catch {
-        return row.data;
-      }
+      const dataFormatada = format(parseISO(row.data.split('T')[0]), 'dd/MM/yyyy');
+      return dataFormatada;
     },
     filterValue: (row) => row.data,
   },
@@ -84,6 +87,21 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     sortValue: (row) => row.origem,
     render: (row) => {
       const isDespesa = Boolean(row.despesa);
+      const isMeta = Boolean(row.metaId || row.meta_id);
+
+      if (isMeta) {
+        return (
+          <Chip
+            size="small"
+            icon={<IconTarget size={16} />}
+            label="Meta"
+            color="info"
+            variant="outlined"
+            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+          />
+        );
+      }
+
       return (
         <Chip
           size="small"
@@ -93,10 +111,7 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
           label={row.origem}
           color={isDespesa ? "error" : "success"}
           variant="outlined"
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
+          sx={{ fontWeight: 600, fontSize: "0.75rem" }}
         />
       );
     },
@@ -108,7 +123,22 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.tipo,
     render: (row) => {
+      const isMeta = Boolean(row.metaId || row.meta_id);
+      const isInvestimento = row?.valor && Number(row.valor) >= 0;
       const isPagamento = row.tipo === "pagamento";
+
+      if (isMeta) {
+        return (
+          <Chip
+            size="small"
+            icon={isInvestimento ? <IconTrendingUp size={16} /> : <IconTrendingDown size={16} />}
+            label={isInvestimento ? "Investimento" : "Retirada"}
+            color={isInvestimento ? "primary" : "warning"}
+            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+          />
+        );
+      }
+
       return (
         <Chip
           size="small"
@@ -117,53 +147,44 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
           }
           label={isPagamento ? "Pagamento" : "Agendamento"}
           color={isPagamento ? "success" : "warning"}
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.75rem",
-          }}
+          sx={{ fontWeight: 600, fontSize: "0.75rem" }}
         />
       );
     },
-    filterValue: (row) =>
-      row.tipo === "pagamento" ? "Pagamento" : "Agendamento",
+    filterValue: (row) => row.metaId || row.meta_id ? "Retirada" : (row.tipo === "pagamento" ? "Pagamento" : "Agendamento"),
   },
   {
     key: "nome",
     label: "Nome",
     align: "left",
     sortValue: (row) => row.nome,
-    render: (row) => (
-      <Stack direction="row" spacing={1.2} alignItems="center">
-        <Avatar
-          sx={{
-            width: 28,
-            height: 28,
-            bgcolor:
-              row.despesa?.cor || row.receita?.cor
-                ? alpha((row.despesa?.cor || row.receita?.cor)!, 0.15)
-                : "primary.light",
-            color: row.despesa?.cor || row.receita?.cor || "primary.main",
-            "& svg": { width: 16, height: 16 },
-          }}
-        >
-          {(row.despesa?.icone || row.receita?.icone) &&
-            AVAILABLE_ICONS[
-            (row.despesa?.icone ||
-              row.receita?.icone) as keyof typeof AVAILABLE_ICONS
-            ] ? (
-            AVAILABLE_ICONS[
-            (row.despesa?.icone ||
-              row.receita?.icone) as keyof typeof AVAILABLE_ICONS
-            ]
-          ) : (
-            <IconCategory />
-          )}
-        </Avatar>
-        <Typography variant="body2" noWrap>
-          {row.nome}
-        </Typography>
-      </Stack>
-    ),
+    render: (row) => {
+      const iconeStr = row.meta?.icone || row.despesa?.icone || row.receita?.icone;
+      const corStr = row.meta?.cor || row.despesa?.cor || row.receita?.cor;
+
+      return (
+        <Stack direction="row" spacing={1.2} alignItems="center">
+          <Avatar
+            sx={{
+              width: 28,
+              height: 28,
+              bgcolor: corStr ? alpha(corStr, 0.15) : "primary.light",
+              color: corStr || "primary.main",
+              "& svg": { width: 16, height: 16 },
+            }}
+          >
+            {iconeStr && AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
+              AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS]
+            ) : (
+              <IconCategory />
+            )}
+          </Avatar>
+          <Typography variant="body2" noWrap>
+            {row.nome}
+          </Typography>
+        </Stack>
+      );
+    },
     filterValue: (row) => row.nome,
   },
   {
@@ -172,11 +193,9 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.observacao || "-",
     render: (row) => (
-      <Tooltip title={row.observacao || "-"} arrow>
-        <Typography variant="body2" noWrap color="textSecondary">
-          {row.observacao || "-"}
-        </Typography>
-      </Tooltip>
+      <Typography variant="body2" noWrap color="textSecondary">
+        {row.observacao || "-"}
+      </Typography>
     ),
     filterValue: (row) => row.observacao || "-",
   },
@@ -187,17 +206,25 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     sortValue: (row) => row.valor,
     render: (row) => {
       const isDespesa = Boolean(row.despesa);
+      const isMeta = Boolean(row.metaId || row.meta_id);
+
+      let color = isDespesa ? "error.main" : "success.main";
+      if (isMeta) {
+        color = Number(row.valor) < 0 ? "warning.main" : "primary.main";
+      }
+
       const formatarValor = (valor: number) => {
         return new Intl.NumberFormat("pt-BR", {
           style: "currency",
           currency: "BRL",
         }).format(valor);
       };
+
       return (
         <Typography
           variant="body2"
           fontWeight={600}
-          color={isDespesa ? "error.main" : "success.main"}
+          color={color}
         >
           {formatarValor(row.valor)}
         </Typography>
@@ -231,6 +258,9 @@ interface CustomTableProps {
 
   /** Seleção de linhas */
   onSelectionChange?: (ids: number[]) => void;
+
+  /** Ação de exclusão em lote */
+  onBulkDelete?: () => void;
 }
 
 /**
@@ -246,6 +276,7 @@ export function CustomTable({
   isLoading = false,
   emptyMessage = "Nenhum dado foi encontrado",
   onSelectionChange,
+  onBulkDelete,
 }: CustomTableProps) {
   // Estado de seleção
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -318,6 +349,8 @@ export function CustomTable({
         filterText={filterText}
         onFilterChange={setFilterText}
         onReset={handleReset}
+        selectedCount={selectedIds.length}
+        onBulkDelete={onBulkDelete}
       />
 
       <TableContainer>

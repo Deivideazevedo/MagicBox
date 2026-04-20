@@ -24,17 +24,47 @@ const receitaSchemaZod = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
-  valorEstimado: z.number().min(0.01, "Valor estimado é obrigatório"),
-  diaRecebimento: z.number().min(1, "O dia deve estar entre 1 e 31").max(31, "O dia deve estar entre 1 e 31").nullable().optional(),
+  // Tornamos opcional no objeto base para validar manualmente depois
+  valorEstimado: z.union([z.number(), z.string()]).optional().nullable(),
+  diaRecebimento: z.number().min(1).max(31).optional().nullable(),
   status: z.enum(["A", "I"]),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
   tipo: z.enum(["FIXA", "VARIAVEL"]),
 }).superRefine(({ tipo, valorEstimado, diaRecebimento }, ctx) => {
+  const temValor = !!valorEstimado && Number(valorEstimado) > 0;
+  const temDia = !!diaRecebimento;
+
+  // 1. Se for FIXA, obriga os dois de forma independente
   if (tipo === "FIXA") {
-    if (!diaRecebimento) {
+    if (!temValor) {
       ctx.addIssue({
         code: "custom",
-        message: "Dia do recebimento é obrigatório",
+        message: "Valor estimado é obrigatório para receitas fixas",
+        path: ["valorEstimado"],
+      });
+    }
+    if (!temDia) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Dia do recebimento é obrigatório para receitas fixas",
+        path: ["diaRecebimento"],
+      });
+    }
+  }
+
+  // 2. Se NÃO for fixa (VARIAVEL), aplica a regra de interdependência
+  // (Ou preenche os dois, ou nenhum)
+  else if (temValor !== temDia) {
+    if (!temValor) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Informe o valor para este dia",
+        path: ["valorEstimado"],
+      });
+    } else {
+      ctx.addIssue({
+        code: "custom",
+        message: "Informe o dia para este valor",
         path: ["diaRecebimento"],
       });
     }
@@ -77,7 +107,7 @@ export const useReceitas = ({
       icone: "IconWallet",
       cor: "",
       categoriaId: 0,
-      valorEstimado: 0,
+      valorEstimado: "",
       diaRecebimento: null,
       status: "A" as const,
       tipo: "VARIAVEL" as const,
@@ -92,10 +122,14 @@ export const useReceitas = ({
     watch,
     setValue,
     setFocus,
+    formState: { errors }
   } = useForm<ReceitaFormData>({
     resolver: zodResolver(receitaSchemaZod),
     defaultValues,
   });
+
+  console.log('errors', errors);
+  console.log('Number(session?.user?.id)', Number(session?.user?.id))
 
   const [createReceita, { isLoading: isCreating }] =
     useCreateReceitaMutation();

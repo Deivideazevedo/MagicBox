@@ -5,6 +5,7 @@ import { Formulario } from "./Formulario";
 import { useMetas } from "../../hooks/useMetas";
 import { Meta } from "@/core/metas/types";
 import { Box, Grid, Slide, useTheme } from "@mui/material";
+import RetiradaMetaModal from "./RetiradaMetaModal";
 
 export const MetasTab = () => {
   const theme = useTheme();
@@ -18,7 +19,8 @@ export const MetasTab = () => {
     isUpdating,
     isEditing,
     isAporte,
-    isRetirada,
+    isRetiradaModalOpen,
+    setIsRetiradaModalOpen,
     isAportando,
     control,
     handleSubmit,
@@ -53,7 +55,6 @@ export const MetasTab = () => {
 
   const handleRetiradaInterno = (meta: Meta) => {
     handleRetirada(meta);
-    setExibirFormulario(true);
   };
 
   const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
@@ -72,7 +73,6 @@ export const MetasTab = () => {
               <Formulario
                 isEditing={isEditing}
                 isAporte={isAporte}
-                isRetirada={isRetirada}
                 isAportando={isAportando}
                 row={null}
                 control={control}
@@ -98,6 +98,12 @@ export const MetasTab = () => {
           </Grid>
         </Grid>
       </MetasDashboard>
+
+      <RetiradaMetaModal
+        open={isRetiradaModalOpen}
+        onClose={() => setIsRetiradaModalOpen(false)}
+        meta={targetMeta}
+      />
     </Box>
   );
 };

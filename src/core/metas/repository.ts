@@ -102,7 +102,11 @@ export const metasRepository = {
       where: { id },
       include: {
         lancamentos: {
-          where: { tipo: 'pagamento' }
+          where: { tipo: 'pagamento' },
+          orderBy: [
+            { data: 'desc' },
+            { createdAt: 'desc' }
+          ]
         }
       }
     });

@@ -18,6 +18,7 @@ import { useLancamentosList } from "./hooks/useLancamentosList";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
+import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 import { useCallback, useMemo } from "react";
 import { useDispatch } from "@/store/hooks";
 import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
@@ -27,6 +28,7 @@ export default function LancamentosPage() {
   const dispatch = useDispatch();
   const { data: despesas = [] } = useGetDespesasQuery();
   const { data: receitas = [] } = useGetReceitasQuery();
+  const { data: metas = [] } = useGetMetasQuery();
 
   const {
     lancamentos,
@@ -58,8 +60,8 @@ export default function LancamentosPage() {
     return lancamentos.map((lancamento) => {
       return {
         ...lancamento,
-        origem: lancamento.despesa ? "Despesa" : "Receita",
-        nome: lancamento.despesa?.nome || lancamento.receita?.nome || "-",
+        origem: (lancamento.metaId || lancamento.meta_id) ? "Meta" : (lancamento.despesa ? "Despesa" : "Receita"),
+        nome: lancamento.meta?.nome || lancamento.despesa?.nome || lancamento.receita?.nome || "-",
       };
     });
   }, [lancamentos]);
@@ -81,6 +83,7 @@ export default function LancamentosPage() {
           filtros={filtros}
           despesas={despesas}
           receitas={receitas}
+          metas={metas}
           handleSearch={handleSearch}
         />
 
@@ -107,23 +110,6 @@ export default function LancamentosPage() {
                     Visualize, edite ou exclua seus lançamentos
                   </Typography>
                 </Box>
-
-                {selectedIds.length > 0 && (
-                  <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<IconTrash size={18} />}
-                    onClick={excluirHandlers.bulk}
-                    disabled={isDeleting}
-                    sx={{
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Excluir {selectedIds.length} selecionado(s)
-                  </Button>
-                )}
               </Box>
 
               <CustomTable
@@ -157,6 +143,7 @@ export default function LancamentosPage() {
                 isLoading={isLoading}
                 emptyMessage="Nenhum lançamento foi encontrado"
                 onSelectionChange={onSelectionChange}
+                onBulkDelete={excluirHandlers.bulk}
               />
             </Card>
           </Grid>
@@ -176,11 +163,11 @@ export default function LancamentosPage() {
 
       {/* Dialog de Exclusão */}
       <DeleteConfirmationDialog
-        open={Boolean(modais.excluir)}
+        open={Boolean(modais.excluir) || modais.bulkExcluir}
         onClose={modalHandlers.excluir.fechar}
         onConfirm={excluirHandlers.confirmar}
         loading={isDeleting}
-        title="Excluir Lançamento?"
+        title={modais.bulkExcluir ? "Excluir Lançamentos Selecionados?" : "Excluir Lançamento?"}
         icon={IconTrash}
         color="error"
       >
@@ -192,12 +179,22 @@ export default function LancamentosPage() {
             fontSize={15}
             color="text.primary"
           >
-            &quot;{lancamentoParaExcluirNome}&quot;
+            {modais.bulkExcluir ? `${selectedIds.length} lançamentos selecionados` : `"${lancamentoParaExcluirNome}"`}
           </Box>
           <br />
-          <Typography variant="body2" color="textSecondary" mt={1}>
-            Valor: R$ {Number(modais.excluir?.valor || 0).toFixed(2)}
-          </Typography>
+          {!modais.bulkExcluir && modais.excluir && (
+            <>
+              <Typography variant="body2" color="textSecondary" mt={1}>
+                Valor: R$ {Number(modais.excluir.valor || 0).toFixed(2)}
+              </Typography>
+              <br />
+            </>
+          )}
+          {modais.bulkExcluir && (
+            <Typography variant="body2" color="textSecondary" mt={1}>
+               Esta ação removerá todos os itens marcados na tabela.
+            </Typography>
+          )}
           <br />
           Essa ação não poderá ser desfeita.
         </Typography>

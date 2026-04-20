@@ -18,6 +18,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  Paper,
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
@@ -125,6 +126,8 @@ export default function Formulario({
   return (
     <Box py={2} px={3} component="form" onSubmit={handleSubmit}>
       <Box
+        component={Paper}
+        elevation={1}
         sx={{
           borderRadius: 3,
           border: "1px solid",

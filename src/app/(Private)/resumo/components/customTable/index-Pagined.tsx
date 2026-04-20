@@ -31,7 +31,8 @@ import { createRenderColumn } from "./utils/renderColumn";
 // Types
 import { ResumoResposta, ResumoTodosResposta } from "@/core/lancamentos/resumo/types";
 import { IconCalendar, IconChecks } from "@tabler/icons-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 import { ActionsIconMode } from "./components/ActionsIconMode";
 import { CustomPaginationActions } from "./components/CustomPaginationActions";
@@ -47,7 +48,7 @@ const formatarValor = (valor: number) => {
 
 const formatarData = (data: string) => {
   try {
-    return format(new Date(data), "dd/MM/yyyy", { locale: ptBR });
+    return formatInTimeZone(parseISO(data), "UTC", "dd/MM/yyyy");
   } catch {
     return data;
   }

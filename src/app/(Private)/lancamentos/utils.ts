@@ -5,7 +5,7 @@ export interface FiltrosLancamentos {
   dataFim?: string;
   item?: string | null;
   observacao?: string;
-  origem?: "despesa" | "receita" | "";
+  origem?: "despesa" | "receita" | "meta" | "";
   tipo?: "pagamento" | "agendamento" | "";
 }
 

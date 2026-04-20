@@ -47,20 +47,27 @@ export function HookDecimalField<TFieldValues extends FieldValues>({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // remover formataçoes matematica nativamente aplicadas no input
+    const rawValue = e.target.value;
+    
+    if (rawValue === "") {
+        field.onChange(returnAsNumber ? null : "");
+        return;
+    }
+
     const numericString = unformat(
-      e.target.value,
+      rawValue,
       defaultFormatOptions.locales
     );
 
     if (returnAsNumber) {
       const number = Number(numericString);
-      field.onChange(isNaN(number) ? undefined : number);
+      field.onChange(isNaN(number) ? null : number);
     } else {
       field.onChange(numericString);
     }
   };
 
-  const visualValue = field.value
+  const visualValue = field.value !== undefined && field.value !== null && field.value !== ""
     ? format(String(field.value), defaultFormatOptions as any)
     : "";
 

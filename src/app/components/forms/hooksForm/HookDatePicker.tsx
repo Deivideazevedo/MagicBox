@@ -17,8 +17,9 @@ type HookDatePickerProps<TFieldValues extends FieldValues> =
     shrinkLabel?: boolean;
     size?: TextFieldProps["size"];
     actions?: Array<"today" | "clear" | "accept">;
+    helperText?: React.ReactNode;
   };
-
+  
 export function HookDatePicker<TFieldValues extends FieldValues>({
   name,
   control,
@@ -26,6 +27,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   shrinkLabel = true,
   size = "medium",
   actions,
+  helperText,
   ...datePickerProps
 }: HookDatePickerProps<TFieldValues>) {
   const {
@@ -53,7 +55,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           fullWidth
           size={size}
           error={!!error}
-          helperText={error?.message}
+          helperText={error?.message || helperText}
           InputLabelProps={{
             ...params.InputLabelProps,
             shrink: shrinkLabel,

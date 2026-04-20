@@ -8,6 +8,11 @@ export const metasApi = api.injectEndpoints({
       query: () => "/metas",
       providesTags: ["Metas"],
     }),
+    
+    getMetaById: builder.query<Meta, number>({
+      query: (id) => `/metas/${id}`,
+      providesTags: (_result, _error, id) => [{ type: "Metas", id }],
+    }),
 
     createMeta: builder.mutation<Meta, MetaPayload>({
       query: (newMeta) => ({
@@ -42,6 +47,7 @@ export const metasApi = api.injectEndpoints({
 
 export const {
   useGetMetasQuery,
+  useGetMetaByIdQuery,
   useCreateMetaMutation,
   useUpdateMetaMutation,
   useDeleteMetaMutation,

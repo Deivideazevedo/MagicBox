@@ -19,6 +19,7 @@ export interface LancamentoResposta {
 
   despesa?: Despesa;
   receita?: Receita;
+  meta?: any; // ou usar o type apropriado
   statusDinamico?: string;
 
   // Compatibilidade com retorno em snake_case (Prisma/raw SQL)

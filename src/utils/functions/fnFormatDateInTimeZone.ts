@@ -1,5 +1,6 @@
 import { TIME_ZONE } from "@/constants/globals";
 import { formatInTimeZone } from "date-fns-tz";
+import { ptBR } from "date-fns/locale";
 
 
 const FORMAT_MAP = {
@@ -17,7 +18,7 @@ type DateFormat = keyof typeof FORMAT_MAP;
 
 type FormatUTCDateProps = {
   date?: Date | string;
-  format?: DateFormat;
+  format?: DateFormat | (string & {});
   timeZone?: string;
 };
 
@@ -77,5 +78,10 @@ export function fnFormatDateInTimeZone(
   if (isNaN(safeDate.getTime())) return "";
 
   // Formatar a data na timezone desejada
-  return formatInTimeZone(safeDate, timeZone, FORMAT_MAP[format]);
+  return formatInTimeZone(
+    safeDate,
+    timeZone,
+    FORMAT_MAP[format as DateFormat] || format,
+    { locale: ptBR }
+  );
 }

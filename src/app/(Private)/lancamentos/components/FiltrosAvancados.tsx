@@ -35,6 +35,7 @@ import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocompl
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
+import { Meta } from "@/core/metas/types";
 import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 
 
@@ -46,9 +47,10 @@ import { FindAllFilters } from "@/dtos";
 import { debounce } from "lodash";
 
 // Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | Receita) & {
-  origem: "despesa" | "receita";
+type ItemComOrigem = (Despesa | Receita | Meta) & {
+  origem: "despesa" | "receita" | "meta";
   uniqueId: string;
+  nome: string;
 };
 
 // Definição de filtros opcionais disponíveis
@@ -76,6 +78,7 @@ interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
   despesas: Despesa[];
   receitas: Receita[];
+  metas: Meta[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
 }
 
@@ -83,6 +86,7 @@ export default function FiltrosAvancados({
   filtros,
   despesas,
   receitas,
+  metas,
   handleSearch,
 }: FiltrosAvancadosProps) {
   const defaultValues: FiltrosLancamentos = {
@@ -164,16 +168,28 @@ export default function FiltrosAvancados({
     [receitas],
   );
 
-  const despesasFiltradas = despesasComOrigem;
+  const metasComOrigem: ItemComOrigem[] = useMemo(
+    () =>
+      metas.map((m) => ({
+        ...m,
+        origem: "meta" as const,
+        uniqueId: `meta-${m.id}`,
+      })),
+    [metas],
+  );
 
+  const despesasFiltradas = despesasComOrigem;
   const receitasFiltradas = receitasComOrigem;
+  const metasFiltradas = metasComOrigem;
 
   const opcoesNome =
     origemWatch === "despesa"
       ? despesasFiltradas
       : origemWatch === "receita"
         ? receitasFiltradas
-        : [...despesasFiltradas, ...receitasComOrigem];
+      : origemWatch === "meta"
+        ? metasFiltradas
+        : [...despesasFiltradas, ...receitasComOrigem, ...metasComOrigem];
 
   const onConvert = useCallback((rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
     const { item, origem, tipo, ...rest } = rawFilters;
@@ -183,11 +199,14 @@ export default function FiltrosAvancados({
       spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
     const receitaId =
       spllitedItem[0] === "receita" ? Number(spllitedItem[1]) : undefined;
+    const metaId =
+      spllitedItem[0] === "meta" ? Number(spllitedItem[1]) : undefined;
 
     const result: Partial<FindAllFilters> = {
       ...rest,
       despesaId,
       receitaId,
+      metaId,
       origem,
       observacao: rest.observacao || undefined,
       tipo: tipo || undefined,
@@ -281,6 +300,7 @@ export default function FiltrosAvancados({
             <MenuItem value="">Todas</MenuItem>
             <MenuItem value="despesa">Despesa</MenuItem>
             <MenuItem value="receita">Receita</MenuItem>
+            <MenuItem value="meta">Meta</MenuItem>
           </HookSelect>
         );
       case "tipo":

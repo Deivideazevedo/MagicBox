@@ -44,6 +44,7 @@ export function useLancamentosList({
   const [modals, setModals] = useState({
     visualizar: null as LancamentoResposta | null,
     excluir: null as LancamentoResposta | null,
+    bulkExcluir: false,
   });
 
   // Calcular totais com base nos dados do backend (já filtrados)
@@ -90,8 +91,10 @@ export function useLancamentosList({
       },
       excluir: {
         abrir: (lancamento: LancamentoResposta) =>
-          setModals((prev) => ({ ...prev, excluir: lancamento })),
-        fechar: () => setModals((prev) => ({ ...prev, excluir: null })),
+          setModals((prev) => ({ ...prev, excluir: lancamento, bulkExcluir: false })),
+        fechar: () => setModals((prev) => ({ ...prev, excluir: null, bulkExcluir: false })),
+        abrirBulk: () =>
+          setModals((prev) => ({ ...prev, excluir: null, bulkExcluir: true })),
       },
     }),
     [],
@@ -101,9 +104,9 @@ export function useLancamentosList({
   const excluirHandlers = useMemo(
     () => ({
       confirmar: async () => {
-        const idsParaExcluir = modals.excluir
-          ? [modals.excluir.id]
-          : selectedIds;
+        const idsParaExcluir = modals.excluir 
+          ? [modals.excluir.id] 
+          : (modals.bulkExcluir ? selectedIds : []);
 
         if (idsParaExcluir.length === 0) return;
 
@@ -127,23 +130,9 @@ export function useLancamentosList({
           setIsDeleting(false);
         }
       },
-      bulk: async () => {
+      bulk: () => {
         if (selectedIds.length === 0) return;
-
-        setIsDeleting(true);
-        try {
-          await bulkDelete({ ids: selectedIds }).unwrap();
-
-          SwalToast.fire({
-            icon: "success",
-            title: `${selectedIds.length} lançamento(s) excluído(s) com sucesso`,
-          });
-
-          setSelectedIds([]);
-        } catch {
-        } finally {
-          setIsDeleting(false);
-        }
+        modalHandlers.excluir.abrirBulk();
       },
     }),
     [modals.excluir, selectedIds, modalHandlers.excluir, bulkDelete],
@@ -195,8 +184,9 @@ export function useLancamentosList({
     // Exclusão
     isDeleting,
     excluirHandlers,
-    lancamentoParaExcluirNome:
-      modals.excluir?.observacao || `Lançamento #${modals.excluir?.id}`,
+    lancamentoParaExcluirNome: modals.bulkExcluir 
+      ? `${selectedIds.length} lançamentos selecionados`
+      : (modals.excluir?.observacao || `Lançamento #${modals.excluir?.id}`),
 
     // Seleção
     selectedIds,

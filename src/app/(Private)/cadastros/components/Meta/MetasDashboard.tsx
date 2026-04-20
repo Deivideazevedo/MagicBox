@@ -100,8 +100,19 @@ export const MetasDashboard = ({
 
   const totalObjetivado = metas.reduce((acc, m) => acc + (m.status === 'A' ? Number(m.valorMeta) : 0), 0);
   const totalAcumulado = metas.reduce((acc, m) => acc + Number(m.valorAcumulado), 0);
-  const concluido = metas.filter((m) => m.status === 'I' || Number(m.valorAcumulado) >= Number(m.valorMeta)).length;
-  const faltante = Math.max(totalObjetivado - metas.reduce((acc, m) => acc + (m.status === 'A' ? Number(m.valorAcumulado) : 0), 0), 0);
+  const concluidasCount = metas.filter((m) => m.status === "I").length;
+  const atingidasCount = metas.filter(
+    (m) => m.status === "A" && Number(m.valorAcumulado) >= Number(m.valorMeta)
+  ).length;
+
+  const faltante = Math.max(
+    totalObjetivado -
+      metas.reduce(
+        (acc, m) => acc + (m.status === "A" ? Number(m.valorAcumulado) : 0),
+        0
+      ),
+    0
+  );
 
   const formatCurrency = (val: number) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -114,7 +125,7 @@ export const MetasDashboard = ({
           <SummaryCard
             title="Total Objetivado"
             value={formatCurrency(totalObjetivado)}
-            subtitle={`${metas.length} objetivos definidos`}
+            subtitle={`${metas.filter((m) => m.status === "A").length} objetivos ativos`}
             icon={IconTarget}
             color={theme.palette.primary.main}
           />
@@ -123,7 +134,7 @@ export const MetasDashboard = ({
           <SummaryCard
             title="Total Guardado"
             value={formatCurrency(totalAcumulado)}
-            subtitle="Valor já reservado"
+            subtitle="Valor total reservado"
             icon={IconTrendingUp}
             color={theme.palette.success.main}
           />
@@ -140,8 +151,8 @@ export const MetasDashboard = ({
         <Grid item xs={12} sm={6} md={3}>
           <SummaryCard
             title="Concluídas"
-            value={concluido.toString()}
-            subtitle="Metas atingidas"
+            value={concluidasCount.toString()}
+            subtitle={`${atingidasCount} atingidas (elegíveis)`}
             icon={IconCircleCheck}
             color={theme.palette.info.main}
           />

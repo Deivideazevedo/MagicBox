@@ -37,7 +37,6 @@ interface FormProps {
   isCreating: boolean;
   isUpdating: boolean;
   isAporte?: boolean;
-  isRetirada?: boolean;
   isAportando?: boolean;
   targetMeta?: Meta | null;
 }
@@ -52,7 +51,6 @@ export const Formulario = (formProps: FormProps) => {
     isCreating,
     isUpdating,
     isAporte = false,
-    isRetirada = false,
     isAportando = false,
     handleCancelEdit,
     targetMeta,
@@ -64,13 +62,11 @@ export const Formulario = (formProps: FormProps) => {
 
   const getTitle = () => {
     if (isAporte) return "Fazer Aporte";
-    if (isRetirada) return "Retirar Valor";
     return isEditing ? "Editar Objetivo" : "Novo Objetivo";
   };
 
   const getButtonText = () => {
     if (isAporte) return "Confirmar Aporte";
-    if (isRetirada) return "Confirmar Retirada";
     return isEditing ? "Salvar Alterações" : "Confirmar Meta";
   };
 
@@ -82,7 +78,6 @@ export const Formulario = (formProps: FormProps) => {
         border: "1px solid",
         borderColor: alpha(theme.palette.primary.main, 0.2),
         backgroundColor: "background.paper",
-        // boxShadow: theme.shadows[8],
         position: "relative",
         overflow: "hidden",
       }}
@@ -119,7 +114,7 @@ export const Formulario = (formProps: FormProps) => {
       </Box>
 
       <CardContent sx={{ p: 3 }}>
-        {!isAporte && !isRetirada && (
+        {!isAporte && (
           <Box display="flex" alignItems="center" gap={2} mb={3}>
             <IconColorMenuPicker
               control={control}
@@ -132,22 +127,22 @@ export const Formulario = (formProps: FormProps) => {
             />
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                {isAporte ? "Aportando em:" : (isRetirada ? "Retirando de:" : (isEditing ? "Editando Objetivo:" : "Novo Objetivo"))}
+                {isEditing ? "Editando Objetivo:" : "Novo Objetivo"}
               </Typography>
-              <Typography variant="body2" color={isRetirada ? "error.main" : "primary.main"}>
-                {watchNome || (isEditing ? row?.nome : "Defina sua próxima conquista")}
+              <Typography variant="body2" color="primary.main">
+                {isEditing ? targetMeta?.nome : (watchNome || "Defina sua próxima conquista")}
               </Typography>
             </Box>
           </Box>
         )}
 
-        {(isAporte || isRetirada) && (
+        {isAporte && (
           <Box display="flex" alignItems="center" gap={2} mb={3}>
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                {isAporte ? "Aportando em:" : "Retirando de:"}
+                Aportando em:
               </Typography>
-              <Typography variant="body2" color={isRetirada ? "error.main" : "primary.main"}>
+              <Typography variant="body2" color="primary.main">
                 {targetMeta?.nome || watchNome}
               </Typography>
             </Box>
@@ -156,7 +151,7 @@ export const Formulario = (formProps: FormProps) => {
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            {!isAporte && !isRetirada && (
+            {!isAporte && (
               <Grid item xs={12}>
                 <HookTextField
                   label="Nome do Objetivo"
@@ -167,7 +162,7 @@ export const Formulario = (formProps: FormProps) => {
               </Grid>
             )}
 
-            {!isAporte && !isRetirada && (
+            {!isAporte && (
               <Grid item xs={12}>
                 <HookCurrencyField
                   name="valorMeta"
@@ -179,12 +174,12 @@ export const Formulario = (formProps: FormProps) => {
               </Grid>
             )}
 
-            {(isAporte || isRetirada) && (
+            {isAporte && (
               <Grid item xs={12}>
                 <HookCurrencyField
                   name="valorMeta"
                   control={control}
-                  label={isRetirada ? "Valor da Retirada" : "Valor do Aporte"}
+                  label="Valor do Aporte"
                   returnAsNumber={true}
                   placeholder="0,00"
                 />
@@ -195,7 +190,8 @@ export const Formulario = (formProps: FormProps) => {
               <HookDatePicker
                 name="dataAlvo"
                 control={control}
-                label={isAporte ? "Data do Aporte" : (isRetirada ? "Data da Retirada" : "Data Alvo")}
+                label={isAporte ? "Data do Aporte" : "Data Alvo"}
+                helperText={!isAporte ? "Data limite para atingir o valor total pretendido." : "Data da movimentação financeira."}
               />
             </Grid>
 
@@ -206,28 +202,24 @@ export const Formulario = (formProps: FormProps) => {
                   fullWidth
                   variant="contained"
                   loading={isCreating || isUpdating || isAportando}
-                  color={isRetirada ? "error" : "primary"}
+                  color="primary"
                   startIcon={<IconDeviceFloppy size={18} />}
                   sx={{
                     borderRadius: 3,
                     py: 1.5,
                     fontWeight: 700,
-                    boxShadow: isRetirada
-                      ? `0 8px 16px ${alpha(theme.palette.error.main, 0.2)}`
-                      : `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
                     transition: 'all 0.2s',
                     '&:hover': {
                       transform: 'translateY(-2px)',
-                      boxShadow: isRetirada
-                        ? `0 12px 20px ${alpha(theme.palette.error.main, 0.3)}`
-                        : `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`
+                      boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`
                     }
                   }}
                 >
                   {getButtonText()}
                 </LoadingButton>
 
-                {(isEditing || isAporte || isRetirada) && (
+                {(isEditing || isAporte) && (
                   <Button
                     variant="outlined"
                     fullWidth

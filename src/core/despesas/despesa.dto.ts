@@ -99,6 +99,28 @@ export const createDespesaSchema = z
         });
       }
     }
+
+    // Validação para VARIAVEL (Ajustada para seguir a regra de ambos ou nenhum)
+    if (data.tipo === "VARIAVEL") {
+      const temValor = !!data.valorEstimado && Number(data.valorEstimado) > 0;
+      const temDia = !!data.diaVencimento;
+
+      if (temValor !== temDia) {
+        if (!temValor) {
+          ctx.addIssue({
+            code: 'custom',
+            message: "Informe o valor para este dia",
+            path: ["valorEstimado"],
+          });
+        } else {
+          ctx.addIssue({
+            code: 'custom',
+            message: "Informe o dia para este valor",
+            path: ["diaVencimento"],
+          });
+        }
+      }
+    }
   });
 
 // Schema para ATUALIZAR despesa
@@ -116,6 +138,27 @@ export const updateDespesaSchema = z
     dataInicio: z.coerce.date().nullable().optional(),
     valorEstimado: z.number().nullable().optional(),
     diaVencimento: z.number().int().min(1).max(31).nullable().optional(),
+  })
+  .superRefine(({ tipo, valorEstimado, diaVencimento }, ctx) => {
+    // Validamos apenas se os campos necessários foram enviados
+    if (tipo !== undefined) {
+      const v = valorEstimado !== undefined ? (!!valorEstimado && Number(valorEstimado) > 0) : null;
+      const d = diaVencimento !== undefined ? !!diaVencimento : null;
+
+      if (tipo === "FIXA") {
+        if (valorEstimado !== undefined && !v) ctx.addIssue({ code: "custom", message: "Valor estimado é obrigatório para despesas fixas", path: ["valorEstimado"] });
+        if (diaVencimento !== undefined && !d) ctx.addIssue({ code: "custom", message: "Dia de vencimento é obrigatório para despesas fixas", path: ["diaVencimento"] });
+      } else if (tipo === "VARIAVEL") {
+        if (valorEstimado !== undefined && diaVencimento !== undefined) {
+          const hasV = !!valorEstimado && Number(valorEstimado) > 0;
+          const hasD = !!diaVencimento;
+          if (hasV !== hasD) {
+            if (!hasV) ctx.addIssue({ code: "custom", message: "Informe o valor para este dia", path: ["valorEstimado"] });
+            else ctx.addIssue({ code: "custom", message: "Informe o dia para este valor", path: ["diaVencimento"] });
+          }
+        }
+      }
+    }
   });
 
 // Schema para buscar por ID

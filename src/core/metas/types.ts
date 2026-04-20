@@ -1,3 +1,5 @@
+import { LancamentoResposta } from "../lancamentos/types";
+
 export interface Meta {
   id: number;
   userId: number;
@@ -15,6 +17,7 @@ export interface Meta {
   valorAcumulado?: number;
   progresso?: number;
   concluida?: boolean;
+  lancamentos?: LancamentoResposta[];
 }
 
 export interface MetaPayload {

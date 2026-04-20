@@ -20,6 +20,7 @@ import {
   ListItemText,
   Divider as MuiDivider,
   Chip,
+  Fade,
 } from "@mui/material";
 import {
   IconEdit,
@@ -33,10 +34,12 @@ import {
   IconDotsVertical,
   IconTrendingDown,
   IconHistory,
+  IconEye,
 } from "@tabler/icons-react";
 import { useState } from "react";
-import HistoricoMetasModal from "./HistoricoMetasModal";
+import DetalhesMetaModal from "./DetalhesMetaModal";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 interface ListagemProps {
   metas: Meta[];
@@ -62,8 +65,8 @@ export const Listagem = ({
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
-  const [metaHistorico, setMetaHistorico] = useState<Meta | null>(null);
-  const [historicoOpen, setHistoricoOpen] = useState(false);
+  const [metaDetalhes, setMetaDetalhes] = useState<Meta | null>(null);
+  const [detalhesOpen, setDetalhesOpen] = useState(false);
   const openMenu = Boolean(anchorEl);
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, meta: Meta) => {
@@ -73,7 +76,8 @@ export const Listagem = ({
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
-    setSelectedMeta(null);
+    // Não alteramos o selectedMeta aqui para evitar que os itens pisquem/sumam
+    // durante a animação de fechamento do menu.
   };
 
   const handleAction = (callback: (meta: Meta) => void) => {
@@ -130,6 +134,12 @@ export const Listagem = ({
         const progresso = (acumulado / metaValor) * 100;
         const cor = meta.cor || theme.palette.primary.main;
         const faltante = Math.max(metaValor - acumulado, 0);
+        const isMetaAtingida = progresso >= 100 && meta.status === 'A';
+
+        // Lógica de Atraso (usando arquitetura Naive)
+        const hoje = new Date().toLocaleDateString('sv-SE');
+        const dataAlvoStr = meta.dataAlvo ? fnFormatNaiveDate(meta.dataAlvo, 'yyyy-MM-dd') : '';
+        const isMetaAtrasada = meta.status === 'A' && progresso < 100 && dataAlvoStr < hoje;
 
         return (
           <Grid item xs={12} md={6} key={meta.id}>
@@ -137,12 +147,27 @@ export const Listagem = ({
               sx={{
                 padding: 0,
                 borderRadius: 4,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                position: "relative",
+                overflow: "visible",
+                transition: 'all 0.2s ease-in-out',
                 opacity: meta.status === 'I' ? 0.8 : 1,
                 filter: meta.status === 'I' ? 'grayscale(0.3)' : 'none',
-                transition: 'all 0.3s ease-in-out',
-                position: "relative",
-                overflow: "visible" // Permite check flutuante
+
+                // Estilo Condicional Centralizado
+                border: isMetaAtingida
+                  ? `1px solid ${alpha(theme.palette.success.main, 0.5)}`
+                  : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+
+                boxShadow: isMetaAtingida
+                  ? `0 2px 7px ${alpha(theme.palette.success.main, 0.4)}`
+                  : undefined,
+
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: isMetaAtingida
+                    ? `0 4px 12px ${alpha(theme.palette.success.main, 0.5)}`
+                    : `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+                }
               }}
               elevation={1}
             >
@@ -198,12 +223,21 @@ export const Listagem = ({
                           sx={{ height: 20, fontSize: '10px', fontWeight: 700 }}
                         />
                       )}
+                      {isMetaAtrasada && (
+                        <Chip
+                          label="Atrasada"
+                          color="error"
+                          size="small"
+                          variant="filled"
+                          sx={{ height: 20, fontSize: '10px', fontWeight: 700 }}
+                        />
+                      )}
                     </Stack>
                     <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center">
                       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: 'text.secondary' }}>
                         <IconCalendar size={14} />
                         <Typography variant="caption" fontWeight={500}>
-                          {meta.dataAlvo ? new Date(meta.dataAlvo).toLocaleDateString() : "Sem data"}
+                          {meta.dataAlvo ? fnFormatNaiveDate(meta.dataAlvo) : "Sem data"}
                         </Typography>
                       </Stack>
                     </Stack>
@@ -281,7 +315,7 @@ export const Listagem = ({
                 </Box>
 
                 {/* Badge de meta batida (Atalho rápido para concluir) */}
-                {progresso >= 100 && meta.status === 'A' && (
+                {isMetaAtingida && (
                   <Tooltip title="Meta batida! Clique para concluir" arrow>
                     <IconButton
                       onClick={() => onToggleStatus(meta)}
@@ -290,8 +324,6 @@ export const Listagem = ({
                         bottom: -18,
                         left: "50%",
                         transform: "translateX(-50%)",
-                        bgcolor: "success.main",
-                        color: "white",
                         width: 36,
                         height: 36,
                         p: 0,
@@ -299,16 +331,17 @@ export const Listagem = ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: `0 4px 14px ${alpha(theme.palette.success.main, 0.5)}`,
+                        boxShadow: `0 2px 7px ${alpha(theme.palette.success.main, 0.5)}`,
                         border: "3px solid",
                         borderColor: "background.paper",
+                        bgcolor: "success.main",
+                        color: "white",
                         zIndex: 2,
                         transition: 'all 0.2s',
                         '&:hover': {
-                          color: "success.light",
-                          bgcolor: "success.main",
-                          transform: "translateX(-50%) scale(1.1)",
-                          boxShadow: `0 6px 20px ${alpha(theme.palette.success.main, 0.6)}`,
+                          color: "white",
+                          bgcolor: "success.dark",
+                          // boxShadow: `0 6px 20px ${alpha(theme.palette.success.main, 0.6)}`,
                         }
                       }}
                     >
@@ -327,12 +360,19 @@ export const Listagem = ({
         anchorEl={anchorEl}
         open={openMenu}
         onClose={handleCloseMenu}
+        disableScrollLock
+        TransitionComponent={Fade}
+        TransitionProps={{
+          timeout: 200,
+          onExited: () => setSelectedMeta(null)
+        }}
         PaperProps={{
           sx: {
             borderRadius: 3,
             minWidth: 180,
             boxShadow: theme.shadows[10],
             mt: 0.5,
+            transform: 'translateZ(0)', // Evita o recálculo de subpixel da fonte (o pulo visual)
           }
         }}
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -344,15 +384,15 @@ export const Listagem = ({
               <ListItemIcon sx={{ color: 'success.main' }}>
                 <IconCoins size={18} />
               </ListItemIcon>
-              <ListItemText primary="Novo Aporte" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+              <ListItemText sx={{ m: 0 }} primary="Novo Aporte" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
             </MenuItem>
             <MenuItem onClick={() => handleAction(onRetirada)}>
               <ListItemIcon sx={{ color: 'error.main' }}>
                 <IconTrendingDown size={18} />
               </ListItemIcon>
-              <ListItemText primary="Retirada" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+              <ListItemText sx={{ m: 0 }} primary="Retirada" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
             </MenuItem>
-            <MuiDivider sx={{ my: 1, opacity: 0.6 }} />
+            <MuiDivider sx={{}} />
           </>
         )}
 
@@ -360,31 +400,32 @@ export const Listagem = ({
           <ListItemIcon sx={{ color: 'primary.main' }}>
             <IconEdit size={18} />
           </ListItemIcon>
-          <ListItemText primary="Editar Meta" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+          <ListItemText sx={{ m: 0 }} primary="Editar Meta" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
         </MenuItem>
 
         <MenuItem onClick={() => {
           if (selectedMeta) {
-            setMetaHistorico(selectedMeta);
-            setHistoricoOpen(true);
+            setMetaDetalhes(selectedMeta);
+            setDetalhesOpen(true);
           }
           handleCloseMenu();
         }}>
           <ListItemIcon>
-            <IconHistory size={18} />
+            <IconEye size={18} />
           </ListItemIcon>
-          <ListItemText primary="Exibir Histórico" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+          <ListItemText sx={{ m: 0 }} primary="Ver Detalhes" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
         </MenuItem>
 
-        <MuiDivider sx={{ my: 1, opacity: 0.6 }} />
+        <MuiDivider sx={{}} />
 
         <MenuItem onClick={() => handleAction(onToggleStatus)}>
           <ListItemIcon sx={{ color: selectedMeta?.status === 'A' ? 'success.main' : 'warning.main' }}>
             {selectedMeta?.status === 'A' ? <IconCircleCheck size={18} /> : <IconTarget size={18} />}
           </ListItemIcon>
           <ListItemText
+            sx={{ m: 0 }}
             primary={selectedMeta?.status === 'A' ? 'Concluir Meta' : 'Reativar Meta'}
-            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+            primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }}
           />
         </MenuItem>
 
@@ -393,21 +434,20 @@ export const Listagem = ({
             <ListItemIcon sx={{ color: 'error.main' }}>
               <IconTrash size={18} />
             </ListItemIcon>
-            <ListItemText primary="Excluir Meta" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
+            <ListItemText sx={{ m: 0 }} primary="Excluir Meta" primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }} />
           </MenuItem>
         )}
       </Menu>
 
-      {/* Modal de Histórico */}
-      {metaHistorico && (
-        <HistoricoMetasModal
-          open={historicoOpen}
+      {/* Modal de Detalhes */}
+      {metaDetalhes && (
+        <DetalhesMetaModal
+          open={detalhesOpen}
           onClose={() => {
-            setHistoricoOpen(false);
-            setMetaHistorico(null);
+            setDetalhesOpen(false);
+            setMetaDetalhes(null);
           }}
-          metaId={metaHistorico.id}
-          metaNome={metaHistorico.nome}
+          metaId={metaDetalhes.id}
         />
       )}
     </Grid>

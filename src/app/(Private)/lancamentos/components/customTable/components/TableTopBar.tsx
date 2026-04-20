@@ -1,10 +1,11 @@
-import { Box, Collapse, IconButton, Paper, Stack, Tooltip } from '@mui/material';
+import { alpha, Badge, Box, Collapse, IconButton, Paper, Stack, Tooltip } from '@mui/material';
 import {
   Search,
   Refresh,
   ChevronLeft,
   ChevronRight,
 } from '@mui/icons-material';
+import { IconChevronLeft, IconChevronRight, IconReload, IconTrash } from '@tabler/icons-react';
 import { SearchTextField } from './SearchTextField';
 import { ReactNode, useState } from 'react';
 import { useIconSpin } from '../hooks/useIconSpin';
@@ -17,6 +18,10 @@ interface TableTopBarProps {
 
   // Customização
   leftActions?: ReactNode;
+
+  // Seleção e Deleção
+  selectedCount?: number;
+  onBulkDelete?: () => void;
 }
 
 /**
@@ -28,6 +33,8 @@ export function TableTopBar({
   onFilterChange,
   onReset,
   leftActions,
+  selectedCount = 0,
+  onBulkDelete,
 }: TableTopBarProps) {
   const [topBarOpen, setTopBarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -68,7 +75,7 @@ export function TableTopBar({
             size="small"
             color="primary"
           >
-            {topBarOpen ? <ChevronLeft /> : <ChevronRight />}
+            {topBarOpen ? <IconChevronLeft size={20} stroke={2.5} /> : <IconChevronRight size={20} stroke={2.5} />}
           </IconButton>
         </Tooltip>
 
@@ -86,12 +93,48 @@ export function TableTopBar({
                   transform: resetSpin.isSpinning ? 'rotate(360deg)' : 'none',
                 }}
               >
-                <Refresh />
+                <IconReload size={20} stroke={2.5} />
               </IconButton>
             </Tooltip>
 
             {/* Área para ações customizadas */}
             {leftActions}
+
+            {/* Botão de Excluir em Lote com Badge */}
+            {selectedCount > 0 && (
+              <Tooltip title="Excluir selecionados" arrow>
+                <IconButton
+                  onClick={onBulkDelete}
+                  size="small"
+                  sx={{
+                    color: 'error.main',
+                    bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+                    '&:hover': {
+                      color: 'error.dark',
+                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.4),
+                    },
+                    ml: 1
+                  }}
+                >
+                  <Badge
+                    badgeContent={selectedCount}
+                    color="error"
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.65rem',
+                        height: '16px',
+                        minWidth: '16px',
+                        padding: '0 4px',// Ajuste aqui para mover para o topo e para a direita
+                        top: -2,
+                        right: -2,
+                      }
+                    }}
+                  >
+                    <IconTrash size={20} />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+            )}
           </Stack>
         </Collapse>
       </Stack>

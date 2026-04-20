@@ -13,10 +13,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Swal from "sweetalert2";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
+import { SwalToast } from "@/utils/swalert";
 import { useTheme } from "@mui/material";
-import { format } from "date-fns";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
-const getHojeLocal = () => format(new Date(), "yyyy-MM-dd");
+const getHojeLocal = () => new Date().toLocaleDateString('sv-SE');
 
 const metaSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -28,6 +29,47 @@ const metaSchema = z.object({
   dataAlvo: z.string().min(1, "Data é obrigatória"),
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
+  // Campos virtuais para contexto de validação
+  isAporte: z.boolean().optional(),
+  valorRestante: z.number().optional(),
+}).superRefine((data, ctx) => {
+  const hoje = getHojeLocal();
+
+  // Validação de Data Alvo (apenas para Meta, não para Aporte)
+  if (!data.isAporte && data.dataAlvo < hoje) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "A data alvo deve ser hoje ou uma data futura.",
+      path: ["dataAlvo"],
+    });
+  }
+
+  // Se for um aporte, validar contra o saldo restante
+  if (data.isAporte) {
+    const restante = data.valorRestante ?? 0;
+
+    if (restante <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Meta concluída! Edite o valor objetivo para novos aportes.",
+        path: ["valorMeta"],
+      });
+      return;
+    }
+
+    if (data.valorMeta > restante) {
+      const valorFormatado = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(restante);
+
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `O aporte não pode exceder o saldo restante de ${valorFormatado}`,
+        path: ["valorMeta"],
+      });
+    }
+  }
 });
 
 export type MetaFormData = z.input<typeof metaSchema>;
@@ -38,8 +80,12 @@ export function useMetas() {
   const userId = Number(session?.user?.id);
 
   const [isAporte, setIsAporte] = useState(false);
-  const [isRetirada, setIsRetirada] = useState(false);
+  const [isRetiradaModalOpen, setIsRetiradaModalOpen] = useState(false);
   const [targetMeta, setTargetMeta] = useState<Meta | null>(null);
+
+  // Estados para Controle do DeleteConfirmationDialog
+  const [tipoConfirmacao, setTipoConfirmacao] = useState<'delete' | 'concluir' | 'reativar' | null>(null);
+  const [metaParaAcao, setMetaParaAcao] = useState<Meta | null>(null);
 
   const { data: metas = [], isLoading } = useGetMetasQuery();
   const [createMeta, { isLoading: isCreating }] = useCreateMetaMutation();
@@ -60,6 +106,10 @@ export function useMetas() {
       nome: "",
       valorMeta: "",
       dataAlvo: getHojeLocal(),
+      isAporte: false,
+      valorRestante: undefined,
+      cor: "",
+      icone: "",
     },
   });
 
@@ -69,30 +119,23 @@ export function useMetas() {
         // O zodResolver já garante que chegamos aqui com o tipo de saída correto (z.infer)
         const data = formData as unknown as z.infer<typeof metaSchema>;
 
-        if ((isAporte || isRetirada) && targetMeta) {
-          // Lógica de Aporte ou Retirada
-          const valorFinal = isRetirada ? -Math.abs(data.valorMeta) : Math.abs(data.valorMeta);
-
+        if (isAporte && targetMeta) {
+          // Lógica de Aporte
           await createLancamento({
             tipo: "pagamento",
-            valor: valorFinal,
+            valor: Math.abs(data.valorMeta),
             data: data.dataAlvo,
             metaId: targetMeta.id,
             userId,
-            observacao: isRetirada ? `Retirada - ${targetMeta.nome}` : `Aporte - ${targetMeta.nome}`,
-            observacaoAutomatica: isRetirada
-              ? `Retirada manual da meta: ${targetMeta.nome}`
-              : `Aporte manual para a meta: ${targetMeta.nome}`,
+            observacao: `Aporte`,
+            observacaoAutomatica: `Aporte manual para a meta: ${targetMeta.nome}`,
           }).unwrap();
 
-          Swal.fire({
+          SwalToast.fire({
             icon: "success",
-            title: isRetirada ? "Retirada realizada!" : "Aporte realizado!",
-            timer: 1500,
-            showConfirmButton: false
+            title: "Aporte realizado com sucesso!",
           });
           setIsAporte(false);
-          setIsRetirada(false);
           setTargetMeta(null);
         } else {
           // Lógica de Meta (Criar/Editar)
@@ -104,19 +147,17 @@ export function useMetas() {
             await createMeta(payload).unwrap();
           }
         }
-        reset({ nome: "", valorMeta: "", dataAlvo: getHojeLocal(), icone: "IconTarget", cor: "#00FF00" });
+        reset({ nome: "", valorMeta: "", dataAlvo: getHojeLocal(), icone: "IconTarget", cor: "" });
         setIsAporte(false);
-        setIsRetirada(false);
       } catch (error) {
-        Swal.fire({ icon: "error", title: "Erro ao processar solicitação" });
+        // Erro tratado globalmente pelo RTK Query e API
       }
     },
-    [createMeta, updateMeta, createLancamento, isAporte, isRetirada, targetMeta, userId, reset, setIsAporte, setIsRetirada, setTargetMeta]
+    [createMeta, updateMeta, createLancamento, isAporte, targetMeta, userId, reset, setIsAporte, setTargetMeta]
   );
 
   const handleEdit = (meta: Meta) => {
     setIsAporte(false);
-    setIsRetirada(false);
     setTargetMeta(meta);
     reset({
       id: meta.id,
@@ -125,96 +166,72 @@ export function useMetas() {
       dataAlvo: meta.dataAlvo ? new Date(meta.dataAlvo).toISOString().split("T")[0] : "",
       icone: meta.icone,
       cor: meta.cor,
+      isAporte: false,
+      valorRestante: undefined
     });
     setTimeout(() => setFocus("nome"), 100);
   };
 
   const handleAporte = (meta: Meta) => {
     setIsAporte(true);
-    setIsRetirada(false);
     setTargetMeta(meta);
+    const restante = Number(meta.valorMeta) - (Number(meta.valorAcumulado) || 0);
+
     reset({
       id: undefined,
-      nome: meta.nome, // Apenas para referência visual se necessário
+      nome: meta.nome,
       valorMeta: "",
       dataAlvo: getHojeLocal(),
+      isAporte: true,
+      valorRestante: restante,
+      cor: "",
+      icone: "",
     });
     setTimeout(() => setFocus("valorMeta"), 100);
   };
 
   const handleRetirada = (meta: Meta) => {
-    setIsRetirada(true);
-    setIsAporte(false);
     setTargetMeta(meta);
-    reset({
-      id: undefined,
-      nome: meta.nome,
-      valorMeta: "", // Começa vazio para a máscara
-      dataAlvo: getHojeLocal(),
-    });
-    setTimeout(() => setFocus("valorMeta"), 100);
+    setIsRetiradaModalOpen(true);
   };
 
-  const handleToggleStatus = async (meta: Meta) => {
+  const handleToggleStatus = (meta: Meta) => {
     const isAtivo = meta.status === "A";
-    const novoStatus = isAtivo ? "I" : "A";
-    const titulo = isAtivo ? "Concluir esta meta?" : "Reativar meta?";
-    const texto = isAtivo
-      ? "Parabéns por atingir seu objetivo! A meta será arquivada como concluída."
-      : "A meta voltará a ficar disponível para novos aportes.";
-
-    Swal.fire({
-      title: titulo,
-      text: texto,
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonColor: theme.palette.primary.main,
-      cancelButtonColor: theme.palette.grey[500],
-      confirmButtonText: isAtivo ? "Sim, inativar" : "Sim, reativar",
-      cancelButtonText: "Cancelar"
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await updateMeta({ id: meta.id, data: { status: novoStatus } }).unwrap();
-          Swal.fire({
-            icon: "success",
-            title: isAtivo ? "Meta concluída!" : "Meta reativada!",
-            timer: 1500,
-            showConfirmButton: false
-          });
-        } catch {
-          Swal.fire({ icon: "error", title: "Erro ao atualizar status" });
-        }
-      }
-    });
+    setTipoConfirmacao(isAtivo ? "concluir" : "reativar");
+    setMetaParaAcao(meta);
   };
 
-  const handleDelete = async (id: number | string) => {
-    const targetId = Number(id);
-    Swal.fire({
-      title: "Excluir meta permanentemente?",
-      text: "Esta ação não pode ser desfeita e a meta será removida da sua listagem.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: theme.palette.error.main,
-      cancelButtonColor: theme.palette.grey[500],
-      confirmButtonText: "Sim, excluir",
-      cancelButtonText: "Cancelar"
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await deleteMeta(targetId).unwrap();
-          Swal.fire({
-            icon: "success",
-            title: "Meta excluída!",
-            timer: 1500,
-            showConfirmButton: false
-          });
-        } catch {
-          Swal.fire({ icon: "error", title: "Erro ao excluir meta" });
-        }
+  const handleDelete = (meta: Meta | number | string) => {
+    if (typeof meta === 'object') {
+      setMetaParaAcao(meta);
+    } else {
+      const found = metas.find(m => m.id === Number(meta));
+      if (found) setMetaParaAcao(found);
+    }
+    setTipoConfirmacao('delete');
+  };
+
+  const executarAcaoConfirmada = async () => {
+    if (!metaParaAcao || !tipoConfirmacao) return;
+
+    try {
+      if (tipoConfirmacao === 'delete') {
+        await deleteMeta(Number(metaParaAcao.id)).unwrap();
+      } else {
+        const novoStatus = tipoConfirmacao === 'concluir' ? 'I' : 'A';
+        await updateMeta({ id: metaParaAcao.id, data: { status: novoStatus } }).unwrap();
       }
-    });
+
+      SwalToast.fire({
+        icon: "success",
+        title: tipoConfirmacao === 'delete' ? "Meta removida!" : "Status atualizado!",
+      });
+    } catch {
+      // Erro tratado globalmente
+    } finally {
+      setTipoConfirmacao(null);
+      setMetaParaAcao(null);
+    }
   };
 
   const isEditing = Boolean(watch("id"));
@@ -229,9 +246,13 @@ export function useMetas() {
     isAportando,
     isEditing,
     isAporte,
-    isRetirada,
-    setIsRetirada,
+    isRetiradaModalOpen,
+    setIsRetiradaModalOpen,
     targetMeta,
+    tipoConfirmacao,
+    metaParaAcao,
+    setTipoConfirmacao,
+    executarAcaoConfirmada,
     control,
     handleSubmit,
     handleEdit,
@@ -241,9 +262,8 @@ export function useMetas() {
     handleToggleStatus,
     handleCancelEdit: () => {
       setIsAporte(false);
-      setIsRetirada(false);
       setTargetMeta(null);
-      reset({ id: undefined, nome: "", valorMeta: "" as any });
+      reset({ id: undefined, nome: "", valorMeta: "", isAporte: false, valorRestante: undefined });
     },
   };
 }
