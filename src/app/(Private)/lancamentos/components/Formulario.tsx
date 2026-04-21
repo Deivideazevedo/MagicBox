@@ -24,12 +24,20 @@ import {
   Tooltip,
   Typography,
   useTheme,
+  Divider,
 } from "@mui/material";
 import {
-  IconCalendarEvent,
-  IconCoin,
-  IconDeviceFloppy,
+  IconEdit,
+  IconMinus,
+  IconPlus,
   IconSwitchHorizontal,
+  IconTarget,
+  IconWallet,
+  IconCreditCard,
+  IconArrowRight,
+  IconCoin,
+  IconCalendarEvent,
+  IconDeviceFloppy,
 } from "@tabler/icons-react";
 import {
   Control,
@@ -44,33 +52,40 @@ import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 interface FormularioProps {
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   control: Control<LancamentoFormData>;
-  tipo: "pagamento" | "agendamento";
+  tipo: "pagamento" | "agendamento" | "investimento" | "retirada";
   parcelar: boolean;
   parcelas: number | null | undefined;
   valor: number;
   valorTotal: number;
   handleTipoChange: (
     event: React.MouseEvent<HTMLElement>,
-    newTipo: "pagamento" | "agendamento" | null,
+    newTipo: "pagamento" | "agendamento" | "investimento" | "retirada" | null,
   ) => void;
   isCreating: boolean;
-  itens: Despesa[] | Receita[];
-  selectedItem: Despesa | Receita | null;
+  itens: any[];
+  selectedItem: any | null;
   reset: UseFormReset<LancamentoFormData>;
   defaultValues: LancamentoFormData;
   setFocus: UseFormSetFocus<LancamentoFormData>;
   setValue: UseFormSetValue<LancamentoFormData>;
   isDespesa: boolean;
+  isMeta: boolean;
   corTema: string;
-  toggleOrigem: () => void;
+  handleOrigemChange: (event: React.MouseEvent<HTMLElement>, novaOrigem: "despesa" | "receita" | "meta" | null) => void;
+  origem: "despesa" | "receita" | "meta";
+  despesasApi: any[];
+  receitasApi: any[];
+  metasApi: any[];
   id?: number;
   itemId?: number;
+  destinoOrigem?: "despesa" | "receita";
+  destinoId?: number;
 }
 
 /** Renderiza o ícone do item selecionado (Tabler icon por nome string ou fallback) */
-function ItemIconAdornment({ item, isDespesa }: { item: Despesa | Receita | null; isDespesa: boolean }) {
+function ItemIconAdornment({ item, isDespesa, isMeta }: { item: any | null; isDespesa: boolean; isMeta: boolean }) {
   const theme = useTheme();
-  const color = isDespesa ? theme.palette.error.main : theme.palette.success.main;
+  const color = isMeta ? theme.palette.primary.main : isDespesa ? theme.palette.error.main : theme.palette.success.main;
   const itemColor = item?.cor || color;
 
   return (
@@ -84,7 +99,6 @@ function ItemIconAdornment({ item, isDespesa }: { item: Despesa | Receita | null
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          // backgroundColor: alpha(itemColor, 0.12),
           color: itemColor,
           flexShrink: 0,
         }}
@@ -93,7 +107,7 @@ function ItemIconAdornment({ item, isDespesa }: { item: Despesa | Receita | null
           name={item?.icone}
           size={18}
           color={itemColor}
-          fallbackIcon={isDespesa ? "IconCreditCard" : "IconWallet"}
+          fallbackIcon={isMeta ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"}
         />
       </Box>
     </InputAdornment>
@@ -117,23 +131,92 @@ export default function Formulario({
   setFocus,
   setValue,
   isDespesa,
+  isMeta,
   corTema,
-  toggleOrigem,
+  handleOrigemChange,
+  origem,
+  despesasApi,
+  receitasApi,
+  metasApi,
   id,
   itemId,
+  destinoOrigem,
+  destinoId,
 }: FormularioProps) {
   const theme = useTheme();
+
+  // Itens para o destino da retirada
+  const itensDestino = destinoOrigem === "despesa" ? despesasApi : receitasApi;
+  const selectedDestino = (itensDestino as any[]).find(i => i.id === destinoId) || null;
+
   return (
     <Box py={2} px={3} component="form" onSubmit={handleSubmit}>
+      {/* Seletor Segmentado de Origem (Apenas modo Novo) */}
+      {!id && (
+        <Box mb={2.5}>
+          <ToggleButtonGroup
+            value={origem}
+            exclusive
+            onChange={handleOrigemChange}
+            fullWidth
+            sx={{
+              backgroundColor: (theme) => alpha(theme.palette.grey[200], 0.6),
+              padding: "4px",
+              borderRadius: "12px",
+              border: "1px solid",
+              borderColor: "divider",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: "4px",
+              "& .MuiToggleButton-root": {
+                border: "1px solid transparent",
+                borderRadius: "8px !important",
+                textTransform: "none",
+                fontSize: "0.875rem",
+                fontWeight: 700,
+                color: "text.secondary",
+                gap: 1,
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                py: 1,
+
+                "&:hover": {
+                  backgroundColor: "background.paper",
+                  borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                },
+
+                "&.Mui-selected": {
+                  backgroundColor: "background.paper",
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
+                  border: "1px solid",
+                  "&.despesa": { color: "error.main", borderColor: alpha(theme.palette.error.main, 0.3) },
+                  "&.receita": { color: "success.main", borderColor: alpha(theme.palette.success.main, 0.3) },
+                  "&.meta": { color: "primary.main", borderColor: alpha(theme.palette.primary.main, 0.3) },
+                },
+              },
+            }}
+          >
+            <ToggleButton value="despesa" className="despesa">
+              <IconCreditCard size={18} /> Despesa
+            </ToggleButton>
+            <ToggleButton value="receita" className="receita">
+              <IconWallet size={18} /> Receita
+            </ToggleButton>
+            <ToggleButton value="meta" className="meta">
+              <IconTarget size={18} /> Meta
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+
       <Box
         component={Paper}
         elevation={1}
         sx={{
           borderRadius: 3,
-          border: "1px solid",
-          borderColor: alpha(theme.palette.primary.main, 0.2),
           p: 3,
-          pb: "27px",
+          border: "1px solid",
+          borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+          backgroundColor: 'background.paper'
         }}
       >
         {/* Header com Switch de Origem */}
@@ -152,52 +235,20 @@ export default function Formulario({
             <DynamicIcon
               name={selectedItem?.icone}
               size={24}
-              fallbackIcon={isDespesa ? "IconCreditCard" : "IconWallet"}
+              fallbackIcon={isMeta ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"}
               color="white"
             />
-
-            {/* Botão de Switch */}
-            <Tooltip
-              title={isDespesa ? "Lançar Fonte de Renda" : "Lançar Despesa"}
-              placement="top"
-              arrow
-            >
-              <Box
-                component="span"
-                sx={{ position: "absolute", top: -10, right: -10 }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={toggleOrigem}
-                  color="inherit"
-                  sx={{
-                    backgroundColor: "primary.main",
-                    boxShadow: 1,
-                    width: 24,
-                    height: 24,
-                    transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                    transform: isDespesa
-                      ? "rotateY(0deg)"
-                      : "rotateY(180deg)",
-                    "&:hover": {
-                      color: "white",
-                      backgroundColor: "primary.dark",
-                    },
-                  }}
-                >
-                  <IconSwitchHorizontal size={14} />
-                </IconButton>
-              </Box>
-            </Tooltip>
           </Box>
           <Box>
             <Typography variant="subtitle2" fontWeight={600}>
-              Lançamento de {isDespesa ? "Despesa" : "Receita"}
+              Lançamento de {isMeta ? "Meta" : isDespesa ? "Despesa" : "Receita"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {isDespesa
-                ? "Registre um pagamento ou agendamento"
-                : "Registre um recebimento"}
+              {isMeta
+                ? "Registre um investimento ou retirada"
+                : isDespesa
+                  ? "Registre um pagamento ou agendamento"
+                  : "Registre um recebimento"}
             </Typography>
           </Box>
         </Box>
@@ -236,53 +287,86 @@ export default function Formulario({
                   textTransform: "none",
                   fontWeight: 600,
                   color: "text.secondary",
-                  transition: "all 0.2s ease-in-out",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                   py: 1.2,
 
                   "&:hover": {
-                    borderColor: (theme) => alpha(theme.palette.divider, 0.1),
-                    backgroundColor: (theme) =>
-                      alpha(theme.palette.background.paper, 0.6),
+                    // backgroundColor: (theme) => alpha(theme.palette.action.hover, 0.02),
+                    borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                    backgroundColor: "background.paper",
                   },
 
                   "&.Mui-selected": {
                     backgroundColor: "background.paper",
-                    color: "primary.main",
                     border: "1px solid",
-                    borderColor: (theme) =>
-                      alpha(theme.palette.primary.main, 0.4),
                     boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
                     "&:hover": {
                       backgroundColor: "background.paper",
                     },
+                    "&[value='investimento']": {
+                      color: "success.main",
+                      borderColor: (theme) => alpha(theme.palette.success.main, 0.4),
+                    },
+                    "&[value='retirada']": {
+                      color: "error.main",
+                      borderColor: (theme) => alpha(theme.palette.error.main, 0.4),
+                    },
+                    "&[value='agendamento']": {
+                      color: "warning.main",
+                      borderColor: (theme) => alpha(theme.palette.warning.main, 0.4),
+                    },
+                    "&[value='pagamento']": {
+                      color: `${corTema}.main`,
+                      borderColor: (theme) => alpha(theme.palette[corTema as 'primary'].main, 0.4),
+                    }
                   },
                 },
               }}
             >
-              <ToggleButton value="pagamento" disableRipple>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <IconCoin size={18} />
-                  <span>Pagamento</span>
-                </Box>
-              </ToggleButton>
-
-              <ToggleButton value="agendamento" disableRipple>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <IconCalendarEvent size={18} />
-                  <span>Agendamento</span>
-                </Box>
-              </ToggleButton>
+              {isMeta ? (
+                <>
+                  <ToggleButton value="investimento">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconPlus size={18} />
+                      <span>Investimento</span>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="retirada">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconMinus size={18} />
+                      <span>Retirada</span>
+                    </Box>
+                  </ToggleButton>
+                </>
+              ) : (
+                <>
+                  <ToggleButton value="pagamento">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconCoin size={18} />
+                      <span>Pagamento</span>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="agendamento">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconCalendarEvent size={18} />
+                      <span>Agendamento</span>
+                    </Box>
+                  </ToggleButton>
+                </>
+              )}
             </ToggleButtonGroup>
           </Grid>
 
           {/* Despesa / Receita — Autocomplete com ícone */}
           <Grid item xs={12}>
-            <HookAutocomplete<LancamentoFormData, Despesa | Receita>
+            <HookAutocomplete<LancamentoFormData, any>
               name="itemId"
               control={control}
               options={itens}
-              label={isDespesa ? "Despesa" : "Receita"}
-              placeholder={isDespesa ? "Buscar despesa..." : "Buscar receita..."}
+              label={isMeta
+                ? (tipo === "retirada" ? "Meta de Origem (Onde sai o saldo)" : "Meta Selecionada")
+                : isDespesa ? "Despesa" : "Receita"}
+              placeholder={isMeta ? "Buscar meta..." : isDespesa ? "Buscar despesa..." : "Buscar receita..."}
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
@@ -293,6 +377,7 @@ export default function Formulario({
                     <ItemIconAdornment
                       item={selectedItem}
                       isDespesa={isDespesa}
+                      isMeta={isMeta}
                     />
                   ),
                 },
@@ -312,6 +397,95 @@ export default function Formulario({
             />
           </Grid>
 
+          {/* DESTINO DA RETIRADA (Exclusivo para Meta + Retirada no modo Novo lançamento) */}
+          {isMeta && tipo === "retirada" && !id && (
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                  border: "1px dashed",
+                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                }}
+              >
+                <Typography variant="body2" fontWeight={700} color="primary" mb={2} display="flex" alignItems="center" gap={1}>
+                  <IconArrowRight size={18} /> Destinar Retirada para:
+                </Typography>
+
+                <ToggleButtonGroup
+                  value={destinoOrigem}
+                  exclusive
+                  onChange={(_, val) => val && setValue("destinoOrigem", val)}
+                  fullWidth
+                  size="small"
+                  sx={{
+                    mb: 3,
+                    "& .MuiToggleButton-root": {
+                      textTransform: "none",
+                      fontWeight: 600,
+                      color: "text.secondary",
+                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                      py: 1,
+
+                      "&:hover": {
+                        backgroundColor: "background.paper",
+                        boxShadow: "0px 4px 8px rgba(0,0,0,0.06)",
+                        borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                      },
+
+                      "&.Mui-selected": {
+                        backgroundColor: "background.paper",
+                        border: "1px solid",
+                        boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
+                        "&:hover": {
+                          backgroundColor: "background.paper",
+                        },
+                        "&[value='despesa']": { color: "error.main", borderColor: alpha(theme.palette.error.main, 0.4) },
+                        "&[value='receita']": { color: "success.main", borderColor: alpha(theme.palette.success.main, 0.4) },
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="despesa">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconCreditCard size={18} />
+                      <span>Despesa</span>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="receita">
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconWallet size={18} />
+                      <span>Receita</span>
+                    </Box>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+
+                <HookAutocomplete
+                  name="destinoId"
+                  control={control}
+                  options={itensDestino}
+                  label={destinoOrigem === "despesa" ? "Despesa de Destino" : "Receita de Destino"}
+                  placeholder={destinoOrigem === "despesa" ? "Pagar qual despesa?" : "Como qual receita?"}
+                  getOptionLabel={(opt) => opt.nome}
+                  getOptionValue={(opt) => opt.id}
+                  forcePopupIcon={false}
+                  textFieldProps={{
+                    InputProps: {
+                      startAdornment: (
+                        <ItemIconAdornment
+                          item={selectedDestino}
+                          isDespesa={destinoOrigem === "despesa"}
+                          isMeta={false}
+                        />
+                      ),
+                    },
+                  }}
+                />
+              </Box>
+            </Grid>
+          )}
+
           {/* Valor */}
           <Grid item xs={12}>
             <HookCurrencyField
@@ -328,11 +502,15 @@ export default function Formulario({
           <Grid item xs={12}>
             <HookDatePicker
               label={
-                tipo === "pagamento"
-                  ? isDespesa
-                    ? "Data do Pagamento"
-                    : "Data do Recebimento"
-                  : "Data do Agendamento"
+                isMeta
+                  ? tipo === "investimento"
+                    ? "Data do Investimento (Aporte)"
+                    : "Data da Retirada (Resgate)"
+                  : tipo === "pagamento"
+                    ? isDespesa
+                      ? "Data do Pagamento"
+                      : "Data do Recebimento"
+                    : "Data do Agendamento"
               }
               name="data"
               control={control}
@@ -347,9 +525,11 @@ export default function Formulario({
               name="observacao"
               control={control}
               placeholder={
-                isDespesa
-                  ? "Ex: Conta de luz de janeiro"
-                  : "Ex: Salário de janeiro"
+                isMeta
+                  ? "Ex: Aporte extra do décimo terceiro"
+                  : isDespesa
+                    ? "Ex: Conta de luz de janeiro"
+                    : "Ex: Salário de janeiro"
               }
               multiline
               rows={2}

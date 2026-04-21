@@ -1,7 +1,5 @@
 "use client";
 
-import { Despesa } from "@/core/despesas/types";
-import { Receita } from "@/core/receitas/types";
 import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
 import {
   useCreateLancamentoMutation,
@@ -9,6 +7,7 @@ import {
 } from "@/services/endpoints/lancamentosApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
+import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 import { SwalToast } from "@/utils/swalert";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -16,19 +15,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-type TipoLancamentoOrigem = "despesa" | "receita";
-type TipoLancamento = "pagamento" | "agendamento";
+import {
+  mapearDadosParaFormulario,
+  mapearFormularioParaPayload,
+  obterLabelSucesso,
+  TipoLancamento,
+  TipoLancamentoOrigem,
+} from "./useLancamentoFormUtils";
 
 const lancamentoSchema = z.object({
   id: z.number().optional(),
-  // itemId armazena o ID da despesa ou receita selecionada
-  itemId: z.number().min(1, "Selecione uma despesa ou receita"),
-  tipo: z.enum(["pagamento", "agendamento"]),
+  // itemId armazena o ID da despesa, receita ou meta selecionada
+  itemId: z.number().min(1, "Selecione um item (despesa, receita ou meta)"),
+  tipo: z.enum(["pagamento", "agendamento", "investimento", "retirada"]),
   valor: z.number().min(0.01, "Valor obrigatório"),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
   parcelas: z.number().nullable().optional(),
   parcelar: z.boolean(),
+
+  // Campos exclusivos para Retirada de Meta (Destino)
+  destinoOrigem: z.enum(["despesa", "receita"]).optional(),
+  destinoId: z.number().optional(),
 });
 
 export type LancamentoFormData = z.infer<typeof lancamentoSchema>;
@@ -48,6 +56,7 @@ export function useLancamentoForm({
   // Queries internas — agora só disparam quando houver sessão
   const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
   const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
+  const { data: metasApi = [] } = useGetMetasQuery(undefined, { skip: !session });
 
   const [createLancamento, { isLoading: isCreating }] =
     useCreateLancamentoMutation();
@@ -64,6 +73,8 @@ export function useLancamentoForm({
       observacao: "",
       parcelas: null,
       parcelar: false,
+      destinoOrigem: "despesa",
+      destinoId: 0,
     }),
     [],
   );
@@ -86,34 +97,18 @@ export function useLancamentoForm({
   const valor = watch("valor");
   const id = watch("id");
   const itemId = watch("itemId");
+  const destinoOrigem = watch("destinoOrigem");
+  const destinoId = watch("destinoId");
 
   // Popular form quando houver lançamento para editar
   useEffect(() => {
     if (lancamentoParaEditar) {
-      const despesaId =
-        lancamentoParaEditar?.despesaId ?? lancamentoParaEditar.despesa_id;
-      const receitaId =
-        lancamentoParaEditar?.receitaId ?? lancamentoParaEditar.receita_id;
-
-      const novaOrigem = despesaId ? "despesa" : "receita";
+      const { origem: novaOrigem, dados } = mapearDadosParaFormulario(lancamentoParaEditar);
+      
       setOrigem(novaOrigem);
-
-      setValue("id", lancamentoParaEditar.id);
-      setValue("itemId", Number(despesaId || receitaId));
-      setValue("tipo", lancamentoParaEditar.tipo);
-      setValue("valor", Number(lancamentoParaEditar.valor));
-
-      const dataLancamento =
-        typeof lancamentoParaEditar.data === "string"
-          ? lancamentoParaEditar.data.split("T")[0]
-          : new Date(lancamentoParaEditar.data).toISOString().split("T")[0];
-      setValue("data", dataLancamento);
-
-      setValue("observacao", lancamentoParaEditar.observacao || "");
-      setValue("parcelar", false);
-      setValue("parcelas", null);
+      reset(dados);
     }
-  }, [lancamentoParaEditar, setValue]);
+  }, [lancamentoParaEditar, reset]);
 
   // Limpar parcelas quando toggle for desligado
   useEffect(() => {
@@ -123,15 +118,16 @@ export function useLancamentoForm({
   }, [parcelar, setValue]);
 
   // Lista de itens conforme origem (sem filtro por categoria)
-  const itensFiltrados = useMemo<Despesa[] | Receita[]>(() => {
+  const itensFiltrados = useMemo<any[]>(() => {
     if (origem === "despesa") return despesasApi;
-    return receitasApi;
-  }, [origem, despesasApi, receitasApi]);
+    if (origem === "receita") return receitasApi;
+    return metasApi;
+  }, [origem, despesasApi, receitasApi, metasApi]);
 
   // Item selecionado atualmente — usado para exibir ícone no formulário
-  const selectedItem = useMemo<Despesa | Receita | null>(() => {
+  const selectedItem = useMemo<any | null>(() => {
     if (!itemId) return null;
-    return (itensFiltrados as (Despesa | Receita)[]).find(
+    return (itensFiltrados as any[]).find(
       (item) => item.id === itemId,
     ) ?? null;
   }, [itemId, itensFiltrados]);
@@ -145,29 +141,64 @@ export function useLancamentoForm({
   const onSubmit = useCallback(
     async (payload: LancamentoFormData) => {
       try {
-        const data: LancamentoPayload = {
-          userId: Number(session?.user?.id),
-          despesaId: origem === "despesa" ? payload.itemId : null,
-          receitaId: origem === "receita" ? payload.itemId : null,
-          tipo: payload.tipo,
-          valor: payload.valor,
-          data: payload.data,
-          observacao: payload.observacao || undefined,
-          parcelas: parcelar && payload.parcelas ? payload.parcelas : null,
-        };
+        const userId = Number(session?.user?.id);
+        const isMeta = origem === "meta";
+        const isRetirada = isMeta && payload.tipo === "retirada";
+        
+        // --- CASO ESPECIAL: Retirada de Meta com Destino ---
+        if (isRetirada && !payload.id) {
+          const vinculoId = `${Date.now()}-${userId}`;
+          const valorNum = Math.abs(payload.valor);
 
-        if (payload.id) {
-          await updateLancamento({ id: String(payload.id), data }).unwrap();
+          // Busca o nome da meta e do destino para observações automáticas
+          const metaNome = selectedItem?.nome || "Meta";
+          const itensDestino = payload.destinoOrigem === "despesa" ? despesasApi : receitasApi;
+          const selectedDestino = (itensDestino as any[]).find(i => i.id === payload.destinoId);
+          const destinoNome = selectedDestino?.nome || "Destino";
+
+          await Promise.all([
+            // 1. Saída da Meta (Sangria)
+            createLancamento({
+              userId,
+              metaId: payload.itemId,
+              tipo: "pagamento" as any,
+              valor: -valorNum,
+              data: payload.data,
+              vinculoId,
+              observacao: `Retirada destinada para: ${destinoNome}`,
+            }).unwrap(),
+
+            // 2. Entrada no Destino (Pagamento Real)
+            createLancamento({
+              userId,
+              despesaId: payload.destinoOrigem === "despesa" ? payload.destinoId : null,
+              receitaId: payload.destinoOrigem === "receita" ? payload.destinoId : null,
+              tipo: "pagamento" as any,
+              valor: valorNum,
+              data: payload.data,
+              vinculoId,
+              observacao: payload.observacao || `Dinheiro realocado da meta: ${metaNome}`,
+            }).unwrap(),
+          ]);
+
           SwalToast.fire({
             icon: "success",
-            title: `${origem === "receita" ? "Receita" : "Despesa"} atualizado com sucesso`,
+            title: "Retirada e destino lançados com sucesso",
           });
-        } else {
-          await createLancamento(data).unwrap();
-          SwalToast.fire({
-            icon: "success",
-            title: `${origem === "receita" ? "Receita" : "Despesa"} lançado com sucesso`,
-          });
+        } 
+        
+        // --- CASO PADRÃO: Lançamento Único ou Edição ---
+        else {
+          const data = mapearFormularioParaPayload(payload, userId, origem);
+          const labelSucesso = obterLabelSucesso(origem, payload.tipo);
+
+          if (payload.id) {
+            await updateLancamento({ id: String(payload.id), data }).unwrap();
+            SwalToast.fire({ icon: "success", title: `${labelSucesso} atualizada com sucesso` });
+          } else {
+            await createLancamento(data).unwrap();
+            SwalToast.fire({ icon: "success", title: `${labelSucesso} lançado com sucesso` });
+          }
         }
 
         // Reset mantendo tipo
@@ -181,14 +212,14 @@ export function useLancamentoForm({
         // Erro tratado pelo interceptor da API
       }
     },
-    [session, origem, parcelar, createLancamento, updateLancamento, reset, defaultValues, onSuccess],
+    [session, origem, parcelar, createLancamento, updateLancamento, reset, defaultValues, onSuccess, selectedItem, despesasApi, receitasApi],
   );
 
   const handleTipoChange = useCallback(
     (event: React.MouseEvent<HTMLElement>, newTipo: TipoLancamento | null) => {
       if (newTipo) {
-        setValue("tipo", newTipo);
-        if (newTipo === "pagamento") {
+        setValue("tipo", newTipo as any);
+        if (newTipo === "pagamento" || newTipo === "retirada" || newTipo === "investimento") {
           setValue("parcelar", false);
         }
       }
@@ -196,13 +227,25 @@ export function useLancamentoForm({
     [setValue],
   );
 
-  const toggleOrigem = useCallback(() => {
-    setOrigem((prev) => (prev === "despesa" ? "receita" : "despesa"));
+  const handleOrigemChange = useCallback((_: any, novaOrigem: TipoLancamentoOrigem | null) => {
+    if (id || !novaOrigem) return;
+    setOrigem(novaOrigem);
     setValue("itemId", 0);
-  }, [setValue]);
+  }, [id, setValue]);
+
+
+  const isMeta = origem === "meta";
+  useEffect(() => {
+    if (isMeta && (tipo === "pagamento" || tipo === "agendamento")) {
+       setValue("tipo", "investimento");
+    }
+    if (!isMeta && (tipo === "investimento" || tipo === "retirada")) {
+       setValue("tipo", "pagamento");
+    }
+  }, [isMeta, tipo, setValue]);
 
   const isDespesa = origem === "despesa";
-  const corTema = isDespesa ? "error" : "success";
+  const corTema = isMeta ? "primary" : isDespesa ? "error" : "success";
   const handleSubmit = handleSubmitForm(onSubmit);
 
   return {
@@ -222,10 +265,17 @@ export function useLancamentoForm({
     setFocus,
     setValue,
     isDespesa,
+    isMeta,
     corTema,
-    toggleOrigem,
+    handleOrigemChange,
     setOrigem,
+    origem,
+    despesasApi,
+    receitasApi,
+    metasApi,
     id,
     itemId,
+    destinoOrigem,
+    destinoId,
   };
 }

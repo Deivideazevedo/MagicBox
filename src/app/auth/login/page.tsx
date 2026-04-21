@@ -38,10 +38,6 @@ export default function Login() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
-  useEffect(() => {
-    router.prefetch(callbackUrl);
-  }, [callbackUrl, router]);
-
   const benefits = [
     {
       icon: (

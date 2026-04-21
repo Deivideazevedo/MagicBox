@@ -10,6 +10,7 @@ export interface LancamentoResposta {
   data: string;
   observacao?: string;
   observacaoAutomatica?: string;
+  vinculoId?: string | null;
   valor: number;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,7 @@ export interface LancamentoPayload {
   despesaId?: number | null;
   receitaId?: number | null;
   metaId?: number | null;
+  vinculoId?: string | null;
   observacaoAutomatica?: string | null;
   parcelas?: number | null; // Usado apenas no criar para gerar múltiplos registros
 }

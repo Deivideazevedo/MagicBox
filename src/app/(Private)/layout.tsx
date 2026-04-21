@@ -32,6 +32,10 @@ interface Props {
   children: React.ReactNode;
 }
 
+import AuthGuard from "@/app/components/auth/AuthGuard";
+
+// ... (styled components permanentes)
+
 export default function RootLayout({
   children,
 }: {
@@ -42,55 +46,55 @@ export default function RootLayout({
   const customizer = useSelector((state: AppState) => state.customizer);
   const theme = useTheme();
 
-  // const { data: session } = useSession();
-
   return (
-    <MainWrapper>
-      {/* ------------------------------------------- */}
-      {/* Sidebar */}
-      {/* ------------------------------------------- */}
-      {customizer.isHorizontal ? "" : <Sidebar />}
-      {/* ------------------------------------------- */}
-      {/* Main Wrapper */}
-      {/* ------------------------------------------- */}
-      <PageWrapper
-        className="page-wrapper"
-        sx={{
-          ...(customizer.isCollapse && {
-            [theme.breakpoints.up("lg")]: {
-              ml: `${customizer.MiniSidebarWidth}px`,
-            },
-          }),
-        }}
-      >
+    <AuthGuard>
+      <MainWrapper>
         {/* ------------------------------------------- */}
-        {/* Header */}
+        {/* Sidebar */}
         {/* ------------------------------------------- */}
-        {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
-        {/* PageContent */}
-        {customizer.isHorizontal ? <Navigation /> : ""}
-        <Container
+        {customizer.isHorizontal ? "" : <Sidebar />}
+        {/* ------------------------------------------- */}
+        {/* Main Wrapper */}
+        {/* ------------------------------------------- */}
+        <PageWrapper
+          className="page-wrapper"
           sx={{
-            maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
+            ...(customizer.isCollapse && {
+              [theme.breakpoints.up("lg")]: {
+                ml: `${customizer.MiniSidebarWidth}px`,
+              },
+            }),
           }}
         >
           {/* ------------------------------------------- */}
+          {/* Header */}
+          {/* ------------------------------------------- */}
+          {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
           {/* PageContent */}
-          {/* ------------------------------------------- */}
+          {customizer.isHorizontal ? <Navigation /> : ""}
+          <Container
+            sx={{
+              maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
+            }}
+          >
+            {/* ------------------------------------------- */}
+            {/* PageContent */}
+            {/* ------------------------------------------- */}
 
-          <Box sx={{ minHeight: "calc(100vh - 170px)", paddingTop: 4, paddingBottom: 4 }}>
-            {/* <Outlet /> */}
-            {children}
-            {/* <Index /> */}
-          </Box>
+            <Box sx={{ minHeight: "calc(100vh - 170px)", paddingTop: 4, paddingBottom: 4 }}>
+              {/* <Outlet /> */}
+              {children}
+              {/* <Index /> */}
+            </Box>
 
-          {/* ------------------------------------------- */}
-          {/* End Page */}
-          {/* ------------------------------------------- */}
-        </Container>
-        <Customizer />
-        <GlobalLancamentoButton />
-      </PageWrapper>
-    </MainWrapper>
+            {/* ------------------------------------------- */}
+            {/* End Page */}
+            {/* ------------------------------------------- */}
+          </Container>
+          <Customizer />
+          <GlobalLancamentoButton />
+        </PageWrapper>
+      </MainWrapper>
+    </AuthGuard>
   );
 }

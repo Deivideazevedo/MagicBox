@@ -119,6 +119,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
     try {
       const nomeDestino = selectedItem.nome;
       const userId = Number(session.user.id);
+      const vinculoId = `${Date.now()}-${userId}`;
 
       // Usando Promise.all como requisitado. 
       // Falhas engatilham o catch e rola o erro antes de mostrar a mensagem de sucesso.
@@ -130,6 +131,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
           tipo: "pagamento",
           data: data.data,
           userId,
+          vinculoId,
           observacao: `Retirada destinada para: ${nomeDestino}`,
         }).unwrap(),
 
@@ -141,6 +143,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
           tipo: "pagamento", // Fixado, já que é pagamento garantido do que tá retirando
           data: data.data,
           userId,
+          vinculoId,
           observacao: data.observacao || `Dinheiro realocado da meta: ${meta.nome}`,
         }).unwrap(),
       ]);

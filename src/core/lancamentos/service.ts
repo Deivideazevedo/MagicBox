@@ -23,7 +23,7 @@ function gerarObservacaoAutomatica(
     currency: "BRL",
   });
   const dataFormatada = format(data, "dd/MM", { locale: ptBR });
-  
+
   return `${observacaoBase} (${parcelaAtual}/${totalParcelas}) - ${valorFormatado} (${dataFormatada})`;
 }
 
@@ -44,7 +44,7 @@ export const lancamentoService = {
     if (!dados.userId) {
       throw new ValidationError("Usuário é obrigatório");
     }
-    
+
     // Regra: Deve ter despesaId, receitaId OU metaId
     if (!dados.despesaId && !dados.receitaId && !dados.metaId) {
       throw new ValidationError("Lançamento deve estar vinculado a uma despesa, receita ou meta");
@@ -129,7 +129,24 @@ export const lancamentoService = {
       throw new ValidationError("Lançamento não pode ter despesa e receita ao mesmo tempo");
     }
 
-    return await repositorio.atualizar(id, dados);
+    const lancamentoAtualizado = await repositorio.atualizar(id, dados);
+
+    // Lógica de Sincronização por vinculoId
+    if (lancamentoAtualizado.vinculoId) {
+      const vinculados = await repositorio.buscarPorVinculo(lancamentoAtualizado.vinculoId, Number(id));
+
+      for (const vinculado of vinculados) {
+        // Sincronização robusta utilizando o resultado da atualização anterior
+        const payloadSinc: Partial<LancamentoPayload> = {
+          data: lancamentoAtualizado.data,
+          valor: Number(lancamentoAtualizado.valor) * -1,
+        };
+
+        await repositorio.atualizar(vinculado.id, payloadSinc);
+      }
+    }
+
+    return lancamentoAtualizado;
   },
 
   async remover(id: string | number) {
@@ -137,6 +154,15 @@ export const lancamentoService = {
     if (!lancamento) {
       throw new NotFoundError("Lançamento não encontrado");
     }
+
+    // Se tiver vínculo, remove o par primeiro
+    if (lancamento.vinculoId) {
+      const vinculados = await repositorio.buscarPorVinculo(lancamento.vinculoId, Number(id));
+      for (const vinculado of vinculados) {
+        await repositorio.remover(vinculado.id);
+      }
+    }
+
     return await repositorio.remover(id);
   },
 

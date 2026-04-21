@@ -138,6 +138,20 @@ export const lancamentoRepository = {
     });
   },
 
+  async buscarPorVinculo(vinculoId: string, excetoId?: number) {
+    return await prisma.lancamento.findMany({
+      where: {
+        vinculoId,
+        id: excetoId ? { not: excetoId } : undefined,
+      },
+      include: {
+        despesa: true,
+        receita: true,
+        meta: true,
+      },
+    });
+  },
+
   async listarPorUsuario(userId: string | number) {
     const numericId = Number(userId);
     if (isNaN(numericId)) return [];
@@ -164,6 +178,7 @@ export const lancamentoRepository = {
         despesaId: data.despesaId ? Number(data.despesaId) : null,
         receitaId: data.receitaId ? Number(data.receitaId) : null,
         metaId: data.metaId ? Number(data.metaId) : null,
+        vinculoId: data.vinculoId ?? null,
       },
     });
   },
@@ -201,11 +216,12 @@ export const lancamentoRepository = {
       where: { id: numericId },
       data: {
         tipo: data.tipo ? (data.tipo as TipoLancamento) : undefined,
-        valor: data.valor ? Number(data.valor) : undefined,
+        valor: data.valor !== undefined ? Number(data.valor) : undefined,
         data: data.data ? new Date(data.data as string) : undefined,
         observacao: data.observacao,
         despesaId: data.despesaId !== undefined ? (data.despesaId ? Number(data.despesaId) : null) : undefined,
         receitaId: data.receitaId !== undefined ? (data.receitaId ? Number(data.receitaId) : null) : undefined,
+        vinculoId: data.vinculoId !== undefined ? data.vinculoId : undefined,
       },
     });
   },

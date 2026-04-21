@@ -36,7 +36,7 @@ export default function Loadingx() {
               variant="body1"
               sx={{ color: "common.white", opacity: 0.9 }}
             >
-              Aguarde enquanto redirecionamos você 
+              Aguarde enquanto redirecionamos você
             </Typography>
           </Box>
         </Fade>

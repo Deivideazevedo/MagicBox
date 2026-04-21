@@ -30,7 +30,6 @@ const validationSchema = yup.object({
 
 const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   // --- 1. Hooks para gerenciar estado, roteamento e parâmetros ---
-  const { data: session } = useSession();
   const [error, setError] = useState(""); // Erro do formulário de credenciais
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,16 +91,14 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   // --- 3. Lógica de login com credenciais ---
   const onSubmit = async (data: { username: string; password: string }) => {
     const result = await signIn("credentials", {
-      redirect: false, // ✅ IMPORTANTE: Impede redirecionamento automático do NextAuth
+      redirect: false,
       username: data.username,
       password: data.password,
     });
 
     if (result?.error) {
-      // Mostra erro no formulário
       setError(result.error);
     } else {
-      // ✅ Redireciona imediatamente após o sucesso para evitar delay do poll de sessão
       router.replace(callbackUrl);
     }
   };
