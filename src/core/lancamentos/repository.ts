@@ -79,7 +79,7 @@ export const lancamentoRepository = {
         where: whereClause,
         take: limit,
         skip: page * limit,
-        orderBy: { data: "desc" },
+        orderBy: { updatedAt: "desc" },
         include: {
           despesa: {
             select: {

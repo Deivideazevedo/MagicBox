@@ -1,14 +1,12 @@
 "use client";
 
-import { useLancamentoForm } from "../hooks/useLancamentoForm";
-import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
-import Formulario from "./Formulario";
+import Formulario from "./formularios";
+import CustomScrollbar from "@/app/components/custom-scroll/Scrollbar";
 import { useDispatch, useSelector } from "@/store/hooks";
-import { SwalToast, Swalert } from "@/utils/swalert";
 import { AppState } from "@/store/store";
 import {
-  abrirDrawer,
   fecharDrawer,
+  abrirDrawer,
 } from "@/store/apps/lancamentos/LancamentoSlice";
 import {
   Box,
@@ -32,39 +30,13 @@ export default function LancamentoDrawer() {
   // Estado Global do Drawer
   const { estaAberto, modo, dadosIniciais } = useSelector((state: AppState) => state.lancamentoUi);
 
-  // Hook do formulário — agora passamos o initialData vindo do Redux
-  const formProps = useLancamentoForm({
-    lancamentoParaEditar: modo === "editar" ? dadosIniciais : null,
-    onSuccess: () => dispatch(fecharDrawer()),
-  });
-  
-  const { setFocus, setOrigem, reset, defaultValues, setValue } = formProps;
-
-  // Se o modo for 'pay', precisamos pré-configurar o formulário
-  useEffect(() => {
-    if (estaAberto && modo === "pagar" && dadosIniciais) {
-      // Configura a origem (despesa ou receita)
-      setOrigem(dadosIniciais.origem);
-      
-      // Reseta com valores da projeção
-      reset({
-        ...defaultValues,
-        itemId: dadosIniciais.origemId,
-        valor: dadosIniciais.valorPrevisto,
-        data: new Date().toISOString().split("T")[0], // Data de hoje para pagamento
-        tipo: "pagamento",
-        observacao: `Pagamento: ${dadosIniciais.nome}`,
-      });
-    }
-  }, [estaAberto, modo, dadosIniciais, reset, defaultValues, setOrigem]);
-
+  // Função para fechar e resetar
   const handleCloseDrawer = useCallback(() => {
     dispatch(fecharDrawer());
-    setTimeout(() => {
-      setOrigem("despesa");
-      reset(defaultValues);
-    }, 300);
-  }, [dispatch, reset, defaultValues, setOrigem]);
+  }, [dispatch]);
+
+  const lancamentoParaEditar = modo === "editar" ? dadosIniciais : null;
+  const initialOrigem = modo === "pagar" ? dadosIniciais?.origem : "despesa";
 
   return (
     <>
@@ -103,15 +75,8 @@ export default function LancamentoDrawer() {
             background: theme.palette.grey[100],
           },
         }}
-        SlideProps={{
-          onEntered: () => setFocus("itemId"),
-        }}
       >
-        <Scrollbar
-          sx={{
-            minHeight: "calc(100vh - 170px)",
-          }}
-        >
+        <CustomScrollbar sx={{ minHeight: "calc(100vh - 170px)" }}>
           <Box
             p={2.3}
             px={3}
@@ -134,8 +99,15 @@ export default function LancamentoDrawer() {
 
           <Divider />
 
-          <Formulario {...formProps} />
-        </Scrollbar>
+          {/* Key garante que o formulário resete ao fechar/abrir */}
+          <Formulario 
+            key={estaAberto ? 'aberto' : 'fechado'}
+            lancamentoParaEditar={lancamentoParaEditar}
+            onSuccess={handleCloseDrawer}
+            initialOrigem={initialOrigem}
+            dadosIniciais={modo === "pagar" ? dadosIniciais : null}
+          />
+        </CustomScrollbar>
       </Drawer>
     </>
   );

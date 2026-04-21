@@ -12,8 +12,7 @@ import {
 } from "@mui/material";
 import { IconX, IconEdit } from "@tabler/icons-react";
 import { LancamentoResposta } from "@/core/lancamentos/types";
-import { useLancamentoForm } from "../hooks/useLancamentoForm";
-import Formulario from "./Formulario";
+import Formulario from "./formularios";
 
 interface ModalEdicaoProps {
   open: boolean;
@@ -26,11 +25,6 @@ export default function ModalEdicao({
   lancamento,
   onClose,
 }: ModalEdicaoProps) {
-  const formProps = useLancamentoForm({
-    lancamentoParaEditar: lancamento,
-    onSuccess: onClose,
-  });
-
   return (
     <Dialog
       open={open}
@@ -74,7 +68,11 @@ export default function ModalEdicao({
       <Divider />
 
       <DialogContent sx={{ p: 0 }}>
-        <Formulario {...formProps} />
+        {/* Usando o container modular que já gerencia seu próprio hook */}
+        <Formulario 
+          lancamentoParaEditar={lancamento} 
+          onSuccess={onClose} 
+        />
       </DialogContent>
     </Dialog>
   );
