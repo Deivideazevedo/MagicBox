@@ -15,7 +15,7 @@ export const dividasApi = api.injectEndpoints({
     }),
     getDividaById: builder.query<Divida, string | number>({
       query: (id) => `/dividas/${id}`,
-      providesTags: (result, error, id) => [{ type: "Dividas", id }],
+      providesTags: (result, error, id) => [{ type: "Dividas", id: String(id) }],
     }),
     createDivida: builder.mutation<Divida, Partial<Divida>>({
       query: (data) => ({
@@ -32,7 +32,7 @@ export const dividasApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
-        { type: "Dividas", id },
+        { type: "Dividas", id: String(id) },
         { type: "Dividas", id: "LIST" },
       ],
     }),
@@ -40,9 +40,10 @@ export const dividasApi = api.injectEndpoints({
       query: (id) => ({
         url: `/dividas/${id}`,
         method: "DELETE",
+        body: {},
       }),
       invalidatesTags: (result, error, id) => [
-        { type: "Dividas", id },
+        { type: "Dividas", id: String(id) },
         { type: "Dividas", id: "LIST" },
       ],
     }),
@@ -53,9 +54,9 @@ export const dividasApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
-        { type: "Dividas", id },
+        { type: "Dividas", id: String(id) },
         { type: "Dividas", id: "LIST" },
-        { type: "Lancamentos", id: "LIST" }, // Aporte gera lançamentos
+        { type: "Lancamentos", id: "LIST" },
       ],
     }),
   }),

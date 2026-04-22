@@ -9,6 +9,7 @@ export const LANCAMENTO_INVALIDATION_TAGS = [
   "Resumo",
   "Dashboard",
   "Metas",
+  "Dividas",
 ] as const;
 
 /**

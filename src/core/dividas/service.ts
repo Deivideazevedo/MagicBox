@@ -3,7 +3,6 @@ import { dividasRepository as repositorio } from "./repository";
 import { CreateDividaDTO, UpdateDividaDTO, ProcessAporteDTO } from "./divida.dto";
 import { lancamentoService } from "../lancamentos/service";
 import { ListagemDividasResponse, StatusDivida } from "./types";
-import { prisma } from "@/lib/prisma";
 
 export const dividasService = {
   async listarPorUsuario(userId: number): Promise<ListagemDividasResponse> {
@@ -96,52 +95,42 @@ export const dividasService = {
     if (!divida || divida.userId !== userId) throw new NotFoundError("Dívida não encontrada");
 
     let valorRestante = dados.valor;
-    const dataAporte = dados.data;
+    const dataAporte = dados.data || new Date();
 
-    while (valorRestante > 0.001) { // Evitar problemas de precisão
-      const proximoAgendamento = await prisma.lancamento.findFirst({
-        where: {
-          despesaId: dividaId,
-          tipo: "agendamento"
-        },
-        orderBy: { data: "asc" }
-      });
+    // Pegamos a situação atual das parcelas para saber por onde começar
+    const parcelas = divida.situacaoParcelas || [];
 
-      if (!proximoAgendamento) break;
+    for (const parcela of parcelas) {
+      if (valorRestante <= 0.001) break;
+      if (parcela.status === 'pago') continue;
 
-      const valorParcela = Number(proximoAgendamento.valor);
+      const valorNecessarioParaQuitar = parcela.valorAgendado - parcela.valorPago;
+      const valorAAplicar = Math.min(valorRestante, valorNecessarioParaQuitar);
 
-      if (valorRestante >= valorParcela - 0.001) {
-        // Liquida a parcela inteira
-        await prisma.lancamento.update({
-          where: { id: proximoAgendamento.id },
-          data: {
-            tipo: "pagamento",
-            data: dataAporte,
-            observacao: proximoAgendamento.observacao + " (Pago)"
-          }
-        });
-        valorRestante -= valorParcela;
+      // Encontramos o agendamento correspondente para atualizar ou criar pagamento vinculado
+      const agendamento = await repositorio.buscarAgendamentoPorData(dividaId, new Date(parcela.dataVencimento));
+
+      if (!agendamento) continue;
+
+      if (valorAAplicar >= valorNecessarioParaQuitar - 0.01) {
+        // Liquida a parcela do mês
+        // Se já houver pagamentos parciais, transformamos este agendamento no "pagamento final" do mês
+        // ou apenas marcamos como pago se o valor bater
+        await repositorio.liquidarAgendamento(agendamento.id, new Date(parcela.dataVencimento), `Liquidação de parcela - ${divida.nome}`);
       } else {
-        // Pagamento parcial
-        await prisma.lancamento.create({
-          data: {
-            userId: proximoAgendamento.userId,
-            despesaId: dividaId,
-            tipo: "pagamento",
-            valor: valorRestante,
-            data: dataAporte,
-            observacao: `Aporte parcial - ${proximoAgendamento.observacao}`,
-          }
+        // Pagamento ainda parcial
+        await lancamentoService.criar({
+          userId,
+          despesaId: dividaId,
+          tipo: "pagamento",
+          valor: valorAAplicar,
+          data: dataAporte,
+          observacao: `Aporte parcial - ${divida.nome}`,
         });
-
-        await prisma.lancamento.update({
-          where: { id: proximoAgendamento.id },
-          data: { valor: valorParcela - valorRestante }
-        });
-
-        valorRestante = 0;
+        // Não removemos o agendamento, pois a parcela ainda não está "paga" integralmente
       }
+
+      valorRestante -= valorAAplicar;
     }
 
     // Verificar se a dívida foi totalmente paga para inativar (concluir)

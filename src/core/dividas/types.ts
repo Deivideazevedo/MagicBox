@@ -1,6 +1,15 @@
 import { Despesa, Lancamento } from "@prisma/client";
 
 export type StatusDivida = "A" | "I"; // Ativo | Inativo (Concluída)
+export type StatusSituacaoParcela = 'pago' | 'parcial' | 'pendente' | 'atrasada';
+
+export interface SituacaoParcela {
+  numero: number;
+  dataVencimento: string;
+  valorAgendado: number;
+  valorPago: number;
+  status: StatusSituacaoParcela;
+}
 
 export interface DividaBase {
   id: string | number;
@@ -9,7 +18,7 @@ export interface DividaBase {
   cor?: string | null;
   status: StatusDivida;
   tipo: "UNICA" | "VOLATIL";
-  lancamentos?: any[];
+  lancamentos?: Lancamento[];
   proximoVencimento?: string | null;
   diasParaVencer?: number | null;
   categoriaNome?: string;
@@ -32,6 +41,7 @@ export interface DividaUnica extends DividaBase {
   parcelasRestantes: number;
   progresso: number; // 0-100
   concluida: boolean;
+  situacaoParcelas?: SituacaoParcela[];
 }
 
 export interface DividaVolatil extends DividaBase {

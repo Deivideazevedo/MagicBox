@@ -235,14 +235,16 @@ export const Formulario = (formProps: FormProps) => {
               </Grid>
             )}
 
-            <Grid item xs={12}>
-              <HookDatePicker
-                name="dataInicio"
-                control={control}
-                label={isAporte ? "Data do Pagamento" : "Data de Início / Vencimento"}
-                helperText={!isAporte ? "Data da primeira parcela. O dia definirá os próximos vencimentos." : "Data da movimentação financeira."}
-              />
-            </Grid>
+            {!isAporte && (
+              <Grid item xs={12}>
+                <HookDatePicker
+                  name="dataInicio"
+                  control={control}
+                  label="Data de Início / Vencimento"
+                  helperText="Data da primeira parcela. O dia definirá os próximos vencimentos."
+                />
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <Stack direction="column" spacing={1.5}>

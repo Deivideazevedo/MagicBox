@@ -158,8 +158,8 @@ export default function DividasPage() {
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 width: '100%',
                 ...(!isMobileForm && {
-                  flexBasis: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
-                  maxWidth: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
+                  flexBasis: (exibirFormulario && !isMobile) ? '66.66% !important' : '100% !important',
+                  maxWidth: (exibirFormulario && !isMobile) ? '66.66% !important' : '100% !important',
                 }),
               }}
             >

@@ -21,6 +21,7 @@ export const lancamentoSchema = z.object({
   despesaId: z.number().int().positive().nullable(),
   receitaId: z.number().int().positive().nullable(),
   metaId: z.number().int().positive().nullable(),
+  vinculoId: z.string().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -59,6 +60,7 @@ export const createLancamentoSchema = z
     despesaId: z.number().int().positive().nullable().optional(),
     receitaId: z.number().int().positive().nullable().optional(),
     metaId: z.number().int().positive().nullable().optional(),
+    vinculoId: z.string().nullable().optional(),
 
     // Parcelas (usado para criar múltiplos registros)
     parcelas: z
@@ -104,6 +106,7 @@ export const updateLancamentoSchema = z
     despesaId: z.number().int().positive().nullable().optional(),
     receitaId: z.number().int().positive().nullable().optional(),
     metaId: z.number().int().positive().nullable().optional(),
+    vinculoId: z.string().nullable().optional(),
   })
   .refine(
     (data) => {

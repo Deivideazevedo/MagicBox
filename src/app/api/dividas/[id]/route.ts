@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dividasService } from "@/core/dividas/service";
 import { getAuthUser } from "@/lib/server-auth";
 import { errorHandler } from "@/lib/error-handler";
+import { updateDividaSchema } from "@/core/dividas/divida.dto";
 
 export const GET = errorHandler(buscarPorId);
 export const PATCH = errorHandler(atualizar);
@@ -16,7 +17,8 @@ async function buscarPorId(request: NextRequest, { params }: { params: { id: str
 async function atualizar(request: NextRequest, { params }: { params: { id: string } }) {
   const { userId } = await getAuthUser(request);
   const body = await request.json();
-  const divida = await dividasService.atualizar(params.id, body);
+  const dados = updateDividaSchema.parse(body);
+  const divida = await dividasService.atualizar(params.id, dados);
   return NextResponse.json(divida);
 }
 

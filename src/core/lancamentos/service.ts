@@ -69,6 +69,7 @@ export const lancamentoService = {
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
         metaId: dados.metaId || null,
+        vinculoId: dados.vinculoId || null,
       };
 
       return await repositorio.criar(data);
@@ -90,6 +91,7 @@ export const lancamentoService = {
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
         metaId: dados.metaId || null,
+        vinculoId: dados.vinculoId || null,
       };
 
       const lancamento = await repositorio.criar(data);

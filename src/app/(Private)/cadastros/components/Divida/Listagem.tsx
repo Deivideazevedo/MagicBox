@@ -213,16 +213,24 @@ export const Listagem = ({
                     </Stack>
                     <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
                     <Stack direction="row" spacing={0.5} alignItems="center" sx={{ 
-                      color: isAtrasada ? "error.main" : (divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"),
+                      color: isConcluida ? "success.main" : (
+                        isAtrasada ? "error.main" : (
+                          divida.diasParaVencer === 0 ? "primary.main" : (
+                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"
+                          )
+                        )
+                      ),
                       fontWeight: 700 
                     }}>
                       <IconCalendarEvent size={14} />
                       <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '10px' }}>
-                        {isAtrasada ? "Atrasada" : (
-                          divida.diasParaVencer === 0 ? "Vence hoje" : (
-                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 
-                              ? `Vence em ${divida.diasParaVencer}d` 
-                              : "Em dia"
+                        {isConcluida ? "Concluido" : (
+                          isAtrasada ? "Atrasada" : (
+                            divida.diasParaVencer === 0 ? "Vence hoje" : (
+                               divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 
+                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? 'dia' : 'dias'}` 
+                                : "Em dia"
+                            )
                           )
                         )}
                       </Typography>
@@ -250,7 +258,13 @@ export const Listagem = ({
                     <Typography 
                       variant={isUnica ? "caption" : "subtitle1"} 
                       fontWeight={800} 
-                      color={isAtrasada ? "error.main" : (divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main")}
+                      color={isConcluida ? "success.main" : (
+                        isAtrasada ? "error.main" : (
+                          divida.diasParaVencer === 0 ? "primary.main" : (
+                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"
+                          )
+                        )
+                      )}
                       sx={isUnica ? { display: 'block', mt: 0.5 } : {}}
                     >
                       {isUnica 
@@ -322,7 +336,7 @@ export const Listagem = ({
                          <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
                           SITUAÇÃO
                         </Typography>
-                        <Typography variant="body2" fontWeight={800} color={isAtrasada ? "error.main" : (divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 ? "warning.main" : "success.main")}>
+                        <Typography variant="body2" fontWeight={800} color={isAtrasada ? "error.main" : (divida.diasParaVencer === 0 ? "primary.main" : (divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 ? "warning.main" : "success.main"))}>
                           {isAtrasada ? "Atrasada" : (
                             divida.diasParaVencer === 0 ? "Vence hoje" : (
                               divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 

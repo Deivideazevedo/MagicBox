@@ -157,42 +157,42 @@ export const DividasTab = () => {
         open={!!tipoConfirmacao}
         onClose={() => setTipoConfirmacao(null)}
         title={
-          tipoConfirmacao === 'delete' 
-            ? "Excluir dívida permanentemente?" 
+          tipoConfirmacao === 'delete'
+            ? "Excluir dívida permanentemente?"
             : tipoConfirmacao === 'concluir'
-            ? "Marcar como concluída?"
-            : "Reativar dívida?"
+              ? "Marcar como concluída?"
+              : "Reativar dívida?"
         }
         confirmButtonText={
-          tipoConfirmacao === 'delete' 
-            ? "Sim, excluir" 
+          tipoConfirmacao === 'delete'
+            ? "Sim, excluir"
             : tipoConfirmacao === 'concluir'
-            ? "Sim, concluir"
-            : "Sim, reativar"
+              ? "Sim, concluir"
+              : "Sim, reativar"
         }
         onConfirm={executarAcaoConfirmada}
         loading={isDeleting || isUpdating}
         color={
-          tipoConfirmacao === 'delete' 
-            ? "error" 
+          tipoConfirmacao === 'delete'
+            ? "error"
             : tipoConfirmacao === 'concluir'
-            ? "success"
-            : "info"
+              ? "success"
+              : "info"
         }
         icon={
-          tipoConfirmacao === 'delete' 
-            ? IconTrash 
+          tipoConfirmacao === 'delete'
+            ? IconTrash
             : tipoConfirmacao === 'concluir'
-            ? IconCheck 
-            : IconRefresh
+              ? IconCheck
+              : IconRefresh
         }
       >
         <Typography variant="body1" color="text.secondary">
-          {tipoConfirmacao === 'delete' 
+          {tipoConfirmacao === 'delete'
             ? "Esta ação removerá a despesa e seus agendamentos vinculados."
             : tipoConfirmacao === 'concluir'
-            ? "A dívida será arquivada como concluída."
-            : "A dívida voltará a ficar disponível para novos pagamentos."
+              ? "A dívida será arquivada como concluída."
+              : "A dívida voltará a ficar disponível para novos pagamentos."
           }
         </Typography>
       </DeleteConfirmationDialog>
