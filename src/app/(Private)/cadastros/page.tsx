@@ -174,7 +174,7 @@ export default function CadastrosPage() {
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
-          <DividasTab despesas={despesas} categorias={categorias} />
+          <DividasTab />
         </TabPanel>
       </Paper>
     </Container>

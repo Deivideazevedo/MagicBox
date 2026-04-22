@@ -1,0 +1,28 @@
+model Lancamento {
+  id                   Int            @id @default(autoincrement())
+  userId               Int
+  despesaId            Int?
+  receitaId            Int?
+  metaId               Int?
+  valor                Decimal        @db.Decimal(10, 2)
+  data                 DateTime
+  tipo                 TipoLancamento @default(agendamento)
+  observacao           String?
+  observacaoAutomatica String?
+  vinculoId            String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  despesa              Despesa?       @relation(fields: [despesaId], references: [id], onDelete: Cascade)
+  receita              Receita?       @relation(fields: [receitaId], references: [id], onDelete: Cascade)
+  meta                 Meta?          @relation(fields: [metaId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([despesaId])
+  @@index([receitaId])
+  @@index([metaId])
+  @@index([tipo])
+  @@index([data])
+  @@map("lancamento")
+}

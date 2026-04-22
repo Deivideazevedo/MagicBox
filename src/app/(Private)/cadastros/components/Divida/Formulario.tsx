@@ -1,13 +1,13 @@
-import CustomToggle from "@/app/components/forms/CustomToggle";
 import {
   HookCurrencyField,
-  HookDecimalField,
-  HookSelect,
+  HookDatePicker,
   HookTextField,
   IconColorMenuPicker,
+  HookAutocomplete,
+  HookDecimalField,
 } from "@/app/components/forms/hooksForm";
-import { Despesa } from "@/core/despesas/types";
-import { DespesaFormData } from "../../hooks/useDespesas";
+import { DividaFormData } from "../../hooks/useDividas";
+import { Divida } from "@/core/dividas/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -15,241 +15,277 @@ import {
   Button,
   Card,
   CardContent,
-  Collapse,
   Grid,
-  InputAdornment,
+  IconButton,
   Stack,
   Typography,
   useTheme,
+  Collapse,
 } from "@mui/material";
-import { Categoria } from "@/core/categorias/types";
-import { IconCalendar, IconCalculator, IconCreditCard, IconCategory, IconCurrencyDollar, IconPlus, IconX } from "@tabler/icons-react";
+import {
+  IconArrowLeft,
+  IconDeviceFloppy,
+  IconX,
+  IconCreditCard
+} from "@tabler/icons-react";
 import { Control, useWatch } from "react-hook-form";
+import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 
 interface FormProps {
   isEditing: boolean;
-  isCollapsed: boolean;
-  row: Despesa | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-  control: Control<DespesaFormData>;
+  control: Control<DividaFormData>;
   isCreating: boolean;
   isUpdating: boolean;
-  categorias: Categoria[];
+  isAporte?: boolean;
+  isAportando?: boolean;
+  targetDivida?: Divida | null;
+  valorParcelaCalculado: number;
 }
 
 export const Formulario = (formProps: FormProps) => {
   const theme = useTheme();
   const {
     isEditing,
-    row,
     handleSubmit,
     control,
     isCreating,
     isUpdating,
-    categorias,
+    isAporte = false,
+    isAportando = false,
     handleCancelEdit,
+    targetDivida,
+    valorParcelaCalculado,
   } = formProps;
+
+  const { data: categorias = [] } = useGetCategoriasQuery();
 
   const watchIcon = useWatch({ control, name: "icone" });
   const watchColor = useWatch({ control, name: "cor" });
   const watchNome = useWatch({ control, name: "nome" });
 
+  const getTitle = () => {
+    if (isAporte) return "Fazer Aporte / Amortização";
+    return isEditing ? "Editar Dívida" : "Nova Dívida Única";
+  };
+
+  const getButtonText = () => {
+    if (isAporte) return "Confirmar Pagamento";
+    return isEditing ? "Salvar Alterações" : "Criar Dívida";
+  };
+
+  const formatCurrency = (val: number) =>
+    val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   return (
     <Card
-      elevation={0}
+      elevation={1}
       sx={{
-        borderRadius: 3,
+        borderRadius: 4,
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.warning.main, 0.2),
-        backgroundColor: (theme) => alpha(theme.palette.warning.light, 0.05),
+        borderColor: alpha(theme.palette.primary.main, 0.2),
+        backgroundColor: "background.paper",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <CardContent sx={{ px: 1, py: 1.5 }}>
-        <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <IconColorMenuPicker
-            control={control}
-            iconName="icone"
-            colorName="cor"
-            watchIcon={watchIcon}
-            watchColor={watchColor}
-            fallbackIcon="IconCreditCard"
-            fallbackColor={theme.palette.warning.main}
-          />
-          <Box>
-            <Typography
-              variant="subtitle2"
-              fontWeight={600}
-              color="text.primary"
-            >
-              {isEditing ? `Editando Dívida:` : `Nova Dívida`}
-            </Typography>
-            <Typography
-              variant="body2"
-              fontWeight={isEditing ? 600 : 400}
-              color="warning.main"
-            >
-              {watchNome || (isEditing ? row?.nome : "Preencha os dados abaixo")}
-            </Typography>
+      {/* Header do Formulário com botão Voltar */}
+      <Box
+        sx={{
+          p: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.primary.main, 0.02),
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton
+            onClick={handleCancelEdit}
+            sx={{
+              color: "text.secondary",
+              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main" }
+            }}
+          >
+            <IconArrowLeft size={20} />
+          </IconButton>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {getTitle()}
+          </Typography>
+        </Stack>
+        <IconButton size="small" onClick={handleCancelEdit}>
+          <IconX size={18} />
+        </IconButton>
+      </Box>
+
+      <CardContent sx={{ p: 3 }}>
+        {!isAporte && (
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <IconColorMenuPicker
+              control={control}
+              iconName="icone"
+              colorName="cor"
+              watchIcon={watchIcon}
+              watchColor={watchColor}
+              fallbackIcon="IconCreditCard"
+              fallbackColor={theme.palette.primary.main}
+            />
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                {isEditing ? "Editando Dívida:" : "Nova Dívida Única"}
+              </Typography>
+              <Typography variant="body2" color="primary.main">
+                {isEditing ? targetDivida?.nome : (watchNome || "Registre um novo parcelamento")}
+              </Typography>
+            </Box>
           </Box>
-        </Box>
+        )}
+
+        {isAporte && (
+          <Box display="flex" alignItems="center" gap={2} mb={3}>
+            <Box>
+              <Typography variant="subtitle2" fontWeight={600}>
+                Amortizando parcelas de:
+              </Typography>
+              <Typography variant="body2" color="primary.main">
+                {targetDivida?.nome || watchNome}
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
         <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={2.5}>
-            {/* Nome */}
-            <Grid item xs={12}>
-              <HookTextField
-                label="Nome da Dívida"
-                name="nome"
-                color="warning"
-                control={control}
-                placeholder="Ex: Financiamento Carro, Empréstimo..."
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconCreditCard size={20} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
+          <Grid container spacing={2}>
+            {!isAporte && (
+              <>
+                <Grid item xs={12}>
+                  <HookTextField
+                    label="Nome da Dívida"
+                    name="nome"
+                    control={control}
+                    placeholder="Ex: Cartão de Crédito, Empréstimo..."
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <HookAutocomplete
+                    name="categoriaId"
+                    control={control}
+                    options={categorias}
+                    label="Categoria"
+                    placeholder="Selecione a categoria..."
+                    getOptionLabel={(opt) => opt.nome}
+                    getOptionValue={(opt) => opt.id}
+                    shrinkLabel
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                   <HookCurrencyField
+                    name="valorTotal"
+                    control={control}
+                    label="Valor Total da Dívida"
+                    returnAsNumber={true}
+                    placeholder="R$ 0,00"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                   <HookDecimalField
+                    name="totalParcelas"
+                    control={control}
+                    label="Quantidade de Parcelas"
+                    returnAsNumber={true}
+                    placeholder="Ex: 12"
+                  />
+                </Grid>
 
-            {/* Categoria */}
-            <Grid item xs={12}>
-              <HookSelect
-                name="categoriaId"
-                color="warning"
-                control={control}
-                options={categorias}
-                label="Categoria"
-                placeholder="Selecione"
-                displayEmpty
-                getValue={(obj) => obj.id}
-                getLabel={(obj) => obj.nome}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <IconCategory size={20} />
-                  </InputAdornment>
-                }
-              />
-            </Grid>
+                <Grid item xs={12}>
+                    <Collapse in={valorParcelaCalculado > 0}>
+                        <Box
+                          p={1.5}
+                          sx={{
+                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                            borderRadius: 2,
+                            border: '1px dashed',
+                            borderColor: alpha(theme.palette.primary.main, 0.3)
+                          }}
+                        >
+                          <Typography variant="caption" color="text.secondary">
+                             Cálculo do Resultado:
+                          </Typography>
+                          <Typography variant="body2" fontWeight={700} color="primary.main">
+                             {formatCurrency(valorParcelaCalculado)} / mês
+                          </Typography>
+                        </Box>
+                    </Collapse>
+                </Grid>
+              </>
+            )}
 
-            {/* Valor Total */}
-            <Grid item xs={12}>
-              <HookCurrencyField
-                name="valorTotal"
-                color="warning"
-                control={control}
-                label="Valor Total da Dívida"
-                returnAsNumber={true}
-                placeholder="Ex: 50.000,00"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconCalculator size={20} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
+            {isAporte && (
+              <Grid item xs={12}>
+                <HookCurrencyField
+                  name="valorAporte"
+                  control={control}
+                  label="Valor do Pagamento"
+                  returnAsNumber={true}
+                  placeholder="0,00"
+                />
+              </Grid>
+            )}
 
-            {/* Data de Início */}
             <Grid item xs={12}>
-              <HookTextField
+              <HookDatePicker
                 name="dataInicio"
-                color="warning"
                 control={control}
-                label="Data de Início"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconCalendar size={20} />
-                    </InputAdornment>
-                  ),
-                }}
+                label={isAporte ? "Data do Pagamento" : "Data de Início / Vencimento"}
+                helperText={!isAporte ? "Data da primeira parcela. O dia definirá os próximos vencimentos." : "Data da movimentação financeira."}
               />
             </Grid>
 
-            {/* Campos Opcionais (Collapse) */}
             <Grid item xs={12}>
-              <Collapse in={!!watchNome || isEditing} timeout={400}>
-                <Box sx={{ pt: 2 }}>
-                  <Grid container spacing={2.5}>
-                    <Grid item xs={12}>
-                      <HookCurrencyField
-                        name="valorEstimado"
-                        color="warning"
-                        control={control}
-                        label="Valor da Parcela"
-                        returnAsNumber={true}
-                        placeholder="(opcional)"
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <IconCurrencyDollar size={20} />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
-                    </Grid>
-
-                    <Grid item xs={12}>
-                      <HookDecimalField
-                        name="diaVencimento"
-                        color="warning"
-                        control={control}
-                        label="Dia do Vencimento"
-                        returnAsNumber={true}
-                        placeholder="Ex: 5"
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <IconCalendar size={20} />
-                            </InputAdornment>
-                          ),
-                        }}
-                        inputProps={{ min: "1", max: "31", maxLength: 2 }}
-                      />
-                    </Grid>
-                  </Grid>
-                </Box>
-              </Collapse>
-            </Grid>
-
-            {/* Status */}
-            <Grid item xs={12} mt={-1}>
-              <CustomToggle
-                control={control}
-                name="status"
-                activeValue="A"
-                inactiveValue="I"
-                color="success"
-                variant="switch"
-                titleActive="Dívida Ativa"
-                titleInactive="Dívida Inativa"
-                descriptionActive="Disponível para lançamentos"
-                descriptionInactive="Oculta para lançamentos"
-              />
-            </Grid>
-
-            {/* Botões de Ação */}
-            <Grid item xs={12} sx={{ pt: 2 }}>
-              <Stack spacing={1.5}>
+              <Stack direction="column" spacing={1.5}>
                 <LoadingButton
                   type="submit"
                   fullWidth
                   variant="contained"
-                  loading={isCreating || isUpdating}
-                  color="warning"
-                  startIcon={<IconPlus size={16} />}
+                  loading={isCreating || isUpdating || isAportando}
+                  color="primary"
+                  startIcon={<IconDeviceFloppy size={18} />}
+                  sx={{
+                    borderRadius: 3,
+                    py: 1.5,
+                    fontWeight: 700,
+                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`
+                    }
+                  }}
                 >
-                  {isEditing ? "Atualizar" : "Adicionar"}
+                  {getButtonText()}
                 </LoadingButton>
 
-                {isEditing && (
-                  <Button variant="outlined" fullWidth onClick={handleCancelEdit} startIcon={<IconX size={16} />}>
+                {(isEditing || isAporte) && (
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={handleCancelEdit}
+                    sx={{
+                      borderRadius: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      borderColor: alpha(theme.palette.divider, 0.2),
+                      color: 'text.secondary',
+                      '&:hover': {
+                        borderColor: theme.palette.primary.main,
+                        bgcolor: alpha(theme.palette.primary.main, 0.04),
+                        color: 'primary.main'
+                      }
+                    }}
+                  >
                     Cancelar
                   </Button>
                 )}

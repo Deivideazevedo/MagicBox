@@ -10,21 +10,11 @@ import { FindAllFilters } from "./lancamento.dto";
  * Gera a observação automática para lançamentos parcelados
  * Formato: "descrição informada (nº da parcela / nº total de parcela) - R$ valor (dia/mês)"
  */
-function gerarObservacaoAutomatica(
-  observacao: string | undefined,
-  parcelaAtual: number,
-  totalParcelas: number,
-  valor: number,
-  data: Date
-): string {
-  const observacaoBase = observacao || "Lançamento";
-  const valorFormatado = valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-  const dataFormatada = format(data, "dd/MM", { locale: ptBR });
+function gerarObservacaoAutomatica(parcelaAtual: number, totalParcelas: number): string {
+  const p = String(parcelaAtual).padStart(2, '0');
+  const t = String(totalParcelas).padStart(2, '0');
 
-  return `${observacaoBase} (${parcelaAtual}/${totalParcelas}) - ${valorFormatado} (${dataFormatada})`;
+  return `Parcela ${p}/${t}`;
 }
 
 export const lancamentoService = {
@@ -88,13 +78,7 @@ export const lancamentoService = {
     const lancamentosCriados = [];
     for (let i = 0; i < parcelas; i++) {
       const dataParcela = addMonths(dataBase as Date, i);
-      const observacaoAutomatica = gerarObservacaoAutomatica(
-        dados.observacao,
-        i + 1,
-        parcelas,
-        valorNumerico,
-        dataParcela
-      );
+      const observacaoAutomatica = gerarObservacaoAutomatica(i + 1, parcelas);
 
       const data = {
         userId: Number(dados.userId),

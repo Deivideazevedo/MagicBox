@@ -1,103 +1,102 @@
-import { Categoria } from "@/core/categorias/types";
-import { Despesa, DespesaPayload, TipoDespesa } from "@/core/despesas/types";
-import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
+import { Divida, DividaUnica, ListagemDividasResponse } from "@/core/dividas/types";
 import {
-  useCreateDespesaMutation,
-  useDeleteDespesaMutation,
-  useGetDespesasQuery,
-  useUpdateDespesaMutation,
-} from "@/services/endpoints/despesasApi";
-import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
+  useCreateDividaMutation,
+  useDeleteDividaMutation,
+  useGetDividasQuery,
+  useUpdateDividaMutation,
+  useProcessarAporteMutation,
+} from "@/services/endpoints/dividasApi";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTheme } from "@mui/material";
 import { useSession } from "next-auth/react";
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { DespesaFormData } from "./useDespesas";
+import { fnCleanObject } from "@/utils/functions/fnCleanObject";
+import { SwalToast } from "@/utils/swalert";
+import { useTheme } from "@mui/material";
 
-const despesaSchemaZod = z.object({
+const getHojeLocal = () => new Date().toLocaleDateString('sv-SE');
+
+const dividaSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
-  userId: z.union([z.string(), z.number()]).optional(),
-  categoriaId: z.number().min(1, "Categoria é obrigatória"),
   nome: z.string().min(1, "Nome é obrigatório"),
+  categoriaId: z.coerce.number().int().positive("Categoria é obrigatória").optional().nullable(),
+  valorTotal: z
+    .union([z.number(), z.string()])
+    .transform((val) => (val === "" || val === undefined ? undefined : Number(val)))
+    .optional()
+    .nullable(),
+  totalParcelas: z.coerce.number().int().min(1, "Mínimo 1 parcela").optional().nullable(),
+  dataInicio: z.string().min(1, "Data é obrigatória"),
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
-  tipo: z.enum(["FIXA", "VARIAVEL", "DIVIDA"]),
-  status: z.enum(["A", "I"]),
-  valorEstimado: z.number().nullable().optional(),
-  diaVencimento: z.number().min(1, "O dia deve estar entre 1 e 31").max(31, "O dia deve estar entre 1 e 31").nullable().optional(),
-  valorTotal: z.number().nullable().optional(),
-  totalParcelas: z.number().min(1).nullable().optional(),
-  dataInicio: z.string().nullable().optional(),
+
+  // Contexto de Aporte
+  isAporte: z.boolean().optional(),
+  valorAporte: z.union([z.number(), z.string()]).optional().nullable()
+    .transform((val) => (val === "" || val === undefined || val === null ? undefined : Number(val))),
 }).superRefine((data, ctx) => {
-  // Se for FIXA ou DIVIDA, o dia de vencimento e valor estimado são obrigatórios
-  if (data.tipo === "FIXA" || data.tipo === "DIVIDA") {
-    if (data.valorEstimado === null || data.valorEstimado === undefined || data.valorEstimado <= 0) {
+  if (data.isAporte) {
+    if (!data.valorAporte || data.valorAporte <= 0) {
       ctx.addIssue({
-        code: "custom",
-        message: "Valor estimado é obrigatório",
-        path: ["valorEstimado"],
+        code: z.ZodIssueCode.custom,
+        message: "Valor do aporte deve ser maior que zero",
+        path: ["valorAporte"],
       });
     }
-    if (data.diaVencimento === null || data.diaVencimento === undefined) {
+  } else {
+    // Validações obrigatórias para criação/edição normal
+    if (!data.categoriaId) {
       ctx.addIssue({
-        code: "custom",
-        message: "Dia do vencimento é obrigatório",
-        path: ["diaVencimento"],
+        code: z.ZodIssueCode.custom,
+        message: "Categoria é obrigatória",
+        path: ["categoriaId"],
+      });
+    }
+    if (!data.valorTotal || data.valorTotal <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Valor total é obrigatório",
+        path: ["valorTotal"],
+      });
+    }
+    if (!data.totalParcelas || data.totalParcelas < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Quantidade de parcelas é obrigatória",
+        path: ["totalParcelas"],
       });
     }
   }
 });
 
-interface UseDespesasProps {
-  despesas?: Despesa[];
-  categorias?: Categoria[];
-}
+export type DividaFormData = z.input<typeof dividaSchema>;
 
-export function useDividas(params?: UseDespesasProps) {
+export function useDividas() {
   const theme = useTheme();
-  const { despesas: despesasProps, categorias: categoriasProps } = params || {};
-
   const { data: session } = useSession();
   const userId = Number(session?.user?.id);
 
-  const { data: despesasQuery = [] } = useGetDespesasQuery(undefined, {
-    skip: despesasProps !== undefined,
-  });
+  const [isAporte, setIsAporte] = useState(false);
+  const [targetDivida, setTargetDivida] = useState<Divida | null>(null);
+  const [tipoConfirmacao, setTipoConfirmacao] = useState<'delete' | 'concluir' | 'reativar' | null>(null);
+  const [dividaParaAcao, setDividaParaAcao] = useState<Divida | null>(null);
 
-  const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
-    skip: categoriasProps !== undefined,
-  });
-
-  const despesasList = (despesasProps ?? despesasQuery).filter(d => d.tipo === "DIVIDA");
-  const categoriasList = categoriasProps ?? categoriasQuery;
-
-  const [openDelete, setDeleteDialog] = useState(false);
-  const [row, setRow] = useState<Despesa | null>(null);
-
-  const [createDespesa, { isLoading: isCreating }] = useCreateDespesaMutation();
-  const [updateDespesa, { isLoading: isUpdating }] = useUpdateDespesaMutation();
-  const [deleteDespesa, { isLoading: isDeleting }] = useDeleteDespesaMutation();
-
-  const defaultValues = useMemo<DespesaFormData>(
-    () => ({
-      userId: userId,
-      status: "A",
-      categoriaId: 0,
-      nome: "",
-      icone: "IconCreditCard",
-      cor: theme.palette.error.main,
-      tipo: "DIVIDA" as const,
-      valorEstimado: null,
-      diaVencimento: null,
-      valorTotal: null,
-      totalParcelas: null,
-      dataInicio: new Date().toISOString().split('T')[0],
-    }),
-    [userId, theme.palette.error.main]
-  );
+  const { data: response = {
+    resumo: {
+      totalDevidoUnicas: 0,
+      totalPagoUnicas: 0,
+      totalAgendadoVolateis: 0,
+      quantidadeTotalParcelas: 0,
+      dividasAtrasadas: 0,
+      proximosVencimentos: 0
+    },
+    dividas: []
+  } as ListagemDividasResponse, isLoading } = useGetDividasQuery();
+  const [createDivida, { isLoading: isCreating }] = useCreateDividaMutation();
+  const [updateDivida, { isLoading: isUpdating }] = useUpdateDividaMutation();
+  const [deleteDivida, { isLoading: isDeleting }] = useDeleteDividaMutation();
+  const [processarAporte, { isLoading: isAportando }] = useProcessarAporteMutation();
 
   const {
     handleSubmit: handleSubmitForm,
@@ -106,126 +105,157 @@ export function useDividas(params?: UseDespesasProps) {
     control,
     watch,
     setFocus,
-  } = useForm<DespesaFormData>({
-    resolver: zodResolver(despesaSchemaZod),
-    defaultValues,
+    formState: { errors }
+
+  } = useForm<DividaFormData>({
+    resolver: zodResolver(dividaSchema),
+    defaultValues: {
+      nome: "",
+      valorTotal: "",
+      totalParcelas: 1,
+      dataInicio: getHojeLocal(),
+      isAporte: false,
+      icone: "IconCreditCard",
+      cor: "",
+    },
   });
+  console.log('errors', errors);
+  const watchValorTotal = watch("valorTotal");
+  const watchParcelas = watch("totalParcelas");
+  const valorParcelaCalculado = (Number(watchValorTotal) || 0) / (Number(watchParcelas) || 1);
 
   const onSubmit = useCallback(
-    async (formData: DespesaFormData) => {
-      const { id, ...rest } = formData;
-
-      const data: DespesaPayload = fnCleanObject({
-        params: {
-          ...rest,
-          userId: rest.userId ? Number(rest.userId) : null,
-          status: rest.status as "A" | "I",
-        }
-      });
-
+    async (formData: DividaFormData) => {
       try {
-        if (id) {
-          await updateDespesa({
-            id: String(id),
-            data,
+        const data = formData as unknown as z.infer<typeof dividaSchema>;
+
+        if (isAporte && targetDivida && targetDivida.tipo === "UNICA") {
+          await processarAporte({
+            id: Number(targetDivida.id),
+            data: {
+              valor: Number(data.valorAporte),
+              data: new Date(data.dataInicio),
+            }
           }).unwrap();
-          SwalToast.fire({ icon: "success", title: "Atualizado!" });
+
+          SwalToast.fire({
+            icon: "success",
+            title: "Aporte realizado com sucesso!",
+          });
+          setIsAporte(false);
+          setTargetDivida(null);
         } else {
-          await createDespesa(data).unwrap();
-          SwalToast.fire({ icon: "success", title: "Criado!" });
+          const payload = fnCleanObject({ params: data });
+
+          if (data.id) {
+            await updateDivida({ id: Number(data.id), data: payload as any }).unwrap();
+          } else {
+            await createDivida(payload as any).unwrap();
+          }
         }
-        reset(defaultValues);
-      } catch (error: any) {
-        console.error("Erro na submissão (Dívida):", error);
-
-        const errorMsg = error?.data?.message || "Ocorreu um erro ao salvar a dívida.";
-
-        SwalToast.fire({
-          icon: "error",
-          title: "Erro ao salvar",
-          text: Array.isArray(errorMsg) ? errorMsg.join(", ") : errorMsg
-        });
+        reset({ nome: "", valorTotal: "", totalParcelas: 1, dataInicio: getHojeLocal(), icone: "IconCreditCard", cor: "" });
+        setIsAporte(false);
+      } catch (error) {
+        // Erro tratado globalmente
       }
     },
-    [updateDespesa, createDespesa, reset, defaultValues]
+    [createDivida, updateDivida, processarAporte, isAporte, targetDivida, reset]
   );
 
-  const handleEdit = useCallback(
-    (despesa: Despesa) => {
-      const data: DespesaFormData = {
-        id: despesa.id,
-        userId: despesa.userId,
-        categoriaId: despesa.categoriaId,
-        nome: despesa.nome,
-        tipo: despesa.tipo as "FIXA" | "VARIAVEL" | "DIVIDA",
-        valorTotal: despesa.valorTotal,
-        totalParcelas: despesa.totalParcelas,
-        dataInicio: despesa.dataInicio ? String(despesa.dataInicio) : null,
-        valorEstimado: despesa.valorEstimado,
-        diaVencimento: despesa.diaVencimento,
-        status: despesa.status as "A" | "I",
-        icone: despesa.icone,
-        cor: despesa.cor,
-      };
+  const handleEdit = (divida: DividaUnica) => {
+    setIsAporte(false);
+    setTargetDivida(divida);
+    reset({
+      id: divida.id,
+      nome: divida.nome,
+      categoriaId: divida.categoriaId,
+      valorTotal: divida.valorTotal,
+      totalParcelas: divida.totalParcelas,
+      dataInicio: new Date(divida.dataInicio).toISOString().split("T")[0],
+      icone: divida.icone,
+      cor: divida.cor,
+      isAporte: false,
+    });
+    setTimeout(() => setFocus("nome"), 100);
+  };
 
-      setRow(despesa);
-      reset(data);
-      setTimeout(() => setFocus("nome"), 100);
-    },
-    [reset, setFocus]
-  );
+  const handleAporte = (divida: Divida) => {
+    setIsAporte(true);
+    setTargetDivida(divida);
+    reset({
+      id: undefined,
+      nome: divida.nome,
+      isAporte: true,
+      valorAporte: "",
+      dataInicio: getHojeLocal(),
+    });
+    setTimeout(() => setFocus("valorAporte"), 100);
+  };
 
-  const handleOpenDialog = useCallback((despesa: Despesa) => {
-    setRow(despesa);
-    setDeleteDialog(true);
-  }, []);
+  const handleDelete = (divida: Divida) => {
+    setDividaParaAcao(divida);
+    setTipoConfirmacao('delete');
+  };
 
-  const handleCloseDialog = useCallback(() => {
-    setRow(null);
-    setDeleteDialog(false);
-  }, []);
+  const handleToggleStatus = (divida: Divida) => {
+    const isAtivo = divida.status === "A";
+    setTipoConfirmacao(isAtivo ? "concluir" : "reativar");
+    setDividaParaAcao(divida);
+  };
 
-  const handleDelete = useCallback(async () => {
-    if (!row) return;
+  const executarAcaoConfirmada = async () => {
+    if (!dividaParaAcao || !tipoConfirmacao) return;
+
     try {
-      await deleteDespesa(row.id).unwrap();
-      setRow(null);
-      setDeleteDialog(false);
-      SwalToast.fire({ icon: "success", title: "Excluído!" });
-    } catch { }
-  }, [deleteDespesa, row]);
+      if (tipoConfirmacao === 'delete') {
+        if (dividaParaAcao.tipo === "UNICA") {
+          await deleteDivida(Number(dividaParaAcao.id)).unwrap();
+        }
+      } else {
+        const novoStatus = tipoConfirmacao === 'concluir' ? 'I' : 'A';
+        await updateDivida({ id: Number(dividaParaAcao.id), data: { status: novoStatus } as any }).unwrap();
+      }
 
-  const handleSubmit = handleSubmitForm(onSubmit);
+      SwalToast.fire({
+        icon: "success",
+        title: tipoConfirmacao === 'delete' ? "Dívida removida!" : "Status atualizado!",
+      });
+    } catch {
+    } finally {
+      setTipoConfirmacao(null);
+      setDividaParaAcao(null);
+    }
+  };
+
   const isEditing = Boolean(watch("id"));
+  const handleSubmit = handleSubmitForm(onSubmit);
 
   return {
+    resumo: response.resumo,
+    dividas: response.dividas,
+    isLoading,
+    isCreating,
+    isUpdating,
     isDeleting,
+    isAportando,
+    isEditing,
+    isAporte,
+    targetDivida,
+    tipoConfirmacao,
+    dividaParaAcao,
+    setTipoConfirmacao,
+    executarAcaoConfirmada,
+    control,
+    handleSubmit,
     handleEdit,
-    handleOpenDialog,
+    handleAporte,
     handleDelete,
-    row,
-    formProps: {
-      isEditing,
-      handleSubmit,
-      handleCancelEdit: () => reset(defaultValues),
-      control,
-      row,
-      isCreating,
-      isUpdating,
-      isCollapsed: !!watch("nome") || isEditing,
-      categorias: categoriasList,
-    },
-    listProps: {
-      despesas: despesasList,
-      handleOpenDialog,
-      handleEdit,
-    },
-    deleteProps: {
-      open: openDelete,
-      name: row?.nome,
-      onConfirm: handleDelete,
-      onClose: handleCloseDialog,
-      isLoading: isDeleting,
+    handleToggleStatus,
+    valorParcelaCalculado,
+    handleCancelEdit: () => {
+      setIsAporte(false);
+      setTargetDivida(null);
+      reset({ id: undefined, nome: "", valorTotal: "", isAporte: false });
     },
   };
 }

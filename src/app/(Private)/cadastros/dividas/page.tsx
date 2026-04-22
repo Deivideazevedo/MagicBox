@@ -1,190 +1,225 @@
 "use client";
 
+import PageContainer from "@/app/components/container/PageContainer";
+import Breadcrumb from "@/app/(Private)/layout/shared/breadcrumb/Breadcrumb";
+import { Divida, DividaUnica } from "@/core/dividas/types";
 import {
   Box,
-  Typography,
-  Button,
   Grid,
-  Card,
-  CardContent,
-  LinearProgress,
-  IconButton,
-  Stack,
-  Avatar,
-  Divider,
+  Typography,
+  useTheme,
+  Slide,
+  Dialog,
+  DialogContent,
+  useMediaQuery,
 } from "@mui/material";
 import {
-  IconArrowRight,
-  IconPlus,
-  IconDotsVertical,
-  IconCreditCard,
-  IconReceipt2,
-  IconChartPie,
-  IconRotateClockwise,
+  IconTrash,
+  IconCheck,
+  IconRefresh,
 } from "@tabler/icons-react";
-import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
-import { startOfMonth, endOfMonth, format } from "date-fns";
-import Swal from "sweetalert2";
+import { useState } from "react";
+import { Formulario } from "../components/Divida/Formulario";
+import { Listagem } from "../components/Divida/Listagem";
+import { DividasDashboard } from "../components/Divida/DividasDashboard";
+import { useDividas } from "../hooks/useDividas";
+import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
-const DividasPage = () => {
-  const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
-  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
+export default function DividasPage() {
+  const theme = useTheme();
+  const {
+    resumo,
+    dividas,
+    isLoading,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    isAportando,
+    isEditing,
+    isAporte,
+    targetDivida,
+    tipoConfirmacao,
+    dividaParaAcao,
+    setTipoConfirmacao,
+    executarAcaoConfirmada,
+    control,
+    handleSubmit,
+    handleEdit,
+    handleAporte,
+    handleDelete,
+    handleToggleStatus,
+    handleCancelEdit,
+    valorParcelaCalculado,
+  } = useDividas();
 
-  const { data: allDespesas = [], isLoading: loadingDespesas } = useGetDespesasQuery();
-  const { data: dashboard } = useGetDashboardQuery({ dataInicio, dataFim });
-  
-  // Filtra apenas despesas do tipo DIVIDA
-  const dividas = allDespesas.filter(d => d.tipo === "DIVIDA" && !d.deletedAt);
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobileForm = useMediaQuery(theme.breakpoints.down("sm"));
+  const [exibirFormulario, setExibirFormulario] = useState(false);
+  const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
+  const BREADCRUMBS = [
+    { title: "Dashboard", to: "/" },
+    { title: "Dívidas", to: "/cadastros/dividas" },
+  ];
+
+  const handleOpenAporte = (divida: Divida) => {
+    handleAporte(divida);
+    setExibirFormulario(true);
   };
 
-  const stats = {
-    totalDevedor: dividas.reduce((acc, d) => acc + (Number(d.valorTotal) || 0), 0),
-    totalPago: 0,
-    quantidade: dividas.length
+  const handleNovaDivida = () => {
+    handleCancelEdit();
+    setExibirFormulario(true);
   };
+
+  const handleEditarDivida = (divida: DividaUnica) => {
+    handleEdit(divida);
+    setExibirFormulario(true);
+  };
+
+  const handleFecharFormulario = () => {
+    handleCancelEdit();
+    setExibirFormulario(false);
+  };
+
+  const dividasFiltradas = mostrarConcluidas ? dividas : dividas.filter((d: Divida) => d.status === 'A');
 
   return (
-    <Box>
+    <PageContainer title="Dívidas" description="Gerencie seus parcelamentos e compromissos">
+      <Breadcrumb title="Dívidas" items={BREADCRUMBS} />
+
       <Box mb={4}>
-        <Typography variant="h4" fontWeight={700} color="text.primary">Dívidas e Financiamentos</Typography>
-        <Typography variant="body1" color="text.secondary">Controle seus passivos e planeje a quitação de parcelas</Typography>
-      </Box>
-
-      {/* Grid de Resumo */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} md={6} lg={4}>
-          <Card elevation={2} sx={{ borderRadius: 3, borderLeft: "6px solid", borderColor: "error.main" }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">Saldo Devedor Total</Typography>
-              <Typography variant="h4" fontWeight={700} color="error.main">
-                {formatCurrency(stats.totalDevedor)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={6} lg={4}>
-          <Card elevation={2} sx={{ borderRadius: 3, borderLeft: "6px solid", borderColor: "primary.main" }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary">Dívidas Ativas</Typography>
-              <Typography variant="h4" fontWeight={700}>
-                {stats.quantidade}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6" fontWeight={600}>Lista de Passivos</Typography>
-        <Button
-          variant="contained"
-          startIcon={<IconPlus size={20} />}
-          sx={{ borderRadius: 2, textTransform: "none" }}
-          onClick={() => Swal.fire("Em breve", "Funcionalidade de criação direta em desenvolvimento", "info")}
+        <DividasDashboard
+          resumo={resumo || { totalDevidoUnicas: 0, totalPagoUnicas: 0, totalAgendadoVolateis: 0, quantidadeTotalParcelas: 0, dividasAtrasadas: 0, proximosVencimentos: 0 }}
+          onNew={handleNovaDivida}
+          mostrarConcluidas={mostrarConcluidas}
+          onToggleConcluidas={setMostrarConcluidas}
         >
-          Nova Dívida
-        </Button>
+          <Grid
+            container
+            spacing={3}
+            sx={{
+              flexWrap: isMobile ? 'wrap' : 'nowrap',
+              alignItems: 'flex-start'
+            }}
+          >
+            {/* Formulário: Lateral no Desktop / Modal no Mobile */}
+            {!isMobileForm ? (
+              <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+                <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
+                  <Formulario
+                    isEditing={isEditing}
+                    isAporte={isAporte}
+                    isAportando={isAportando}
+                    control={control}
+                    handleSubmit={handleSubmit}
+                    isCreating={isCreating}
+                    isUpdating={isUpdating}
+                    handleCancelEdit={handleFecharFormulario}
+                    targetDivida={targetDivida}
+                    valorParcelaCalculado={valorParcelaCalculado}
+                  />
+                </Grid>
+              </Slide>
+            ) : (
+              <Dialog
+                open={exibirFormulario}
+                onClose={handleFecharFormulario}
+                fullWidth
+                maxWidth="xs"
+                PaperProps={{
+                  sx: { borderRadius: 4, bgcolor: 'background.paper' }
+                }}
+              >
+                <DialogContent sx={{ p: 0 }}>
+                  <Formulario
+                    isEditing={isEditing}
+                    isAporte={isAporte}
+                    isAportando={isAportando}
+                    control={control}
+                    handleSubmit={handleSubmit}
+                    isCreating={isCreating}
+                    isUpdating={isUpdating}
+                    handleCancelEdit={handleFecharFormulario}
+                    targetDivida={targetDivida}
+                    valorParcelaCalculado={valorParcelaCalculado}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Listagem */}
+            <Grid
+              item
+              xs={12}
+              sx={{
+                flexGrow: 1,
+                minWidth: 0,
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                width: '100%',
+                ...(!isMobileForm && {
+                  flexBasis: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
+                  maxWidth: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
+                }),
+              }}
+            >
+              <Listagem
+                dividas={dividasFiltradas}
+                isLoading={isLoading}
+                onEdit={handleEditarDivida}
+                onDelete={handleDelete}
+                onAporte={handleOpenAporte}
+                onToggleStatus={handleToggleStatus}
+              />
+            </Grid>
+          </Grid>
+        </DividasDashboard>
       </Box>
 
-      <Grid container spacing={3}>
-        {dividas.length === 0 && (
-          <Grid item xs={12}>
-            <Box textAlign="center" py={10} bgcolor="action.hover" borderRadius={4}>
-              <IconChartPie size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-              <Typography color="text.secondary">Nenhuma dívida cadastrada no momento.</Typography>
-            </Box>
-          </Grid>
-        )}
-        
-        {dividas.map((divida) => {
-          const total = Number(divida.valorTotal) || 0;
-          const estimado = Number(divida.valorEstimado) || 0;
-
-          return (
-            <Grid item xs={12} md={6} key={divida.id}>
-              <Card elevation={3} sx={{ borderRadius: 4, overflow: "hidden" }}>
-                <CardContent sx={{ p: 0 }}>
-                  <Box p={3}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar 
-                          sx={{ 
-                            bgcolor: `${divida.cor}20` || "primary.light", 
-                            color: divida.cor || "primary.main",
-                            borderRadius: 2
-                          }}
-                        >
-                          <IconReceipt2 size={24} />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="h6" fontWeight={700}>{divida.nome}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Vence todo dia {divida.diaVencimento}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                      <IconButton size="small"><IconDotsVertical size={20} /></IconButton>
-                    </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    <Grid container spacing={2} mb={2}>
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="text.secondary">Valor Total</Typography>
-                        <Typography variant="body1" fontWeight={700}>{formatCurrency(total)}</Typography>
-                      </Grid>
-                      <Grid item xs={6} textAlign="right">
-                        <Typography variant="caption" color="text.secondary">Parcela Mensal</Typography>
-                        <Typography variant="body1" fontWeight={700} color="primary.main">{formatCurrency(estimado)}</Typography>
-                      </Grid>
-                    </Grid>
-
-                    <Box mb={2}>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="caption" color="text.secondary">Progresso de Quitação</Typography>
-                        <Typography variant="caption" fontWeight={700}>Calculando...</Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="indeterminate" 
-                        sx={{ height: 6, borderRadius: 3, bgcolor: "action.hover" }} 
-                      />
-                    </Box>
-                  </Box>
-
-                  <Box bgcolor="action.hover" p={2} display="flex" gap={2}>
-                    <Button 
-                      fullWidth 
-                      variant="contained" 
-                      color="primary"
-                      startIcon={<IconCreditCard size={18} />}
-                      sx={{ borderRadius: 2, textTransform: "none" }}
-                    >
-                      Pagar Parcela
-                    </Button>
-                    <Button 
-                      fullWidth 
-                      variant="outlined"
-                      startIcon={<IconRotateClockwise size={18} />}
-                      sx={{ borderRadius: 2, textTransform: "none" }}
-                    >
-                      Amortizar
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          );
-        })}
-      </Grid>
-    </Box>
+      {/* Confirmação */}
+      <DeleteConfirmationDialog
+        open={!!tipoConfirmacao}
+        onClose={() => setTipoConfirmacao(null)}
+        title={
+          tipoConfirmacao === 'delete' 
+            ? "Excluir dívida permanentemente?" 
+            : tipoConfirmacao === 'concluir'
+            ? "Marcar como concluída?"
+            : "Reativar dívida?"
+        }
+        confirmButtonText={
+          tipoConfirmacao === 'delete' 
+            ? "Sim, excluir" 
+            : tipoConfirmacao === 'concluir'
+            ? "Sim, concluir"
+            : "Sim, reativar"
+        }
+        onConfirm={executarAcaoConfirmada}
+        loading={isDeleting || isUpdating}
+        color={
+          tipoConfirmacao === 'delete' 
+            ? "error" 
+            : tipoConfirmacao === 'concluir'
+            ? "success"
+            : "info"
+        }
+        icon={
+          tipoConfirmacao === 'delete' 
+            ? IconTrash 
+            : tipoConfirmacao === 'concluir'
+            ? IconCheck 
+            : IconRefresh
+        }
+      >
+        <Typography variant="body1" color="text.secondary">
+          {tipoConfirmacao === 'delete' 
+            ? "Esta ação removerá a despesa e seus agendamentos vinculados."
+            : tipoConfirmacao === 'concluir'
+            ? "A dívida será arquivada como concluída."
+            : "A dívida voltará a ficar disponível para novos pagamentos."
+          }
+        </Typography>
+      </DeleteConfirmationDialog>
+    </PageContainer>
   );
-};
-
-export default DividasPage;
+}

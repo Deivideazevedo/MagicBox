@@ -1,226 +1,470 @@
-import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
-import { Despesa } from "@/core/despesas/types";
+import React, { useState } from "react";
 import {
-  alpha,
   Box,
   Card,
-  CardContent,
-  Chip,
-  Divider,
-  IconButton,
-  List,
-  ListItem,
-  ListItemSecondaryAction,
-  ListItemText,
+  Grid,
   Stack,
-  TextField,
   Typography,
+  useTheme,
+  IconButton,
+  Chip,
+  alpha,
+  Tooltip,
+  LinearProgress,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Fade,
+  CardContent,
 } from "@mui/material";
 import {
-  IconCreditCard,
-  IconEdit,
-  IconSearch,
+  IconDotsVertical,
+  IconPencil,
   IconTrash,
+  IconCreditCard,
+  IconCalendarEvent,
+  IconCircleCheck,
+  IconCoin,
+  IconAlertCircle,
+  IconEye,
+  IconHistory,
+  IconTrendingUp,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { Divida, DividaUnica, DividaVolatil } from "@/core/dividas/types";
+import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
+import DetalhesDividaModal from "./DetalhesDividaModal";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
-interface ListProps {
-  despesas: Despesa[];
-  handleOpenDialog: (despesa: Despesa) => void;
-  handleEdit: (despesa: Despesa) => void;
+interface ListagemProps {
+  dividas: Divida[];
+  isLoading: boolean;
+  onEdit: (divida: DividaUnica) => void;
+  onDelete: (divida: Divida) => void;
+  onAporte: (divida: Divida) => void;
+  onToggleStatus: (divida: Divida) => void;
 }
 
-export const Listagem = (formProps: ListProps) => {
-  const { despesas, handleOpenDialog, handleEdit } = formProps;
-  const [searchTerm, setSearchTerm] = useState("");
+export const Listagem = ({ 
+  dividas, 
+  isLoading, 
+  onEdit, 
+  onDelete, 
+  onAporte, 
+  onToggleStatus 
+}: ListagemProps) => {
+  const theme = useTheme();
+  
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedDivida, setSelectedDivida] = useState<Divida | null>(null);
+  const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
+  const [dividaDetalhesId, setDividaDetalhesId] = useState<string | number | null>(null);
 
-  const filteredDespesas = despesas.filter((d) =>
-    d.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, divida: Divida) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedDivida(divida);
+  };
 
-  return (
-    <Card
-      elevation={0}
-      sx={{
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.divider, 1),
-      }}
-    >
-      <CardContent sx={{ p: 0 }}>
-        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={2}
-          >
-            <Box>
-              <Typography variant="h6" fontWeight={600} color="text.primary">
-                Despesas e Dívidas
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {despesas.length} item
-                {despesas.length !== 1 ? "s" : ""} cadastrado
-                {despesas.length !== 1 ? "s" : ""}
-              </Typography>
-            </Box>
-            <Chip
-              label={`${despesas.length} registros`}
-              color="primary"
-              variant="outlined"
-            />
-          </Stack>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Pesquisar..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <IconSearch size={20} stroke={1.5} color="gray" style={{ marginRight: 8 }} />,
-            }}
-          />
-        </Box>
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
 
-        {filteredDespesas.length === 0 ? (
+  const handleOpenDetalhes = (id: string | number) => {
+    setDividaDetalhesId(id);
+    setModalDetalhesOpen(true);
+    handleCloseMenu();
+  };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <Typography variant="body2" color="text.secondary">Carregando seus compromissos...</Typography>
+      </Box>
+    );
+  }
+
+  if (dividas.length === 0) {
+    return (
+      <Card
+        elevation={0}
+        sx={{
+          p: 8,
+          borderRadius: 6,
+          textAlign: "center",
+          bgcolor: alpha(theme.palette.background.paper, 0.4),
+          border: `2px dashed ${theme.palette.divider}`,
+        }}
+      >
+        <Stack spacing={2} alignItems="center">
           <Box
             sx={{
-              textAlign: "center",
-              py: 8,
-              color: "text.secondary",
+              p: 2,
+              borderRadius: "50%",
+              bgcolor: alpha(theme.palette.primary.main, 0.05),
+              color: theme.palette.primary.main,
             }}
           >
-            <IconCreditCard
-              size={64}
-              style={{ opacity: 0.3, marginBottom: 16 }}
-            />
-            <Typography variant="h6" gutterBottom>
-              Nenhum registro encontrado
+            <IconCreditCard size={48} stroke={1.5} />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>Nenhuma dívida encontrada</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Comece registrando seus parcelamentos ou acompanhe seus agendamentos aqui.
             </Typography>
           </Box>
-        ) : (
-          <List disablePadding>
-            {filteredDespesas.map((despesa: Despesa, index: number) => {
-              const isActive = despesa.status === "A";
-              const isFixa = despesa.tipo === "FIXA";
-              const isDivida = despesa.tipo === "DIVIDA";
-              
-              const bg = despesa.cor 
-                ? alpha(despesa.cor, 0.15) 
-                : (isActive ? "primary.light" : "grey.300");
-              const fg = despesa.cor 
-                ? despesa.cor 
-                : (isActive ? "primary.main" : "grey.600");
+        </Stack>
+      </Card>
+    );
+  }
 
-              return (
-                <Box key={despesa.id}>
-                  <ListItem
+  const formatCurrency = (val: number) =>
+    (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  return (
+    <Grid container spacing={3}>
+      {dividas.map((divida) => {
+        const isUnica = divida.tipo === "UNICA";
+        const cor = divida.cor || theme.palette.primary.main;
+        
+        // Dados específicos por tipo
+        const valorPrincipal = isUnica ? (divida as DividaUnica).valorTotal : (divida as DividaVolatil).valorTotalAgendado;
+        const valorPago = isUnica ? (divida as DividaUnica).valorPago : 0;
+        const valorRestante = isUnica ? (divida as DividaUnica).valorRestante : (divida as DividaVolatil).valorTotalAgendado;
+        const progresso = isUnica ? (divida as DividaUnica).progresso : 0;
+        const parcelasInfo = isUnica 
+            ? `${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas} parcelas`
+            : `${(divida as DividaVolatil).quantidadeParcelas} parcelas agendadas`;
+
+        const isConcluida = isUnica && (divida as DividaUnica).concluida;
+        const isArquivada = divida.status === "I";
+        const isAtrasada = (isUnica && (divida as DividaUnica).diasParaVencer !== null && (divida as DividaUnica).diasParaVencer! < 0) || 
+                          (!isUnica && (divida as DividaVolatil).atrasada);
+        
+        return (
+          <Grid item xs={12} md={6} key={divida.id}>
+            <Card
+              sx={{
+                padding: 0,
+                borderRadius: 4,
+                position: "relative",
+                overflow: "visible",
+                transition: 'all 0.2s ease-in-out',
+                opacity: isArquivada ? 0.8 : 1,
+                filter: isArquivada ? 'grayscale(0.3)' : 'none',
+                border: isConcluida
+                  ? `1px solid ${alpha(theme.palette.success.main, 0.5)}`
+                  : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: `0 4px 12px ${alpha(cor, 0.1)}`,
+                }
+              }}
+              elevation={1}
+            >
+              <CardContent sx={{ p: "32px" }}>
+                <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleOpenMenu(e, divida)}
                     sx={{
-                      py: 2,
-                      px: 2,
-                      "&:hover": {
-                        backgroundColor: "action.hover",
-                      },
-                      opacity: isActive ? 1 : 0.6
+                      color: "text.secondary",
+                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.05) }
                     }}
                   >
-                    <Box
+                    <IconDotsVertical size={18} />
+                  </IconButton>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 2, minWidth: 0, mb: 3 }}>
+                   <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: 2,
+                      bgcolor: alpha(cor, 0.1),
+                      color: cor,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      display: "flex",
+                    }}
+                  >
+                    <DynamicIcon name={divida.icone || (isUnica ? "IconCreditCard" : "IconCalendarEvent")} size={28} stroke={1.5} />
+                  </Box>
+                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        sx={{
+                          lineHeight: 1.2,
+                          mb: 0.5,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}
+                      >
+                        {divida.nome}
+                      </Typography>
+                      <Chip
+                        label={isUnica ? "Única" : "Variável"}
+                        size="small"
+                        sx={{ height: 20, fontSize: '10px', fontWeight: 700, bgcolor: alpha(cor, 0.1), color: cor }}
+                      />
+                    </Stack>
+                    <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
+                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ 
+                      color: isAtrasada ? "error.main" : (divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"),
+                      fontWeight: 700 
+                    }}>
+                      <IconCalendarEvent size={14} />
+                      <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '10px' }}>
+                        {isAtrasada ? "Atrasada" : (
+                          divida.diasParaVencer === 0 ? "Vence hoje" : (
+                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 
+                              ? `Vence em ${divida.diasParaVencer}d` 
+                              : "Em dia"
+                          )
+                        )}
+                      </Typography>
+                    </Stack>
+                    </Stack>
+                  </Box>
+                </Box>
+
+                {/* Info de Valores */}
+                <Grid container spacing={2} mb={2.5}>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                      {isUnica ? "VALOR TOTAL" : "LANÇADO"}
+                    </Typography>
+                    <Typography variant={isUnica ? "caption" : "subtitle1"} fontWeight={800} color={isUnica ? "text.primary" : "warning.main"} sx={isUnica ? { display: 'block', mt: 0.5 } : {}}>
+                      {isUnica 
+                         ? `${formatCurrency(valorPago)} / ${formatCurrency(valorPrincipal)}`
+                         : formatCurrency(valorPrincipal)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                      {isUnica ? "PRÓXIMO" : "PRÓXIMO"}
+                    </Typography>
+                    <Typography 
+                      variant={isUnica ? "caption" : "subtitle1"} 
+                      fontWeight={800} 
+                      color={isAtrasada ? "error.main" : (divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main")}
+                      sx={isUnica ? { display: 'block', mt: 0.5 } : {}}
+                    >
+                      {isUnica 
+                        ? (divida.proximoVencimento ? fnFormatNaiveDate(divida.proximoVencimento, 'dd/MM/yyyy') : "---")
+                        : (divida.proximoVencimento ? fnFormatNaiveDate(divida.proximoVencimento, 'dd/MM/yyyy') : "---")
+                      }
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
+                {isUnica ? (
+                  <Box>
+                    <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(progresso, 100)}
+                          sx={{
+                            height: 10,
+                            borderRadius: 5,
+                            bgcolor: alpha(cor, 0.1),
+                            "& .MuiLinearProgress-bar": {
+                              bgcolor: cor,
+                              borderRadius: 5,
+                              boxShadow: `0 2px 4px ${alpha(cor, 0.3)}`,
+                            },
+                          }}
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          px: 1.2,
+                          py: 0.4,
+                          borderRadius: "6px",
+                          bgcolor: alpha(cor, 0.1),
+                          color: cor,
+                          minWidth: "45px",
+                          textAlign: "center"
+                        }}
+                      >
+                        <Typography variant="caption" fontWeight={800}>
+                          {progresso.toFixed(0)}%
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" mt={1}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                         {parcelasInfo}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {isConcluida ? "Dívida quitada! 🎉" : `${formatCurrency(valorRestante)} restantes`}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Divider sx={{ mb: 2, borderStyle: 'dashed' }} />
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                          PARCELAS EM ABERTO
+                        </Typography>
+                        <Typography variant="body2" fontWeight={800} color="warning.main">
+                          {(divida as DividaVolatil).quantidadeParcelas} registros
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                         <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                          SITUAÇÃO
+                        </Typography>
+                        <Typography variant="body2" fontWeight={800} color={isAtrasada ? "error.main" : (divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 ? "warning.main" : "success.main")}>
+                          {isAtrasada ? "Atrasada" : (
+                            divida.diasParaVencer === 0 ? "Vence hoje" : (
+                              divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 
+                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? 'dia' : 'dias'}` 
+                                : "Em dia"
+                            )
+                          )}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Badge de conclusão rápida */}
+                {isConcluida && !isArquivada && (
+                  <Tooltip title="Quitada! Clique para arquivar" arrow>
+                    <IconButton
+                      onClick={() => onToggleStatus(divida)}
                       sx={{
-                        width: 40,
-                        height: 40,
+                        position: "absolute",
+                        bottom: -18,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        width: 36,
+                        height: 36,
+                        p: 0,
                         borderRadius: "50%",
-                        backgroundColor: bg,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: fg,
-                        mr: 2,
+                        boxShadow: `0 2px 7px ${alpha(theme.palette.success.main, 0.5)}`,
+                        border: "3px solid",
+                        borderColor: "background.paper",
+                        bgcolor: "success.main",
+                        color: "white",
+                        zIndex: 2,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: "success.dark",
+                          transform: "translateX(-50%) scale(1.1)",
+                        }
                       }}
                     >
-                      <DynamicIcon 
-                        name={despesa.icone || "IconCreditCard"} 
-                        size={20} 
-                        fallbackIcon={isFixa ? "IconRepeat" : isDivida ? "IconReceipt" : "IconCreditCard"} 
-                      />
-                    </Box>
+                      <IconCircleCheck size={24} stroke={2.5} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        );
+      })}
 
-                    <ListItemText
-                      primary={
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={1}
-                          component="div"
-                        >
-                          <Typography variant="body1" fontWeight={500}>
-                            {despesa.nome}
-                          </Typography>
-                          {isFixa && (
-                            <Chip label="Fixa" color="info" size="small" variant="outlined" />
-                          )}
-                          {isDivida && (
-                            <Chip label="Dívida" color="warning" size="small" variant="outlined" />
-                          )}
-                          <Chip
-                            label={isActive ? "Ativa" : "Inativa"}
-                            color={isActive ? "success" : "default"}
-                            size="small"
-                            variant="filled"
-                          />
-                        </Stack>
-                      }
-                      secondary={
-                        <Stack spacing={0} component="div">
-                          <Typography variant="caption" color="text.secondary">
-                            Categoria: {despesa.categoria?.nome || "N/A"}
-                          </Typography>
-                          <Stack direction="row" spacing={2}>
-                            {(isFixa || isDivida) && despesa.valorEstimado && (
-                              <Typography variant="caption" color="text.secondary">
-                                Projeção: {new Intl.NumberFormat("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                }).format(despesa.valorEstimado)}
-                              </Typography>
-                            )}
-                            {despesa.diaVencimento && (
-                              <Typography variant="caption" color="text.secondary">
-                                Dia {despesa.diaVencimento}
-                              </Typography>
-                            )}
-                          </Stack>
-                        </Stack>
-                      }
-                      secondaryTypographyProps={{ component: "div" }}
-                    />
+      {/* Menu Global para as Dívidas */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+        disableScrollLock
+        TransitionComponent={Fade}
+        TransitionProps={{ timeout: 200 }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: 180,
+            boxShadow: theme.shadows[10],
+            mt: 0.5,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => handleOpenDetalhes(selectedDivida!.id)}>
+          <ListItemIcon><IconEye size={18} /></ListItemIcon>
+          <ListItemText primary="Ver detalhes" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+        </MenuItem>
 
-                    <ListItemSecondaryAction>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEdit(despesa)}
-                          sx={{ color: "primary.main" }}
-                        >
-                          <IconEdit size={18} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(despesa)}
-                          sx={{ color: "error.main" }}
-                        >
-                          <IconTrash size={18} />
-                        </IconButton>
-                      </Stack>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                  {index < despesas.length - 1 && <Divider />}
-                </Box>
-              );
-            })}
-          </List>
+        {selectedDivida?.tipo === "UNICA" && selectedDivida?.status === "A" && !selectedDivida.concluida && (
+           <MenuItem 
+            onClick={() => {
+              onAporte(selectedDivida);
+              handleCloseMenu();
+            }}
+            sx={{ color: theme.palette.success.main }}
+           >
+            <ListItemIcon><IconCoin size={18} color={theme.palette.success.main} /></ListItemIcon>
+            <ListItemText primary="Novo Aporte" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          </MenuItem>
         )}
-      </CardContent>
-    </Card>
+
+        <Divider sx={{ my: 1 }} />
+
+        {selectedDivida?.tipo === "UNICA" && (
+          <MenuItem 
+            onClick={() => {
+              onEdit(selectedDivida as DividaUnica);
+              handleCloseMenu();
+            }}
+          >
+            <ListItemIcon><IconPencil size={18} /></ListItemIcon>
+            <ListItemText primary="Editar" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          </MenuItem>
+        )}
+
+        {/* Somente UNICA pode ser concluída/reativada manualmente. Volátil some ao pagar. */}
+        {selectedDivida?.tipo === "UNICA" && (
+           <MenuItem 
+            onClick={() => {
+              onToggleStatus(selectedDivida!);
+              handleCloseMenu();
+            }}
+          >
+            <ListItemIcon>
+              {selectedDivida?.status === "A" ? <IconCircleCheck size={18} /> : <IconHistory size={18} />}
+            </ListItemIcon>
+            <ListItemText 
+              primary={selectedDivida?.status === "A" ? "Concluir / Arquivar" : "Reativar Dívida"} 
+              primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} 
+            />
+          </MenuItem>
+        )}
+
+        <MenuItem 
+          onClick={() => {
+            onDelete(selectedDivida!);
+            handleCloseMenu();
+          }}
+          sx={{ color: theme.palette.error.main }}
+        >
+          <ListItemIcon><IconTrash size={18} color={theme.palette.error.main} /></ListItemIcon>
+          <ListItemText primary="Excluir" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+        </MenuItem>
+      </Menu>
+
+      {/* Modal de Detalhes */}
+      {dividaDetalhesId && (
+        <DetalhesDividaModal
+          open={modalDetalhesOpen}
+          onClose={() => setModalDetalhesOpen(false)}
+          dividaId={dividaDetalhesId}
+        />
+      )}
+    </Grid>
   );
 };

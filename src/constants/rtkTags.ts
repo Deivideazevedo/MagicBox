@@ -44,3 +44,15 @@ export const META_INVALIDATION_TAGS = [
   "Dashboard",
   "Lancamentos",
 ] as const;
+/**
+ * Tags invalidadas por qualquer mutação de Dívida.
+ * Uma mudança em dívida afeta: resumo projetado, dashboard, lançamentos e metas.
+ */
+export const DIVIDA_INVALIDATION_TAGS = [
+  "Dividas",
+  "Resumo",
+  "Dashboard",
+  "Lancamentos",
+  "Metas",
+  "Despesas",
+] as const;

@@ -109,6 +109,7 @@ export const api = createApi({
     "Resumo",
     "Users",
     "Metas",
+    "Dividas",
   ],
   endpoints: () => ({}), // Endpoints serão injetados nos arquivos de serviço específicos
 });
