@@ -355,7 +355,12 @@ const DetalhesDividaModal = ({ open, onClose, dividaId }: DetalhesDividaModalPro
                       atrasada: { label: "Atrasada", color: theme.palette.error.main, icon: <IconAlertCircle size={18} /> },
                     };
 
-                    const config = statusConfig[p.status];
+                    // Se estiver pendente mas a data já passou, considerar como atrasada
+                    const hoje = new Date().toLocaleDateString('sv-SE');
+                    const isParcelaAtrasada = p.status === 'pendente' && p.dataVencimento < hoje;
+                    const statusFinal = isParcelaAtrasada ? 'atrasada' : p.status;
+
+                    const config = statusConfig[statusFinal];
                     const corItem = config.color;
 
                     return (

@@ -46,22 +46,27 @@ interface ListagemProps {
   onToggleStatus: (divida: Divida) => void;
 }
 
-export const Listagem = ({ 
-  dividas, 
-  isLoading, 
-  onEdit, 
-  onDelete, 
-  onAporte, 
-  onToggleStatus 
+export const Listagem = ({
+  dividas,
+  isLoading,
+  onEdit,
+  onDelete,
+  onAporte,
+  onToggleStatus,
 }: ListagemProps) => {
   const theme = useTheme();
-  
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDivida, setSelectedDivida] = useState<Divida | null>(null);
   const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
-  const [dividaDetalhesId, setDividaDetalhesId] = useState<string | number | null>(null);
+  const [dividaDetalhesId, setDividaDetalhesId] = useState<
+    string | number | null
+  >(null);
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, divida: Divida) => {
+  const handleOpenMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    divida: Divida,
+  ) => {
     setAnchorEl(event.currentTarget);
     setSelectedDivida(divida);
   };
@@ -78,8 +83,10 @@ export const Listagem = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <Typography variant="body2" color="text.secondary">Carregando seus compromissos...</Typography>
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <Typography variant="body2" color="text.secondary">
+          Carregando seus compromissos...
+        </Typography>
       </Box>
     );
   }
@@ -108,9 +115,12 @@ export const Listagem = ({
             <IconCreditCard size={48} stroke={1.5} />
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={700}>Nenhuma dívida encontrada</Typography>
+            <Typography variant="h6" fontWeight={700}>
+              Nenhuma dívida encontrada
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Comece registrando seus parcelamentos ou acompanhe seus agendamentos aqui.
+              Comece registrando seus parcelamentos ou acompanhe seus
+              agendamentos aqui.
             </Typography>
           </Box>
         </Stack>
@@ -126,21 +136,28 @@ export const Listagem = ({
       {dividas.map((divida) => {
         const isUnica = divida.tipo === "UNICA";
         const cor = divida.cor || theme.palette.primary.main;
-        
+
         // Dados específicos por tipo
-        const valorPrincipal = isUnica ? (divida as DividaUnica).valorTotal : (divida as DividaVolatil).valorTotalAgendado;
+        const valorPrincipal = isUnica
+          ? (divida as DividaUnica).valorTotal
+          : (divida as DividaVolatil).valorTotalAgendado;
         const valorPago = isUnica ? (divida as DividaUnica).valorPago : 0;
-        const valorRestante = isUnica ? (divida as DividaUnica).valorRestante : (divida as DividaVolatil).valorTotalAgendado;
+        const valorRestante = isUnica
+          ? (divida as DividaUnica).valorRestante
+          : (divida as DividaVolatil).valorTotalAgendado;
         const progresso = isUnica ? (divida as DividaUnica).progresso : 0;
-        const parcelasInfo = isUnica 
-            ? `${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas} parcelas`
-            : `${(divida as DividaVolatil).quantidadeParcelas} parcelas agendadas`;
+        const parcelasInfo = isUnica
+          ? `${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas} parcelas`
+          : `${(divida as DividaVolatil).quantidadeParcelas} parcelas agendadas`;
 
         const isConcluida = isUnica && (divida as DividaUnica).concluida;
         const isArquivada = divida.status === "I";
-        const isAtrasada = (isUnica && (divida as DividaUnica).diasParaVencer !== null && (divida as DividaUnica).diasParaVencer! < 0) || 
-                          (!isUnica && (divida as DividaVolatil).atrasada);
-        
+        const isAtrasada =
+          (isUnica &&
+            (divida as DividaUnica).diasParaVencer !== null &&
+            (divida as DividaUnica).diasParaVencer! < 0) ||
+          (!isUnica && (divida as DividaVolatil).atrasada);
+
         return (
           <Grid item xs={12} md={6} key={divida.id}>
             <Card
@@ -149,35 +166,45 @@ export const Listagem = ({
                 borderRadius: 4,
                 position: "relative",
                 overflow: "visible",
-                transition: 'all 0.2s ease-in-out',
+                transition: "all 0.2s ease-in-out",
                 opacity: isArquivada ? 0.8 : 1,
-                filter: isArquivada ? 'grayscale(0.3)' : 'none',
+                filter: isArquivada ? "grayscale(0.3)" : "none",
+
+                boxShadow: isConcluida
+                  ? `0 2px 7px ${alpha(theme.palette.success.main, 0.4)}`
+                  : undefined,
                 border: isConcluida
                   ? `1px solid ${alpha(theme.palette.success.main, 0.5)}`
                   : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
                 "&:hover": {
                   transform: "translateY(-2px)",
-                  boxShadow: `0 4px 12px ${alpha(cor, 0.1)}`,
-                }
+                  boxShadow: isConcluida
+                    ? `0 4px 12px ${alpha(theme.palette.success.main, 0.5)}`
+                    : `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+                },
               }}
               elevation={1}
             >
               <CardContent sx={{ p: "32px" }}>
-                <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}>
+                <Box
+                  sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+                >
                   <IconButton
                     size="small"
                     onClick={(e) => handleOpenMenu(e, divida)}
                     sx={{
                       color: "text.secondary",
-                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.05) }
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.action.active, 0.05),
+                      },
                     }}
                   >
                     <IconDotsVertical size={18} />
                   </IconButton>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 2, minWidth: 0, mb: 3 }}>
-                   <Box
+                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 3 }}>
+                  <Box
                     sx={{
                       p: 1,
                       borderRadius: 2,
@@ -188,7 +215,14 @@ export const Listagem = ({
                       display: "flex",
                     }}
                   >
-                    <DynamicIcon name={divida.icone || (isUnica ? "IconCreditCard" : "IconCalendarEvent")} size={28} stroke={1.5} />
+                    <DynamicIcon
+                      name={
+                        divida.icone ||
+                        (isUnica ? "IconCreditCard" : "IconCalendarEvent")
+                      }
+                      size={28}
+                      stroke={1.5}
+                    />
                   </Box>
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Stack direction="row" spacing={1} alignItems="center">
@@ -200,7 +234,7 @@ export const Listagem = ({
                           mb: 0.5,
                           whiteSpace: "nowrap",
                           overflow: "hidden",
-                          textOverflow: "ellipsis"
+                          textOverflow: "ellipsis",
                         }}
                       >
                         {divida.nome}
@@ -208,33 +242,55 @@ export const Listagem = ({
                       <Chip
                         label={isUnica ? "Única" : "Variável"}
                         size="small"
-                        sx={{ height: 20, fontSize: '10px', fontWeight: 700, bgcolor: alpha(cor, 0.1), color: cor }}
+                        sx={{
+                          height: 20,
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          bgcolor: alpha(cor, 0.1),
+                          color: cor,
+                        }}
                       />
                     </Stack>
-                    <Stack direction="row" flexWrap="wrap" gap={1.5} alignItems="center">
-                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ 
-                      color: isConcluida ? "success.main" : (
-                        isAtrasada ? "error.main" : (
-                          divida.diasParaVencer === 0 ? "primary.main" : (
-                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"
-                          )
-                        )
-                      ),
-                      fontWeight: 700 
-                    }}>
-                      <IconCalendarEvent size={14} />
-                      <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'uppercase', fontSize: '10px' }}>
-                        {isConcluida ? "Concluido" : (
-                          isAtrasada ? "Atrasada" : (
-                            divida.diasParaVencer === 0 ? "Vence hoje" : (
-                               divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 
-                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? 'dia' : 'dias'}` 
-                                : "Em dia"
-                            )
-                          )
-                        )}
-                      </Typography>
-                    </Stack>
+                    <Stack
+                      direction="row"
+                      flexWrap="wrap"
+                      gap={1.5}
+                      alignItems="center"
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        alignItems="center"
+                        sx={{
+                          color: isConcluida
+                            ? "success.main"
+                            : isAtrasada || divida.diasParaVencer === 0
+                              ? "error.main"
+                              : divida.diasParaVencer !== null &&
+                                  (divida.diasParaVencer as number) <= 7
+                                ? "warning.main"
+                                : "success.main",
+                          fontWeight: 700,
+                        }}
+                      >
+                        <IconCalendarEvent size={14} />
+                        <Typography
+                          variant="caption"
+                          fontWeight={800}
+                          sx={{ textTransform: "uppercase", fontSize: "10px" }}
+                        >
+                          {isConcluida
+                            ? "Concluido"
+                            : isAtrasada
+                              ? "Atrasada"
+                              : divida.diasParaVencer === 0
+                                ? "Vence hoje"
+                                : divida.diasParaVencer !== null &&
+                                    (divida.diasParaVencer as number) <= 7
+                                  ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? "dia" : "dias"}`
+                                  : "Em dia"}
+                        </Typography>
+                      </Stack>
                     </Stack>
                   </Box>
                 </Box>
@@ -242,35 +298,66 @@ export const Listagem = ({
                 {/* Info de Valores */}
                 <Grid container spacing={2} mb={2.5}>
                   <Grid item xs={6}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                      display="block"
+                      gutterBottom
+                    >
                       {isUnica ? "VALOR TOTAL" : "LANÇADO"}
                     </Typography>
-                    <Typography variant={isUnica ? "caption" : "subtitle1"} fontWeight={800} color={isUnica ? "text.primary" : "warning.main"} sx={isUnica ? { display: 'block', mt: 0.5 } : {}}>
-                      {isUnica 
-                         ? `${formatCurrency(valorPago)} / ${formatCurrency(valorPrincipal)}`
-                         : formatCurrency(valorPrincipal)}
+                    <Typography
+                      variant={isUnica ? "caption" : "subtitle1"}
+                      fontWeight={800}
+                      color={isUnica ? "text.primary" : "warning.main"}
+                      sx={isUnica ? { display: "block", mt: 0.5 } : {}}
+                    >
+                      {isUnica
+                        ? `${formatCurrency(valorPago)} / ${formatCurrency(valorPrincipal)}`
+                        : formatCurrency(valorPrincipal)}
                     </Typography>
                   </Grid>
-                  <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" gutterBottom>
+                  <Grid item xs={6} sx={{ textAlign: "right" }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                      display="block"
+                      gutterBottom
+                    >
                       {isUnica ? "PRÓXIMO" : "PRÓXIMO"}
                     </Typography>
-                    <Typography 
-                      variant={isUnica ? "caption" : "subtitle1"} 
-                      fontWeight={800} 
-                      color={isConcluida ? "success.main" : (
-                        isAtrasada ? "error.main" : (
-                          divida.diasParaVencer === 0 ? "primary.main" : (
-                            divida.diasParaVencer !== null && (divida.diasParaVencer as number) <= 7 ? "warning.main" : "success.main"
-                          )
-                        )
-                      )}
-                      sx={isUnica ? { display: 'block', mt: 0.5 } : {}}
-                    >
-                      {isUnica 
-                        ? (divida.proximoVencimento ? fnFormatNaiveDate(divida.proximoVencimento, 'dd/MM/yyyy') : "---")
-                        : (divida.proximoVencimento ? fnFormatNaiveDate(divida.proximoVencimento, 'dd/MM/yyyy') : "---")
+                    <Typography
+                      variant={isUnica ? "caption" : "subtitle1"}
+                      fontWeight={800}
+                      color={
+                        isConcluida
+                          ? "success.main"
+                          : isAtrasada
+                            ? "error.main"
+                            : divida.diasParaVencer === 0
+                              ? "primary.main"
+                              : divida.diasParaVencer !== null &&
+                                  (divida.diasParaVencer as number) <= 7
+                                ? "warning.main"
+                                : "success.main"
                       }
+                      sx={isUnica ? { display: "block", mt: 0.5 } : {}}
+                    >
+                      {isUnica
+                        ? divida.proximoVencimento
+                          ? fnFormatNaiveDate(
+                              divida.proximoVencimento,
+                              "dd/MM/yyyy",
+                            )
+                          : "---"
+                        : divida.proximoVencimento
+                          ? fnFormatNaiveDate(
+                              divida.proximoVencimento,
+                              "dd/MM/yyyy",
+                            )
+                          : "---"}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -278,7 +365,12 @@ export const Listagem = ({
                 {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
                 {isUnica ? (
                   <Box>
-                    <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      mb={1}
+                    >
                       <Box sx={{ flexGrow: 1 }}>
                         <LinearProgress
                           variant="determinate"
@@ -303,7 +395,7 @@ export const Listagem = ({
                           bgcolor: alpha(cor, 0.1),
                           color: cor,
                           minWidth: "45px",
-                          textAlign: "center"
+                          textAlign: "center",
                         }}
                       >
                         <Typography variant="caption" fontWeight={800}>
@@ -311,39 +403,84 @@ export const Listagem = ({
                         </Typography>
                       </Box>
                     </Stack>
-                    <Stack direction="row" justifyContent="space-between" mt={1}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                         {parcelasInfo}
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      mt={1}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                      >
+                        {parcelasInfo}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {isConcluida ? "Dívida quitada! 🎉" : `${formatCurrency(valorRestante)} restantes`}
+                        {isConcluida
+                          ? "Dívida quitada! 🎉"
+                          : `${formatCurrency(valorRestante)} restantes`}
                       </Typography>
                     </Stack>
                   </Box>
                 ) : (
                   <Box>
-                    <Divider sx={{ mb: 2, borderStyle: 'dashed' }} />
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Divider sx={{ mb: 2, borderStyle: "dashed" }} />
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
                       <Box>
-                        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
                           PARCELAS EM ABERTO
                         </Typography>
-                        <Typography variant="body2" fontWeight={800} color="warning.main">
-                          {(divida as DividaVolatil).quantidadeParcelas} registros
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="warning.main"
+                        >
+                          {(divida as DividaVolatil).quantidadeParcelas}{" "}
+                          registros
                         </Typography>
                       </Box>
-                      <Box sx={{ textAlign: 'right' }}>
-                         <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
                           SITUAÇÃO
                         </Typography>
-                        <Typography variant="body2" fontWeight={800} color={isAtrasada ? "error.main" : (divida.diasParaVencer === 0 ? "primary.main" : (divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 ? "warning.main" : "success.main"))}>
-                          {isAtrasada ? "Atrasada" : (
-                            divida.diasParaVencer === 0 ? "Vence hoje" : (
-                              divida.diasParaVencer !== null && divida.diasParaVencer !== undefined && divida.diasParaVencer <= 7 
-                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? 'dia' : 'dias'}` 
-                                : "Em dia"
-                            )
-                          )}
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color={
+                            isAtrasada
+                              ? "error.main"
+                              : divida.diasParaVencer === 0
+                                ? "primary.main"
+                                : divida.diasParaVencer !== null &&
+                                    divida.diasParaVencer !== undefined &&
+                                    divida.diasParaVencer <= 7
+                                  ? "warning.main"
+                                  : "success.main"
+                          }
+                        >
+                          {isAtrasada
+                            ? "Atrasada"
+                            : divida.diasParaVencer === 0
+                              ? "Vence hoje"
+                              : divida.diasParaVencer !== null &&
+                                  divida.diasParaVencer !== undefined &&
+                                  divida.diasParaVencer <= 7
+                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? "dia" : "dias"}`
+                                : "Em dia"}
                         </Typography>
                       </Box>
                     </Stack>
@@ -373,11 +510,11 @@ export const Listagem = ({
                         bgcolor: "success.main",
                         color: "white",
                         zIndex: 2,
-                        transition: 'all 0.2s',
-                        '&:hover': {
+                        transition: "all 0.2s",
+                        "&:hover": {
                           bgcolor: "success.dark",
                           transform: "translateX(-50%) scale(1.1)",
-                        }
+                        },
                       }}
                     >
                       <IconCircleCheck size={24} stroke={2.5} />
@@ -404,70 +541,100 @@ export const Listagem = ({
             minWidth: 180,
             boxShadow: theme.shadows[10],
             mt: 0.5,
-          }
+          },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         <MenuItem onClick={() => handleOpenDetalhes(selectedDivida!.id)}>
-          <ListItemIcon><IconEye size={18} /></ListItemIcon>
-          <ListItemText primary="Ver detalhes" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          <ListItemIcon>
+            <IconEye size={18} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Ver detalhes"
+            primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+          />
         </MenuItem>
 
-        {selectedDivida?.tipo === "UNICA" && selectedDivida?.status === "A" && !selectedDivida.concluida && (
-           <MenuItem 
-            onClick={() => {
-              onAporte(selectedDivida);
-              handleCloseMenu();
-            }}
-            sx={{ color: theme.palette.success.main }}
-           >
-            <ListItemIcon><IconCoin size={18} color={theme.palette.success.main} /></ListItemIcon>
-            <ListItemText primary="Novo Aporte" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
-          </MenuItem>
-        )}
+        {selectedDivida?.tipo === "UNICA" &&
+          selectedDivida?.status === "A" &&
+          !selectedDivida.concluida && (
+            <MenuItem
+              onClick={() => {
+                onAporte(selectedDivida);
+                handleCloseMenu();
+              }}
+              sx={{ color: theme.palette.success.main }}
+            >
+              <ListItemIcon>
+                <IconCoin size={18} color={theme.palette.success.main} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Novo Aporte"
+                primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+              />
+            </MenuItem>
+          )}
 
         <Divider sx={{ my: 1 }} />
 
         {selectedDivida?.tipo === "UNICA" && (
-          <MenuItem 
+          <MenuItem
             onClick={() => {
               onEdit(selectedDivida as DividaUnica);
               handleCloseMenu();
             }}
           >
-            <ListItemIcon><IconPencil size={18} /></ListItemIcon>
-            <ListItemText primary="Editar" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+            <ListItemIcon>
+              <IconPencil size={18} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Editar"
+              primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+            />
           </MenuItem>
         )}
 
         {/* Somente UNICA pode ser concluída/reativada manualmente. Volátil some ao pagar. */}
         {selectedDivida?.tipo === "UNICA" && (
-           <MenuItem 
+          <MenuItem
             onClick={() => {
               onToggleStatus(selectedDivida!);
               handleCloseMenu();
             }}
           >
             <ListItemIcon>
-              {selectedDivida?.status === "A" ? <IconCircleCheck size={18} /> : <IconHistory size={18} />}
+              {selectedDivida?.status === "A" ? (
+                <IconCircleCheck size={18} />
+              ) : (
+                <IconHistory size={18} />
+              )}
             </ListItemIcon>
-            <ListItemText 
-              primary={selectedDivida?.status === "A" ? "Concluir / Arquivar" : "Reativar Dívida"} 
-              primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} 
+            <ListItemText
+              primary={
+                selectedDivida?.status === "A"
+                  ? "Concluir / Arquivar"
+                  : "Reativar Dívida"
+              }
+              primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
             />
           </MenuItem>
         )}
 
-        <MenuItem 
+        <MenuItem
           onClick={() => {
             onDelete(selectedDivida!);
             handleCloseMenu();
           }}
           sx={{ color: theme.palette.error.main }}
         >
-          <ListItemIcon><IconTrash size={18} color={theme.palette.error.main} /></ListItemIcon>
-          <ListItemText primary="Excluir" primaryTypographyProps={{ variant: 'caption', fontWeight: 600 }} />
+          <ListItemIcon>
+            <IconTrash size={18} color={theme.palette.error.main} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Excluir"
+            primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+          />
         </MenuItem>
       </Menu>
 
