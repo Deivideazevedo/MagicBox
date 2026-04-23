@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { DividaUnica, DividaVolatil, StatusDivida, SituacaoParcela } from "./types";
+import { DividaUnica, DividaVolatil, StatusDivida, SituacaoParcela, StatusSituacaoParcela } from "./types";
 import { CreateDividaDTO, UpdateDividaDTO } from "./divida.dto";
 import { differenceInCalendarDays, isSameMonth } from "date-fns";
 import { Prisma, Lancamento, Despesa, Categoria } from "@prisma/client";
@@ -33,45 +33,85 @@ export const dividasRepository = {
       orderBy: { createdAt: "desc" },
     });
 
-    return despesas.map((d) => this.mapearDividaUnica(d));
+    return despesas.map((d) => this.mapearDividaUnica(d as DespesaComRelacoes));
   },
 
   async listarVolateis(userId: number): Promise<DividaVolatil[]> {
-    const agendamentos = await prisma.lancamento.findMany({
+    const despesasBase = await prisma.despesa.findMany({
       where: {
         userId,
-        tipo: "agendamento",
-        despesaId: { not: null },
-        despesa: {
-          tipo: { not: "DIVIDA" },
-          deletedAt: null,
-          status: "A"
-        }
+        tipo: "VARIAVEL",
+        deletedAt: null,
+        status: "A"
       },
       include: {
-        despesa: {
-          include: { categoria: true }
+        categoria: true,
+        lancamentos: {
+          orderBy: { data: "asc" }
         }
-      },
-      orderBy: { data: "asc" }
-    });
-
-    // Agrupar por despesaId
-    const grupos = new Map<number, LancamentoComDespesa[]>();
-    agendamentos.forEach((l: LancamentoComDespesa) => {
-      const list = grupos.get(l.despesaId!) || [];
-      list.push(l);
-      grupos.set(l.despesaId!, list);
+      }
     });
 
     const hoje = new Date();
+    const volateis: DividaVolatil[] = [];
 
-    return Array.from(grupos.values()).map(list => {
-      const d = list[0].despesa!;
-      const proximo = list[0];
-      const diasParaVencer = differenceInCalendarDays(new Date(proximo.data), hoje);
+    for (const d of despesasBase) {
+      const lancamentos = d.lancamentos || [];
+      
+      const mesesComAgendamento = new Map<string, Lancamento[]>();
+      lancamentos.filter(l => l.tipo === 'agendamento').forEach(a => {
+        const key = `${new Date(a.data).getUTCMonth()}-${new Date(a.data).getUTCFullYear()}`;
+        const list = mesesComAgendamento.get(key) || [];
+        list.push(a);
+        mesesComAgendamento.set(key, list);
+      });
 
-      return {
+      const situacaoParcelas: SituacaoParcela[] = [];
+      let numeroSeq = 1;
+
+      const chavesOrdenadas = Array.from(mesesComAgendamento.keys()).sort((a, b) => {
+        const [m1, y1] = a.split('-').map(Number);
+        const [m2, y2] = b.split('-').map(Number);
+        return y1 !== y2 ? y1 - y2 : m1 - m2;
+      });
+
+      for (const key of chavesOrdenadas) {
+        const ags = mesesComAgendamento.get(key)!;
+        const [mes, ano] = key.split('-').map(Number);
+        const dataReferencia = ags[0].data;
+
+        const valorAgendadoNoMes = ags.reduce((acc, l) => acc + Number(l.valor), 0);
+        const pagamentosNoMes = lancamentos.filter(l => 
+          l.tipo === 'pagamento' && 
+          new Date(l.data).getUTCMonth() === mes && 
+          new Date(l.data).getUTCFullYear() === ano
+        );
+        const valorPagoNoMes = pagamentosNoMes.reduce((acc, l) => acc + Number(l.valor), 0);
+
+        // REGRA: Se foi TOTALMENTE paga, IGNORA do Card de Dívidas
+        if (valorPagoNoMes >= valorAgendadoNoMes - 0.01) continue;
+
+        let status: StatusSituacaoParcela = (valorPagoNoMes > 0) ? 'parcial' : 'pendente';
+        if (status === 'pendente' && new Date(dataReferencia) < hoje && !isSameMonth(new Date(dataReferencia), hoje)) {
+          status = 'atrasada';
+        }
+
+        situacaoParcelas.push({
+          numero: numeroSeq++,
+          dataVencimento: new Date(dataReferencia).toISOString(),
+          valorAgendado: valorAgendadoNoMes,
+          valorPago: valorPagoNoMes,
+          status
+        });
+      }
+
+      if (situacaoParcelas.length === 0) continue;
+
+      const proximo = situacaoParcelas.find(p => p.status !== 'pago');
+      const valorTotalPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorAgendado, 0);
+      const valorPagoPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorPago, 0);
+
+      volateis.push({
         id: `vol-${d.id}`,
         despesaId: d.id,
         nome: d.nome,
@@ -79,15 +119,58 @@ export const dividasRepository = {
         cor: d.cor,
         status: "A",
         tipo: "VOLATIL",
-        valorTotalAgendado: list.reduce((acc, l) => acc + Number(l.valor), 0),
-        quantidadeParcelas: list.length,
-        proximoVencimento: proximo.data.toISOString(),
-        diasParaVencer,
-        atrasada: diasParaVencer < 0,
+        valorTotalAgendado: valorTotalPendentes,
+        valorPago: valorPagoPendentes,
+        valorRestante: Math.max(0, valorTotalPendentes - valorPagoPendentes),
+        quantidadeParcelas: situacaoParcelas.length,
+        proximoVencimento: proximo?.dataVencimento || null,
+        diasParaVencer: proximo ? differenceInCalendarDays(new Date(proximo.dataVencimento), hoje) : null,
+        atrasada: situacaoParcelas.some(p => p.status === 'atrasada'),
         categoriaNome: d.categoria?.nome,
         userId: d.userId,
-        lancamentos: list
-      } as DividaVolatil;
+        lancamentos: lancamentos,
+        situacaoParcelas
+      });
+    }
+
+    return volateis;
+  },
+
+  async buscarVolatilPorDespesaId(despesaId: number, userId: number): Promise<DividaVolatil | null> {
+    const d = await prisma.despesa.findFirst({
+      where: { id: despesaId, userId, tipo: "VARIAVEL", deletedAt: null },
+      include: { categoria: true, lancamentos: { orderBy: { data: "asc" } } }
+    });
+    if (!d) return null;
+    const mapped = await this.listarVolateis(userId);
+    return mapped.find(v => v.despesaId === despesaId) || null;
+  },
+
+  async buscarAgendamentoPorData(despesaId: number, data: Date): Promise<Lancamento | null> {
+    const start = new Date(data.getFullYear(), data.getMonth(), 1);
+    const end = new Date(data.getFullYear(), data.getMonth() + 1, 0);
+
+    return prisma.lancamento.findFirst({
+      where: {
+        despesaId,
+        tipo: 'agendamento',
+        data: {
+          gte: start,
+          lte: end
+        }
+      }
+    });
+  },
+
+  async liquidarAgendamento(id: number, data: Date, observacao: string): Promise<Lancamento> {
+    return prisma.lancamento.update({
+      where: { id },
+      data: {
+        tipo: 'pagamento',
+        data: data,
+        observacao,
+        updatedAt: new Date()
+      }
     });
   },
 
@@ -109,64 +192,94 @@ export const dividasRepository = {
 
   mapearDividaUnica(d: DespesaComRelacoes): DividaUnica {
     const lancamentos = d.lancamentos || [];
-    const totalParcelas = d.totalParcelas || 0;
+    const totalParcelasPlanejadas = d.totalParcelas || 0;
     const valorTotal = Number(d.valorTotal || 0);
-    const valorParcelaBase = Number(d.valorEstimado || (valorTotal / totalParcelas) || 0);
+    const valorParcelaBase = Number(d.valorEstimado || (valorTotal / totalParcelasPlanejadas) || 0);
     const dataInicio = new Date(d.dataInicio || d.createdAt);
     const hoje = new Date();
-
-    // 1. Calcular Valor Total Pago (Aportes + Drawer)
-    const pagamentosTotais = lancamentos.filter((l: Lancamento) => l.tipo === "pagamento");
-    const valorPagoTotal = pagamentosTotais.reduce((acc: number, l: Lancamento) => acc + Number(l.valor), 0);
+    // 1. Identificar todos os meses que possuem atividade (Planejada ou Real)
+    const mesesComAtividade = new Set<string>();
     
-    // 2. Gerar cronograma (Waterfall)
-    const situacaoParcelas: SituacaoParcela[] = [];
-    let saldoParaAbater = valorPagoTotal;
-    
-    for (let i = 0; i < totalParcelas; i++) {
-      const dataVencimento = new Date(dataInicio);
-      dataVencimento.setMonth(dataInicio.getMonth() + i);
-
-      // Ajuste de dia
-      const diaDesejado = dataInicio.getDate();
-      const ultimoDiaMes = new Date(dataVencimento.getFullYear(), dataVencimento.getMonth() + 1, 0).getDate();
-      dataVencimento.setDate(Math.min(diaDesejado, ultimoDiaMes));
-
-      // Valor desta parcela específica (priorizar agendamento se existir para capturar alterações manuais)
-      const agendamentosNoMes = lancamentos.filter((l: Lancamento) => 
-        l.tipo === "agendamento" && isSameMonth(new Date(l.data), dataVencimento)
-      );
-      const valorDestaParcela = agendamentosNoMes.length > 0 ? Number(agendamentosNoMes[0].valor) : valorParcelaBase;
-
-      let valorAlocado = 0;
-      let status: SituacaoParcela['status'] = 'pendente';
-
-      if (saldoParaAbater >= valorDestaParcela - 0.01) {
-        valorAlocado = valorDestaParcela;
-        saldoParaAbater -= valorDestaParcela;
-        status = 'pago';
-      } else if (saldoParaAbater > 0) {
-        valorAlocado = saldoParaAbater;
-        saldoParaAbater = 0;
-        status = 'parcial';
-      } else if (dataVencimento < hoje && !isSameMonth(dataVencimento, hoje)) {
-        status = 'atrasada';
-      }
-
-      situacaoParcelas.push({
-        numero: i + 1,
-        dataVencimento: dataVencimento.toISOString(),
-        valorAgendado: valorDestaParcela,
-        valorPago: valorAlocado,
-        status
-      });
+    // Meses do cronograma planejado
+    for (let i = 0; i < totalParcelasPlanejadas; i++) {
+        const dVenc = new Date(dataInicio);
+        dVenc.setMonth(dataInicio.getMonth() + i);
+        const key = `${dVenc.getUTCMonth()}-${dVenc.getUTCFullYear()}`;
+        mesesComAtividade.add(key);
     }
 
-    // 3. Calcular Metadados Globais
-    const valorRestante = Math.max(0, valorTotal - valorPagoTotal);
+    // Meses com agendamentos reais (Drawer)
+    const agendamentosReais = lancamentos.filter(l => l.tipo === 'agendamento');
+    agendamentosReais.forEach(l => {
+        const date = new Date(l.data);
+        const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+        mesesComAtividade.add(key);
+    });
+
+    // 2. Processar cada mês para calcular Valor Agendado e Valor Pago
+    const situacaoParcelas: SituacaoParcela[] = [];
+    const keysOrdenadas = Array.from(mesesComAtividade).sort((a, b) => {
+        const [m1, y1] = a.split('-').map(Number);
+        const [m2, y2] = b.split('-').map(Number);
+        return y1 !== y2 ? y1 - y2 : m1 - m2;
+    });
+
+    keysOrdenadas.forEach((key, idx) => {
+        const [mes, ano] = key.split('-').map(Number);
+        
+        // Pagamentos do mês
+        const valorPagoNoMes = lancamentos
+            .filter(l => l.tipo === 'pagamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
+            .reduce((acc, l) => acc + Number(l.valor), 0);
+
+        // Agendamentos reais do mês
+        const valorAgendadoReal = lancamentos
+            .filter(l => l.tipo === 'agendamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
+            .reduce((acc, l) => acc + Number(l.valor), 0);
+
+        // Se o mês está no plano original e NÃO tem agendamento real (já foi pago ou deletado), 
+        // usamos o base. Se tem agendamento real, usamos o real (que já é o valor atualizado).
+        const isMêsPlanejado = idx < totalParcelasPlanejadas;
+        const valorFinalAgendado = (valorAgendadoReal > 0) ? valorAgendadoReal : (isMêsPlanejado ? valorParcelaBase : 0);
+
+        // Se não tem agendamento nem é planejado (ex: apenas um pagamento avulso), ignoramos como parcela
+        if (valorFinalAgendado === 0 && valorAgendadoReal === 0 && !isMêsPlanejado) return;
+
+        let label = `Parcela ${String(idx + 1).padStart(2, '0')}/${String(totalParcelasPlanejadas).padStart(2, '0')}`;
+        if (idx >= totalParcelasPlanejadas) {
+            label = "Parcela Adicional";
+        }
+
+        const dateRef = new Date(ano, mes, dataInicio.getDate());
+        let status: StatusSituacaoParcela = 'pendente';
+        if (valorPagoNoMes >= valorFinalAgendado - 0.01 && valorFinalAgendado > 0) {
+            status = 'pago';
+        } else if (valorPagoNoMes > 0) {
+            status = 'parcial';
+        } else if (dateRef < hoje && !isSameMonth(dateRef, hoje)) {
+            status = 'atrasada';
+        }
+
+        situacaoParcelas.push({
+            numero: idx + 1,
+            label,
+            dataVencimento: dateRef.toISOString(),
+            valorAgendado: valorFinalAgendado,
+            valorPago: valorPagoNoMes,
+            status
+        });
+    });
+
+
+    // 4. Calcular Metadados Globais (Baseado no acumulado real de agendamentos)
+    const valorTotalCalculado = situacaoParcelas.reduce((acc, p) => acc + p.valorAgendado, 0);
+    const valorPagoTotalGlobal = lancamentos
+        .filter(l => l.tipo === 'pagamento')
+        .reduce((acc, l) => acc + Number(l.valor), 0);
+
+    const valorRestante = Math.max(0, valorTotalCalculado - valorPagoTotalGlobal);
     const parcelasPagas = situacaoParcelas.filter(p => p.status === 'pago').length;
-    const parcelasRestantes = Math.max(0, totalParcelas - parcelasPagas);
-    const progresso = valorTotal > 0 ? (valorPagoTotal / valorTotal) * 100 : 0;
+    const progresso = valorTotalCalculado > 0 ? (valorPagoTotalGlobal / valorTotalCalculado) * 100 : 0;
     const proximoAgendamento = situacaoParcelas.find(p => p.status !== 'pago');
 
     return {
@@ -176,126 +289,62 @@ export const dividasRepository = {
       cor: d.cor,
       status: d.status as StatusDivida,
       tipo: "UNICA",
-      valorTotal,
-      totalParcelas,
+      valorTotal: valorTotalCalculado,
+      totalParcelas: situacaoParcelas.length,
       valorParcela: valorParcelaBase,
       dataInicio: d.dataInicio || d.createdAt,
       diaVencimento: d.diaVencimento || 0,
-      valorPago: valorPagoTotal,
+      valorPago: valorPagoTotalGlobal,
       valorRestante,
       parcelasPagas,
-      parcelasRestantes,
+      parcelasRestantes: Math.max(0, situacaoParcelas.length - parcelasPagas),
       progresso,
-      concluida: (valorRestante <= 0 && valorTotal > 0) || parcelasPagas >= totalParcelas,
+      concluida: (valorRestante <= 0 && valorTotalCalculado > 0) || parcelasPagas >= situacaoParcelas.length,
       proximoVencimento: proximoAgendamento?.dataVencimento || null,
       diasParaVencer: proximoAgendamento ? differenceInCalendarDays(new Date(proximoAgendamento.dataVencimento), hoje) : null,
       lancamentos: d.lancamentos,
       situacaoParcelas,
       categoriaId: d.categoriaId,
-      categoriaNome: d.categoria?.nome,
       userId: d.userId,
-    } as DividaUnica;
+      categoriaNome: d.categoria?.nome
+    };
   },
 
-  async buscarVolatilPorDespesaId(despesaId: number, userId: number): Promise<DividaVolatil | null> {
-    const agendamentos = await prisma.lancamento.findMany({
-      where: {
-        userId,
-        despesaId,
-        tipo: "agendamento",
-        despesa: {
-          deletedAt: null,
-          status: "A"
-        }
-      },
-      include: {
-        despesa: {
-          include: { categoria: true }
-        }
-      },
-      orderBy: { data: "asc" }
-    });
-
-    if (agendamentos.length === 0) return null;
-
-    const d = agendamentos[0].despesa!;
-    const proximo = agendamentos[0];
-    const hoje = new Date();
-    const diasParaVencer = differenceInCalendarDays(new Date(proximo.data), hoje);
-
-    return {
-      id: `vol-${d.id}`,
-      despesaId: d.id,
-      nome: d.nome,
-      icone: d.icone,
-      cor: d.cor,
-      status: "A" as StatusDivida,
-      tipo: "VOLATIL",
-      valorTotalAgendado: agendamentos.reduce((acc, l) => acc + Number(l.valor), 0),
-      quantidadeParcelas: agendamentos.length,
-      proximoVencimento: proximo.data.toISOString(),
-      diasParaVencer,
-      atrasada: diasParaVencer < 0,
-      categoriaNome: d.categoria?.nome,
-      userId: d.userId,
-      lancamentos: agendamentos
-    } as DividaVolatil;
-  },
-
-  async criar(dados: CreateDividaDTO & { userId: number }) {
-    return await prisma.despesa.create({
+  async criar(dados: CreateDividaDTO & { userId: number }): Promise<Despesa> {
+    return prisma.despesa.create({
       data: {
-        ...dados,
+        userId: dados.userId,
+        categoriaId: dados.categoriaId,
+        nome: dados.nome,
         tipo: "DIVIDA",
-        valorEstimado: Number(dados.valorTotal) / dados.totalParcelas,
+        valorTotal: dados.valorTotal,
+        totalParcelas: dados.totalParcelas,
         diaVencimento: new Date(dados.dataInicio).getDate(),
+        dataInicio: new Date(dados.dataInicio),
+        icone: dados.icone,
+        cor: dados.cor,
+        status: "A",
+        updatedAt: new Date()
       }
     });
   },
 
-  async atualizar(id: number, dados: UpdateDividaDTO) {
-    // Garantir que não estamos tentando atualizar o ID ou campos inexistentes
-    const { ...updateData }: Prisma.DespesaUpdateInput = dados;
-    
-    if (dados.valorTotal && dados.totalParcelas) {
-      updateData.valorEstimado = Number(dados.valorTotal) / dados.totalParcelas;
-    }
-
-    return await prisma.despesa.update({
+  async atualizar(id: number, data: UpdateDividaDTO): Promise<Despesa> {
+    return prisma.despesa.update({
       where: { id },
-      data: updateData
-    });
-  },
-
-  async remover(id: number) {
-    return await prisma.despesa.update({
-      where: { id },
-      data: { deletedAt: new Date() }
-    });
-  },
-
-  async buscarAgendamentoPorData(despesaId: number, data: Date) {
-    return await prisma.lancamento.findFirst({
-      where: {
-        despesaId,
-        tipo: "agendamento",
-        data
-      }
-    });
-  },
-
-  async liquidarAgendamento(agendamentoId: number, dataPagamento: Date, observacao: string) {
-    const ag = await prisma.lancamento.findUnique({ where: { id: agendamentoId } });
-    if (!ag) return null;
-
-    return await prisma.lancamento.update({
-      where: { id: agendamentoId },
       data: {
-        tipo: "pagamento",
-        valor: ag.valor,
-        data: dataPagamento,
-        observacao
-      }
+        ...data,
+        updatedAt: new Date(),
+      },
     });
-  }
+  },
+
+  async remover(id: number): Promise<Despesa> {
+    return prisma.despesa.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  },
 };

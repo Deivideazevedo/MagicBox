@@ -1,5 +1,7 @@
 # Regras de Negócio: Resumo e Mini Cards
 
+> **Nota:** Este documento complementa `REGRAS-DE-NEGOCIO.md`. Aqui estão as regras específicas do módulo de resumo financeiro e totais dos mini cards.
+
 Este documento descreve as regras lógicas utilizadas para gerar o Resumo Financeiro e os Mini Cards de totalização do sistema.
 
 ## 1. Resumo Financeiro (Listagem Consolidada)

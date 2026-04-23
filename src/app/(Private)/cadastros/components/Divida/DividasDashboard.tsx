@@ -162,10 +162,10 @@ export const DividasDashboard = ({
       >
         <Box>
           <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.5px', color: 'text.primary' }}>
-            Suas Dívidas
+            Suas Dívidas com Prazo
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
-            Acompanhe suas dívidas únicas e os agendamentos das despesas voláteis
+            Gerencie a evolução e o encerramento de suas dívidas
           </Typography>
         </Box>
 

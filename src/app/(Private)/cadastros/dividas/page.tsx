@@ -85,7 +85,7 @@ export default function DividasPage() {
   const dividasFiltradas = mostrarConcluidas ? dividas : dividas.filter((d: Divida) => d.status === 'A');
 
   return (
-    <PageContainer title="Dívidas" description="Gerencie seus parcelamentos e compromissos">
+    <PageContainer title="Dívidas com Prazo" description="Gerencie a evolução e o encerramento de suas dívidas">
       <Breadcrumb title="Dívidas" items={BREADCRUMBS} />
 
       <Box mb={4}>

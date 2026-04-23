@@ -1,6 +1,6 @@
-# Regras de Negócio - MagicBox
+# Regras de Negócio - MagicBox v2.0
 
-Sistema de gestão financeira pessoal com controle de despesas, receitas, lançamentos e metas.
+Sistema de gestão financeira pessoal com controle de despesas, receitas, lançamentos, dívidas e metas.
 
 ---
 
@@ -13,9 +13,10 @@ O MagicBox é um sistema de gestão financeira pessoal que permite aos usuários
 - **Categorias**: Organizam despesas e receitas
 - **Despesas**: Controlam gastos fixos, variáveis e dívidas
 - **Receitas**: Controlam rendas fixas e variáveis
+- **Dívidas**: Gerenciam parcelamentos com cronograma de quitação (UNICA e VOLATIL)
 - **Lançamentos**: Registram transações reais (pagamentos) e agendamentos
-- **Metas**: Permitem poupar para objetivos específicos
-- **Resumo**: Fornece visão consolidada com projeções financeiras
+- **Metas**: Permitem poupar para objetivos específicos com acompanhamento de progresso
+- **Resumo**: Fornece visão consolidada com projeções financeiras e mini cards
 
 ### 1.2 Hierarquia de Dados
 
@@ -25,15 +26,30 @@ User (Usuário)
   ├── Categoria (1:N)
   │     │
   │     ├── Despesa (1:N)
-  │     │     └── Lancamento (N:1)
+  │     │     └─ tipo: FIXA | VARIAVEL | DIVIDA
+  │     │           │
+  │     │           └── Lancamento (N:1)
   │     │
   │     ├── Receita (1:N)
-  │     │     └── Lancamento (N:1)
+  │     │           └── Lancamento (N:1)
   │     │
   │     └── Lancamento (N:1)
   │
+  ├── Divida (1:N)
+  │     │
+  │     ├── DividaUnica: tipo=DIVIDA com parcelamento
+  │     │     ├── Gerencia agendamentos automáticos
+  │     │     └── Suporta aportes para quitação
+  │     │
+  │     └── DividaVolatil: agrupamento de agendamentos manuais
+  │
   └── Meta (1:N)
-        └── Lancamento (N:1)
+        │
+        ├── ValorObjetivo: valorMeta
+        ├── ValorAcumulado: soma de lançamentos (pagamentos)
+        ├── Progresso: percentual calculado
+        │
+        └── Lancamento (N:1) - Aportes
 ```
 
 ### 1.3 Entidades Principais
@@ -1907,15 +1923,22 @@ TIPO DE DELETE:
 |-------|------------|
 | **Despesa Fixa** | Gasto recorrente mensal (aluguel, internet, etc) |
 | **Despesa Variável** | Gasto ocasional sem padrão definido (supermercado, lazer) |
-| **Dívida** | Parcelamento de compra (TV, carro, etc) com saldo devedor |
+| **Dívida Única** | Parcelamento com valor total fixo e agendamentos automáticos |
+| **Dívida Volátil** | Agrupamento de agendamentos manuais para despesas não-DÍVIDA |
 | **Parcela** | Parte de um pagamento dividido (ex: 12x de R$ 250) |
 | **Amortização** | Redução progressiva do saldo devedor |
 | **Saldo Devedor** | Valor restante a pagar de uma dívida |
+| **Waterfall** | Algoritmo de cálculo de parcelas pagas/parciais |
+| **Aporte** | Depósito em uma meta de economia |
+| **Aporte em Dívida** | Quitação antecipada de parcelas de dívida |
+| **Valor Acumulado** | Soma de aportes em uma meta |
+| **Progresso** | Percentual de atingimento de uma meta |
+| **Meta Concluída** | Meta atingida (valorAcumulado >= valorMeta) |
 | **Lançamento** | Registro de uma transação (pagamento ou agendamento) |
 | **Agendamento** | Transação planejada para futuro |
-| **Aporte** | Depósito em uma meta de economia |
 | **Saldo Bloqueado** | Dinheiro reservado em metas |
 | **Saldo Livre** | Dinheiro disponível para gastar |
+| **Mini Card** | Totalizador com max(pagas, previstas) |
 
 ---
 
@@ -2290,6 +2313,559 @@ Este documento apresentou a **regra de negócio completa** do MagicBox, cobrindo
 
 ---
 
-*Documento gerado em: 2024*
-*Versão do Sistema: 1.0*
+## 10. Módulo de Dívidas
+
+O sistema de dívidas do MagicBox é dividido em dois tipos distintos: **Dívida Única** e **Dívida Volátil**.
+
+### 10.1 Tipos de Dívida
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TAXONOMIA DE DÍVIDAS                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌──────────────────────┐
+                    │       DÍVIDA         │
+                    └──────────┬───────────┘
+                               │
+              ┌────────────────┴────────────────┐
+              │                                 │
+              ▼                                 ▼
+     ┌────────────────┐                ┌────────────────┐
+     │  DIVIDA ÚNICA   │                │ DIVIDA VOLÁTIL  │
+     │  (tipo=UNICA)   │                │ (tipo=VOLATIL)  │
+     ├────────────────┤                ├────────────────┤
+     │ Parcelamento   │                │ Agendamentos   │
+     │ com valorTotal │                │ agrupados de   │
+     │ e totalParcelas│                │ despesas não  │
+     │                │                │ DIVIDA         │
+     └────────────────┘                └──────���─────────┘
+```
+
+### 10.2 Dívida Única (UNICA)
+
+**O que é:** Parcelamento de uma compra com valor total fixo, dividido em parcelas regulares.
+
+**Características:**
+- Armazenada na tabela `despesa` com `tipo = 'DIVIDA'`
+- Tem campos específicos: `valorTotal`, `totalParcelas`, `dataInicio`
+- Gera agendamentos automáticos na criação
+- Pode ser quitada antecipadamente via aportes
+
+**Campos Obrigatórios:**
+```typescript
+interface DividaUnica {
+  // Herdados de Despesa
+  nome: string;
+  tipo: 'DIVIDA';
+  categoriaId: number;
+  valorEstimado: Decimal;        // Valor da parcela (calculado: valorTotal / totalParcelas)
+  diaVencimento: number;         // Dia do vencimento (1-31)
+  status: 'A' | 'I';
+  
+  // Campos específicos de DÍVIDA
+  valorTotal: Decimal;           // Valor total da dívida
+  totalParcelas: number;        // Quantidade de parcelas
+  dataInicio: Date;              // Data da primeira parcela
+}
+```
+
+**Exemplo Real:**
+```
+Dívida: "TV LED 50 polegadas"
+  - valorTotal: R$ 3.000,00
+  - totalParcelas: 12
+  - valorEstimado: R$ 250,00 (3.000 / 12)
+  - diaVencimento: 5
+  - dataInicio: 2024-01-05
+  - status: A
+
+Agendamentos criados automaticamente:
+  1. "TV LED 50 polegadas (01/12)" - 05/01/2024 - R$ 250,00
+  2. "TV LED 50 polegadas (02/12)" - 05/02/2024 - R$ 250,00
+  3. "TV LED 50 polegadas (03/12)" - 05/03/2024 - R$ 250,00
+  ... (até 12/12)
+```
+
+### 10.3 Dívida Volátil (VOLATIL)
+
+**O que é:** Agrupamento de agendamentos manuais de despesas não-DÍVIDA. Representa gastos recorrentes com valor/agendamento definidos pelo usuário.
+
+**Características:**
+- Não é uma entidade separada, é uma **view calculada**
+- Agrupa todos os `lancamento` do tipo `agendamento` vinculados a despesas (exceto tipo DIVIDA)
+- Mostra múltiplas parcelas com valores potencialmente diferentes
+- Útil para rastrear gastos parcelados manualmente
+
+**Campos Calculados:**
+```typescript
+interface DividaVolatil {
+  id: string;                    // Formato: "vol-{despesaId}"
+  despesaId: number;            // ID da despesa de origem
+  nome: string;
+  valorTotalAgendado: number;    // Soma de todos os agendamentos
+  quantidadeParcelas: number;   // Contagem de agendamentos
+  proximoVencimento: Date;
+  diasParaVencer: number;
+  atrasada: boolean;             // diasParaVencer < 0
+}
+```
+
+**Exemplo Real:**
+```
+Usuário criou manualmente 6 agendamentos para "Consórcio":
+  - 01/01/2024: R$ 500,00
+  - 01/02/2024: R$ 500,00
+  - 01/03/2024: R$ 500,00
+  - 01/04/2024: R$ 500,00
+  - 01/05/2024: R$ 500,00
+  - 01/06/2024: R$ 500,00
+
+Resultado como Dívida Volátil:
+  - id: "vol-15"
+  - nome: "Consórcio"
+  - valorTotalAgendado: R$ 3.000,00
+  - quantidadeParcelas: 6
+  - proximoVencimento: 01/04/2024
+  - diasParaVencer: 8
+  - atrasada: false
+```
+
+### 10.4 Cronograma Waterfall (Cálculo de Parcelas)
+
+O sistema calcula o estado de cada parcela usando um algoritmo **Waterfall** (redução progressiva):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          WATERFALL - COMO FUNCIONA                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Dívida: R$ 3.000,00 em 12x de R$ 250,00
+
+Pagamentos realizados:
+  - Jan/2024: R$ 300,00 (pagou mais que a parcela)
+  - Fev/2024: R$ 200,00 (pagou menos)
+
+SALDO PARA ABATER: R$ 500,00
+
+  Parcela 1 (R$ 250): Saldo >= parcela? SIM
+    → PAGO INTEGRALMENTE
+    → Abate R$ 250 do saldo
+    → Novo saldo: R$ 250,00
+
+  Parcela 2 (R$ 250): Saldo >= parcela? SIM
+    → PAGO INTEGRALMENTE
+    → Abate R$ 250 do saldo
+    → Novo saldo: R$ 0,00
+
+  Parcela 3 (R$ 250): Saldo < parcela? SIM
+    → PAGAMENTO PARCIAL (R$ 0)
+    → Saldo esgotado
+
+  Parcelas 4-12: Aguardando pagamento
+```
+
+**Algoritmo Implementado:**
+```typescript
+function calcularWaterfall(lancamentos, valorParcelaBase, totalParcelas, dataInicio) {
+  const pagamentos = lancamentos.filter(l => l.tipo === 'pagamento');
+  let valorPagoTotal = pagamentos.reduce((acc, l) => acc + Number(l.valor), 0);
+  
+  let saldoParaAbater = valorPagoTotal;
+  const situacaoParcelas = [];
+  
+  for (let i = 0; i < totalParcelas; i++) {
+    // Calcula data de vencimento desta parcela
+    const dataVencimento = new Date(dataInicio);
+    dataVencimento.setMonth(dataInicio.getMonth() + i);
+    const diaDesejado = dataInicio.getDate();
+    const ultimoDiaMes = new Date(dataVencimento.getFullYear(), dataVencimento.getMonth() + 1, 0).getDate();
+    dataVencimento.setDate(Math.min(diaDesejado, ultimoDiaMes));
+    
+    // Verifica se há agendamento manual para este mês (prioriza valor customizado)
+    const agendamentoNoMes = lancamentos.find(l => 
+      l.tipo === 'agendamento' && isSameMonth(l.data, dataVencimento)
+    );
+    const valorDestaParcela = agendamentoNoMes ? Number(agendamentoNoMes.valor) : valorParcelaBase;
+    
+    let status = 'pendente';
+    
+    if (saldoParaAbater >= valorDestaParcela - 0.01) {
+      status = 'pago';
+      saldoParaAbater -= valorDestaParcela;
+    } else if (saldoParaAbater > 0) {
+      status = 'parcial';
+      saldoParaAbater = 0;
+    } else if (dataVencimento < hoje && !isSameMonth(dataVencimento, hoje)) {
+      status = 'atrasada';
+    }
+    
+    situacaoParcelas.push({ numero: i + 1, dataVencimento, status });
+  }
+  
+  return situacaoParcelas;
+}
+```
+
+**Status de Cada Parcela:**
+
+| Status | Significado | Condição |
+|--------|-------------|----------|
+| `pago` | Parcela quitada | `saldoParaAbater >= valorParcela` |
+| `parcial` | Pago parcialmente | `0 < saldoParaAbater < valorParcela` |
+| `pendente` | Aguardando pagamento | `saldoParaAbater == 0` E data futura |
+| `atrasada` | Vencida sem pagamento | Data < hoje E saldo esgotado |
+
+### 10.5 Sistema de Aporte (Quitação Antecipada)
+
+**O que é:** Mecanismo para quitar parcelas de uma dívida com valores maiores que a parcela normal.
+
+**Como Funciona:**
+
+```
+Dívida: TV LED
+  - Parcela mensal: R$ 250,00
+  - Saldo devedor: R$ 1.750,00 (7 parcelas restantes)
+  
+Usuário decide fazer aporte de R$ 500,00:
+  
+  Abate Parcela 1: R$ 250,00 → Quitada
+  Abate Parcela 2: R$ 250,00 → Quitada
+  Restante R$ 0,00 aplicado em Parcela 3
+  
+  Resultado:
+    - Parcelas 1 e 2: PAGO
+    - Saldo devedor: R$ 1.250,00 (5 parcelas restantes)
+```
+
+**Fluxo de Aporte:**
+```typescript
+async function processarAporte(dividaId, valorAporte, dataAporte) {
+  const divida = await buscarDivida(dividaId);
+  const parcelas = divida.situacaoParcelas;
+  let valorRestante = valorAporte;
+  
+  for (const parcela of parcelas) {
+    if (valorRestante <= 0.001) break;
+    if (parcela.status === 'pago') continue;
+    
+    const valorNecessario = parcela.valorAgendado - parcela.valorPago;
+    const valorAAplicar = Math.min(valorRestante, valorNecessario);
+    
+    // Encontra agendamento do mês
+    const agendamento = await buscarAgendamentoPorData(dividaId, parcela.dataVencimento);
+    
+    if (valorAAplicar >= valorNecessario - 0.01) {
+      // Liquida parcela (transforma agendamento em pagamento)
+      await liquidarAgendamento(agendamento.id, parcela.dataVencimento, 
+        `Liquidação de parcela - ${divida.nome}`);
+    } else {
+      // Pagamento parcial (cria novo lançamento)
+      await criarLancamento({
+        tipo: 'pagamento',
+        valor: valorAAplicar,
+        data: dataAporte,
+        observacao: `Aporte parcial - ${divida.nome}`
+      });
+    }
+    
+    valorRestante -= valorAAplicar;
+  }
+  
+  // Verifica se dívida foi totalmente quitada
+  const dividaAtualizada = await buscarDivida(dividaId);
+  if (dividaAtualizada.concluida) {
+    await atualizarStatus(dividaId, 'I'); // Inativa automaticamente
+  }
+  
+  return dividaAtualizada;
+}
+```
+
+**Regra de Auto-Conclusão:**
+Quando `valorRestante <= 0` OU `parcelasPagas >= totalParcelas`, a dívida é marcada como `status = 'I'` (inativa).
+
+### 10.6 Resumo de Dívidas (Listagem)
+
+A listagem de dívidas retorna um consolidado:
+
+```typescript
+interface ResumoDividas {
+  totalDevidoUnicas: number;       // Soma de valorRestante de todas UNICA
+  totalPagoUnicas: number;        // Soma de valorPago de todas UNICA
+  totalAgendadoVolateis: number;  // Soma de valorTotalAgendado das VOLATIL
+  quantidadeTotalParcelas: number; // Total de parcelas pendentes
+  dividasAtrasadas: number;        // Qtd de dívidas com diasParaVencer < 0
+  proximosVencimentos: number;    // Qtd vencendo nos próximos 7 dias
+}
+
+interface ListagemDividasResponse {
+  resumo: ResumoDividas;
+  dividas: (DividaUnica | DividaVolatil)[];
+}
+```
+
+---
+
+## 11. Módulo de Metas (Atualizado)
+
+### 11.1 Conceito Expandido
+
+Metas representam objetivos de economia. Diferente de outros módulos, metas **não são projetadas** no resumo, mas **bloqueiam saldo**.
+
+### 11.2 Campos Calculados
+
+O sistema calcula automaticamente:
+
+```typescript
+interface MetaCalculada {
+  // Campos do banco
+  id: number;
+  nome: string;
+  valorMeta: number;           // Valor objetivo
+  dataAlvo: Date;             // Prazo
+  status: 'A' | 'I';
+  
+  // Campos CALCULADOS
+  valorAcumulado: number;     // Soma de aportes (lancamentos tipo='pagamento')
+  progresso: number;          // (valorAcumulado / valorMeta) * 100
+  concluida: boolean;         // valorAcumulado >= valorMeta
+  totalFaltante: number;      // valorMeta - valorAcumulado
+}
+```
+
+### 11.3 Cálculo do Valor Acumulado
+
+```sql
+-- valorAcumulado = soma de todos os lançamentos vinculados à meta
+SELECT 
+  m.id,
+  COALESCE(SUM(l.valor), 0) as valorAcumulado
+FROM meta m
+LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento'
+WHERE m."userId" = 1 AND m.status = 'A' AND m."deletedAt" IS NULL
+GROUP BY m.id;
+```
+
+### 11.4 Aporte Inicial
+
+Ao criar uma meta, é possível definir um `valorInicial` que cria automaticamente um lançamento:
+
+```typescript
+// Criação de meta com aporte inicial
+async function criarMeta(dados) {
+  const { valorInicial, ...dadosMeta } = dados;
+  
+  const novaMeta = await prisma.meta.create({ data: dadosMeta });
+  
+  if (valorInicial && valorInicial > 0) {
+    await lancamentoService.criar({
+      tipo: 'pagamento',
+      valor: valorInicial,
+      data: new Date(),
+      observacao: `Aporte inicial - ${novaMeta.nome}`,
+      observacaoAutomatica: `Aporte inicial automático para a meta: ${novaMeta.nome}`,
+      metaId: novaMeta.id
+    });
+  }
+  
+  return novaMeta;
+}
+```
+
+### 11.5 Resumo de Metas
+
+```typescript
+interface ResumoMetas {
+  totalObjetivado: number;    // Soma de todas as valorMeta
+  totalAcumulado: number;     // Soma de todos os valorAcumulado
+  totalFaltante: number;      // totalObjetivado - totalAcumulado
+  metasConcluidas: number;    // Quantidade de metas com concluida=true
+  totalAtivas: number;         // Quantidade de metas com status='A'
+  metas: MetaCalculada[];     // Lista detalhada
+}
+```
+
+### 11.6 Exemplo Prático
+
+```
+Meta: "Viagem para Disney"
+  - valorMeta: R$ 15.000,00
+  - dataAlvo: 2025-12-31
+  - status: A
+
+Aportes realizados:
+  - Jan/2024: R$ 500,00
+  - Fev/2024: R$ 500,00
+  - Mar/2024: R$ 500,00
+
+Campos calculados:
+  - valorAcumulado: R$ 1.500,00
+  - progresso: 10% (1.500 / 15.000 * 100)
+  - totalFaltante: R$ 13.500,00
+  - concluida: false (1.500 < 15.000)
+
+Impacto no Saldo:
+  - Saldo Atual: R$ 10.000,00
+  - Saldo Bloqueado: R$ 1.500,00 (apenas esta meta)
+  - Saldo Livre: R$ 8.500,00
+```
+
+---
+
+## 12. Validação de Despesa VARIÁVEL (Atualizada)
+
+### 12.1 Regra: "Ambos ou Nenhum"
+
+Para despesas do tipo `VARIAVEL`, a regra de validação é:
+
+```
+✅ Válido:
+  - valorEstimado = NULL E diaVencimento = NULL
+  - valorEstimado = R$ 100 E diaVencimento = 15
+
+❌ Inválido:
+  - valorEstimado = R$ 100 E diaVencimento = NULL
+  - valorEstimado = NULL E diaVencimento = 15
+```
+
+**Justificativa:** Se o usuário define um valor estimado, deve informar também o dia de vencimento para que o sistema possa calcular corretamente o status e as projeções.
+
+### 12.2 Implementação Zod
+
+```typescript
+.superRefine((data, ctx) => {
+  if (data.tipo === "VARIAVEL") {
+    const temValor = !!data.valorEstimado && Number(data.valorEstimado) > 0;
+    const temDia = !!data.diaVencimento;
+
+    if (temValor !== temDia) {
+      if (!temValor) {
+        ctx.addIssue({
+          code: 'custom',
+          message: "Informe o valor para este dia",
+          path: ["valorEstimado"],
+        });
+      } else {
+        ctx.addIssue({
+          code: 'custom',
+          message: "Informe o dia para este valor",
+          path: ["diaVencimento"],
+        });
+      }
+    }
+  }
+});
+```
+
+---
+
+## 13. Mini Cards e Diferenças (Integrado do Resumo)
+
+### 13.1 Lógica de Totalização
+
+Os Mini Cards mostram os totais considerando o **maior valor entre realizado e previsto**:
+
+```typescript
+// Lógica implementada
+totalEntradas = max(entradasPagas, entradasPrevistas);
+totalSaidas = max(saidasPagas, saidasPrevistas);
+
+// Entradas Pagas: soma de lançamentos 'pagamento' com receitaId
+// Entradas Previstas: entradasAgendadas + entradasProjetadas
+
+// Saídas Pagas: soma de lançamentos 'pagamento' com despesaId
+// Saídas Previstas: saidasAgendadas + saidasProjetadas
+```
+
+### 13.2 Interpretação das Diferenças
+
+| Diferença | Significado | Ação Recomendada |
+|-----------|-------------|------------------|
+| `> 0` (Positivo) | Valor Pendente | Aún não foi pago/recebido |
+| `< 0` (Negativo) | Valor Excedente | Gastou/ganhou mais que o previsto |
+| `= 0` | Equilíbrio | Realizado equals previsto exatamente |
+
+### 13.3 Exemplo de Cálculo
+
+```
+Entradas Pagas: R$ 5.000,00
+Entradas Agendadas: R$ 0,00
+Entradas Projetadas: R$ 0,00
+Entradas Previstas: R$ 0,00
+Diferença Entradas: R$ 0,00 - R$ 5.000,00 = -R$ 5.000,00 (excedente)
+
+Saídas Pagas: R$ 2.200,00
+Saídas Agendadas: R$ 300,00
+Saídas Projetadas: R$ 0,00
+Saídas Previstas: R$ 300,00
+Diferença Saídas: R$ 300,00 - R$ 2.200,00 = -R$ 1.900,00 (excedente)
+
+Total Entradas (card): max(5.000, 0) = R$ 5.000,00
+Total Saídas (card): max(2.200, 300) = R$ 2.200,00
+Total Saldo: R$ 5.000,00 - R$ 2.200,00 = R$ 2.800,00
+```
+
+---
+
+## 14. Referências Cruzadas
+
+### 14.1 Documentos Relacionados
+
+| Documento | Descrição |
+|-----------|-----------|
+| `REGRAS-DE-NEGOCIO.md` | Este documento - Regras principais |
+| `REGRAS_NEGOCIO_RESUMO.md` | Regras específicas do módulo de resumo e mini cards |
+
+### 14.2 Arquivos de Implementação
+
+| Módulo | Repositório | Service | DTO |
+|--------|-------------|---------|-----|
+| Despesas | `src/core/despesas/` | Service de despesas | `despesa.dto.ts` |
+| Dívidas | `src/core/dividas/` | `dividas/service.ts` | `divida.dto.ts` |
+| Metas | `src/core/metas/` | `metas/service.ts` | `meta.dto.ts` |
+| Resumo | `src/core/lancamentos/resumo/` | N/A | `resumo.dto.ts` |
+
+### 14.3 Tags de Cache (RTK Query)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              RTK TAGS                                       │
+│  Uma alteração em uma entidade invalida múltiplos endpoints                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ENTIDADE          │ AFETA
+──────────────────┼─────────────────────────────────────────────────────────
+Categoria         │ categorias, despesas, receitas, lancamentos
+──────────────────┼─────────────────────────────────────────────────────────
+Despesa           │ resumo (projeções), dashboard, lancamentos
+──────────────────┼─────────────────────────────────────────────────────────
+Receita           │ resumo (projeções), dashboard, lancamentos
+──────────────────┼─────────────────────────────────────────────────────────
+Meta              │ saldo bloqueado, resumo, dashboard, lançamentos (aportes)
+──────────────────┼─────────────────────────────────────────────────────────
+Dívida            │ resumo (projeções), dashboard, lancamentos, metas
+──────────────────┼─────────────────────────────────────────────────────────
+Lançamento        │ resumo, dashboard, metas (bloqueio de saldo)
+```
+
+---
+
+## 15. Changelog de Regras
+
+### Versão 2.0 - Adições
+
+| Regra | Descrição | Data |
+|-------|-----------|------|
+| DÍVIDA UNICA/VOLATIL | Nova tipologia de dívidas | 2024 |
+| Sistema de Aporte | Quitacao antecipada de dívidas | 2024 |
+| Waterfall | Cálculo de parcelas pagas/parciais | 2024 |
+| Metas calculadas | valorAcumulado, progresso, concluida | 2024 |
+| VARIÁVEL "ambos ou nenhum" | Nova regra de validação | 2024 |
+| Mini Cards max() | Total = max(pagas, previstas) | 2024 |
+
+---
+
+*Documento atualizado em: 2024*
+*Versão do Sistema: 2.0*
 *MagicBox - Gestão Financeira Pessoal*

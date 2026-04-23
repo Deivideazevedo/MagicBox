@@ -5,6 +5,7 @@ export type StatusSituacaoParcela = 'pago' | 'parcial' | 'pendente' | 'atrasada'
 
 export interface SituacaoParcela {
   numero: number;
+  label?: string;
   dataVencimento: string;
   valorAgendado: number;
   valorPago: number;
@@ -48,10 +49,13 @@ export interface DividaVolatil extends DividaBase {
   tipo: "VOLATIL";
   despesaId: number;
   
-  // Metadados calculados do agrupamento de agendamentos
+  // Metadados calculados
   valorTotalAgendado: number;
+  valorPago: number;
+  valorRestante: number;
   quantidadeParcelas: number;
   atrasada: boolean;
+  situacaoParcelas?: SituacaoParcela[];
 }
 
 export type Divida = DividaUnica | DividaVolatil;
