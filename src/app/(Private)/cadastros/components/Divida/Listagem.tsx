@@ -36,6 +36,7 @@ import { Divida, DividaUnica, DividaVolatil } from "@/core/dividas/types";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import DetalhesDividaModal from "./DetalhesDividaModal";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { useDividasTourRefs } from "./DividasTourContext";
 
 interface ListagemProps {
   dividas: Divida[];
@@ -55,6 +56,7 @@ export const Listagem = ({
   onToggleStatus,
 }: ListagemProps) => {
   const theme = useTheme();
+  const tourRefs = useDividasTourRefs();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDivida, setSelectedDivida] = useState<Divida | null>(null);
@@ -133,7 +135,7 @@ export const Listagem = ({
 
   return (
     <Grid container spacing={3}>
-      {dividas.map((divida) => {
+      {dividas.map((divida, index) => {
         const isUnica = divida.tipo === "UNICA";
         const cor = divida.cor || theme.palette.primary.main;
 
@@ -161,6 +163,7 @@ export const Listagem = ({
         return (
           <Grid item xs={12} md={6} key={divida.id}>
             <Card
+              ref={index === 0 ? (tourRefs.cardRef as React.Ref<HTMLDivElement>) : undefined}
               sx={{
                 padding: 0,
                 borderRadius: 4,
@@ -190,6 +193,7 @@ export const Listagem = ({
                   sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
                 >
                   <IconButton
+                    ref={index === 0 ? (tourRefs.menuRef as React.Ref<HTMLButtonElement>) : undefined}
                     size="small"
                     onClick={(e) => handleOpenMenu(e, divida)}
                     sx={{
@@ -240,6 +244,7 @@ export const Listagem = ({
                         {divida.nome}
                       </Typography>
                       <Chip
+                        ref={index === 0 ? (tourRefs.chipTipoRef as React.Ref<HTMLDivElement>) : undefined}
                         label={isUnica ? "Única" : "Variável"}
                         size="small"
                         sx={{
@@ -364,7 +369,7 @@ export const Listagem = ({
 
                 {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
                 {isUnica ? (
-                  <Box>
+                  <Box ref={index === 0 ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>) : undefined}>
                     <Stack
                       direction="row"
                       spacing={1.5}

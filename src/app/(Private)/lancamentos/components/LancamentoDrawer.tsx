@@ -12,13 +12,14 @@ import {
   Box,
   Divider,
   Drawer,
-  Fab,
+  Button,
   IconButton,
   Tooltip,
   Typography,
   useTheme,
+  alpha,
 } from "@mui/material";
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconPlus, IconX, IconSquarePlus } from "@tabler/icons-react";
 import { useCallback, useEffect } from "react";
 
 const DrawerWidth = "420px";
@@ -26,9 +27,11 @@ const DrawerWidth = "420px";
 export default function LancamentoDrawer() {
   const theme = useTheme();
   const dispatch = useDispatch();
-  
+
   // Estado Global do Drawer
-  const { estaAberto, modo, dadosIniciais } = useSelector((state: AppState) => state.lancamentoUi);
+  const { estaAberto, modo, dadosIniciais } = useSelector(
+    (state: AppState) => state.lancamentoUi,
+  );
 
   // Função para fechar e resetar
   const handleCloseDrawer = useCallback(() => {
@@ -40,21 +43,57 @@ export default function LancamentoDrawer() {
 
   return (
     <>
-      {/* Botão Flutuante (Usando Redux) */}
-      <Tooltip title="Novo Lançamento">
-        <Fab
+      <Box
+        sx={{
+          position: "fixed",
+          right: 0,
+          bottom: "15px",
+          zIndex: 1100,
+        }}
+      >
+        <Button
+          variant="contained"
           color="primary"
-          aria-label="novo-lancamento"
-          sx={{
-            position: "fixed",
-            right: "25px",
-            bottom: "15px",
-          }}
           onClick={() => dispatch(abrirDrawer({ modo: "novo" }))}
+          sx={{
+            borderRadius: "24px 0 0 24px",
+            minWidth: "48px",
+            height: "48px",
+            p: 0,
+            pl: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1.5,
+            boxShadow: (theme) => theme.shadows[1],
+            border: "1px solid",
+            borderRight: "none",
+            borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
+            overflow: "hidden",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "& .label": {
+              maxWidth: 0,
+              opacity: 0,
+              whiteSpace: "nowrap",
+              transition: "all 0.3s",
+              fontWeight: 600,
+            },
+            "&:hover": {
+              pr: 2,
+              boxShadow: (theme) =>
+                `-6px 6px 18px ${alpha(theme.palette.primary.main, 0.4)}`,
+              transform: "translateX(-4px)",
+              "& .label": {
+                maxWidth: "200px",
+                opacity: 1,
+              },
+            },
+          }}
         >
-          <IconPlus stroke={1.5} />
-        </Fab>
-      </Tooltip>
+          <IconSquarePlus size="22" stroke="2" />
+          <span className="label">Novo Lançamento</span>
+        </Button>
+      </Box>
 
       {/* Drawer Lateral */}
       <Drawer
@@ -89,7 +128,11 @@ export default function LancamentoDrawer() {
             }}
           >
             <Typography variant="h4" fontWeight={600} color="primary">
-              {modo === "editar" ? "Editar Lançamento" : modo === "pagar" ? "Efetuar Pagamento" : "Novo Lançamento"}
+              {modo === "editar"
+                ? "Editar Lançamento"
+                : modo === "pagar"
+                  ? "Efetuar Pagamento"
+                  : "Novo Lançamento"}
             </Typography>
 
             <IconButton color="inherit" onClick={handleCloseDrawer}>
@@ -100,8 +143,8 @@ export default function LancamentoDrawer() {
           <Divider />
 
           {/* Key garante que o formulário resete ao fechar/abrir */}
-          <Formulario 
-            key={estaAberto ? 'aberto' : 'fechado'}
+          <Formulario
+            key={estaAberto ? "aberto" : "fechado"}
             lancamentoParaEditar={lancamentoParaEditar}
             onSuccess={handleCloseDrawer}
             initialOrigem={initialOrigem}

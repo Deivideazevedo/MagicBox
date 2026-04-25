@@ -20,7 +20,7 @@ import {
   Avatar,
   Stack,
 } from "@mui/material";
-import { ReactNode, useState, useEffect, useMemo, memo } from "react";
+import { ReactNode, useState, useEffect, useMemo, memo, useRef, useCallback } from "react";
 import {
   IconCalendar,
   IconChecks,
@@ -261,6 +261,9 @@ interface CustomTableProps {
 
   /** Ação de exclusão em lote */
   onBulkDelete?: () => void;
+
+  /** Refs opcionais do Product Tour */
+  refs?: any;
 }
 
 /**
@@ -277,14 +280,21 @@ export function CustomTable({
   emptyMessage = "Nenhum dado foi encontrado",
   onSelectionChange,
   onBulkDelete,
+  refs,
 }: CustomTableProps) {
   // Estado de seleção
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
+  // Armazena callback latest para evitar stale closure vazando
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onSelectionChange]);
+
   // Limpar seleção ao mudar de página
   useEffect(() => {
     setSelectedIds([]);
-    if (onSelectionChange) onSelectionChange([]);
+    if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page]);
 
@@ -305,32 +315,37 @@ export function CustomTable({
     setFilterText("");
     resetSort();
     setSelectedIds([]);
-    if (onSelectionChange) onSelectionChange([]);
+    if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
     pagination.onRowsPerPageChange({
       target: { value: String(10) },
     } as React.ChangeEvent<HTMLInputElement>);
     pagination.onPageChange(null, 0);
   };
 
-  // Handlers de seleção
+  // Handlers de seleção resolvidos via callback sem depender da closure da row memorizada
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       const allIds = sortedData.map((row) => row.id);
       setSelectedIds(allIds);
-      if (onSelectionChange) onSelectionChange(allIds);
+      if (onSelectionChangeRef.current) onSelectionChangeRef.current(allIds);
     } else {
       setSelectedIds([]);
-      if (onSelectionChange) onSelectionChange([]);
+      if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
     }
   };
 
-  const handleSelectOne = (id: number) => {
-    const newSelectedIds = selectedIds.includes(id)
-      ? selectedIds.filter((selectedId) => selectedId !== id)
-      : [...selectedIds, id];
-    setSelectedIds(newSelectedIds);
-    if (onSelectionChange) onSelectionChange(newSelectedIds);
-  };
+  const handleSelectOne = useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const newSelectedIds = prev.includes(id)
+        ? prev.filter((selectedId) => selectedId !== id)
+        : [...prev, id];
+        
+      if (onSelectionChangeRef.current) {
+        onSelectionChangeRef.current(newSelectedIds);
+      }
+      return newSelectedIds;
+    });
+  }, []);
 
   // 📏 Calcular total de colunas para colSpan (8 colunas + 1 checkbox + 1 ações)
   const totalColumns = TABLE_COLUMNS.length + 2;
@@ -363,7 +378,7 @@ export function CustomTable({
               }}
             >
               {/* Checkbox Select All */}
-              <TableCell padding="checkbox">
+              <TableCell padding="checkbox" ref={refs?.selectAllRef}>
                 <Checkbox
                   indeterminate={
                     selectedIds.length > 0 &&
@@ -430,7 +445,7 @@ export function CustomTable({
                 </TableCell>
               </TableRow>
             ) : sortedData.length > 0 && !isLoading && (
-              sortedData.map((row) => (
+              sortedData.map((row, index) => (
                 <CustomRow
                   key={row.id}
                   row={row}
@@ -438,6 +453,8 @@ export function CustomTable({
                   actions={actions}
                   isSelected={selectedIds.includes(row.id)}
                   onSelect={handleSelectOne}
+                  rowIndex={index}
+                  acaoRef={index === 0 ? refs?.primeiraAcaoRef : undefined}
                 />
               ))
             )}
@@ -479,6 +496,8 @@ interface CustomRowProps {
   actions: IActionConfig[];
   isSelected: boolean;
   onSelect: (id: number) => void;
+  rowIndex?: number;
+  acaoRef?: any;
 }
 
 /**
@@ -493,6 +512,8 @@ const CustomRow = memo(
     actions,
     isSelected,
     onSelect,
+    rowIndex,
+    acaoRef,
   }: CustomRowProps) {
     // Helper para renderizar colunas usando a função utilitária
     const renderColumn = useMemo(
@@ -537,7 +558,7 @@ const CustomRow = memo(
         ))}
 
         {/* Ações */}
-        <TableCell align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
+        <TableCell ref={acaoRef} align="center" sx={{ whiteSpace: "nowrap", width: 0 }}>
           <ActionsIconMode row={row} actions={actions} />
         </TableCell>
       </TableRow>

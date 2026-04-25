@@ -23,6 +23,7 @@ import MetasTab from "./components/Meta/MetasTab";
 import { IconCategory, IconTarget } from "@tabler/icons-react";
 import CategoriasTab from "./components/Categoria/CategoriasTab";
 import DividasTab from "./components/Divida/DividasTab";
+import { DividasTourProvider } from "./components/Divida/DividasTourContext";
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 
 interface TabPanelProps {
@@ -174,7 +175,9 @@ export default function CadastrosPage() {
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
-          <DividasTab />
+          <DividasTourProvider>
+            <DividasTab />
+          </DividasTourProvider>
         </TabPanel>
       </Paper>
     </Container>

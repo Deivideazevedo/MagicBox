@@ -12,20 +12,27 @@ import {
   Dialog,
   DialogContent,
   useMediaQuery,
+  Tooltip,
+  IconButton,
+  alpha,
 } from "@mui/material";
 import {
   IconTrash,
   IconCheck,
   IconRefresh,
+  IconHelp,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Formulario } from "../components/Divida/Formulario";
 import { Listagem } from "../components/Divida/Listagem";
 import { DividasDashboard } from "../components/Divida/DividasDashboard";
 import { useDividas } from "../hooks/useDividas";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
+import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import { DividasTourProvider, useDividasTourRefs } from "../components/Divida/DividasTourContext";
+import { criarDividasTourSteps } from "../components/Divida/dividasTourSteps";
 
-export default function DividasPage() {
+function DividasPageContent() {
   const theme = useTheme();
   const {
     resumo,
@@ -57,6 +64,15 @@ export default function DividasPage() {
   const [exibirFormulario, setExibirFormulario] = useState(false);
   const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
 
+  // Tour guiado com refs
+  const tourRefs = useDividasTourRefs();
+  const tourSteps = useMemo(() => criarDividasTourSteps(tourRefs), [tourRefs]);
+  const tour = useTour({
+    storageKey: "tour-dividas-visto-v2",
+    steps: tourSteps,
+    autoStart: true,
+  });
+
   const BREADCRUMBS = [
     { title: "Dashboard", to: "/" },
     { title: "Dívidas", to: "/cadastros/dividas" },
@@ -87,6 +103,38 @@ export default function DividasPage() {
   return (
     <PageContainer title="Dívidas com Prazo" description="Gerencie a evolução e o encerramento de suas dívidas">
       <Breadcrumb title="Dívidas" items={BREADCRUMBS} />
+
+      {/* Botão de ajuda flutuante */}
+      <Tooltip title="Iniciar tour guiado" arrow>
+        <IconButton
+          onClick={() => {
+            tour.reset();
+            tour.start();
+          }}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 1200,
+            width: 48,
+            height: 48,
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            color: theme.palette.primary.main,
+            border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+            backdropFilter: 'blur(10px)',
+            boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: theme.palette.primary.main,
+              color: '#fff',
+              transform: 'scale(1.1)',
+              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.35)}`,
+            },
+          }}
+        >
+          <IconHelp size={24} />
+        </IconButton>
+      </Tooltip>
 
       <Box mb={4}>
         <DividasDashboard
@@ -220,6 +268,28 @@ export default function DividasPage() {
           }
         </Typography>
       </DeleteConfirmationDialog>
+
+      {/* Tour Guiado */}
+      <ProductTour
+        isOpen={tour.isOpen}
+        step={tour.step}
+        currentStep={tour.currentStep}
+        totalSteps={tour.totalSteps}
+        isFirstStep={tour.isFirstStep}
+        isLastStep={tour.isLastStep}
+        onNext={tour.next}
+        onPrev={tour.prev}
+        onSkip={tour.skip}
+      />
     </PageContainer>
+  );
+}
+
+// Exportação principal: Provider envolve o conteúdo para que os refs estejam disponíveis em todos os filhos
+export default function DividasPage() {
+  return (
+    <DividasTourProvider>
+      <DividasPageContent />
+    </DividasTourProvider>
   );
 }

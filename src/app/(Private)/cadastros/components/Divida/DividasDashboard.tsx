@@ -1,4 +1,5 @@
 import { ResumoDividas, Divida } from "@/core/dividas/types";
+import { useDividasTourRefs } from "./DividasTourContext";
 import {
   alpha,
   Box,
@@ -97,6 +98,7 @@ export const DividasDashboard = ({
   onToggleConcluidas
 }: DividasDashboardProps) => {
   const theme = useTheme();
+  const tourRefs = useDividasTourRefs();
 
   const formatCurrency = (val: number) =>
     (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -113,7 +115,7 @@ export const DividasDashboard = ({
   return (
     <Box>
       {/* Totalizadores */}
-      <Grid container spacing={3} mb={4}>
+      <Grid container spacing={3} mb={4} ref={tourRefs.resumoRef as React.Ref<HTMLDivElement>}>
         <Grid item xs={12} sm={6} md={3}>
           <SummaryCard
             title="Total em Dívidas"
@@ -170,6 +172,7 @@ export const DividasDashboard = ({
         </Box>
 
         <Stack
+          ref={tourRefs.acoesRef as React.Ref<HTMLDivElement>}
           direction="row"
           spacing={2}
           alignItems="center"

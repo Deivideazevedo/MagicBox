@@ -37,6 +37,7 @@ import { Despesa } from "@/core/despesas/types";
 import { Receita } from "@/core/receitas/types";
 import { Meta } from "@/core/metas/types";
 import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
+import { LancamentosTourRefs } from "./LancamentosTourContext";
 
 
 import { parseISO, isValid } from "date-fns";
@@ -80,6 +81,7 @@ interface FiltrosAvancadosProps {
   receitas: Receita[];
   metas: Meta[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
+  refs?: LancamentosTourRefs;
 }
 
 export default function FiltrosAvancados({
@@ -88,6 +90,7 @@ export default function FiltrosAvancados({
   receitas,
   metas,
   handleSearch,
+  refs,
 }: FiltrosAvancadosProps) {
   const defaultValues: FiltrosLancamentos = {
     dataInicio: filtros.dataInicio || "",
@@ -105,10 +108,10 @@ export default function FiltrosAvancados({
 
   // Filtros ativos (opcionais adicionados pelo usuário)
   // Agora todos os filtros iniciam vazios conforme solicitação
-  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>([]);
+  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>(["item"]);
 
   // Estado para controlar a expansão do Accordion
-  const [expandido, setExpandido] = useState(false);
+  const [expandido, setExpandido] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuAberto = Boolean(anchorEl);
 
@@ -424,8 +427,8 @@ export default function FiltrosAvancados({
               }}
             >
               <IconButton
+                ref={refs?.botaoFiltrosRef}
                 onClick={(e) => {
-                  e.stopPropagation();
                   setAnchorEl(e.currentTarget);
                 }}
                 sx={{
@@ -451,7 +454,7 @@ export default function FiltrosAvancados({
         </Box>
 
         {/* Filtro Rápido aqui agora */}
-        <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
+        <Box ref={refs?.seletorPeriodoRef} sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
           {!filtrosAtivos.includes("periodo") && (
             <SeletorPeriodo
               onClick={(e) => e.stopPropagation()}
@@ -593,7 +596,7 @@ export default function FiltrosAvancados({
         </Menu>
       </AccordionSummary>
 
-      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
+      <AccordionDetails ref={refs?.filtrosAdicionaisRef} sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
 
         <Divider sx={{ mb: 2, opacity: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
