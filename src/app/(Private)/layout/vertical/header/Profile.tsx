@@ -1,20 +1,19 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import Image from "next/image";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-
-import CustomAvatar from '@/components/shared/CustomAvatar';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Menu from '@mui/material/Menu';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
+import CustomAvatar from "@/components/shared/CustomAvatar";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import { useTheme } from "@mui/material/styles";
 
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -24,16 +23,15 @@ import {
   IconPigMoney,
   IconSettings,
   IconTrendingUp,
-  IconUser
-} from '@tabler/icons-react';
-
+  IconUser,
+} from "@tabler/icons-react";
 
 import { toggleCustomizer } from "@/store/customizer/CustomizerSlice";
 import { useDispatch } from "@/store/hooks";
-import { Stack } from '@mui/system';
+import { Stack } from "@mui/system";
 
 const Profile = () => {
-  const [copyText, setCopyText] = useState('Copiar e-mail');
+  const [copyText, setCopyText] = useState("Copiar e-mail");
   const [anchorEl2, setAnchorEl2] = useState(null);
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
@@ -46,61 +44,56 @@ const Profile = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
 
-  console.log('session', session);
-
   const profileMenuItems = [
     {
-      title: 'Meu Perfil',
-      subtitle: 'Configurações da conta',
-      href: '/dashboard/perfil',
+      title: "Meu Perfil",
+      subtitle: "Configurações da conta",
+      href: "/dashboard/perfil",
       icon: <IconUser size={20} />,
-      color: '#5D87FF',
+      color: "#5D87FF",
     },
     {
-      title: 'Metas Financeiras',
-      subtitle: 'Acompanhar objetivos',
-      href: '/dashboard?section=goals',
+      title: "Metas Financeiras",
+      subtitle: "Acompanhar objetivos",
+      href: "/dashboard?section=goals",
       icon: <IconTrendingUp size={20} />,
-      color: '#13DEB9',
+      color: "#13DEB9",
     },
     {
-      title: 'Configurações',
-      subtitle: 'Preferências do app',
+      title: "Configurações",
+      subtitle: "Preferências do app",
       onClick: () => dispatch(toggleCustomizer(true)),
       icon: <IconSettings size={20} />,
-      color: '#FA896B',
+      color: "#FA896B",
     },
     {
-      title: 'Ajuda & Suporte',
-      subtitle: 'Central de ajuda',
-      href: '/dashboard/ajuda',
+      title: "Ajuda & Suporte",
+      subtitle: "Central de ajuda",
+      href: "/dashboard/ajuda",
       icon: <IconHelpCircle size={20} />,
-      color: '#FFAE1F',
+      color: "#FFAE1F",
     },
   ];
 
-
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(session?.user?.email || '');
-      setCopyText('Email copiado!');
+      await navigator.clipboard.writeText(session?.user?.email || "");
+      setCopyText("Email copiado!");
       setTimeout(() => {
-        setCopyText('Copiar e-mail');
+        setCopyText("Copiar e-mail");
       }, 3000);
     } catch (error) {
-      console.error('Erro ao copiar email:', error);
+      console.error("Erro ao copiar email:", error);
     }
-  }
+  };
 
   const nomeCompleto = useMemo(() => {
-    const partes = session?.user?.name?.split(' ') || [];
+    const partes = session?.user?.name?.split(" ") || [];
     if (partes.length > 2) {
       return `${partes[0]} ${partes[partes.length - 1]}`;
     }
-    return session?.user?.name || '';
+    return session?.user?.name || "";
   }, [session?.user?.name]);
-
-
 
   return (
     <Box>
@@ -111,8 +104,8 @@ const Profile = () => {
         aria-controls="profile-menu"
         aria-haspopup="true"
         sx={{
-          ...(typeof anchorEl2 === 'object' && {
-            color: 'primary.main',
+          ...(typeof anchorEl2 === "object" && {
+            color: "primary.main",
             p: 1,
           }),
         }}
@@ -123,10 +116,10 @@ const Profile = () => {
           sx={{
             width: 36,
             height: 36,
-            border: '2px solid',
-            borderColor: 'primary.main',
-            backgroundColor: 'transparent',
-            color: 'primary.main'
+            border: "2px solid",
+            borderColor: "primary.main",
+            backgroundColor: "transparent",
+            color: "primary.main",
           }}
         />
       </IconButton>
@@ -137,13 +130,13 @@ const Profile = () => {
         keepMounted
         open={Boolean(anchorEl2)}
         onClose={handleClose2}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
         sx={{
-          '& .MuiMenu-paper': {
-            width: '320px',
+          "& .MuiMenu-paper": {
+            width: "320px",
             borderRadius: 3,
-            boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+            boxShadow: "0 12px 24px rgba(0,0,0,0.15)",
           },
         }}
       >
@@ -158,42 +151,54 @@ const Profile = () => {
               sx={{
                 width: 60,
                 height: 60,
-                border: '3px solid',
-                borderColor: 'primary.main',
-                backgroundColor: 'transparent',
-                color: 'primary.main'
+                border: "3px solid",
+                borderColor: "primary.main",
+                backgroundColor: "transparent",
+                color: "primary.main",
               }}
             />
             <Box>
               <Typography variant="h6" fontWeight={600}>
                 {nomeCompleto}
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  mt: 1.5,
+                }}
+              >
                 {/* Badge Premium */}
                 <Box
                   sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
+                    display: "inline-flex",
+                    alignItems: "center",
                     gap: 0.5,
                     px: 1.2,
                     py: 0.6,
-                    borderRadius: '6px',
-                    backgroundColor: 'primary.light',
-                    color: 'primary.main',
-                    border: '1px solid',
-                    transition: 'all 0.2s',
-                    borderColor: 'primary.light',
-                    cursor: 'default',
-                    userSelect: 'none',
-                    '&:hover': {
-                      transform: 'translateY(-1px)',
-                      bgcolor: 'primary.main',
-                      color: 'primary.light',
+                    borderRadius: "6px",
+                    backgroundColor: "primary.light",
+                    color: "primary.main",
+                    border: "1px solid",
+                    transition: "all 0.2s",
+                    borderColor: "primary.light",
+                    cursor: "default",
+                    userSelect: "none",
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      bgcolor: "primary.main",
+                      color: "primary.light",
                     },
                   }}
                 >
                   <IconCrown size={15} />
-                  <Typography variant="caption" fontWeight={700} sx={{ letterSpacing: '0.5px', fontSize: '10px' }}>
+                  <Typography
+                    variant="caption"
+                    fontWeight={700}
+                    sx={{ letterSpacing: "0.5px", fontSize: "10px" }}
+                  >
                     Premium
                   </Typography>
                 </Box>
@@ -205,48 +210,60 @@ const Profile = () => {
                     // component={Paper}
                     // elevation={1}
                     sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       width: 28,
                       height: 28,
-                      borderRadius: '8px',
-                      backgroundColor: 'action.hover',
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        backgroundColor: 'action.selected',
-                        transform: 'translateY(-1px)',
+                      borderRadius: "8px",
+                      backgroundColor: "action.hover",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      "&:hover": {
+                        backgroundColor: "action.selected",
+                        transform: "translateY(-1px)",
                       },
                       color: "primary.main",
                     }}
                   >
-                    {session?.user?.origem === 'google' && (
-                      <Image src="/images/svgs/google-icon.svg" width={14} height={14} alt="Google" />
-                    )}
-                    {session?.user?.origem === 'github' && (
+                    {session?.user?.origem === "google" && (
                       <Image
-                        src={theme.palette.mode === 'dark' ? "/images/svgs/git-White.svg" : "/images/svgs/git-icon.svg"}
+                        src="/images/svgs/google-icon.svg"
+                        width={14}
+                        height={14}
+                        alt="Google"
+                      />
+                    )}
+                    {session?.user?.origem === "github" && (
+                      <Image
+                        src={
+                          theme.palette.mode === "dark"
+                            ? "/images/svgs/git-White.svg"
+                            : "/images/svgs/git-icon.svg"
+                        }
                         width={18}
                         height={18}
                         alt="GitHub"
                       />
                     )}
 
-                    {(session?.user?.origem === 'azure-ad' || session?.user?.origem === 'microsoft') && (
-                      <Image src="/images/svgs/microsoft-icon.svg" width={18} height={18} alt="Microsoft" />
+                    {(session?.user?.origem === "azure-ad" ||
+                      session?.user?.origem === "microsoft") && (
+                      <Image
+                        src="/images/svgs/microsoft-icon.svg"
+                        width={18}
+                        height={18}
+                        alt="Microsoft"
+                      />
                     )}
                     {/* {(!session?.user?.origem || session?.user?.origem === 'credenciais') && (
                       <Image src="/images/svgs/icon-account.svg" width={20} height={20} alt="E-mail" />
                     )} */}
                   </Box>
                 </Tooltip>
-
               </Box>
-
-
             </Box>
           </Stack>
         </Box>
@@ -268,7 +285,7 @@ const Profile = () => {
                 mx: 1,
                 my: 0.5,
                 borderRadius: 2,
-                '&:hover': {
+                "&:hover": {
                   backgroundColor: `${item.color}15`,
                 },
               }}
@@ -281,9 +298,9 @@ const Profile = () => {
                     borderRadius: 1.5,
                     backgroundColor: `${item.color}20`,
                     color: item.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   {item.icon}
@@ -294,10 +311,10 @@ const Profile = () => {
                 secondary={item.subtitle}
                 primaryTypographyProps={{
                   fontWeight: 500,
-                  fontSize: '0.875rem',
+                  fontSize: "0.875rem",
                 }}
                 secondaryTypographyProps={{
-                  fontSize: '0.75rem',
+                  fontSize: "0.75rem",
                 }}
               />
             </ListItemButton>
@@ -337,7 +354,7 @@ const Profile = () => {
             }}
             sx={{
               borderRadius: 2,
-              textTransform: 'none',
+              textTransform: "none",
               fontWeight: 600,
             }}
           >

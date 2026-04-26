@@ -78,7 +78,7 @@ function LancamentosPageContent() {
   const tour = useTour({
     storageKey: "tour-lancamentos-visto-v1",
     steps,
-    autoStart: true,
+    autoStart: totalRows > 0,
   });
 
   // Handler de "Editar" — agora abre o Drawer Único Global
@@ -125,13 +125,15 @@ function LancamentosPageContent() {
               <Typography variant="h3" fontWeight={700}>
                 Lançamentos
               </Typography>
-              <ProductTourButton
-                onClick={() => {
-                  tour.reset();
-                  tour.start();
-                }}
-                title="Iniciar Tour Premium"
-              />
+              {totalRows > 0 && (
+                <ProductTourButton
+                  onClick={() => {
+                    tour.reset();
+                    tour.start();
+                  }}
+                  title="Iniciar Tour Premium"
+                />
+              )}
             </Stack>
             <Typography variant="h6" color="textSecondary">
               Gerencie seus pagamentos e agendamentos financeiros

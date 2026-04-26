@@ -96,6 +96,7 @@ interface DividasDashboardProps {
   mostrarConcluidas?: boolean;
   onToggleConcluidas?: (val: boolean) => void;
   onStartTour?: () => void;
+  showTourButton?: boolean;
 }
 
 export const DividasDashboard = ({
@@ -105,6 +106,7 @@ export const DividasDashboard = ({
   mostrarConcluidas = false,
   onToggleConcluidas,
   onStartTour,
+  showTourButton = false,
 }: DividasDashboardProps) => {
   const theme = useTheme();
   const tourRefs = useDividasTourRefs();
@@ -184,11 +186,13 @@ export const DividasDashboard = ({
             >
               Suas Dívidas com Prazo
             </Typography>
-            <ProductTourButton
-              buttonRef={tourRefs.tituloRef}
-              onClick={onStartTour || (() => {})}
-              title="Deseja ver como funciona?"
-            />
+            {showTourButton && (
+              <ProductTourButton
+                buttonRef={tourRefs.tituloRef}
+                onClick={onStartTour || (() => {})}
+                title="Deseja ver como funciona?"
+              />
+            )}
           </Stack>
           <Typography
             variant="body2"

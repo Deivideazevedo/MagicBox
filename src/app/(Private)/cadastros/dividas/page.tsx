@@ -76,7 +76,7 @@ function DividasPageContent() {
   const tour = useTour({
     storageKey: "tour-dividas-visto-v2",
     steps: tourSteps,
-    autoStart: true,
+    autoStart: dividas.length > 0,
   });
 
 
@@ -129,6 +129,7 @@ function DividasPageContent() {
             tour.reset();
             tour.start();
           }}
+          showTourButton={dividas.length > 0}
         >
           <Grid
             container
