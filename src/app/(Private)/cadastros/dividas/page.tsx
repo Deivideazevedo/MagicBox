@@ -1,7 +1,6 @@
 "use client";
 
 import PageContainer from "@/app/components/container/PageContainer";
-import Breadcrumb from "@/app/(Private)/layout/shared/breadcrumb/Breadcrumb";
 import { Divida, DividaUnica } from "@/core/dividas/types";
 import {
   Box,
@@ -15,6 +14,7 @@ import {
   Tooltip,
   IconButton,
   alpha,
+  Stack,
 } from "@mui/material";
 import {
   IconTrash,
@@ -28,8 +28,14 @@ import { Listagem } from "../components/Divida/Listagem";
 import { DividasDashboard } from "../components/Divida/DividasDashboard";
 import { useDividas } from "../hooks/useDividas";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
-import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
-import { DividasTourProvider, useDividasTourRefs } from "../components/Divida/DividasTourContext";
+import {
+  ProductTour,
+  useTour,
+} from "@/app/components/shared/ProductTour";
+import {
+  DividasTourProvider,
+  useDividasTourRefs,
+} from "../components/Divida/DividasTourContext";
 import { criarDividasTourSteps } from "../components/Divida/dividasTourSteps";
 
 function DividasPageContent() {
@@ -73,10 +79,6 @@ function DividasPageContent() {
     autoStart: true,
   });
 
-  const BREADCRUMBS = [
-    { title: "Dashboard", to: "/" },
-    { title: "Dívidas", to: "/cadastros/dividas" },
-  ];
 
   const handleOpenAporte = (divida: Divida) => {
     handleAporte(divida);
@@ -98,62 +100,52 @@ function DividasPageContent() {
     setExibirFormulario(false);
   };
 
-  const dividasFiltradas = mostrarConcluidas ? dividas : dividas.filter((d: Divida) => d.status === 'A');
+  const dividasFiltradas = mostrarConcluidas
+    ? dividas
+    : dividas.filter((d: Divida) => d.status === "A");
 
   return (
-    <PageContainer title="Dívidas com Prazo" description="Gerencie a evolução e o encerramento de suas dívidas">
-      <Breadcrumb title="Dívidas" items={BREADCRUMBS} />
-
-      {/* Botão de ajuda flutuante */}
-      <Tooltip title="Iniciar tour guiado" arrow>
-        <IconButton
-          onClick={() => {
-            tour.reset();
-            tour.start();
-          }}
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 1200,
-            width: 48,
-            height: 48,
-            bgcolor: alpha(theme.palette.primary.main, 0.1),
-            color: theme.palette.primary.main,
-            border: `2px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-            backdropFilter: 'blur(10px)',
-            boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              bgcolor: theme.palette.primary.main,
-              color: '#fff',
-              transform: 'scale(1.1)',
-              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.35)}`,
-            },
-          }}
-        >
-          <IconHelp size={24} />
-        </IconButton>
-      </Tooltip>
+    <PageContainer
+      title="Dívidas com Prazo"
+      description="Gerencie a evolução e o encerramento de suas dívidas"
+    >
 
       <Box mb={4}>
         <DividasDashboard
-          resumo={resumo || { totalDevidoUnicas: 0, totalPagoUnicas: 0, totalAgendadoVolateis: 0, quantidadeTotalParcelas: 0, dividasAtrasadas: 0, proximosVencimentos: 0 }}
+          resumo={
+            resumo || {
+              totalDevidoUnicas: 0,
+              totalPagoUnicas: 0,
+              totalAgendadoVolateis: 0,
+              quantidadeTotalParcelas: 0,
+              dividasAtrasadas: 0,
+              proximosVencimentos: 0,
+            }
+          }
           onNew={handleNovaDivida}
           mostrarConcluidas={mostrarConcluidas}
           onToggleConcluidas={setMostrarConcluidas}
+          onStartTour={() => {
+            tour.reset();
+            tour.start();
+          }}
         >
           <Grid
             container
             spacing={3}
             sx={{
-              flexWrap: isMobile ? 'wrap' : 'nowrap',
-              alignItems: 'flex-start'
+              flexWrap: isMobile ? "wrap" : "nowrap",
+              alignItems: "flex-start",
             }}
           >
             {/* Formulário: Lateral no Desktop / Modal no Mobile */}
             {!isMobileForm ? (
-              <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+              <Slide
+                direction="right"
+                in={exibirFormulario}
+                mountOnEnter
+                unmountOnExit
+              >
                 <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
                   <Formulario
                     isEditing={isEditing}
@@ -176,7 +168,7 @@ function DividasPageContent() {
                 fullWidth
                 maxWidth="xs"
                 PaperProps={{
-                  sx: { borderRadius: 4, bgcolor: 'background.paper' }
+                  sx: { borderRadius: 4, bgcolor: "background.paper" },
                 }}
               >
                 <DialogContent sx={{ p: 0 }}>
@@ -203,11 +195,17 @@ function DividasPageContent() {
               sx={{
                 flexGrow: 1,
                 minWidth: 0,
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                width: '100%',
+                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                width: "100%",
                 ...(!isMobileForm && {
-                  flexBasis: (exibirFormulario && !isMobile) ? '66.66% !important' : '100% !important',
-                  maxWidth: (exibirFormulario && !isMobile) ? '66.66% !important' : '100% !important',
+                  flexBasis:
+                    exibirFormulario && !isMobile
+                      ? "66.66% !important"
+                      : "100% !important",
+                  maxWidth:
+                    exibirFormulario && !isMobile
+                      ? "66.66% !important"
+                      : "100% !important",
                 }),
               }}
             >
@@ -229,43 +227,42 @@ function DividasPageContent() {
         open={!!tipoConfirmacao}
         onClose={() => setTipoConfirmacao(null)}
         title={
-          tipoConfirmacao === 'delete' 
-            ? "Excluir dívida permanentemente?" 
-            : tipoConfirmacao === 'concluir'
-            ? "Marcar como concluída?"
-            : "Reativar dívida?"
+          tipoConfirmacao === "delete"
+            ? "Excluir dívida permanentemente?"
+            : tipoConfirmacao === "concluir"
+              ? "Marcar como concluída?"
+              : "Reativar dívida?"
         }
         confirmButtonText={
-          tipoConfirmacao === 'delete' 
-            ? "Sim, excluir" 
-            : tipoConfirmacao === 'concluir'
-            ? "Sim, concluir"
-            : "Sim, reativar"
+          tipoConfirmacao === "delete"
+            ? "Sim, excluir"
+            : tipoConfirmacao === "concluir"
+              ? "Sim, concluir"
+              : "Sim, reativar"
         }
         onConfirm={executarAcaoConfirmada}
         loading={isDeleting || isUpdating}
         color={
-          tipoConfirmacao === 'delete' 
-            ? "error" 
-            : tipoConfirmacao === 'concluir'
-            ? "success"
-            : "info"
+          tipoConfirmacao === "delete"
+            ? "error"
+            : tipoConfirmacao === "concluir"
+              ? "success"
+              : "info"
         }
         icon={
-          tipoConfirmacao === 'delete' 
-            ? IconTrash 
-            : tipoConfirmacao === 'concluir'
-            ? IconCheck 
-            : IconRefresh
+          tipoConfirmacao === "delete"
+            ? IconTrash
+            : tipoConfirmacao === "concluir"
+              ? IconCheck
+              : IconRefresh
         }
       >
         <Typography variant="body1" color="text.secondary">
-          {tipoConfirmacao === 'delete' 
+          {tipoConfirmacao === "delete"
             ? "Esta ação removerá a despesa e seus agendamentos vinculados."
-            : tipoConfirmacao === 'concluir'
-            ? "A dívida será arquivada como concluída."
-            : "A dívida voltará a ficar disponível para novos pagamentos."
-          }
+            : tipoConfirmacao === "concluir"
+              ? "A dívida será arquivada como concluída."
+              : "A dívida voltará a ficar disponível para novos pagamentos."}
         </Typography>
       </DeleteConfirmationDialog>
 

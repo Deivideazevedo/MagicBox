@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { DividaUnica, DividaVolatil, StatusDivida, SituacaoParcela, StatusSituacaoParcela } from "./types";
 import { CreateDividaDTO, UpdateDividaDTO } from "./divida.dto";
-import { differenceInCalendarDays, isSameMonth } from "date-fns";
+import { differenceInCalendarDays, isSameMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Prisma, Lancamento, Despesa, Categoria } from "@prisma/client";
 
 type DespesaComCategoria = Despesa & {
@@ -57,7 +58,7 @@ export const dividasRepository = {
 
     for (const d of despesasBase) {
       const lancamentos = d.lancamentos || [];
-      
+
       const mesesComAgendamento = new Map<string, Lancamento[]>();
       lancamentos.filter(l => l.tipo === 'agendamento').forEach(a => {
         const key = `${new Date(a.data).getUTCMonth()}-${new Date(a.data).getUTCFullYear()}`;
@@ -81,9 +82,9 @@ export const dividasRepository = {
         const dataReferencia = ags[0].data;
 
         const valorAgendadoNoMes = ags.reduce((acc, l) => acc + Number(l.valor), 0);
-        const pagamentosNoMes = lancamentos.filter(l => 
-          l.tipo === 'pagamento' && 
-          new Date(l.data).getUTCMonth() === mes && 
+        const pagamentosNoMes = lancamentos.filter(l =>
+          l.tipo === 'pagamento' &&
+          new Date(l.data).getUTCMonth() === mes &&
           new Date(l.data).getUTCFullYear() === ano
         );
         const valorPagoNoMes = pagamentosNoMes.reduce((acc, l) => acc + Number(l.valor), 0);
@@ -96,9 +97,12 @@ export const dividasRepository = {
           status = 'atrasada';
         }
 
+        const label = `Referência: ${format(new Date(dataReferencia), 'MM/yyyy', { locale: ptBR })}`;
+
         situacaoParcelas.push({
           numero: numeroSeq++,
-          dataVencimento: new Date(dataReferencia).toISOString(),
+          label,
+          dataVencimento: new Date(dataReferencia).toISOString().split('T')[0],
           valorAgendado: valorAgendadoNoMes,
           valorPago: valorPagoNoMes,
           status
@@ -110,6 +114,17 @@ export const dividasRepository = {
       const proximo = situacaoParcelas.find(p => p.status !== 'pago');
       const valorTotalPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorAgendado, 0);
       const valorPagoPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorPago, 0);
+
+      // Otimização: Retornar apenas lançamentos que pertencem aos meses exibidos
+      const mesesVisiveis = new Set(situacaoParcelas.map(p => {
+        const d = new Date(p.dataVencimento);
+        return `${d.getUTCMonth()}-${d.getUTCFullYear()}`;
+      }));
+
+      const lancamentosFiltrados = lancamentos.filter(l => {
+        const d = new Date(l.data);
+        return mesesVisiveis.has(`${d.getUTCMonth()}-${d.getUTCFullYear()}`);
+      });
 
       volateis.push({
         id: `vol-${d.id}`,
@@ -128,7 +143,7 @@ export const dividasRepository = {
         atrasada: situacaoParcelas.some(p => p.status === 'atrasada'),
         categoriaNome: d.categoria?.nome,
         userId: d.userId,
-        lancamentos: lancamentos,
+        lancamentos: lancamentosFiltrados,
         situacaoParcelas
       });
     }
@@ -199,83 +214,99 @@ export const dividasRepository = {
     const hoje = new Date();
     // 1. Identificar todos os meses que possuem atividade (Planejada ou Real)
     const mesesComAtividade = new Set<string>();
-    
+    const mapaParcelasPlanejadas = new Map<string, number>();
+
     // Meses do cronograma planejado
+    const diaVencimentoPuro = d.diaVencimento || dataInicio.getUTCDate();
     for (let i = 0; i < totalParcelasPlanejadas; i++) {
-        const dVenc = new Date(dataInicio);
-        dVenc.setMonth(dataInicio.getMonth() + i);
-        const key = `${dVenc.getUTCMonth()}-${dVenc.getUTCFullYear()}`;
-        mesesComAtividade.add(key);
+      const dVenc = new Date(Date.UTC(
+        dataInicio.getUTCFullYear(),
+        dataInicio.getUTCMonth() + i,
+        diaVencimentoPuro
+      ));
+      const key = `${dVenc.getUTCMonth()}-${dVenc.getUTCFullYear()}`;
+      mesesComAtividade.add(key);
+      mapaParcelasPlanejadas.set(key, i + 1); // Salva o número da parcela original
     }
 
-    // Meses com agendamentos reais (Drawer)
-    const agendamentosReais = lancamentos.filter(l => l.tipo === 'agendamento');
-    agendamentosReais.forEach(l => {
-        const date = new Date(l.data);
-        const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
-        mesesComAtividade.add(key);
+    // Lançamentos reais (Drawer)
+    lancamentos.forEach(l => {
+      const date = new Date(l.data);
+      const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+      mesesComAtividade.add(key);
     });
 
     // 2. Processar cada mês para calcular Valor Agendado e Valor Pago
     const situacaoParcelas: SituacaoParcela[] = [];
     const keysOrdenadas = Array.from(mesesComAtividade).sort((a, b) => {
-        const [m1, y1] = a.split('-').map(Number);
-        const [m2, y2] = b.split('-').map(Number);
-        return y1 !== y2 ? y1 - y2 : m1 - m2;
+      const [m1, y1] = a.split('-').map(Number);
+      const [m2, y2] = b.split('-').map(Number);
+      return y1 !== y2 ? y1 - y2 : m1 - m2;
     });
 
     keysOrdenadas.forEach((key, idx) => {
-        const [mes, ano] = key.split('-').map(Number);
-        
-        // Pagamentos do mês
-        const valorPagoNoMes = lancamentos
-            .filter(l => l.tipo === 'pagamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
-            .reduce((acc, l) => acc + Number(l.valor), 0);
+      const [mes, ano] = key.split('-').map(Number);
 
-        // Agendamentos reais do mês
-        const valorAgendadoReal = lancamentos
-            .filter(l => l.tipo === 'agendamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
-            .reduce((acc, l) => acc + Number(l.valor), 0);
+      // Pagamentos do mês
+      const valorPagoNoMes = lancamentos
+        .filter(l => l.tipo === 'pagamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
+        .reduce((acc, l) => acc + Number(l.valor), 0);
 
-        // Se o mês está no plano original e NÃO tem agendamento real (já foi pago ou deletado), 
-        // usamos o base. Se tem agendamento real, usamos o real (que já é o valor atualizado).
-        const isMêsPlanejado = idx < totalParcelasPlanejadas;
-        const valorFinalAgendado = (valorAgendadoReal > 0) ? valorAgendadoReal : (isMêsPlanejado ? valorParcelaBase : 0);
+      // Agendamentos reais do mês
+      const valorAgendadoReal = lancamentos
+        .filter(l => l.tipo === 'agendamento' && new Date(l.data).getUTCMonth() === mes && new Date(l.data).getUTCFullYear() === ano)
+        .reduce((acc, l) => acc + Number(l.valor), 0);
 
-        // Se não tem agendamento nem é planejado (ex: apenas um pagamento avulso), ignoramos como parcela
-        if (valorFinalAgendado === 0 && valorAgendadoReal === 0 && !isMêsPlanejado) return;
+      // Se o mês está no plano original e NÃO tem agendamento real (já foi pago ou deletado), 
+      // usamos o base. Se tem agendamento real, usamos o real (que já é o valor atualizado).
+      const numeroParcelaOriginal = mapaParcelasPlanejadas.get(key);
+      const isMêsPlanejado = numeroParcelaOriginal !== undefined;
+      const valorFinalAgendado = (valorAgendadoReal > 0) ? valorAgendadoReal : (isMêsPlanejado ? valorParcelaBase : 0);
 
-        let label = `Parcela ${String(idx + 1).padStart(2, '0')}/${String(totalParcelasPlanejadas).padStart(2, '0')}`;
-        if (idx >= totalParcelasPlanejadas) {
-            label = "Parcela Adicional";
-        }
+      // Se não tem agendamento nem é planejado, mas TAMBÉM não tem pagamento, ignoramos
+      if (valorFinalAgendado === 0 && valorPagoNoMes === 0 && !isMêsPlanejado) return;
 
-        const dateRef = new Date(ano, mes, dataInicio.getDate());
-        let status: StatusSituacaoParcela = 'pendente';
-        if (valorPagoNoMes >= valorFinalAgendado - 0.01 && valorFinalAgendado > 0) {
-            status = 'pago';
+      let label = "";
+      if (isMêsPlanejado) {
+        label = `Parcela ${String(numeroParcelaOriginal).padStart(2, '0')}/${String(totalParcelasPlanejadas).padStart(2, '0')}`;
+      } else {
+        label = "Parcela Adicional";
+      }
+
+      // Usamos o dia que foi gravado explicitamente no banco ou o dia da data de início
+      const diaVencimentoBanco = d.diaVencimento || dataInicio.getUTCDate();
+      const dateRef = new Date(Date.UTC(ano, mes, diaVencimentoBanco));
+      let status: StatusSituacaoParcela = 'pendente';
+
+      if (valorFinalAgendado > 0) {
+        if (valorPagoNoMes >= valorFinalAgendado - 0.01) {
+          status = 'pago';
         } else if (valorPagoNoMes > 0) {
-            status = 'parcial';
+          status = 'parcial';
         } else if (dateRef < hoje && !isSameMonth(dateRef, hoje)) {
-            status = 'atrasada';
+          status = 'atrasada';
         }
+      } else if (valorPagoNoMes > 0) {
+        // Se não havia agendamento mas foi pago (ex: pagamento avulso antes/fora do plano)
+        status = 'pago';
+      }
 
-        situacaoParcelas.push({
-            numero: idx + 1,
-            label,
-            dataVencimento: dateRef.toISOString(),
-            valorAgendado: valorFinalAgendado,
-            valorPago: valorPagoNoMes,
-            status
-        });
+      situacaoParcelas.push({
+        numero: idx + 1,
+        label,
+        dataVencimento: dateRef.toISOString().split('T')[0],
+        valorAgendado: valorFinalAgendado,
+        valorPago: valorPagoNoMes,
+        status
+      });
     });
 
 
     // 4. Calcular Metadados Globais (Baseado no acumulado real de agendamentos)
     const valorTotalCalculado = situacaoParcelas.reduce((acc, p) => acc + p.valorAgendado, 0);
     const valorPagoTotalGlobal = lancamentos
-        .filter(l => l.tipo === 'pagamento')
-        .reduce((acc, l) => acc + Number(l.valor), 0);
+      .filter(l => l.tipo === 'pagamento')
+      .reduce((acc, l) => acc + Number(l.valor), 0);
 
     const valorRestante = Math.max(0, valorTotalCalculado - valorPagoTotalGlobal);
     const parcelasPagas = situacaoParcelas.filter(p => p.status === 'pago').length;
@@ -319,7 +350,7 @@ export const dividasRepository = {
         tipo: "DIVIDA",
         valorTotal: dados.valorTotal,
         totalParcelas: dados.totalParcelas,
-        diaVencimento: new Date(dados.dataInicio).getDate(),
+        diaVencimento: new Date(dados.dataInicio).getUTCDate(),
         dataInicio: new Date(dados.dataInicio),
         icone: dados.icone,
         cor: dados.cor,

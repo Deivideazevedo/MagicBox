@@ -12,7 +12,12 @@ import {
   Portal,
   Fade,
 } from "@mui/material";
-import { IconX, IconChevronLeft, IconChevronRight, IconPlayerSkipForward } from "@tabler/icons-react";
+import {
+  IconX,
+  IconChevronLeft,
+  IconChevronRight,
+  IconPlayerSkipForward,
+} from "@tabler/icons-react";
 import { TourStep } from "./useTour";
 
 interface ProductTourProps {
@@ -55,145 +60,161 @@ export const ProductTour = ({
 
   /**
    * Posiciona o tooltip em relação ao target.
-   * 
-   * Lógica de placement:
-   * - Se o step define um placement (top/bottom/left/right), tenta usar.
-   * - Em telas < 768px, left/right fazem fallback para top/bottom (evita overflow em mobile).
-   * - Se o placement desejado não cabe, usa o fallback automático (abaixo > acima).
    */
-  const positionTooltip = useCallback((rect: DOMRect | null, placement?: TourStep["placement"]) => {
-    if (!tooltipRef.current) return;
+  const positionTooltip = useCallback(
+    (rect: DOMRect | null, placement?: TourStep["placement"]) => {
+      if (!tooltipRef.current) return;
 
-    const tooltipEl = tooltipRef.current;
-    const tooltipHeight = tooltipEl.offsetHeight || 300;
-    const tooltipWidth = Math.min(400, window.innerWidth - 32);
-    const isMobile = window.innerWidth < 768;
+      const tooltipEl = tooltipRef.current;
+      const tooltipHeight = tooltipEl.offsetHeight || 300;
+      const tooltipWidth = Math.min(400, window.innerWidth - 32);
+      const isMobile = window.innerWidth < 768;
 
-    // Sem target: centralizar na tela
-    if (!rect) {
+      // Sem target: centralizar na tela
+      if (!rect) {
+        setTooltipStyle({
+          top: `${window.innerHeight / 2 - tooltipHeight / 2}px`,
+          left: `${window.innerWidth / 2 - tooltipWidth / 2}px`,
+          width: `${tooltipWidth}px`,
+        });
+        return;
+      }
+
+      // Espaços disponíveis em cada direção
+      const spaceAbove = rect.top - SPOTLIGHT_PADDING;
+      const spaceBelow = window.innerHeight - rect.bottom - SPOTLIGHT_PADDING;
+      const spaceRight = window.innerWidth - rect.right - SPOTLIGHT_PADDING;
+      const spaceLeft = rect.left - SPOTLIGHT_PADDING;
+
+      let top: number;
+      let left: number;
+
+      const effectivePlacement =
+        isMobile && (placement === "left" || placement === "right")
+          ? undefined
+          : placement;
+
+      if (
+        effectivePlacement === "right" &&
+        spaceRight >= tooltipWidth + TOOLTIP_GAP
+      ) {
+        left = rect.right + SPOTLIGHT_PADDING + TOOLTIP_GAP;
+        top = rect.top + rect.height / 2 - tooltipHeight / 2;
+      } else if (
+        effectivePlacement === "left" &&
+        spaceLeft >= tooltipWidth + TOOLTIP_GAP
+      ) {
+        left = rect.left - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipWidth;
+        top = rect.top + rect.height / 2 - tooltipHeight / 2;
+      } else if (
+        effectivePlacement === "top" &&
+        spaceAbove >= tooltipHeight + TOOLTIP_GAP
+      ) {
+        top = rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight;
+        left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      } else if (
+        effectivePlacement === "bottom" &&
+        spaceBelow >= tooltipHeight + TOOLTIP_GAP
+      ) {
+        top = rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP;
+        left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      } else {
+        if (spaceBelow >= tooltipHeight + TOOLTIP_GAP) {
+          top = rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP;
+        } else if (spaceAbove >= tooltipHeight + TOOLTIP_GAP) {
+          top = rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight;
+        } else {
+          top =
+            spaceBelow >= spaceAbove
+              ? rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP
+              : Math.max(
+                  16,
+                  rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight,
+                );
+        }
+        left = rect.left + rect.width / 2 - tooltipWidth / 2;
+      }
+
+      left = Math.max(
+        16,
+        Math.min(left, window.innerWidth - tooltipWidth - 16),
+      );
+      top = Math.max(
+        16,
+        Math.min(top, window.innerHeight - tooltipHeight - 16),
+      );
+
       setTooltipStyle({
-        top: `${window.innerHeight / 2 - tooltipHeight / 2}px`,
-        left: `${window.innerWidth / 2 - tooltipWidth / 2}px`,
+        top: `${top}px`,
+        left: `${left}px`,
         width: `${tooltipWidth}px`,
       });
-      return;
+    },
+    [],
+  );
+
+  // Recalcula o retângulo do alvo e scrolla se necessário
+  const refreshTargetRect = useCallback((activeStep: TourStep) => {
+    const el = activeStep.ref.current;
+    if (!el) {
+      setTargetRect(null);
+      return null;
     }
-
-    // Espaços disponíveis em cada direção
-    const spaceAbove = rect.top - SPOTLIGHT_PADDING;
-    const spaceBelow = window.innerHeight - rect.bottom - SPOTLIGHT_PADDING;
-    const spaceRight = window.innerWidth - rect.right - SPOTLIGHT_PADDING;
-    const spaceLeft = rect.left - SPOTLIGHT_PADDING;
-
-    let top: number;
-    let left: number;
-
-    // Em mobile, força top/bottom mesmo se o step pede left/right
-    const effectivePlacement = (isMobile && (placement === "left" || placement === "right"))
-      ? undefined
-      : placement;
-
-    // --- Tenta o placement solicitado ---
-    if (effectivePlacement === "right" && spaceRight >= tooltipWidth + TOOLTIP_GAP) {
-      // À direita do target
-      left = rect.right + SPOTLIGHT_PADDING + TOOLTIP_GAP;
-      top = rect.top + rect.height / 2 - tooltipHeight / 2;
-    } else if (effectivePlacement === "left" && spaceLeft >= tooltipWidth + TOOLTIP_GAP) {
-      // À esquerda do target
-      left = rect.left - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipWidth;
-      top = rect.top + rect.height / 2 - tooltipHeight / 2;
-    } else if (effectivePlacement === "top" && spaceAbove >= tooltipHeight + TOOLTIP_GAP) {
-      // Acima do target
-      top = rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight;
-      left = rect.left + rect.width / 2 - tooltipWidth / 2;
-    } else if (effectivePlacement === "bottom" && spaceBelow >= tooltipHeight + TOOLTIP_GAP) {
-      // Abaixo do target
-      top = rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP;
-      left = rect.left + rect.width / 2 - tooltipWidth / 2;
-    } else {
-      // --- Fallback automático: abaixo > acima ---
-      if (spaceBelow >= tooltipHeight + TOOLTIP_GAP) {
-        top = rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP;
-      } else if (spaceAbove >= tooltipHeight + TOOLTIP_GAP) {
-        top = rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight;
-      } else {
-        // Nenhum cabe perfeitamente — coloca onde tem mais espaço
-        top = spaceBelow >= spaceAbove
-          ? rect.bottom + SPOTLIGHT_PADDING + TOOLTIP_GAP
-          : Math.max(16, rect.top - SPOTLIGHT_PADDING - TOOLTIP_GAP - tooltipHeight);
-      }
-      left = rect.left + rect.width / 2 - tooltipWidth / 2;
-    }
-
-    // Clamp para não sair da tela
-    left = Math.max(16, Math.min(left, window.innerWidth - tooltipWidth - 16));
-    top = Math.max(16, Math.min(top, window.innerHeight - tooltipHeight - 16));
-
-    setTooltipStyle({
-      top: `${top}px`,
-      left: `${left}px`,
-      width: `${tooltipWidth}px`,
-    });
+    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const rect = el.getBoundingClientRect();
+    setTargetRect(rect);
+    return rect;
   }, []);
 
   const updatePosition = useCallback(() => {
     if (!step || !isOpen) return;
 
-    const el = step.ref.current;
-    if (!el) {
-      // Step sem target (ex: boas-vindas)
-      setTargetRect(null);
-      // Aguarda o tooltip renderizar para pegar sua altura
-      requestAnimationFrame(() => {
-        positionTooltip(null);
-        setVisible(true);
-      });
-      return;
-    }
+    const rect = refreshTargetRect(step);
 
-    // Scroll suave até o elemento
-    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
-    // Aguarda o scroll para pegar coordenadas corretas
-    setTimeout(() => {
-      const rect = el.getBoundingClientRect();
-      setTargetRect(rect);
-      // Aguarda o tooltip renderizar/atualizar para calcular posição
-      requestAnimationFrame(() => {
-        positionTooltip(rect, step.placement);
-        setVisible(true);
-      });
-    }, 250);
-  }, [step, isOpen, positionTooltip]);
+    // Aguarda o tooltip renderizar/atualizar para calcular posição final
+    requestAnimationFrame(() => {
+      positionTooltip(rect, step.placement);
+      setVisible(true);
+    });
+  }, [step, isOpen, refreshTargetRect, positionTooltip]);
 
   // Fluxo de transição entre steps:
-  // 1. Fade-out com conteúdo ANTIGO
-  // 2. Após fade-out terminar → atualiza conteúdo para o NOVO
-  // 3. Reposiciona → Fade-in com conteúdo NOVO
+  // 1. O spotlight se move IMEDIATAMENTE (desliza) para o próximo alvo
+  // 2. O conteúdo (tooltip) faz fade-out e fade-in sincronizado
   useEffect(() => {
     if (!isOpen || !step) return;
 
-    // Limpa timer anterior
     if (fadeOutTimerRef.current) {
       clearTimeout(fadeOutTimerRef.current);
     }
 
-    // Se é o primeiro render (ainda não tem displayedStep), mostra direto
+    // Move o spotlight imediatamente para o novo alvo
+    const newRect = refreshTargetRect(step);
+
+    // Se é o primeiro render, mostra direto
     if (!displayedStep) {
       setDisplayedStep(step);
       setDisplayedCurrentStep(currentStep);
-      updatePosition();
+      requestAnimationFrame(() => {
+        positionTooltip(newRect, step.placement);
+        setVisible(true);
+      });
       return;
     }
 
-    // Step mudou: inicia fade-out com conteúdo ANTIGO
+    // Inicia fade-out do conteúdo enquanto o spotlight já está deslizando
     setVisible(false);
 
-    // Após o fade-out terminar, troca o conteúdo e reposiciona
     fadeOutTimerRef.current = setTimeout(() => {
       setDisplayedStep(step);
       setDisplayedCurrentStep(currentStep);
-      updatePosition();
+
+      // Reposiciona o tooltip no novo local
+      requestAnimationFrame(() => {
+        const finalRect = step.ref.current?.getBoundingClientRect() || null;
+        positionTooltip(finalRect, step.placement);
+        setVisible(true);
+      });
     }, FADE_DURATION);
 
     return () => {
@@ -201,8 +222,8 @@ export const ProductTour = ({
         clearTimeout(fadeOutTimerRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, currentStep, isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, currentStep, isOpen, refreshTargetRect, positionTooltip]);
 
   // Recalcula no resize e scroll
   useEffect(() => {
@@ -337,7 +358,8 @@ export const ProductTour = ({
             position: "fixed",
             ...tooltipStyle,
             zIndex: 10000,
-            transition: "top 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+            transition:
+              "top 0.25s cubic-bezier(0.4, 0, 0.2, 1), left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           <Box
@@ -356,7 +378,13 @@ export const ProductTour = ({
             }}
           >
             {/* Barra de progresso gradiente */}
-            <Box sx={{ position: "relative", height: 4, bgcolor: alpha(theme.palette.primary.main, 0.06) }}>
+            <Box
+              sx={{
+                position: "relative",
+                height: 4,
+                bgcolor: alpha(theme.palette.primary.main, 0.06),
+              }}
+            >
               <Box
                 sx={{
                   position: "absolute",
@@ -373,9 +401,18 @@ export const ProductTour = ({
 
             {/* Header */}
             <Box sx={{ p: 3, pb: 1 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="flex-start"
+              >
                 <Box sx={{ flex: 1 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center" mb={1}>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    mb={1}
+                  >
                     <Box
                       sx={{
                         width: 32,
@@ -398,7 +435,12 @@ export const ProductTour = ({
                       variant="caption"
                       color="text.disabled"
                       fontWeight={700}
-                      sx={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.6rem", lineHeight: 1 }}
+                      sx={{
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        fontSize: "0.6rem",
+                        lineHeight: 1,
+                      }}
                     >
                       Passo {displayedCurrentStep + 1} de {totalSteps}
                     </Typography>
@@ -406,7 +448,11 @@ export const ProductTour = ({
                   <Typography
                     variant="h6"
                     fontWeight={800}
-                    sx={{ lineHeight: 1.3, letterSpacing: "-0.02em", fontSize: "1.1rem" }}
+                    sx={{
+                      lineHeight: 1.3,
+                      letterSpacing: "-0.02em",
+                      fontSize: "1.1rem",
+                    }}
                   >
                     {displayedStep.title}
                   </Typography>
@@ -418,7 +464,10 @@ export const ProductTour = ({
                     ml: 1,
                     mt: -0.5,
                     color: "text.disabled",
-                    "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.08), color: "text.secondary" },
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.action.active, 0.08),
+                      color: "text.secondary",
+                    },
                   }}
                 >
                   <IconX size={16} />
@@ -451,7 +500,11 @@ export const ProductTour = ({
                 bgcolor: alpha(theme.palette.action.hover, 0.015),
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 {!isFirstStep ? (
                   <Button
                     size="small"
@@ -463,7 +516,9 @@ export const ProductTour = ({
                       textTransform: "none",
                       borderRadius: 2,
                       px: 2,
-                      "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.05) },
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.action.active, 0.05),
+                      },
                     }}
                   >
                     Anterior
@@ -491,7 +546,9 @@ export const ProductTour = ({
                   size="small"
                   variant="contained"
                   onClick={onNext}
-                  endIcon={!isLastStep ? <IconChevronRight size={16} /> : undefined}
+                  endIcon={
+                    !isLastStep ? <IconChevronRight size={16} /> : undefined
+                  }
                   sx={{
                     fontWeight: 700,
                     textTransform: "none",

@@ -16,8 +16,8 @@ export function calcularStatus(
   hoje.setHours(0, 0, 0, 0);
 
   // 1. Regra de Ouro: Já está pago ou parcial
-  if (valorPago > 0 && valorPrevisto !== 0) {
-    if (valorPago < valorPrevisto) {
+  if (valorPago > 0) {
+    if (valorPrevisto > 0 && valorPago < valorPrevisto) {
       return { label: "Parcial", isAtrasado: false };
     }
     return { label: "Pago", isAtrasado: false };

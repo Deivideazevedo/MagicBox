@@ -1,10 +1,10 @@
 import { useState } from "react";
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
-import Menu from '@mui/material/Menu';
-import Typography from '@mui/material/Typography';
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
+import Menu from "@mui/material/Menu";
+import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import { IconChevronDown, IconHelp } from "@tabler/icons-react";
 import AppLinks from "./AppLinks";
@@ -119,24 +119,6 @@ const AppDD = () => {
         component={Link}
       >
         Chat
-      </Button>
-      <Button
-        color="inherit"
-        sx={{ color: (theme) => theme.palette.text.secondary }}
-        variant="text"
-        href="/"
-        component={Link}
-      >
-        Calendar
-      </Button>
-      <Button
-        color="inherit"
-        sx={{ color: (theme) => theme.palette.text.secondary }}
-        variant="text"
-        href="/"
-        component={Link}
-      >
-        Email
       </Button>
     </>
   );

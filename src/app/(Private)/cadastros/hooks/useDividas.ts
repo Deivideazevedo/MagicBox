@@ -119,7 +119,7 @@ export function useDividas() {
       cor: "",
     },
   });
-  console.log('errors', errors);
+
   const watchValorTotal = watch("valorTotal");
   const watchParcelas = watch("totalParcelas");
   const valorParcelaCalculado = (Number(watchValorTotal) || 0) / (Number(watchParcelas) || 1);

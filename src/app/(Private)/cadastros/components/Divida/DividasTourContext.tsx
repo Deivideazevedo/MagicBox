@@ -10,6 +10,7 @@ export interface DividasTourRefs {
   progressoRef: MutableRefObject<HTMLElement | null>;
   menuRef: MutableRefObject<HTMLElement | null>;
   boasVindasRef: MutableRefObject<HTMLElement | null>; // sempre null, step sem target
+  tituloRef: MutableRefObject<HTMLElement | null>;
 }
 
 const DividasTourContext = createContext<DividasTourRefs | null>(null);
@@ -23,6 +24,7 @@ export const DividasTourProvider = ({ children }: { children: React.ReactNode })
     progressoRef: useRef<HTMLElement | null>(null),
     menuRef: useRef<HTMLElement | null>(null),
     boasVindasRef: useRef<HTMLElement | null>(null),
+    tituloRef: useRef<HTMLElement | null>(null),
   };
 
   return (

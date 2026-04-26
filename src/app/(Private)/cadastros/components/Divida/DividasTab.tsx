@@ -1,6 +1,15 @@
 "use client";
 
-import { Box, Grid, Slide, useTheme, Typography, Dialog, DialogContent, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Slide,
+  useTheme,
+  Typography,
+  Dialog,
+  DialogContent,
+  useMediaQuery,
+} from "@mui/material";
 import { useState } from "react";
 import { Formulario } from "./Formulario";
 import { Listagem } from "./Listagem";
@@ -9,8 +18,20 @@ import { useDividas } from "../../hooks/useDividas";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 import { IconTrash, IconCheck, IconRefresh } from "@tabler/icons-react";
 import { Divida, DividaUnica } from "@/core/dividas/types";
+import { useMemo } from "react";
+import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import { DividasTourProvider, useDividasTourRefs } from "./DividasTourContext";
+import { criarDividasTourSteps } from "./dividasTourSteps";
 
 export const DividasTab = () => {
+  return (
+    <DividasTourProvider>
+      <DividasTabContent />
+    </DividasTourProvider>
+  );
+};
+
+const DividasTabContent = () => {
   const theme = useTheme();
   const {
     resumo,
@@ -42,6 +63,15 @@ export const DividasTab = () => {
   const [exibirFormulario, setExibirFormulario] = useState(false);
   const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
 
+  // Tour guiado com refs
+  const tourRefs = useDividasTourRefs();
+  const tourSteps = useMemo(() => criarDividasTourSteps(tourRefs), [tourRefs]);
+  const tour = useTour({
+    storageKey: "tour-dividas-visto-v2",
+    steps: tourSteps,
+    autoStart: true,
+  });
+
   const handleOpenAporte = (divida: Divida) => {
     handleAporte(divida);
     setExibirFormulario(true);
@@ -62,27 +92,47 @@ export const DividasTab = () => {
     setExibirFormulario(false);
   };
 
-  const dividasFiltradas = mostrarConcluidas ? dividas : dividas.filter((d: Divida) => d.status === 'A');
+  const dividasFiltradas = mostrarConcluidas
+    ? dividas
+    : dividas.filter((d: Divida) => d.status === "A");
 
   return (
-    <Box>
+    <Box px={5} pt={1.5} pb={2.5}>
       <DividasDashboard
-        resumo={resumo || { totalDevidoUnicas: 0, totalPagoUnicas: 0, totalAgendadoVolateis: 0, quantidadeTotalParcelas: 0, dividasAtrasadas: 0, proximosVencimentos: 0 }}
+        resumo={
+          resumo || {
+            totalDevidoUnicas: 0,
+            totalPagoUnicas: 0,
+            totalAgendadoVolateis: 0,
+            quantidadeTotalParcelas: 0,
+            dividasAtrasadas: 0,
+            proximosVencimentos: 0,
+          }
+        }
         onNew={handleNovaDivida}
         mostrarConcluidas={mostrarConcluidas}
         onToggleConcluidas={setMostrarConcluidas}
+        onStartTour={() => {
+          tour.reset();
+          tour.start();
+        }}
       >
         <Grid
           container
           spacing={3}
           sx={{
-            flexWrap: isMobile ? 'wrap' : 'nowrap',
-            alignItems: 'flex-start'
+            flexWrap: isMobile ? "wrap" : "nowrap",
+            alignItems: "flex-start",
           }}
         >
           {/* Formulário: Lateral no Desktop / Modal no Mobile */}
           {!isMobileForm ? (
-            <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+            <Slide
+              direction="right"
+              in={exibirFormulario}
+              mountOnEnter
+              unmountOnExit
+            >
               <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
                 <Formulario
                   isEditing={isEditing}
@@ -105,7 +155,7 @@ export const DividasTab = () => {
               fullWidth
               maxWidth="xs"
               PaperProps={{
-                sx: { borderRadius: 4, bgcolor: 'background.paper' }
+                sx: { borderRadius: 4, bgcolor: "background.paper" },
               }}
             >
               <DialogContent sx={{ p: 0 }}>
@@ -132,11 +182,17 @@ export const DividasTab = () => {
             sx={{
               flexGrow: 1,
               minWidth: 0,
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              width: '100%',
+              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+              width: "100%",
               ...(!isMobileForm && {
-                flexBasis: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
-                maxWidth: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
+                flexBasis:
+                  exibirFormulario && !isMobileForm
+                    ? "66.66% !important"
+                    : "100% !important",
+                maxWidth:
+                  exibirFormulario && !isMobileForm
+                    ? "66.66% !important"
+                    : "100% !important",
               }),
             }}
           >
@@ -157,45 +213,57 @@ export const DividasTab = () => {
         open={!!tipoConfirmacao}
         onClose={() => setTipoConfirmacao(null)}
         title={
-          tipoConfirmacao === 'delete'
+          tipoConfirmacao === "delete"
             ? "Excluir dívida permanentemente?"
-            : tipoConfirmacao === 'concluir'
+            : tipoConfirmacao === "concluir"
               ? "Marcar como concluída?"
               : "Reativar dívida?"
         }
         confirmButtonText={
-          tipoConfirmacao === 'delete'
+          tipoConfirmacao === "delete"
             ? "Sim, excluir"
-            : tipoConfirmacao === 'concluir'
+            : tipoConfirmacao === "concluir"
               ? "Sim, concluir"
               : "Sim, reativar"
         }
         onConfirm={executarAcaoConfirmada}
         loading={isDeleting || isUpdating}
         color={
-          tipoConfirmacao === 'delete'
+          tipoConfirmacao === "delete"
             ? "error"
-            : tipoConfirmacao === 'concluir'
+            : tipoConfirmacao === "concluir"
               ? "success"
               : "info"
         }
         icon={
-          tipoConfirmacao === 'delete'
+          tipoConfirmacao === "delete"
             ? IconTrash
-            : tipoConfirmacao === 'concluir'
+            : tipoConfirmacao === "concluir"
               ? IconCheck
               : IconRefresh
         }
       >
         <Typography variant="body1" color="text.secondary">
-          {tipoConfirmacao === 'delete'
+          {tipoConfirmacao === "delete"
             ? "Esta ação removerá a despesa e seus agendamentos vinculados."
-            : tipoConfirmacao === 'concluir'
+            : tipoConfirmacao === "concluir"
               ? "A dívida será arquivada como concluída."
-              : "A dívida voltará a ficar disponível para novos pagamentos."
-          }
+              : "A dívida voltará a ficar disponível para novos pagamentos."}
         </Typography>
       </DeleteConfirmationDialog>
+
+      {/* Tour Guiado */}
+      <ProductTour
+        isOpen={tour.isOpen}
+        step={tour.step}
+        currentStep={tour.currentStep}
+        totalSteps={tour.totalSteps}
+        isFirstStep={tour.isFirstStep}
+        isLastStep={tour.isLastStep}
+        onNext={tour.next}
+        onPrev={tour.prev}
+        onSkip={tour.skip}
+      />
     </Box>
   );
 };

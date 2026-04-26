@@ -51,11 +51,12 @@ CREATE TABLE "lancamento" (
     "despesaId" INTEGER,
     "receitaId" INTEGER,
     "metaId" INTEGER,
-    "tipo" "TipoLancamento" NOT NULL,
     "valor" DECIMAL(10,2) NOT NULL,
     "data" TIMESTAMP(3) NOT NULL,
+    "tipo" "TipoLancamento" NOT NULL DEFAULT 'agendamento',
     "observacao" TEXT,
     "observacaoAutomatica" TEXT,
+    "vinculoId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -136,7 +137,7 @@ CREATE INDEX "despesa_categoriaId_idx" ON "despesa"("categoriaId");
 CREATE INDEX "despesa_status_idx" ON "despesa"("status");
 
 -- CreateIndex
-CREATE INDEX "lancamento_userId_data_idx" ON "lancamento"("userId", "data");
+CREATE INDEX "lancamento_userId_idx" ON "lancamento"("userId");
 
 -- CreateIndex
 CREATE INDEX "lancamento_despesaId_idx" ON "lancamento"("despesaId");
@@ -146,6 +147,12 @@ CREATE INDEX "lancamento_receitaId_idx" ON "lancamento"("receitaId");
 
 -- CreateIndex
 CREATE INDEX "lancamento_metaId_idx" ON "lancamento"("metaId");
+
+-- CreateIndex
+CREATE INDEX "lancamento_tipo_idx" ON "lancamento"("tipo");
+
+-- CreateIndex
+CREATE INDEX "lancamento_data_idx" ON "lancamento"("data");
 
 -- CreateIndex
 CREATE INDEX "meta_userId_status_deletedAt_idx" ON "meta"("userId", "status", "deletedAt");
@@ -193,6 +200,9 @@ ALTER TABLE "despesa" ADD CONSTRAINT "despesa_categoriaId_fkey" FOREIGN KEY ("ca
 ALTER TABLE "despesa" ADD CONSTRAINT "despesa_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_despesaId_fkey" FOREIGN KEY ("despesaId") REFERENCES "despesa"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -200,9 +210,6 @@ ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_receitaId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_metaId_fkey" FOREIGN KEY ("metaId") REFERENCES "meta"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "lancamento" ADD CONSTRAINT "lancamento_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "meta" ADD CONSTRAINT "meta_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

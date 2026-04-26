@@ -57,10 +57,12 @@ export const MetasTab = () => {
     handleRetirada(meta);
   };
 
-  const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
+  const metasFiltradas = mostrarConcluidas
+    ? metas
+    : metas.filter((m) => m.status === "A");
 
   return (
-    <Box px={3}>
+    <Box px={5} pt={1.5} pb={2.5}>
       <MetasDashboard
         metas={metas}
         onNew={handleOpenNew}
@@ -68,7 +70,12 @@ export const MetasTab = () => {
         onToggleConcluidas={setMostrarConcluidas}
       >
         <Grid container spacing={3}>
-          <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+          <Slide
+            direction="right"
+            in={exibirFormulario}
+            mountOnEnter
+            unmountOnExit
+          >
             <Grid item xs={12} md={4}>
               <Formulario
                 isEditing={isEditing}

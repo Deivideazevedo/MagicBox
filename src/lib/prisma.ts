@@ -16,6 +16,7 @@ const createPrismaClient = () => {
     idleTimeoutMillis: 30000, // Fecha conexões ociosas após 30s
     connectionTimeoutMillis: 5000, // Timeout para obter conexão: 5s (padrão: 0 = sem timeout)
     allowExitOnIdle: true, // Permite que o processo termine se não houver conexões ativas
+    ssl: connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
   });
 
   // Monitoramento do pool em desenvolvimento

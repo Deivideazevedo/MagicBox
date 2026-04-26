@@ -1,7 +1,7 @@
 import { NotFoundError } from "@/lib/errors";
 import { dividasRepository as repositorio } from "./repository";
 import { CreateDividaDTO, UpdateDividaDTO, ProcessAporteDTO } from "./divida.dto";
-import { lancamentoService } from "../lancamentos/service";
+import { lancamentoService, gerarObservacaoAutomatica } from "../lancamentos/service";
 import { ListagemDividasResponse, StatusDivida } from "./types";
 
 export const dividasService = {
@@ -51,15 +51,19 @@ export const dividasService = {
     // 2. Gerar agendamentos automáticos
     const valorParcela = Number(dados.valorTotal) / dados.totalParcelas;
     const dataInicio = new Date(dados.dataInicio);
+    const diaDesejado = dataInicio.getUTCDate();
 
     for (let i = 0; i < dados.totalParcelas; i++) {
-      const dataParcela = new Date(dataInicio);
-      dataParcela.setMonth(dataInicio.getMonth() + i);
+      // Criamos a data base em UTC para manipulação segura
+      const dataParcela = new Date(Date.UTC(
+        dataInicio.getUTCFullYear(),
+        dataInicio.getUTCMonth() + i,
+        1
+      ));
 
       // Regra de Vencimento: manter dia da dataInicio ou último dia do mês
-      const diaDesejado = dataInicio.getDate();
-      const ultimoDiaMes = new Date(dataParcela.getFullYear(), dataParcela.getMonth() + 1, 0).getDate();
-      dataParcela.setDate(Math.min(diaDesejado, ultimoDiaMes));
+      const ultimoDiaMes = new Date(Date.UTC(dataParcela.getUTCFullYear(), dataParcela.getUTCMonth() + 1, 0)).getUTCDate();
+      dataParcela.setUTCDate(Math.min(diaDesejado, ultimoDiaMes));
 
       await lancamentoService.criar({
         userId,
@@ -68,7 +72,12 @@ export const dividasService = {
         valor: valorParcela,
         data: dataParcela,
         observacao: novaDivida.nome, 
-        observacaoAutomatica: `Parcela ${String(i + 1).padStart(2, '0')}/${String(dados.totalParcelas).padStart(2, '0')}`
+        observacaoAutomatica: gerarObservacaoAutomatica(
+          i + 1, 
+          dados.totalParcelas, 
+          novaDivida.nome, 
+          Number(valorParcela)
+        ),
       });
     }
 

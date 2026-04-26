@@ -1,6 +1,8 @@
 // src/core/lancamentos/service.ts
 import { LancamentoPayload } from "./types";
 import { lancamentoRepository as repositorio } from "./repository";
+import { despesaRepository } from "../despesas/repository";
+import { receitaRepository } from "../receitas/repository";
 import { ValidationError, NotFoundError } from "@/lib/errors";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -8,13 +10,23 @@ import { FindAllFilters } from "./lancamento.dto";
 
 /**
  * Gera a observação automática para lançamentos parcelados
- * Formato: "descrição informada (nº da parcela / nº total de parcela) - R$ valor (dia/mês)"
+ * Formato: "descrição informada (nº da parcela / nº total de parcela) - R$ valor"
  */
-function gerarObservacaoAutomatica(parcelaAtual: number, totalParcelas: number): string {
+export function gerarObservacaoAutomatica(
+  parcelaAtual: number,
+  totalParcelas: number,
+  descricao?: string,
+  valor?: number
+): string {
   const p = String(parcelaAtual).padStart(2, '0');
   const t = String(totalParcelas).padStart(2, '0');
 
-  return `Parcela ${p}/${t}`;
+  const descParte = descricao ? `${descricao} ` : "";
+  const valorParte = valor !== undefined
+    ? ` - R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+    : "";
+
+  return `${descParte} (${p}/${t}) ${valorParte}`;
 }
 
 export const lancamentoService = {
@@ -77,9 +89,27 @@ export const lancamentoService = {
 
     // Se houver parcelas, cria múltiplos registros
     const lancamentosCriados = [];
+
+    // Busca o nome para a observação automática se não houver observação manual
+    let nomeParaObs = dados.observacao;
+    if (!nomeParaObs) {
+      if (dados.despesaId) {
+        const dep = await despesaRepository.buscarPorId(Number(dados.despesaId));
+        nomeParaObs = dep?.nome;
+      } else if (dados.receitaId) {
+        const rec = await receitaRepository.buscarPorId(Number(dados.receitaId));
+        nomeParaObs = rec?.nome;
+      }
+    }
+
     for (let i = 0; i < parcelas; i++) {
       const dataParcela = addMonths(dataBase as Date, i);
-      const observacaoAutomatica = gerarObservacaoAutomatica(i + 1, parcelas);
+      const observacaoAutomatica = gerarObservacaoAutomatica(
+        i + 1,
+        parcelas,
+        nomeParaObs || undefined,
+        valorNumerico
+      );
 
       const data = {
         userId: Number(dados.userId),

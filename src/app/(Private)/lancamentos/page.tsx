@@ -9,8 +9,10 @@ import {
   Button,
   Tooltip,
   alpha,
+  Stack,
 } from "@mui/material";
-import { IconTrash, IconHelp } from "@tabler/icons-react";
+import { IconTrash, IconHelp, IconSparkles } from "@tabler/icons-react";
+import { IconButton } from "@mui/material";
 
 // Desabilitar prerendering estático para páginas dinâmicas protegidas
 export const dynamic = "force-dynamic";
@@ -34,7 +36,11 @@ import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 
 // Tour
-import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import {
+  ProductTour,
+  useTour,
+  ProductTourButton,
+} from "@/app/components/shared/ProductTour";
 import {
   LancamentosTourProvider,
   useLancamentosTourRefs,
@@ -105,13 +111,32 @@ function LancamentosPageContent() {
   return (
     <>
       <Container maxWidth={false} sx={{ px: { xs: 0, md: 2 } }}>
-        <Box sx={{ mb: 4 }} ref={tourRefs.tituloRef}>
-          <Typography variant="h3" gutterBottom fontWeight={700}>
-            Lançamentos
-          </Typography>
-          <Typography variant="h6" color="textSecondary">
-            Gerencie seus pagamentos e agendamentos financeiros
-          </Typography>
+        <Box
+          sx={{
+            mb: 4,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+          ref={tourRefs.tituloRef}
+        >
+          <Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography variant="h3" fontWeight={700}>
+                Lançamentos
+              </Typography>
+              <ProductTourButton
+                onClick={() => {
+                  tour.reset();
+                  tour.start();
+                }}
+                title="Iniciar Tour Premium"
+              />
+            </Stack>
+            <Typography variant="h6" color="textSecondary">
+              Gerencie seus pagamentos e agendamentos financeiros
+            </Typography>
+          </Box>
         </Box>
 
         {/* Filtros avançados */}
@@ -258,67 +283,6 @@ function LancamentosPageContent() {
         onPrev={tour.prev}
         onSkip={tour.skip}
       />
-
-      {/* FAB Local: Tour Guiado (Posicionado acima do global "Novo Lançamento") */}
-      <Box
-        sx={{
-          position: "fixed",
-          right: 0,
-          bottom: "75px", // Posicionado acima do Global FAB
-          zIndex: 1100,
-        }}
-      >
-        <Button
-          variant="contained"
-          onClick={() => {
-            tour.reset();
-            tour.start();
-          }}
-          sx={{
-            borderRadius: "24px 0 0 24px",
-            minWidth: "48px",
-            height: "48px",
-            p: 0,
-            pl: 2,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 1.5,
-            backgroundColor: (theme) =>
-              theme.palette.mode === "dark" ? "#2a3447" : "#fff",
-            color: "primary.main",
-            boxShadow: (theme) => theme.shadows[1],
-            border: "1px solid",
-            borderRight: "none",
-            borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-            overflow: "hidden",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            "& .label": {
-              maxWidth: 0,
-              opacity: 0,
-              whiteSpace: "nowrap",
-              transition: "all 0.3s",
-              fontWeight: 700,
-            },
-            "&:hover": {
-              pr: 2,
-              backgroundColor: "primary.main",
-              color: "#fff",
-              boxShadow: (theme) =>
-                `-6px 6px 18px ${alpha(theme.palette.primary.main, 0.4)}`,
-              transform: "translateX(-4px)",
-              borderColor: "primary.main",
-              "& .label": {
-                maxWidth: "200px",
-                opacity: 1,
-              },
-            },
-          }}
-        >
-          <IconHelp size="22" stroke="2" />
-          <span className="label">Iniciar Tour Guiado</span>
-        </Button>
-      </Box>
     </>
   );
 }

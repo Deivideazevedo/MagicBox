@@ -133,6 +133,12 @@ export const Listagem = ({
   const formatCurrency = (val: number) =>
     (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const formatValueOnly = (val: number) =>
+    (val || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
   return (
     <Grid container spacing={3}>
       {dividas.map((divida, index) => {
@@ -161,9 +167,13 @@ export const Listagem = ({
           (!isUnica && (divida as DividaVolatil).atrasada);
 
         return (
-          <Grid item xs={12} md={6} key={divida.id}>
+          <Grid item xs={12} sm={6} md={4} key={divida.id}>
             <Card
-              ref={index === 0 ? (tourRefs.cardRef as React.Ref<HTMLDivElement>) : undefined}
+              ref={
+                index === 0
+                  ? (tourRefs.cardRef as React.Ref<HTMLDivElement>)
+                  : undefined
+              }
               sx={{
                 padding: 0,
                 borderRadius: 4,
@@ -193,7 +203,11 @@ export const Listagem = ({
                   sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
                 >
                   <IconButton
-                    ref={index === 0 ? (tourRefs.menuRef as React.Ref<HTMLButtonElement>) : undefined}
+                    ref={
+                      index === 0
+                        ? (tourRefs.menuRef as React.Ref<HTMLButtonElement>)
+                        : undefined
+                    }
                     size="small"
                     onClick={(e) => handleOpenMenu(e, divida)}
                     sx={{
@@ -244,7 +258,11 @@ export const Listagem = ({
                         {divida.nome}
                       </Typography>
                       <Chip
-                        ref={index === 0 ? (tourRefs.chipTipoRef as React.Ref<HTMLDivElement>) : undefined}
+                        ref={
+                          index === 0
+                            ? (tourRefs.chipTipoRef as React.Ref<HTMLDivElement>)
+                            : undefined
+                        }
                         label={isUnica ? "Única" : "Variável"}
                         size="small"
                         sx={{
@@ -310,7 +328,7 @@ export const Listagem = ({
                       display="block"
                       gutterBottom
                     >
-                      {isUnica ? "VALOR TOTAL" : "LANÇADO"}
+                      {isUnica ? "VALOR TOTAL (R$)" : "LANÇADO (R$)"}
                     </Typography>
                     <Typography
                       variant={isUnica ? "caption" : "subtitle1"}
@@ -319,8 +337,8 @@ export const Listagem = ({
                       sx={isUnica ? { display: "block", mt: 0.5 } : {}}
                     >
                       {isUnica
-                        ? `${formatCurrency(valorPago)} / ${formatCurrency(valorPrincipal)}`
-                        : formatCurrency(valorPrincipal)}
+                        ? `${formatValueOnly(valorPago)} / ${formatValueOnly(valorPrincipal)}`
+                        : formatValueOnly(valorPrincipal)}
                     </Typography>
                   </Grid>
                   <Grid item xs={6} sx={{ textAlign: "right" }}>
@@ -369,7 +387,13 @@ export const Listagem = ({
 
                 {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
                 {isUnica ? (
-                  <Box ref={index === 0 ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>) : undefined}>
+                  <Box
+                    ref={
+                      index === 0
+                        ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>)
+                        : undefined
+                    }
+                  >
                     <Stack
                       direction="row"
                       spacing={1.5}
@@ -646,6 +670,7 @@ export const Listagem = ({
       {/* Modal de Detalhes */}
       {dividaDetalhesId && (
         <DetalhesDividaModal
+          key={dividaDetalhesId}
           open={modalDetalhesOpen}
           onClose={() => setModalDetalhesOpen(false)}
           dividaId={dividaDetalhesId}

@@ -112,7 +112,7 @@ Cada tipo de dívida mostra opções diferentes. Explore!`,
 
   // 7 - Encerramento
   {
-    ref: refs.boasVindasRef,
+    ref: refs.tituloRef,
     title: "🚀 Prontinho! Você domina suas dívidas agora.",
     description:
       `Resumão rápido:
@@ -121,6 +121,7 @@ Cada tipo de dívida mostra opções diferentes. Explore!`,
 • Fique de olho nos cards vermelhos (atrasadas) e amarelos (vence em breve)
 • Registre aportes para quitar antes do prazo
 
-Se precisar rever este tour, clique no botão de ajuda (?) no canto inferior direito a qualquer momento. 😉`,
+Se precisar rever este tour, clique no ícone de brilho (✨) no topo da página a qualquer momento. 😉`,
+    placement: "right",
   },
 ];

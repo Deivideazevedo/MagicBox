@@ -55,25 +55,14 @@ const Header = () => {
     color: theme.palette.text.secondary,
   }));
 
-  // Mock data - em produção viria de APIs
-  const quickFinancialData = {
-    saldo: 2174.75,
-    meta: 85, // percentual da meta alcançada
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
-
   // Logica de Fullscreen Real (F11)
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => setIsFullScreen(true));
+      document.documentElement
+        .requestFullscreen()
+        .then(() => setIsFullScreen(true));
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen().then(() => setIsFullScreen(false));
@@ -85,7 +74,8 @@ const Header = () => {
   useEffect(() => {
     const handleFsChange = () => setIsFullScreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFsChange);
-    return () => document.removeEventListener("fullscreenchange", handleFsChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFsChange);
   }, []);
 
   return (
@@ -120,39 +110,6 @@ const Header = () => {
         {lgUp ? (
           <>
             <Navigation />
-
-            {/* Quick Financial Info */}
-            <Box sx={{ mx: 2 }}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label={`Saldo: ${formatCurrency(quickFinancialData.saldo)}`}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    fontWeight: 600,
-                    borderColor: "#13DEB9",
-                    color: "#13DEB9",
-                    "&:hover": {
-                      backgroundColor: "#13DEB920",
-                    },
-                  }}
-                />
-                <Chip
-                  icon={<IconTrendingUp size={16} />}
-                  label={`Meta: ${quickFinancialData.meta}%`}
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    fontWeight: 600,
-                    borderColor: "#5D87FF",
-                    color: "#5D87FF",
-                    "&:hover": {
-                      backgroundColor: "#5D87FF20",
-                    },
-                  }}
-                />
-              </Stack>
-            </Box>
           </>
         ) : null}
 
@@ -196,8 +153,8 @@ const Header = () => {
             onClick={() =>
               dispatch(
                 setDarkMode(
-                  customizer.activeMode === "light" ? "dark" : "light"
-                )
+                  customizer.activeMode === "light" ? "dark" : "light",
+                ),
               )
             }
           >

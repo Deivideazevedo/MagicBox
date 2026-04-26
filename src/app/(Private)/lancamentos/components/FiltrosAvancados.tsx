@@ -39,7 +39,6 @@ import { Meta } from "@/core/metas/types";
 import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 import { LancamentosTourRefs } from "./LancamentosTourContext";
 
-
 import { parseISO, isValid } from "date-fns";
 import { FiltrosLancamentos, getDefaultDates } from "../utils";
 
@@ -55,12 +54,7 @@ type ItemComOrigem = (Despesa | Receita | Meta) & {
 };
 
 // Definição de filtros opcionais disponíveis
-type FiltroKey =
-  | "periodo"
-  | "origem"
-  | "tipo"
-  | "item"
-  | "observacao";
+type FiltroKey = "periodo" | "origem" | "tipo" | "item" | "observacao";
 
 interface FiltroDefinicao {
   key: FiltroKey;
@@ -117,7 +111,6 @@ export default function FiltrosAvancados({
 
   // Estados do Filtro Rápido (Controlados)
   const [tipoPeriodo, setTipoPeriodo] = useState<any>("mes");
-
 
   const origemWatch = watch("origem");
 
@@ -190,38 +183,41 @@ export default function FiltrosAvancados({
       ? despesasFiltradas
       : origemWatch === "receita"
         ? receitasFiltradas
-      : origemWatch === "meta"
-        ? metasFiltradas
-        : [...despesasFiltradas, ...receitasComOrigem, ...metasComOrigem];
+        : origemWatch === "meta"
+          ? metasFiltradas
+          : [...despesasFiltradas, ...receitasComOrigem, ...metasComOrigem];
 
-  const onConvert = useCallback((rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
-    const { item, origem, tipo, ...rest } = rawFilters;
+  const onConvert = useCallback(
+    (rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
+      const { item, origem, tipo, ...rest } = rawFilters;
 
-    const spllitedItem = item ? item.split("-") : [];
-    const despesaId =
-      spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
-    const receitaId =
-      spllitedItem[0] === "receita" ? Number(spllitedItem[1]) : undefined;
-    const metaId =
-      spllitedItem[0] === "meta" ? Number(spllitedItem[1]) : undefined;
+      const spllitedItem = item ? item.split("-") : [];
+      const despesaId =
+        spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
+      const receitaId =
+        spllitedItem[0] === "receita" ? Number(spllitedItem[1]) : undefined;
+      const metaId =
+        spllitedItem[0] === "meta" ? Number(spllitedItem[1]) : undefined;
 
-    const result: Partial<FindAllFilters> = {
-      ...rest,
-      despesaId,
-      receitaId,
-      metaId,
-      origem,
-      observacao: rest.observacao || undefined,
-      tipo: tipo || undefined,
-    };
-    return result;
-  }, []);
+      const result: Partial<FindAllFilters> = {
+        ...rest,
+        despesaId,
+        receitaId,
+        metaId,
+        origem,
+        observacao: rest.observacao || undefined,
+        tipo: tipo || undefined,
+      };
+      return result;
+    },
+    [],
+  );
 
   const handleSearchDebounced = useCallback(
     debounce((data: FiltrosLancamentos) => {
       handleSearch(onConvert(data));
     }, 500),
-    [handleSearch, onConvert]
+    [handleSearch, onConvert],
   );
 
   // Watch total para disparo automático
@@ -236,9 +232,12 @@ export default function FiltrosAvancados({
       novosFiltros.dataFim !== filtros.dataFim ||
       (novosFiltros.origem || "") !== (filtros.origem || "") ||
       (novosFiltros.tipo || undefined) !== (filtros.tipo || undefined) ||
-      (novosFiltros.despesaId || undefined) !== (filtros.despesaId || undefined) ||
-      (novosFiltros.receitaId || undefined) !== (filtros.receitaId || undefined) ||
-      (novosFiltros.observacao || undefined) !== (filtros.observacao || undefined);
+      (novosFiltros.despesaId || undefined) !==
+        (filtros.despesaId || undefined) ||
+      (novosFiltros.receitaId || undefined) !==
+        (filtros.receitaId || undefined) ||
+      (novosFiltros.observacao || undefined) !==
+        (filtros.observacao || undefined);
 
     if (!mudou) return;
 
@@ -256,14 +255,17 @@ export default function FiltrosAvancados({
       tipo: "",
       observacao: "",
     });
-    setExpandido(false)
+    setExpandido(false);
     setFiltrosAtivos([]);
     setTipoPeriodo("mes");
-    handleSearch({
-      ...getDefaultDates(),
-      page: 0,
-      limit: 10,
-    }, true);
+    handleSearch(
+      {
+        ...getDefaultDates(),
+        page: 0,
+        limit: 10,
+      },
+      true,
+    );
   };
 
   // Renderiza o campo de acordo com a chave do filtro
@@ -429,6 +431,7 @@ export default function FiltrosAvancados({
               <IconButton
                 ref={refs?.botaoFiltrosRef}
                 onClick={(e) => {
+                  e.stopPropagation();
                   setAnchorEl(e.currentTarget);
                 }}
                 sx={{
@@ -454,7 +457,10 @@ export default function FiltrosAvancados({
         </Box>
 
         {/* Filtro Rápido aqui agora */}
-        <Box ref={refs?.seletorPeriodoRef} sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
+        <Box
+          ref={refs?.seletorPeriodoRef}
+          sx={{ width: { xs: "100%", sm: "fit-content" } }}
+        >
           {!filtrosAtivos.includes("periodo") && (
             <SeletorPeriodo
               onClick={(e) => e.stopPropagation()}
@@ -470,15 +476,14 @@ export default function FiltrosAvancados({
           )}
         </Box>
 
-
         {/* Menu de filtros disponíveis */}
         <Menu
           anchorEl={anchorEl}
           open={menuAberto}
           onClose={() => setAnchorEl(null)}
           onClick={(e) => e.stopPropagation()}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
           slotProps={{
             paper: {
               // elevation: 3,
@@ -542,11 +547,7 @@ export default function FiltrosAvancados({
                     color: isActive ? "primary.main" : "text.disabled",
                   }}
                 >
-                  {isActive ? (
-                    <IconCheck size={18} />
-                  ) : (
-                    <IconPlus size={18} />
-                  )}
+                  {isActive ? <IconCheck size={18} /> : <IconPlus size={18} />}
                 </ListItemIcon>
                 <ListItemText primary={f.label} />
               </MenuItem>
@@ -561,13 +562,16 @@ export default function FiltrosAvancados({
             }}
             sx={{
               color: "error.main",
-              "&.MuiMenuItem-root:hover": { // Adicionando a classe para aumentar especificidade
+              "&.MuiMenuItem-root:hover": {
+                // Adicionando a classe para aumentar especificidade
                 bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
                 color: "error.main",
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: "32px !important", color: "error.main" }}>
+            <ListItemIcon
+              sx={{ minWidth: "32px !important", color: "error.main" }}
+            >
               <IconFilterOff size={18} />
             </ListItemIcon>
             <ListItemText primary="Resetar" />
@@ -596,8 +600,10 @@ export default function FiltrosAvancados({
         </Menu>
       </AccordionSummary>
 
-      <AccordionDetails ref={refs?.filtrosAdicionaisRef} sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
-
+      <AccordionDetails
+        ref={refs?.filtrosAdicionaisRef}
+        sx={{ px: 2.5, pb: 2.5, pt: 0 }}
+      >
         <Divider sx={{ mb: 2, opacity: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
             FILTROS ADICIONAIS
