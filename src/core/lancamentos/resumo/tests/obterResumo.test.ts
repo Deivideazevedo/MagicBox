@@ -15,7 +15,7 @@ async function test() {
 
   const userId = 1;
   const dataInicio = "2026-04-01";
-  const dataFim = "2026-04-30";
+  const dataFim = "2026-05-30";
 
   console.log("🚀 Testando [obterResumo]...");
   console.log(`👤 Usuário: ${userId}`);

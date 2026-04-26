@@ -204,18 +204,20 @@ function formatarHora(iso: string): string {
   return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
-/** Formata data como "Hoje" ou "dd/mm/aaaa" */
+/** Formata data como "Hoje", "Ontem" ou "dd/mm/aaaa" */
 function formatarData(iso: string): string {
   const d = new Date(iso);
-  const hoje = new Date();
+  d.setHours(0, 0, 0, 0);
 
-  if (
-    d.getDate() === hoje.getDate() &&
-    d.getMonth() === hoje.getMonth() &&
-    d.getFullYear() === hoje.getFullYear()
-  ) {
-    return "Hoje";
-  }
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const ontem = new Date();
+  ontem.setDate(ontem.getDate() - 1);
+  ontem.setHours(0, 0, 0, 0);
+
+  if (d.getTime() === hoje.getTime()) return "Hoje";
+  if (d.getTime() === ontem.getTime()) return "Ontem";
 
   return d.toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -224,9 +226,13 @@ function formatarData(iso: string): string {
   });
 }
 
-/** Retorna a chave de dia (yyyy-mm-dd) de um ISO */
+/** Retorna a chave de dia (yyyy-mm-dd) em horário LOCAL */
 function chaveDoDia(iso: string): string {
-  return new Date(iso).toISOString().split("T")[0];
+  const d = new Date(iso);
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
 }
 
 // ─── Component ──────────────────────────────────

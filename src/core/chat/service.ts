@@ -29,8 +29,8 @@ const github = createOpenAI({
 // 🛡️ TIER 3: Github/Copilot (Reserva de Emergência, entra em ação caso Google/Groq esgotem)
 const MODELS = [
   // TIER 1: Ultra Rápidos (Foco em Baixa Latência)
-  { name: "Groq (llama-3.1-8b-instant)", provider: "Groq", model: groq("llama-3.1-8b-instant") },
   { name: "Gemini (3.1-flash-lite-preview)", provider: "Gemini", model: google("gemini-3.1-flash-lite-preview") },
+  { name: "Groq (llama-3.1-8b-instant)", provider: "Groq", model: groq("llama-3.1-8b-instant") },
 
   // TIER 2: Balanceados (Maior raciocínio, limites um pouco menores)
   { name: "Gemini (2.5-flash-lite)", provider: "Gemini", model: google("gemini-2.5-flash-lite") },
@@ -129,7 +129,7 @@ Sua missão EXCLUSIVA é ajudar o usuário final da aplicação a entender como 
 - Valores: R$ X.XXX,XX sempre em Negrito (**R$ 1.200,00**).
 - Navegação: Forneça links markdown: [Acessar Dívidas](/cadastros/dividas)
 
-Exemplo de ESTRUTURA de resposta PREMIUM (Atenção: JAMAIS use estes valores fictícios, são apenas para visualização de layout):
+Exemplo de ESTRUTURA de resposta PREMIUM (Atenção: JAMAIS e EM HIPÓTESE ALGUMA use estes valores ou dados fictícios, são apenas para visualização de layout):
 """
 Olá! [Sua saudação amigável aqui]! 🧐
 
@@ -158,21 +158,30 @@ ${relatorioSkills}
 // ─────────────────────────────────────────────────
 function criarFerramentas(userId: number) {
   const agora = new Date();
-  const dataInicio = new Date(agora.getFullYear(), agora.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-  const dataFim = new Date(agora.getFullYear(), agora.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
 
   return {
     obterResumoFinanceiro: {
       description:
-        "Retorna o resumo financeiro do mês atual do usuário: saldo disponível, saldo livre, gastos, receitas, saldo bloqueado em metas e projeções.",
+        "Retorna o resumo financeiro de um mês específico (saldo disponível, livre, gastos, receitas e projeções). Use para responder sobre a situação financeira geral.",
       inputSchema: z.object({
-        motivo: z.string().describe("Motivo da consulta").default("resumo"),
+        mes: z
+          .number()
+          .min(1)
+          .max(12)
+          .optional()
+          .describe("Mês desejado (1-12). Padrão: mês atual."),
+        ano: z
+          .number()
+          .optional()
+          .describe("Ano desejado (ex: 2026). Padrão: ano atual."),
       }),
-      execute: async () => {
+      execute: async ({ mes, ano }: { mes?: number; ano?: number }) => {
+        const m = mes || agora.getMonth() + 1;
+        const a = ano || agora.getFullYear();
+
+        const dataInicio = new Date(a, m - 1, 1).toISOString().split("T")[0];
+        const dataFim = new Date(a, m, 0).toISOString().split("T")[0];
+
         logChat({
           tipo: "TOOL_CALL",
           userId,
@@ -189,33 +198,39 @@ function criarFerramentas(userId: number) {
         logChat({
           tipo: "TOOL_RESULT",
           ferramenta: "obterResumoFinanceiro",
-          mensagem: `Saldo: R$${card.saldoAtual} | Livre: R$${card.saldoLivre} | Bloqueado: R$${card.saldoBloqueado}`,
-          detalhes: `Entradas: R$${card.totalEntradas} | Saídas: R$${card.totalSaidas} | Projeção: R$${card.saldoProjetado}`,
+          mensagem: `Saldo: R$${card.saldoAtual} | Livre: R$${card.saldoLivre}`,
+          detalhes: `Projeção: R$${card.saldoProjetado} | Mês: ${m}/${a}`,
         });
 
         return {
-          saldoAtual: card.saldoAtual,
-          saldoLivre: card.saldoLivre,
-          saldoBloqueado: card.saldoBloqueado,
-          saldoProjetado: card.saldoProjetado,
-          totalEntradas: card.totalEntradas,
-          entradasRecebidas: card.entradasPagas,
-          entradasPendentes: card.diferencaEntradas,
-          totalSaidas: card.totalSaidas,
-          saidasPagas: card.saidasPagas,
-          saidasPendentes: card.diferencaSaidas,
-          mesReferencia: `${agora.getMonth() + 1}/${agora.getFullYear()}`,
+          ...card,
+          mesReferencia: `${m}/${a}`,
         };
       },
     },
 
     obterContasProximasVencimento: {
       description:
-        "Retorna as contas (despesas e receitas) do mês atual com seus status: vencidas, vencendo hoje, próximas do vencimento ou pendentes.",
+        "Retorna as contas (despesas e receitas) de um mês específico com seus status (vencidas, pendentes, vencendo hoje, próximas do vencimento, pagas). Use para listar o que o usuário precisa pagar ou receber.",
       inputSchema: z.object({
-        motivo: z.string().describe("Motivo da consulta").default("vencimentos"),
+        mes: z
+          .number()
+          .min(1)
+          .max(12)
+          .optional()
+          .describe("Mês desejado (1-12). Padrão: mês atual."),
+        ano: z
+          .number()
+          .optional()
+          .describe("Ano desejado (ex: 2026). Padrão: ano atual."),
       }),
-      execute: async () => {
+      execute: async ({ mes, ano }: { mes?: number; ano?: number }) => {
+        const m = mes || agora.getMonth() + 1;
+        const a = ano || agora.getFullYear();
+
+        const dataInicio = new Date(a, m - 1, 1).toISOString().split("T")[0];
+        const dataFim = new Date(a, m, 0).toISOString().split("T")[0];
+
         logChat({
           tipo: "TOOL_CALL",
           userId,
@@ -243,14 +258,17 @@ function criarFerramentas(userId: number) {
         logChat({
           tipo: "TOOL_RESULT",
           ferramenta: "obterContasProximasVencimento",
-          mensagem: `${pendentes.length} contas pendentes encontradas`,
-          detalhes: pendentes.slice(0, 5).map((p) => `${p.nome}: R$${p.valorPrevisto} (${p.status})`).join(" | "),
+          mensagem: `${pendentes.length} contas pendentes encontradas para ${m}/${a}`,
+          detalhes: pendentes
+            .slice(0, 5)
+            .map((p) => `${p.nome}: R$${p.valorPrevisto}`)
+            .join(" | "),
         });
 
         return {
           totalPendentes: pendentes.length,
           contas: pendentes,
-          mesReferencia: `${agora.getMonth() + 1}/${agora.getFullYear()}`,
+          mesReferencia: `${m}/${a}`,
         };
       },
     },
@@ -331,11 +349,17 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
         },
       });
 
+      // REGRA DE OURO PARA FALLBACK: 
+      // Ao aguardar as etapas (.steps), garantimos que qualquer erro (como 503 ou rate limit) 
+      // durante as chamadas de ferramentas seja capturado aqui, permitindo que o loop 'catch' 
+      // tente o próximo modelo. Como a UI faz buffer das mensagens, a experiência continua fluida.
+      await result.steps;
+
       logChat({
         tipo: "PROVEDOR",
         modelo: m.name,
         provider: m.provider,
-        mensagem: "✅ Stream iniciado",
+        mensagem: "✅ Resposta preparada com sucesso",
       });
 
       return result;
