@@ -19,6 +19,7 @@ export interface ResumoResposta {
   atrasado: boolean;
   icone: string | null;
   cor: string | null;
+  isProjetado: boolean;
   detalhes: DetalheResumo[];
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Switch, Typography, alpha } from "@mui/material";
-import { Control, Controller } from "react-hook-form";
+import { Control, Controller, FieldValues, Path } from "react-hook-form";
 import { ReactNode } from "react";
 
 type ColorType =
@@ -12,9 +12,9 @@ type ColorType =
   | "info"
   | "success";
 
-interface CustomToggleProps {
-  control: Control<any>;
-  name: string;
+interface CustomToggleProps<TFieldValues extends FieldValues = FieldValues> {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
   color?: ColorType;
   variant?: "checkbox" | "switch";
   iconActive?: ReactNode;
@@ -27,7 +27,7 @@ interface CustomToggleProps {
   inactiveValue?: any;
 }
 
-export default function CustomToggle({
+export default function CustomToggle<TFieldValues extends FieldValues = FieldValues>({
   control,
   name,
   color = "primary",
@@ -39,7 +39,7 @@ export default function CustomToggle({
   descriptionInactive,
   activeValue = true,
   inactiveValue = false,
-}: CustomToggleProps) {
+}: CustomToggleProps<TFieldValues>) {
   return (
     <Controller
       name={name}

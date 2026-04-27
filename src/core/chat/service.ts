@@ -105,51 +105,38 @@ function construirSystemPrompt(): string {
   }
 
   return `
-Você é o Assistente Virtual Oficial do aplicativo MagicBox.
-Sua missão EXCLUSIVA é ajudar o usuário final da aplicação a entender como o sistema funciona e orientá-lo sobre a gestão das suas finanças.
+Você é o Assistente Virtual Oficial do MagicBox. Sua prioridade absoluta é a precisão dos dados.
 
-# Restrições de Segurança (CRÍTICO):
-1. PRIVACIDADE DE SISTEMA: Sob nenhuma hipótese compartilhe código fonte, chaves de API, arquivos .env, scripts de banco de dados ou fale sobre a arquitetura interna do sistema.
-2. Você NÃO é um assistente de desenvolvedores. Se perguntarem sobre código backend, credenciais ou variáveis de ambiente, responda gentilmente que você é focado na experiência do usuário.
-3. JAMAIS mencione nomes de ferramentas internas, funções, endpoints ou termos técnicos como "obterResumoFinanceiro", "obterContasProximasVencimento", "tool", "API", "endpoint" ou semelhantes. Fale sempre em linguagem natural com o usuário final
+# DIRETRIZ DE OURO: CONSULTA OBRIGATÓRIA
+- NUNCA invente valores, contas, datas ou saldos. 
+- Para QUALQUER pergunta sobre finanças, saldo, gastos ou contas, você deve OBRIGATORIAMENTE chamar uma ferramenta ("obterResumoFinanceiro" ou "consultarLancamentos") antes de dar a primeira palavra ao usuário.
+- Se a ferramenta retornar vazio, diga explicitamente: "Não encontrei registros para este período no seu MagicBox. 🧐".
+- DATA ATUAL: ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Bahia" })} (Use esta data como referência real para calcular "ontem", "hoje", "amanhã" ao chamar as ferramentas).
 
-# Uso de Ferramentas Internas (INVISÍVEL ao usuário):
-- Quando precisar consultar dados financeiros (saldo, gastos, receitas, projeções), use as ferramentas disponíveis como "obterResumoFinanceiro", "obterContasProximasVencimento" mas não mencione que está usando as ferramentas, apenas apresente os dados de forma natural.
-- NUNCA diga "vou chamar a ferramenta X", "consultando a função Y" ou "usando a API Z". Simplesmente consulte e apresente os dados de forma natural.
-- Exemplo ERRADO: "Vou chamar a ferramenta obterResumoFinanceiro para você! 🤖"
-- Exemplo CORRETO: "Deixa eu verificar suas finanças! 📊" (e então use a ferramenta internamente)
+# ENTENDIMENTO DE DADOS
+- **Pagamento Parcial**: Ocorre quando o 'valorPago' é maior que zero mas menor que o 'valorPrevisto'. Explique isso ao usuário como "Pago parcialmente".
+- **Lançamento Projetado (Virtual)**: Identificado por 'isProjetado: true'. São projeções automáticas de despesas fixas (ex: Luz, Aluguel) que ainda não possuem um agendamento manual ou pagamento real. Trate-os como "Previsões".
+- **Granularidade**: Se o usuário perguntar por um dia específico, passe a mesma data para 'dataInicio' e 'dataFim'.
 
-# Formato de Resposta e Estética UX (CRÍTICO):
-- Tom de Voz: Amigável, lúdico, prestativo e PREMIUM. Você é a cara do MagicBox.
-- Seja CONCISO e DIRETO.
-- REGRA ABSOLUTA DE ESPAÇAMENTO: Você DEVE pular DUAS linhas (dois parágrafos) entre CADA tópico ou item de lista. 
-- Espaçamento Visual: O texto não pode parecer um bloco compacto. Cada frase importante merece seu próprio parágrafo com espaço de respiro.
-- Emojis: Use emojis em TODA resposta para listar dados e enfatizar ações, tornando a leitura leve e divertida. 
-- Listas: Nunca use listas coladas. Cada item deve ter um emoji temático no início.
-- Valores: R$ X.XXX,XX sempre em Negrito (**R$ 1.200,00**).
-- Navegação: Forneça links markdown: [Acessar Dívidas](/cadastros/dividas)
+# COMPORTAMENTO E TOM
+- Responda de forma amigável, lúdica e PREMIUM.
+- Use emojis em todas as listas e para enfatizar ações.
+- Mantenha sigilo total sobre a arquitetura técnica (APIs, tabelas, código). Fale apenas da interface do usuário.
 
-Exemplo de ESTRUTURA de resposta PREMIUM (Atenção: JAMAIS e EM HIPÓTESE ALGUMA use estes valores ou dados fictícios, são apenas para visualização de layout):
-"""
-Olá! [Sua saudação amigável aqui]! 🧐
+# REGRAS DE FORMATAÇÃO (ESTRITA)
+1. Pule DUAS LINHAS entre cada parágrafo ou item de lista para garantir o "respiro" visual.
+2. Valores financeiros devem estar sempre em **Negrito** no formato brasileiro: **R$ 1.250,50**.
+3. Use links markdown para navegação: [Texto](/rota).
+4. Listas: Cada item deve começar com um emoji temático e ter espaçamento duplo entre eles.
 
-• [Emoji] **[Nome Real da Conta]:** **[Valor Real da Conta]** (Status: [Status Real])
+# FLUXO DE RESPOSTA
+- Passo 1: Analisar se a pergunta exige dados reais.
+- Passo 2: Se sim, chamar a ferramenta adequada.
+- Passo 3: Formatar a resposta usando APENAS os dados retornados.
+- Passo 4: Sugerir um link útil de navegação.
 
-[Pule duas linhas entre itens]
-
-[Sua conclusão ou link útil aqui] 😊
-"""
-
-# Diretrizes de Ouro:
-1. Você DEVE obrigatoriamente chamar uma ferramenta se o usuário perguntar qualquer dado sobre o financeiro dele.
-2. Se a ferramenta não retornar dados para o período, responda: "Não encontrei nenhum registro de [tipo de dado] para este período no seu MagicBox. 🧐"
-3. JAMAIS invente nomes de contas, valores, parcelas ou datas. A alucinação de dados financeiros é um erro gravíssimo.
-4. Caso a resposta não exista no documento, busque nas ferramentas disponíveis e se não encontrar, informe ao usuário que não tem essa informação.
-
-# Documentação:
----
+# DOCUMENTAÇÃO DE APOIO:
 ${relatorioSkills}
----
   `;
 }
 
@@ -162,113 +149,106 @@ function criarFerramentas(userId: number) {
   return {
     obterResumoFinanceiro: {
       description:
-        "Retorna o resumo financeiro de um mês específico (saldo disponível, livre, gastos, receitas e projeções). Use para responder sobre a situação financeira geral.",
+        "Retorna o resumo financeiro (saldo disponível, livre, total de gastos e receitas) para um período específico. Use para responder sobre a situação financeira geral ou saldo em datas específicas (hoje, ontem, este mês).",
       inputSchema: z.object({
-        mes: z
-          .number()
-          .min(1)
-          .max(12)
+        dataInicio: z
+          .string()
           .optional()
-          .describe("Mês desejado (1-12). Padrão: mês atual."),
-        ano: z
-          .number()
+          .describe("Data de início no formato YYYY-MM-DD. Padrão: primeiro dia do mês atual."),
+        dataFim: z
+          .string()
           .optional()
-          .describe("Ano desejado (ex: 2026). Padrão: ano atual."),
+          .describe("Data de fim no formato YYYY-MM-DD. Padrão: último dia do mês atual."),
       }),
-      execute: async ({ mes, ano }: { mes?: number; ano?: number }) => {
-        const m = mes || agora.getMonth() + 1;
-        const a = ano || agora.getFullYear();
-
-        const dataInicio = new Date(a, m - 1, 1).toISOString().split("T")[0];
-        const dataFim = new Date(a, m, 0).toISOString().split("T")[0];
+      execute: async ({ dataInicio, dataFim }: { dataInicio?: string; dataFim?: string }) => {
+        const dInicio = dataInicio || new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split("T")[0];
+        const dFim = dataFim || new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split("T")[0];
 
         logChat({
           tipo: "TOOL_CALL",
           userId,
           ferramenta: "obterResumoFinanceiro",
-          mensagem: `Período: ${dataInicio} → ${dataFim}`,
+          mensagem: `Período: ${dInicio} → ${dFim}`,
         });
 
         const card = await resumoServico.obterCardResumo({
           userId,
-          dataInicio,
-          dataFim,
+          dataInicio: dInicio,
+          dataFim: dFim,
         });
 
         logChat({
           tipo: "TOOL_RESULT",
           ferramenta: "obterResumoFinanceiro",
-          mensagem: `Saldo: R$${card.saldoAtual} | Livre: R$${card.saldoLivre}`,
-          detalhes: `Projeção: R$${card.saldoProjetado} | Mês: ${m}/${a}`,
+          mensagem: `Saldo Atual: R$${card.saldoAtual} | Livre: R$${card.saldoLivre}`,
+          detalhes: `Período: ${dInicio} a ${dFim}`,
         });
 
         return {
           ...card,
-          mesReferencia: `${m}/${a}`,
+          periodoReferencia: `${dInicio} a ${dFim}`,
         };
       },
     },
 
-    obterContasProximasVencimento: {
+    consultarLancamentos: {
       description:
-        "Retorna as contas (despesas e receitas) de um mês específico com seus status (vencidas, pendentes, vencendo hoje, próximas do vencimento, pagas). Use para listar o que o usuário precisa pagar ou receber.",
+        "Consulta o detalhamento de lançamentos (receitas e despesas) em um período. Retorna status de pagamento (Pago, Parcial, Pendente), valores e se o lançamento é uma projeção virtual. Use para perguntas como 'o que eu gastei ontem?', 'quais contas estão pendentes?' ou 'tenho algo projetado?'.",
       inputSchema: z.object({
-        mes: z
-          .number()
-          .min(1)
-          .max(12)
+        dataInicio: z
+          .string()
           .optional()
-          .describe("Mês desejado (1-12). Padrão: mês atual."),
-        ano: z
-          .number()
+          .describe("Data de início no formato YYYY-MM-DD. Padrão: primeiro dia do mês atual."),
+        dataFim: z
+          .string()
           .optional()
-          .describe("Ano desejado (ex: 2026). Padrão: ano atual."),
+          .describe("Data de fim no formato YYYY-MM-DD. Padrão: último dia do mês atual."),
+        tipo: z
+          .enum(["receita", "despesa", "todos"])
+          .optional()
+          .default("todos")
+          .describe("Filtra por tipo de lançamento."),
       }),
-      execute: async ({ mes, ano }: { mes?: number; ano?: number }) => {
-        const m = mes || agora.getMonth() + 1;
-        const a = ano || agora.getFullYear();
-
-        const dataInicio = new Date(a, m - 1, 1).toISOString().split("T")[0];
-        const dataFim = new Date(a, m, 0).toISOString().split("T")[0];
+      execute: async ({ dataInicio, dataFim, tipo }: { dataInicio?: string; dataFim?: string; tipo?: "receita" | "despesa" | "todos" }) => {
+        const dInicio = dataInicio || new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split("T")[0];
+        const dFim = dataFim || new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split("T")[0];
 
         logChat({
           tipo: "TOOL_CALL",
           userId,
-          ferramenta: "obterContasProximasVencimento",
-          mensagem: `Período: ${dataInicio} → ${dataFim}`,
+          ferramenta: "consultarLancamentos",
+          mensagem: `Período: ${dInicio} → ${dFim} | Tipo: ${tipo}`,
         });
 
         const itens = await resumoServico.obterResumo({
           userId,
-          dataInicio,
-          dataFim,
+          dataInicio: dInicio,
+          dataFim: dFim,
         });
 
-        const pendentes = itens
-          .filter((item) => item.status !== "Pago" && item.origem === "despesa")
+        const filtrados = itens
+          .filter((item) => tipo === "todos" || item.origem === tipo)
           .map((item) => ({
             nome: item.nome,
+            tipo: item.origem,
             valorPrevisto: item.valorPrevisto,
             valorPago: item.valorPago,
             status: item.status,
             atrasado: item.atrasado,
+            isProjetado: item.isProjetado,
             diaVencimento: item.diaVencido,
           }));
 
         logChat({
           tipo: "TOOL_RESULT",
-          ferramenta: "obterContasProximasVencimento",
-          mensagem: `${pendentes.length} contas pendentes encontradas para ${m}/${a}`,
-          detalhes: pendentes
-            .slice(0, 5)
-            .map((p) => `${p.nome}: R$${p.valorPrevisto}`)
-            .join(" | "),
+          ferramenta: "consultarLancamentos",
+          mensagem: `Encontrados ${filtrados.length} lançamentos para o período ${dInicio} a ${dFim}`,
         });
 
         return {
-          totalPendentes: pendentes.length,
-          contas: pendentes,
-          mesReferencia: `${m}/${a}`,
+          totalEncontrados: filtrados.length,
+          lancamentos: filtrados,
+          periodoReferencia: `${dInicio} a ${dFim}`,
         };
       },
     },

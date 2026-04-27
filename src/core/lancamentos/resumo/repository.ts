@@ -152,7 +152,8 @@ export const resumoRepository = {
               COALESCE(rec.nome, d.nome, f.nome) as "nome",
               COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento") as "diaVencido",
               COALESCE(rec.icone, d.icone, f.icone) as "icone",
-              COALESCE(rec.cor, d.cor, f.cor) as "cor"
+              COALESCE(rec.cor, d.cor, f.cor) as "cor",
+              CASE WHEN real."origemId" IS NULL THEN true ELSE false END as "isProjetado"
           -- União de dados: Cruza o planejado (recorrências) com o realizado (lançamentos)
           FROM itens_recorrentes_base rec
           FULL OUTER JOIN lancamentos_reais_agrupados real 
@@ -187,6 +188,7 @@ export const resumoRepository = {
         id: `${item.origem}-${item.origemId}-${mes}-${ano}`,
         status: label,
         atrasado: isAtrasado,
+        isProjetado: item.isProjetado,
         detalhes: item.detalhes
       };
     });
