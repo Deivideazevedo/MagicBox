@@ -46,6 +46,11 @@ const slideUp = keyframes`
   }
 `;
 
+const blink = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+`;
+
 // ─── Types ──────────────────────────────────────
 /** Mapa de messageId → timestamp ISO */
 type TimestampMap = Record<string, string>;
@@ -113,6 +118,8 @@ const MessageBubble = styled(Box, {
   border: isUser
     ? "none"
     : `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+  transition: "all 0.2s ease-out",
+  overflowWrap: "anywhere",
   "& p": {
     margin: 0,
     whiteSpace: "pre-wrap",
@@ -279,17 +286,8 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
 
   const isLoading = status === "submitted" || status === "streaming";
 
-  // Mensagens visíveis: esconde a última mensagem da IA enquanto está em streaming
-  // Isso faz a IA ficar em "Pensando" até a resposta completa chegar
-  const visibleMessages = React.useMemo(() => {
-    if (!isLoading) return messages;
-    // Se está carregando, esconde a última mensagem se for da IA
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg && lastMsg.role === "assistant") {
-      return messages.slice(0, -1);
-    }
-    return messages;
-  }, [messages, isLoading]);
+  // Mensagens visíveis: agora exibe todas em tempo real para permitir o streaming palavra por palavra
+  const visibleMessages = messages;
 
   // Persistir mensagens e timestamps quando mudam
   useEffect(() => {
@@ -466,9 +464,30 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
                           {texto}
                         </Typography>
                       ) : (
-                        <ReactMarkdown remarkPlugins={[remarkBreaks]}>
-                          {texto}
-                        </ReactMarkdown>
+                        <Box
+                          sx={{
+                            position: "relative",
+                            "& p:last-child::after, & li:last-child::after":
+                              status === "streaming" &&
+                                index === visibleMessages.length - 1
+                                ? {
+                                  content: '""',
+                                  display: "inline-block",
+                                  width: "6px",
+                                  height: "14px",
+                                  backgroundColor: "primary.main",
+                                  ml: 0.5,
+                                  verticalAlign: "middle",
+                                  borderRadius: "2px",
+                                  animation: `${blink} 1s step-end infinite`,
+                                }
+                                : {},
+                          }}
+                        >
+                          <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                            {texto}
+                          </ReactMarkdown>
+                        </Box>
                       )}
                     </MessageBubble>
                     {hora && (
@@ -489,7 +508,9 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
               );
             })
           )}
-          {isLoading && (
+          {isLoading &&
+            (messages[messages.length - 1]?.role !== "assistant" ||
+              !extrairTexto(messages[messages.length - 1])) && (
             <MessageBubble>
               <Stack
                 direction="row"
@@ -589,10 +610,9 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
                 },
                 "&.Mui-disabled": {
                   border: (theme) =>
-                    `1.5px solid ${
-                      theme.palette.mode === "dark"
-                        ? theme.palette.divider
-                        : theme.palette.grey[300]
+                    `1.5px solid ${theme.palette.mode === "dark"
+                      ? theme.palette.divider
+                      : theme.palette.grey[300]
                     }`,
                   boxShadow: "none",
                 },

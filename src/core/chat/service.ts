@@ -2,6 +2,7 @@ import { streamText, convertToModelMessages, UIMessage, stepCountIs } from "ai";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createFallback } from "ai-fallback";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -27,21 +28,36 @@ const github = createOpenAI({
 //    - Groq 70B Versatile (Melhor qualidade OS, mas limite de tokens/dia esgota rápido)
 //
 // 🛡️ TIER 3: Github/Copilot (Reserva de Emergência, entra em ação caso Google/Groq esgotem)
-const MODELS = [
-  // TIER 1: Ultra Rápidos (Foco em Baixa Latência)
-  { name: "Gemini (3.1-flash-lite-preview)", provider: "Gemini", model: google("gemini-3.1-flash-lite-preview") },
-  { name: "Groq (llama-3.1-8b-instant)", provider: "Groq", model: groq("llama-3.1-8b-instant") },
 
-  // TIER 2: Balanceados (Maior raciocínio, limites um pouco menores)
-  { name: "Gemini (2.5-flash-lite)", provider: "Gemini", model: google("gemini-2.5-flash-lite") },
-  { name: "Gemini (2.5-flash)", provider: "Gemini", model: google("gemini-2.5-flash") },
-  { name: "Groq (llama-3.3-70b-versatile)", provider: "Groq", model: groq("llama-3.3-70b-versatile") },
+const resilientModel = createFallback({
+  models: [
+    // TIER 1: Ultra Rápidos (Foco em Baixa Latência)
+    groq("llama-3.3-70b-versatile"),
+    google("gemini-3.1-flash-lite-preview"),
+    groq("llama-3.1-8b-instant"),
 
-  // TIER 3: GitHub Models (Fallback de Segurança)
-  { name: "GitHub (gpt-5-mini)", provider: "GitHub", model: github("gpt-5-mini") },
-  { name: "GitHub (gpt-4.1-mini)", provider: "GitHub", model: github("gpt-4.1-mini") },
-  { name: "GitHub (gpt-4.1)", provider: "GitHub", model: github("gpt-4.1") },
-] as const;
+    // TIER 2: Balanceados (Maior raciocínio, limites um pouco menores)
+    google("gemini-2.5-flash-lite"),
+    google("gemini-2.5-flash"),
+
+    // TIER 3: GitHub Models (Fallback de Segurança)
+    github("gpt-5-mini"),
+    github("gpt-4.1-mini"),
+    github("gpt-4.1"),
+  ],
+  // Quarentena: Se um modelo falhar (ex: Rate Limit 429), ele é ignorado por 1 minuto
+  modelResetInterval: 60000,
+  onError: (error, modelId) => {
+    // Dispara a cada tombo individual. 
+    // Ex: Groq caiu? Registra e vai pro Google silenciosamente.
+    logChat({
+      tipo: "FALLBACK",
+      modelo: modelId,
+      mensagem: `O modelo ${modelId} falhou e entrou em quarentena de 1 minuto.`,
+      detalhes: String(error)
+    });
+  },
+});
 
 // ─────────────────────────────────────────────────
 // Gestão de Contexto Ativa
@@ -256,7 +272,7 @@ function criarFerramentas(userId: number) {
 }
 
 // ─────────────────────────────────────────────────
-// Fallback com Blacklist de Provedores
+// Execução do Chat (Motor Resiliente)
 // ─────────────────────────────────────────────────
 interface ExecutarChatParams {
   messages: UIMessage[];
@@ -281,7 +297,9 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
         userId,
         mensagem: `Input excedeu limite de ${MAX_INPUT_CHARS} caracteres (${textoUser.length} chars)`,
       });
-      throw new Error(`A sua última mensagem está muito longa (máximo ${MAX_INPUT_CHARS} caracteres). Por favor, resuma sua pergunta.`);
+      throw new Error(
+        `A sua última mensagem está muito longa (máximo ${MAX_INPUT_CHARS} caracteres). Por favor, resuma sua pergunta.`
+      );
     }
 
     logChat({
@@ -295,93 +313,32 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
   const recentMessages = aplicarJanelaDeContexto(messages);
   const systemPrompt = construirSystemPrompt();
   const tools = criarFerramentas(userId);
-
   const modelMessages = await convertToModelMessages(recentMessages);
 
-  const blacklistedProviders = new Set<string>();
-
-  for (const m of MODELS) {
-    if (blacklistedProviders.has(m.provider)) continue;
-
-    try {
-      logChat({
-        tipo: "PROVEDOR",
-        modelo: m.name,
-        provider: m.provider,
-        userId,
-        mensagem: "Conectando...",
-      });
-
-      const result = streamText({
-        model: m.model,
-        system: systemPrompt,
-        messages: modelMessages,
-        tools,
-        stopWhen: stepCountIs(5), // Nesta versão (6.0), stopWhen controla o limite de execuções (substitui maxSteps)
-        onFinish: ({ text, steps }) => {
-          logChat({
-            tipo: "RESPOSTA",
-            modelo: m.name,
-            provider: m.provider,
-            mensagem: text,
-            detalhes: `Etapas executadas: ${steps.length}`,
-          });
-        },
-      });
-
-      // REGRA DE OURO PARA FALLBACK: 
-      // Ao aguardar as etapas (.steps), garantimos que qualquer erro (como 503 ou rate limit) 
-      // durante as chamadas de ferramentas seja capturado aqui, permitindo que o loop 'catch' 
-      // tente o próximo modelo. Como a UI faz buffer das mensagens, a experiência continua fluida.
-      await result.steps;
-
-      logChat({
-        tipo: "PROVEDOR",
-        modelo: m.name,
-        provider: m.provider,
-        mensagem: "✅ Resposta preparada com sucesso",
-      });
-
-      return result;
-    } catch (e: unknown) {
-      const erro = e as { statusCode?: number; message?: string };
-
-      const isAuthError =
-        erro?.statusCode === 401 ||
-        erro?.statusCode === 403 ||
-        (typeof erro?.message === "string" &&
-          erro.message.toLowerCase().includes("key"));
-
-      if (isAuthError) {
-        logChat({
-          tipo: "ERRO",
-          modelo: m.name,
-          provider: m.provider,
-          mensagem: `Autenticação falhou (${erro?.statusCode}). Provedor ${m.provider} bloqueado.`,
-          detalhes: erro?.message,
-        });
-        blacklistedProviders.add(m.provider);
-      } else {
-        logChat({
-          tipo: "FALLBACK",
-          modelo: m.name,
-          provider: m.provider,
-          mensagem: `${erro?.message || "Erro desconhecido"}`,
-          detalhes: "Tentando próximo modelo...",
-        });
-      }
-    }
-  }
-
   logChat({
-    tipo: "ERRO",
-    mensagem: "TODOS os modelos falharam.",
-    detalhes: `Bloqueados: ${[...blacklistedProviders].join(", ") || "nenhum"}`,
+    tipo: "PROVEDOR",
+    userId,
+    mensagem: "Conectando ao motor resiliente (fallback + quarentena ativos)...",
   });
 
-  throw new Error(
-    "Todos os modelos de IA falharam. Verifique suas chaves de API no .env.local."
-  );
+  const result = streamText({
+    model: resilientModel,
+    system: systemPrompt,
+    messages: modelMessages,
+    tools,
+    stopWhen: stepCountIs(5),
+    onFinish: ({ text, steps, model }) => {
+      logChat({
+        tipo: "RESPOSTA",
+        modelo: model.modelId,
+        provider: model.provider,
+        mensagem: text,
+        detalhes: `Etapas executadas: ${steps.length}`,
+      });
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
 }
 
 export const chatService = {

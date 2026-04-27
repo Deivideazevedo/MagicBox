@@ -16,5 +16,5 @@ async function enviarMensagem(requisicao: NextRequest): Promise<NextResponse> {
     userId: Number(authId),
   });
 
-  return result.toUIMessageStreamResponse() as unknown as NextResponse;
+  return result as unknown as NextResponse;
 }
