@@ -13,7 +13,18 @@ export const dashboardApi = api.injectEndpoints({
       }),
       providesTags: ["Dashboard"],
     }),
+    getHeatmap: builder.query<any, DashboardFiltros>({
+      query: (params) => ({
+        url: "/dashboard/heatmap",
+        params: fnCleanObject({ params }),
+      }),
+      providesTags: ["Dashboard"],
+    }),
   }),
 });
 
-export const { useGetDashboardQuery, useLazyGetDashboardQuery } = dashboardApi;
+export const { 
+  useGetDashboardQuery, 
+  useLazyGetDashboardQuery,
+  useGetHeatmapQuery 
+} = dashboardApi;

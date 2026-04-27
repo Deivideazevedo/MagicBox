@@ -16,17 +16,22 @@ import {
 } from "@tabler/icons-react";
 import { useGoalsProgress } from "../hooks/useGoalsProgress";
 
-const GoalsProgress = () => {
+import { useDashboardTourRefs } from "../components/DashboardTourContext";
+
+const GoalsProgress = ({ date }: { date?: Date }) => {
+  const { goalsRef } = useDashboardTourRefs();
+  const baseDate = date || new Date();
   const {
     goals,
     formatCurrency,
     calculateProgress,
     getTimeRemaining,
     overallProgress
-  } = useGoalsProgress();
+  } = useGoalsProgress(baseDate);
 
   return (
     <Card
+      ref={goalsRef}
       elevation={3}
       sx={{
         borderRadius: 3,
@@ -62,6 +67,7 @@ const GoalsProgress = () => {
               textTransform: "none",
               color: "primary.main",
             }}
+            href="/cadastros/metas"
           >
             Ver todas
           </Button>

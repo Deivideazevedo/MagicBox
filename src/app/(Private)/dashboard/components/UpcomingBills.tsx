@@ -33,10 +33,14 @@ import { useDispatch } from "@/store/hooks";
 import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
 import { SwalToast, Swalert } from "@/utils/swalert";
 
-const UpcomingBills = () => {
+import { useDashboardTourRefs } from "../components/DashboardTourContext";
+
+const UpcomingBills = ({ date }: { date?: Date }) => {
+  const { upcomingBillsRef } = useDashboardTourRefs();
   const dispatch = useDispatch();
-  const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
-  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
+  const baseDate = date || new Date();
+  const dataInicio = format(startOfMonth(baseDate), "yyyy-MM-dd");
+  const dataFim = format(endOfMonth(baseDate), "yyyy-MM-dd");
 
   const { data: dashboard, isLoading } = useGetDashboardQuery({
     dataInicio,
@@ -156,6 +160,7 @@ const UpcomingBills = () => {
 
   return (
     <Card
+      ref={upcomingBillsRef}
       elevation={3}
       sx={{
         borderRadius: 3,
@@ -191,7 +196,7 @@ const UpcomingBills = () => {
               textTransform: "none",
               color: "primary.main",
             }}
-            href="/dashboard/despesas"
+            href="/resumo"
           >
             Ver todas
           </Button>

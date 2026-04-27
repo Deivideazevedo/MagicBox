@@ -30,13 +30,19 @@ import { AppState } from "@/store/store";
 import Navigation from "./Navigation";
 import MobileRightSidebar from "./MobileRightSidebar";
 
+import { usePathname } from "next/navigation";
+import { ProductTourButton } from "@/app/components/shared/ProductTour";
+
 const Header = () => {
+  const pathname = usePathname();
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up("lg"));
   const lgDown = useMediaQuery((theme: any) => theme.breakpoints.down("lg"));
 
   // drawer
   const customizer = useSelector((state: AppState) => state.customizer);
   const dispatch = useDispatch();
+
+  const isDashboard = pathname === "/dashboard";
 
   const AppBarStyled = styled(AppBar)(({ theme }) => ({
     boxShadow: "none",
@@ -115,6 +121,17 @@ const Header = () => {
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
+          {/* ------------------------------------------- */}
+          {/* Dashboard Tour Button */}
+          {/* ------------------------------------------- */}
+          {isDashboard && (
+            <ProductTourButton 
+              onClick={() => window.dispatchEvent(new CustomEvent("start-dashboard-tour"))}
+              title="Tour do Dashboard"
+              size="small"
+            />
+          )}
+
           {/* ------------------------------------------- */}
           {/* Toggle Fullscreen Button (Real F11) */}
           {/* ------------------------------------------- */}

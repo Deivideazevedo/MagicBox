@@ -19,9 +19,13 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 
-const RecentTransactions = () => {
-  const dataInicio = format(startOfMonth(new Date()), "yyyy-MM-dd");
-  const dataFim = format(endOfMonth(new Date()), "yyyy-MM-dd");
+import { useDashboardTourRefs } from "../components/DashboardTourContext";
+
+const RecentTransactions = ({ date }: { date?: Date }) => {
+  const { recentTransactionsRef } = useDashboardTourRefs();
+  const baseDate = date || new Date();
+  const dataInicio = format(startOfMonth(baseDate), "yyyy-MM-dd");
+  const dataFim = format(endOfMonth(baseDate), "yyyy-MM-dd");
 
   const { data: dashboard, isLoading } = useGetDashboardQuery({ dataInicio, dataFim });
   const transactions = dashboard?.transacoesRecentes || [];
@@ -45,6 +49,7 @@ const RecentTransactions = () => {
 
   return (
     <Card
+      ref={recentTransactionsRef}
       elevation={3}
       sx={{
         borderRadius: 3,
@@ -62,7 +67,7 @@ const RecentTransactions = () => {
               textTransform: "none",
               color: "primary.main",
             }}
-            href="/dashboard/extrato"
+            href="/lancamentos"
           >
             Ver todas
           </Button>

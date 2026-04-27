@@ -20,83 +20,128 @@ import {
 } from "@tabler/icons-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import FinancialSummaryCards from "./components/FinancialSummaryCards";
 import GoalsProgress from "./components/GoalsProgress";
 import MonthlyChart from "./components/MonthlyChart";
 import QuickActionModal from "./components/QuickActionModal";
 import RecentTransactions from "./components/RecentTransactions";
 import UpcomingBills from "./components/UpcomingBills";
+import TransactionHeatmap from "./components/TransactionHeatmap";
 
 // Componentes locais (serão criados)
 
-const Dashboard = () => {
+import { useMemo } from "react";
+import { ProductTour, useTour, ProductTourButton } from "@/app/components/shared/ProductTour";
+import { DashboardTourProvider, useDashboardTourRefs } from "./components/DashboardTourContext";
+import { criarDashboardTourSteps } from "./components/dashboardTourSteps";
+
+const DashboardContent = () => {
   const { data: session } = useSession();
-  const [quickActionOpen, setQuickActionOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<"despesa" | "conta" | "lancamento" | null>(null);
+  const tourRefs = useDashboardTourRefs();
+  
   const [isPageVisible, setIsPageVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     setIsPageVisible(true);
   }, []);
 
-  const handleQuickAction = (action: "despesa" | "conta" | "lancamento") => {
-    setSelectedAction(action);
-    setQuickActionOpen(true);
-  };
+  const steps = useMemo(() => criarDashboardTourSteps(tourRefs), [tourRefs]);
+  const tour = useTour({
+    storageKey: "tour-dashboard-visto-v1",
+    steps,
+    autoStart: true,
+  });
 
-
+  // Escutar evento do Header para iniciar o tour
+  useEffect(() => {
+    const handleStartTour = () => {
+      tour.reset();
+      tour.start();
+    };
+    window.addEventListener("start-dashboard-tour", handleStartTour);
+    return () => window.removeEventListener("start-dashboard-tour", handleStartTour);
+  }, [tour]);
 
   const userName = session?.user?.name?.split(" ")[0] || "Usuário";
+  const isCurrentMonth = format(selectedDate, "MM/yyyy") === format(new Date(), "MM/yyyy");
 
   return (
     <PageContainer title="Dashboard" description="Visão geral das suas finanças">
       <Fade in={isPageVisible} timeout={350}>
         <Container maxWidth="xl">
         {/* Welcome Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h3" 
-            gutterBottom 
-            fontWeight={700}
-            sx={{
-              background: "linear-gradient(45deg, #5D87FF 30%, #49BEFF 90%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Olá, {userName}! 👋
+        <Box sx={{ mb: 4 }} ref={tourRefs.welcomeRef}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Typography 
+              variant="h3" 
+              fontWeight={700}
+              sx={{
+                background: "linear-gradient(45deg, #5D87FF 30%, #49BEFF 90%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              {isCurrentMonth ? `Olá, ${userName}! 👋` : `Resumo de ${format(selectedDate, "MMMM", { locale: ptBR })}`}
+            </Typography>
+            <ProductTourButton 
+              onClick={() => {
+                tour.reset();
+                tour.start();
+              }}
+              size="small"
+            />
+            {!isCurrentMonth && (
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => setSelectedDate(new Date())}
+                sx={{ borderRadius: 2, textTransform: 'none' }}
+              >
+                Voltar para o mês atual
+              </Button>
+            )}
+          </Stack>
+          <Typography variant="h6" color="textSecondary">
+            {isCurrentMonth 
+              ? "Aqui está um resumo das suas finanças hoje" 
+              : `Visualizando dados consolidados de ${format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR })}`}
           </Typography>
-          <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
-            Aqui está um resumo das suas finanças hoje
-          </Typography>
-          
-
         </Box>
 
         {/* Financial Summary Cards */}
-        <FinancialSummaryCards />
+        <FinancialSummaryCards date={selectedDate} />
+
+        <Box sx={{ mt: 3 }}>
+          <TransactionHeatmap />
+        </Box>
 
         {/* Main Content Grid */}
-        <Grid container spacing={3} sx={{ mt: 2 }}>
+        <Grid container spacing={3} sx={{ mt: 0 }}>
           {/* Monthly Chart */}
           <Grid item xs={12} lg={8}>
-            <MonthlyChart />
+            <MonthlyChart 
+              selectedDate={selectedDate} 
+              onMonthClick={(date: Date) => setSelectedDate(date)} 
+            />
           </Grid>
 
           {/* Goals Progress */}
           <Grid item xs={12} lg={4}>
-            <GoalsProgress />
+            <GoalsProgress date={selectedDate} />
           </Grid>
 
           {/* Recent Transactions */}
           <Grid item xs={12} lg={7}>
-            <RecentTransactions />
+            <RecentTransactions date={selectedDate} />
           </Grid>
 
           {/* Upcoming Bills */}
           <Grid item xs={12} lg={5}>
-            <UpcomingBills />
+            <UpcomingBills date={selectedDate} />
           </Grid>
 
           {/* Quick Stats */}
@@ -137,9 +182,11 @@ const Dashboard = () => {
               
               <Grid container spacing={3} alignItems="center">
                 <Grid item xs={12} md={8}>
-                  <Typography variant="h5" fontWeight={600} gutterBottom>
-                    🎉 Parabéns! Você está no caminho certo
-                  </Typography>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+                    <Typography variant="h5" fontWeight={600}>
+                      🎉 Parabéns! Você está no caminho certo
+                    </Typography>
+                  </Box>
                   <Typography variant="body1" sx={{ mb: 3, opacity: 0.9 }}>
                     Suas finanças estão organizadas e você tem controle total sobre seus gastos.
                     Continue assim e alcance seus objetivos financeiros!
@@ -156,7 +203,7 @@ const Dashboard = () => {
                         backgroundColor: "rgba(255, 255, 255, 0.3)",
                       },
                     }}
-                    href="/dashboard/relatorios"
+                    href="/relatorios"
                   >
                     <IconTrendingUp size={32} />
                   </IconButton>
@@ -170,7 +217,27 @@ const Dashboard = () => {
         </Grid>
         </Container>
       </Fade>
+
+      <ProductTour
+        isOpen={tour.isOpen}
+        step={tour.step}
+        currentStep={tour.currentStep}
+        totalSteps={tour.totalSteps}
+        isFirstStep={tour.isFirstStep}
+        isLastStep={tour.isLastStep}
+        onNext={tour.next}
+        onPrev={tour.prev}
+        onSkip={tour.skip}
+      />
     </PageContainer>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <DashboardTourProvider>
+      <DashboardContent />
+    </DashboardTourProvider>
   );
 };
 

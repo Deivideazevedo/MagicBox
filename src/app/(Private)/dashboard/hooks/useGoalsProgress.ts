@@ -2,7 +2,7 @@
 
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 
-export const useGoalsProgress = () => {
+export const useGoalsProgress = (date?: Date) => {
   const { data: metas = [], isLoading } = useGetMetasQuery();
 
   const formatCurrency = (value: number) => {
