@@ -65,6 +65,7 @@ const resilientModel = createFallback({
 const MAX_CONTEXT_CHARS = 8000;
 const MAX_MESSAGES = 10; // 5 trocas completas usuário/IA
 const MAX_INPUT_CHARS = 500;
+const TOOL_ONLY_PLACEHOLDER = "[Consulta de dados realizada com sucesso]";
 
 function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   let charCount = 0;
@@ -92,16 +93,18 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
     // Adicionamos um texto neutro para que a mensagem seja aceita por todos os provedores.
     const partsFinais = [...textParts];
     if (msg.role === "assistant" && contentStr.trim() === "") {
-      partsFinais.push({ type: "text", text: "[Consulta de dados realizada com sucesso]" });
+      partsFinais.push({ type: "text", text: TOOL_ONLY_PLACEHOLDER });
     }
 
     // Recria a mensagem higienizada: sem 'toolInvocations' e apenas com partes de texto.
     // Isso garante compatibilidade cross-provider ao fazer fallback entre Groq/Gemini/OpenAI.
+    // Usamos desestruturação para excluir 'toolInvocations' em vez de defini-lo como undefined,
+    // garantindo que a propriedade seja completamente removida do objeto resultante.
+    const { toolInvocations: _removed, ...rest } = msg;
     const msgHigienizada: UIMessage = {
-      ...msg,
-      toolInvocations: undefined,
+      ...rest,
       parts: partsFinais,
-      content: contentStr || "[Consulta de dados realizada com sucesso]",
+      content: contentStr || TOOL_ONLY_PLACEHOLDER,
     };
 
     resultado.unshift(msgHigienizada);
