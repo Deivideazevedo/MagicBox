@@ -35,6 +35,46 @@ const github = createOpenAI({
  * Substitui o log genérico por um rastro real de qual modelo está sendo acionado.
  */
 function withLog(model: any): any {
+  const prepararParams = (params: any) => {
+    // Só precisamos injetar o bypass se o modelo destino for o Google/Gemini
+    const isGoogle =
+      model.provider?.toLowerCase().includes("google") ||
+      model.modelId?.toLowerCase().includes("gemini");
+
+    if (!isGoogle || !params.prompt) return params;
+
+    return {
+      ...params,
+      prompt: params.prompt.map((msg: any) => {
+        if (Array.isArray(msg.content)) {
+          return {
+            ...msg,
+            content: msg.content.map((part: any) => {
+              if (part.type === "tool-call") {
+                const bypass = "skip_thought_signature_validator";
+                // Injetamos em múltiplos campos para garantir que o SDK do Google capture em qualquer versão
+                return {
+                  ...part,
+                  thoughtSignature: part.thoughtSignature || bypass,
+                  providerOptions: {
+                    ...part.providerOptions,
+                    google: { ...part.providerOptions?.google, thoughtSignature: bypass }
+                  },
+                  providerMetadata: {
+                    ...part.providerMetadata,
+                    google: { ...part.providerMetadata?.google, thoughtSignature: bypass },
+                  },
+                };
+              }
+              return part;
+            }),
+          };
+        }
+        return msg;
+      }),
+    };
+  };
+
   // Intercepta a transmissão (streaming)
   const originalDoStream = model.doStream.bind(model);
   model.doStream = async (params: any) => {
@@ -44,7 +84,7 @@ function withLog(model: any): any {
       provider: model.provider,
       mensagem: "Acionado para transmissão (Streaming).",
     });
-    return originalDoStream(params);
+    return originalDoStream(prepararParams(params));
   };
 
   // Intercepta a geração única (text/tool call)
@@ -56,7 +96,7 @@ function withLog(model: any): any {
       provider: model.provider,
       mensagem: "Acionado para geração (Tool Call/Text).",
     });
-    return originalDoGenerate(params);
+    return originalDoGenerate(prepararParams(params));
   };
 
   return model;
@@ -65,6 +105,7 @@ function withLog(model: any): any {
 const resilientModel = createFallback({
   models: [
     // TIER 1: Velocidade Extrema (Garante resposta instantânea)
+    // withLog(google("gemini-3.1-flash-lite")),
     withLog(groq("llama-3.1-8b-instant")),
     withLog(google("gemini-3.1-flash-lite-preview")),
 
@@ -112,25 +153,22 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
     const msg = ultimasMensagens[i];
 
-    // Higienização de partes: Apenas filtramos textos vazios
-    const validParts = msg.parts.filter((p) => (p.type === "text") && (p.text.trim().length > 0));
+    // Higienização de partes: Preservamos tudo o que não for texto vazio
+    const validParts = msg.parts.filter((p) => {
+      if (p.type === "text") return p.text.trim().length > 0;
+      return true; // Mantém ferramentas, raciocínio, arquivos, etc.
+    });
 
     const contentStr = validParts
       .filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join("");
 
-    // REGRA DE S
+    // REGRA DE SEGURANÇA: Limite de caracteres
     if (charCount + contentStr.length > MAX_CONTEXT_CHARS) break;
 
-    // IMPORTANTE: Usamos spread para manter propriedades "não documentadas" do SDK v6
-    // que podem conter assinaturas de provedor (como providerMetadata).
-    const msgHigienizada: UIMessage = {
-      ...msg,
-      parts: validParts,
-    };
-
-    resultado.unshift(msgHigienizada);
+    // Adicionamos a mensagem ao resultado (usamos spread para manter IDs e outras props)
+    resultado.unshift({ ...msg, parts: validParts });
     charCount += contentStr.length;
   }
 
