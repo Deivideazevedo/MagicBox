@@ -146,7 +146,9 @@ export default function LancamentoDrawer() {
           <Formulario
             key={estaAberto ? "aberto" : "fechado"}
             lancamentoParaEditar={lancamentoParaEditar}
-            onSuccess={handleCloseDrawer}
+            onSuccess={() => {
+              if (modo !== "novo") handleCloseDrawer();
+            }}
             initialOrigem={initialOrigem}
             dadosIniciais={modo === "pagar" ? dadosIniciais : null}
           />

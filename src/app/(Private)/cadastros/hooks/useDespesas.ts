@@ -113,8 +113,6 @@ export function useDespesas(params?: UseDespesasProps) {
     defaultValues,
   });
 
-  console.log('errors', errors);
-
   const onSubmit = useCallback(
     async (formData: DespesaFormData) => {
       const { id, ...rest } = formData;

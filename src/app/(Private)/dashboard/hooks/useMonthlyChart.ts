@@ -1,101 +1,52 @@
-import { useState, useEffect, useMemo } from "react";
-import { useGetLancamentosQuery } from "@/services/endpoints/lancamentosApi";
-import { format, startOfMonth, endOfMonth, isWithinInterval, startOfYear, endOfYear } from "date-fns";
+import { useGetPerformanceQuery } from "@/services/endpoints/dashboardApi";
+import { parseISO, format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Lancamento } from "@/core/lancamentos/types";
 
 interface MonthData {
   month: string;
   date: Date;
-  receitas: number;
-  despesas: number;
+  receitasRealizadas: number;
+  receitasProjetadas: number;
+  despesasRealizadas: number;
+  despesasProjetadas: number;
   metas: number;
   saldo: number;
 }
 
 export const useMonthlyChart = () => {
-  const [monthlyData, setMonthlyData] = useState<MonthData[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Buscar lançamentos do ano atual (Janeiro a Dezembro)
   const today = new Date();
-  const dataInicio = format(startOfYear(today), "yyyy-MM-dd");
-  const dataFim = format(endOfYear(today), "yyyy-MM-dd");
+  const currentYear = today.getFullYear();
 
-  const queryParams = {
-    page: 0,
-    limit: 1000, 
-    dataInicio,
-    dataFim
-  };
+  const { data: response, isLoading } = useGetPerformanceQuery({ 
+    ano: currentYear 
+  });
 
-  const { data: response, isLoading } = useGetLancamentosQuery(queryParams);
+  const monthlyData: MonthData[] = (response || []).map((item) => {
+    // Usar dataReferencia e validar se é uma data real
+    const date = item.dataReferencia ? parseISO(item.dataReferencia) : new Date(NaN);
+    
+    const isDateValid = isValid(date);
 
-  // Extrair array de lancamentos da resposta paginada (memoizado para evitar re-renders)
-  const lancamentos = useMemo(() => {
-    return Array.isArray(response) ? response : response?.data || [];
-  }, [response]);
+    return {
+      ...item,
+      date: isDateValid ? date : new Date(),
+      // Formatar o nome do mês localmente apenas se a data for válida
+      month: isDateValid ? format(date, "MMM", { locale: ptBR }) : item.month || "---",
+      saldo: (item.receitasRealizadas || 0) - (item.despesasRealizadas || 0) - (item.metas || 0)
+    };
+  });
 
-  useEffect(() => {
-    if (!isLoading && lancamentos) {
-      const monthsData: MonthData[] = [];
-      const currentYear = today.getFullYear();
-
-      // Criar dados para os 12 meses do ano atual
-      for (let monthIdx = 0; monthIdx < 12; monthIdx++) {
-        const monthDate = new Date(currentYear, monthIdx, 1);
-        const monthStart = startOfMonth(monthDate);
-        const monthEnd = endOfMonth(monthDate);
-        
-        const monthName = format(monthDate, "MMM", { locale: ptBR });
-        
-        // Filtrar lançamentos do mês
-        const monthLancamentos = lancamentos.filter((lancamento: Lancamento) => {
-          const lancamentoDate = new Date(lancamento.data);
-          return isWithinInterval(lancamentoDate, { start: monthStart, end: monthEnd });
-        });
-
-        // Calcular receitas, despesas e metas
-        let receitas = 0;
-        let despesas = 0;
-        let metas = 0;
-
-        monthLancamentos.forEach((lancamento: Lancamento) => {
-          const valor = Math.abs(Number(lancamento.valor));
-          
-          if (lancamento.receitaId || lancamento.receita_id) {
-            receitas += valor;
-          } else if (lancamento.despesaId || lancamento.despesa_id) {
-            despesas += valor;
-          } else if (lancamento.metaId || lancamento.meta_id) {
-            metas += valor;
-          }
-        });
-
-        monthsData.push({
-          month: monthName,
-          date: monthDate,
-          receitas,
-          despesas,
-          metas,
-          saldo: receitas - despesas - metas
-        });
-      }
-
-      setMonthlyData(monthsData);
-      setLoading(false);
-    }
-  }, [lancamentos, isLoading]);
-
-  const currentMonth = monthlyData[today.getMonth()] || monthlyData[monthlyData.length - 1];
-  const totalReceitas = monthlyData.reduce((acc, month) => acc + month.receitas, 0);
-  const totalDespesas = monthlyData.reduce((acc, month) => acc + month.despesas, 0);
-  const totalMetas = monthlyData.reduce((acc, month) => acc + month.metas, 0);
+  const currentMonth = monthlyData[today.getMonth()] || (monthlyData.length > 0 ? monthlyData[monthlyData.length - 1] : null);
+  
+  // Totais consolidados (Realizados)
+  const totalReceitas = monthlyData.reduce((acc, month) => acc + (month.receitasRealizadas || 0), 0);
+  const totalDespesas = monthlyData.reduce((acc, month) => acc + (month.despesasRealizadas || 0), 0);
+  const totalMetas = monthlyData.reduce((acc, month) => acc + (month.metas || 0), 0);
   const saldoTotal = totalReceitas - totalDespesas - totalMetas;
 
   return {
     monthlyData,
-    loading: loading || isLoading,
+    loading: isLoading,
     currentMonth,
     totalReceitas,
     totalDespesas,

@@ -12,6 +12,8 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 const despesaSchema = z.object({
   id: z.number().optional(),
@@ -51,7 +53,7 @@ export function useDespesaForm({
       itemId: 0,
       tipo: "pagamento",
       valor: "",
-      data: new Date().toISOString().split("T")[0],
+      data: fnGetTodayISO(),
       observacao: "",
       parcelas: null,
       parcelar: false,
@@ -83,7 +85,7 @@ export function useDespesaForm({
       const dataLancamento =
         typeof lancamentoParaEditar.data === "string"
           ? lancamentoParaEditar.data.split("T")[0]
-          : new Date(lancamentoParaEditar.data).toISOString().split("T")[0];
+          : fnFormatNaiveDate(lancamentoParaEditar.data, "yyyy-MM-dd");
 
       reset({
         id: lancamentoParaEditar.id,
@@ -100,7 +102,7 @@ export function useDespesaForm({
         ...defaultValues,
         itemId: dadosIniciais.origemId,
         valor: dadosIniciais.valorPrevisto,
-        data: new Date().toISOString().split("T")[0],
+        data: fnGetTodayISO(),
         tipo: "pagamento",
         observacao: `Pagamento: ${dadosIniciais.nome}`,
       });
@@ -151,7 +153,16 @@ export function useDespesaForm({
           SwalToast.fire({ icon: "success", title: "Despesa lançada com sucesso" });
         }
 
-        reset({ ...defaultValues, tipo: formData.tipo });
+        // Reseta mantendo o tipo (Pagamento/Agendamento) e a data correta
+        reset({ 
+          ...defaultValues, 
+          tipo: formData.tipo,
+          data: fnGetTodayISO() 
+        });
+
+        // Foca novamente no campo inicial
+        setTimeout(() => setFocus("itemId"), 100);
+
         onSuccess?.();
       } catch {
         // Erro tratado pelo interceptor

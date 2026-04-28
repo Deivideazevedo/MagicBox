@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
+import { useRouter } from "next/navigation";
 import type { UIMessage } from "ai";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
@@ -250,6 +251,7 @@ interface ChatDrawerProps {
 }
 
 const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
+  const router = useRouter();
   const theme = useTheme();
   const initialMessages = useRef(carregarHistorico());
   const initialTimestamps = useRef(carregarTimestamps());
@@ -278,6 +280,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
     initialTimestamps.current,
   );
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // IDs de mensagens que já foram exibidas com animação (não re-animar ao re-render)
   const shownMessagesRef = useRef<Set<string>>(
@@ -334,10 +337,11 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
     }
   }, [isLoading, messages]);
 
-  // Scroll ao abrir o drawer (ex: após recarregar a página)
+  // Focar o input ao abrir o drawer
   useEffect(() => {
     if (open) {
       setTimeout(() => {
+        inputRef.current?.focus();
         messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
       }, 100);
     }
@@ -357,6 +361,9 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
     setTimestamps({});
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TIMESTAMPS_KEY);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   }, [setMessages]);
 
   // Renderiza separador de data se for a primeira mensagem do dia
@@ -484,7 +491,37 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
                                 : {},
                           }}
                         >
-                          <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkBreaks]}
+                            components={{
+                              a: ({ href, children }) => {
+                                const isInternal = href?.startsWith("/");
+                                if (isInternal) {
+                                  return (
+                                    <a
+                                      href={href}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        router.push(href as string);
+                                        onClose(); // Fecha a gaveta ao navegar para uma rota interna
+                                      }}
+                                    >
+                                      {children}
+                                    </a>
+                                  );
+                                }
+                                return (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {children}
+                                  </a>
+                                );
+                              },
+                            }}
+                          >
                             {texto}
                           </ReactMarkdown>
                         </Box>
@@ -564,6 +601,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
           <Stack direction="row" spacing={1.5} alignItems="center">
             <TextField
               fullWidth
+              inputRef={inputRef}
               variant="outlined"
               size="small"
               placeholder="O que deseja consultar?"

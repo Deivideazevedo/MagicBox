@@ -14,6 +14,8 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 const metaSchema = z.object({
   id: z.number().optional(),
@@ -55,7 +57,7 @@ export function useMetaForm({
       itemId: 0,
       tipo: "investimento" as const,
       valor: "",
-      data: new Date().toISOString().split("T")[0],
+      data: fnGetTodayISO(),
       observacao: "",
       destinoOrigem: "despesa" as const,
       destinoId: 0,
@@ -87,7 +89,7 @@ export function useMetaForm({
       const dataLancamento =
         typeof lancamentoParaEditar.data === "string"
           ? lancamentoParaEditar.data.split("T")[0]
-          : new Date(lancamentoParaEditar.data).toISOString().split("T")[0];
+          : fnFormatNaiveDate(lancamentoParaEditar.data, "yyyy-MM-dd");
 
       reset({
         id: lancamentoParaEditar.id,
@@ -179,7 +181,16 @@ export function useMetaForm({
           }
         }
 
-        reset({ ...defaultValues, tipo: formData.tipo });
+        // Reseta mantendo o tipo e a data correta
+        reset({ 
+          ...defaultValues, 
+          tipo: formData.tipo,
+          data: fnGetTodayISO() 
+        });
+
+        // Foca novamente no campo inicial
+        setTimeout(() => setFocus("itemId"), 100);
+
         onSuccess?.();
       } catch {
         // Erro tratado pelo interceptor

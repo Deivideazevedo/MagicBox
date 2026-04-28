@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { api } from "../api";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { DashboardResponse } from "@/core/dashboard/types";
+import { DashboardResponse, PerformanceMensal } from "@/core/dashboard/types";
 import { DashboardFiltros } from "@/core/dashboard/dashboard.dto";
 
 export const dashboardApi = api.injectEndpoints({
@@ -20,11 +20,19 @@ export const dashboardApi = api.injectEndpoints({
       }),
       providesTags: ["Dashboard"],
     }),
+    getPerformance: builder.query<PerformanceMensal[], { ano: number }>({
+      query: (params) => ({
+        url: "/dashboard/performance",
+        params: fnCleanObject({ params }),
+      }),
+      providesTags: ["Dashboard"],
+    }),
   }),
 });
 
 export const { 
   useGetDashboardQuery, 
   useLazyGetDashboardQuery,
-  useGetHeatmapQuery 
+  useGetHeatmapQuery,
+  useGetPerformanceQuery
 } = dashboardApi;

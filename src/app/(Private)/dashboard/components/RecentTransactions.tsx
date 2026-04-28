@@ -113,6 +113,8 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
                   </ListItemIcon>
                   
                   <ListItemText
+                    primaryTypographyProps={{ component: "div" }}
+                    secondaryTypographyProps={{ component: "div" }}
                     primary={
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>

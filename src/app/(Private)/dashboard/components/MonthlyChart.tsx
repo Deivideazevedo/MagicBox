@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import React, { useState } from "react";
 import { 
   Card, 
   CardContent, 
@@ -7,15 +8,10 @@ import {
   useTheme, 
   LinearProgress, 
   alpha,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel
+  Switch,
+  FormControlLabel,
+  useMediaQuery
 } from "@mui/material";
-import { useGetLancamentosQuery } from "@/services/endpoints/lancamentosApi";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useDashboardTourRefs } from "../components/DashboardTourContext";
 import { useMonthlyChart } from "../hooks/useMonthlyChart";
 
 // Importação dinâmica do ApexCharts para evitar erro de SSR
@@ -29,7 +25,9 @@ const MonthlyChart = ({
   onMonthClick: (date: Date) => void 
 }) => {
   const theme = useTheme();
-  const { monthlyChartRef } = useDashboardTourRefs();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [showProjections, setShowProjections] = useState(false);
+  
   const { 
     monthlyData, 
     loading, 
@@ -49,35 +47,53 @@ const MonthlyChart = ({
     );
   }
 
+  // Cores do gráfico
+  const colors = [
+    theme.palette.success.main, 
+    alpha(theme.palette.success.main, 0.4),
+    theme.palette.error.main,
+    alpha(theme.palette.error.main, 0.4),
+    theme.palette.warning.main
+  ];
+
+  const activeColors = showProjections ? colors : [colors[0], colors[2], colors[4]];
+
   // Configurações do ApexCharts
   const options: any = {
     chart: {
       type: 'bar',
-      height: 320,
+      height: 350,
       fontFamily: 'inherit',
       toolbar: { show: false },
+      selection: { enabled: false },
+      animations: { enabled: !isMobile },
       events: {
         dataPointSelection: (event: any, chartContext: any, config: any) => {
           const month = monthlyData[config.dataPointIndex];
           if (month) onMonthClick(month.date);
+        }
+      },
+      states: {
+        active: {
+          filter: { type: 'darken', value: 0.85 }
         }
       }
     },
     plotOptions: {
       bar: {
         horizontal: false,
-        columnWidth: '55%',
-        borderRadius: 4,
+        columnWidth: showProjections ? (isMobile ? '90%' : '85%') : '75%',
+        borderRadius: 0,
         borderRadiusApplication: 'end',
       },
     },
     dataLabels: { enabled: false },
     stroke: {
       show: true,
-      width: 2,
+      width: 0,
       colors: ['transparent']
     },
-    colors: [theme.palette.success.main, theme.palette.error.main, theme.palette.warning.main],
+    colors: activeColors,
     xaxis: {
       categories: monthlyData.map(m => m.month),
       axisBorder: { show: false },
@@ -120,10 +136,17 @@ const MonthlyChart = ({
       horizontalAlign: 'center',
       offsetY: 8,
       itemMargin: {
-        horizontal: 15,
+        horizontal: 20,
         vertical: 5
       },
-      markers: { radius: 12 }
+      markers: { 
+        radius: 6,
+        shape: 'square',
+        width: 12,
+        height: 12,
+        offsetX: -6,
+        strokeWidth: 0
+      }
     },
     grid: {
       borderColor: theme.palette.divider,
@@ -132,14 +155,35 @@ const MonthlyChart = ({
     },
   };
 
-  const series = [
+  const series = showProjections ? [
+    {
+      name: 'Rec. Realizada',
+      data: monthlyData.map(m => m.receitasRealizadas)
+    },
+    {
+      name: 'Rec. Projetada',
+      data: monthlyData.map(m => m.receitasProjetadas)
+    },
+    {
+      name: 'Desp. Realizada',
+      data: monthlyData.map(m => m.despesasRealizadas)
+    },
+    {
+      name: 'Desp. Projetada',
+      data: monthlyData.map(m => m.despesasProjetadas)
+    },
+    {
+      name: 'Metas',
+      data: monthlyData.map(m => m.metas)
+    }
+  ] : [
     {
       name: 'Receitas',
-      data: monthlyData.map(m => m.receitas)
+      data: monthlyData.map(m => m.receitasRealizadas)
     },
     {
       name: 'Despesas',
-      data: monthlyData.map(m => m.despesas)
+      data: monthlyData.map(m => m.despesasRealizadas)
     },
     {
       name: 'Metas',
@@ -149,53 +193,65 @@ const MonthlyChart = ({
 
   return (
     <Card
-      ref={monthlyChartRef}
       elevation={3}
       sx={{
         borderRadius: 3,
         height: "100%",
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        overflow: "hidden",
+        // Forçando o arredondamento dos marcadores da legenda via CSS (como validado no DevTools)
+        "& .apexcharts-legend-marker svg": {
+          borderRadius: "6px !important"
+        }
       }}
     >
-      <CardContent sx={{ p: 3, flex: 1 }}>
+      <CardContent sx={{ p: isMobile ? 2 : 3, flex: 1, display: "flex", flexDirection: "column" }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="text.primary">
+            <Typography variant={isMobile ? "subtitle1" : "h6"} fontWeight={600} color="text.primary">
               Desempenho Mensal
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="caption" color="text.secondary">
               Receitas x Despesas x Metas
             </Typography>
           </Box>
-          
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Mês de Referência</InputLabel>
-            <Select
-              label="Mês de Referência"
-              value={format(selectedDate, "MM/yyyy")}
-              onChange={(e) => {
-                const [month, year] = e.target.value.split("/");
-                onMonthClick(new Date(parseInt(year), parseInt(month) - 1, 1));
-              }}
-              sx={{ borderRadius: 2 }}
-            >
-              {monthlyData.map((m, i) => (
-                <MenuItem key={i} value={format(m.date, "MM/yyyy")}>
-                  {format(m.date, "MMMM 'de' yyyy", { locale: ptBR })}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch 
+                size="small" 
+                checked={showProjections} 
+                onChange={(e) => setShowProjections(e.target.checked)} 
+              />
+            }
+            label={
+              <Typography variant="caption" color="text.secondary">
+                Projeções
+              </Typography>
+            }
+            labelPlacement="start"
+          />
         </Box>
 
-        <Box sx={{ mt: 1 }}>
-          <Chart
-            options={options}
-            series={series}
-            type="bar"
-            height={320}
-          />
+        <Box 
+          sx={{ 
+            mt: 1, 
+            width: '100%', 
+            overflowX: isMobile ? 'auto' : 'hidden',
+            overflowY: 'hidden',
+            '&::-webkit-scrollbar': { height: isMobile ? 6 : 0 },
+            '&::-webkit-scrollbar-thumb': { backgroundColor: alpha(theme.palette.divider, 0.5), borderRadius: 3 }
+          }}
+        >
+          <Box sx={{ minWidth: isMobile ? 650 : '100%' }}>
+            <Chart
+              options={options}
+              series={series}
+              type="bar"
+              height={350}
+            />
+          </Box>
         </Box>
 
         <Box 
@@ -203,7 +259,7 @@ const MonthlyChart = ({
           justifyContent="space-between" 
           alignItems="center" 
           mt={2}
-          p={2}
+          p={isMobile ? 1.5 : 2}
           sx={{ 
             bgcolor: alpha(theme.palette.primary.main, 0.05),
             borderRadius: 2
@@ -211,9 +267,9 @@ const MonthlyChart = ({
         >
           <Box>
             <Typography variant="caption" color="text.secondary" display="block">
-              Saldo Livre Consolidado
+              {isMobile ? "Saldo (Realizado)" : "Saldo Livre Consolidado (Realizado)"}
             </Typography>
-            <Typography variant="h5" fontWeight={700} color={saldoTotal >= 0 ? "success.main" : "error.main"}>
+            <Typography variant={isMobile ? "h6" : "h5"} fontWeight={700} color={saldoTotal >= 0 ? "success.main" : "error.main"}>
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
@@ -224,7 +280,7 @@ const MonthlyChart = ({
             <Typography variant="caption" color="text.secondary" display="block">
               Aproveitamento
             </Typography>
-            <Typography variant="h6" fontWeight={600} color="primary.main">
+            <Typography variant={isMobile ? "body1" : "h6"} fontWeight={600} color="primary.main">
               {percentualSaldo}%
             </Typography>
           </Box>

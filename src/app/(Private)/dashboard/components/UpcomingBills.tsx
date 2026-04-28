@@ -26,6 +26,7 @@ import {
   IconEditCircle,
 } from "@tabler/icons-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
@@ -226,7 +227,13 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
 
             <Box mb={3}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Total a pagar pendente este mês
+                Total a pagar pendente em{" "}
+                <Box
+                  component="span"
+                  sx={{ color: "primary.main", fontWeight: 700 }}
+                >
+                  {format(baseDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                </Box>
               </Typography>
               <Typography variant="h4" fontWeight={700} color="primary.main">
                 {formatCurrency(totalAmount)}
@@ -270,6 +277,8 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                       </ListItemIcon>
                       
                       <ListItemText
+                        primaryTypographyProps={{ component: "div" }}
+                        secondaryTypographyProps={{ component: "div" }}
                         primary={
                           <Box display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>

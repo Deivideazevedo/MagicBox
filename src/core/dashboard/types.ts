@@ -24,7 +24,7 @@ export interface TransacaoRecente {
 }
 
 export interface UpcomingBillItem {
-  id: string; // origin-id-month-year
+  id: string;
   despesaId: number;
   nome: string;
   valorPrevisto: number;
@@ -35,7 +35,17 @@ export interface UpcomingBillItem {
   atrasado: boolean;
   icone: string | null;
   cor: string | null;
-  categoriaId?: number;
+  categoriaId: number | null;
+}
+
+export interface PerformanceMensal {
+  month: string;
+  dataReferencia: string;
+  receitasRealizadas: number;
+  receitasProjetadas: number;
+  despesasRealizadas: number;
+  despesasProjetadas: number;
+  metas: number;
 }
 
 export interface DashboardResponse {

@@ -29,31 +29,63 @@ const github = createOpenAI({
 //
 // 🛡️ TIER 3: Github/Copilot (Reserva de Emergência, entra em ação caso Google/Groq esgotem)
 
+/**
+ * Wrapper para adicionar logs automáticos a cada tentativa de modelo no fallback.
+ * Substitui o log genérico por um rastro real de qual modelo está sendo acionado.
+ */
+function withLog(model: any): any {
+  // Intercepta a transmissão (streaming)
+  const originalDoStream = model.doStream.bind(model);
+  model.doStream = async (params: any) => {
+    logChat({
+      tipo: "PROVEDOR",
+      modelo: model.modelId,
+      provider: model.provider,
+      mensagem: "Acionado para transmissão (Streaming).",
+    });
+    return originalDoStream(params);
+  };
+
+  // Intercepta a geração única (text/tool call)
+  const originalDoGenerate = model.doGenerate.bind(model);
+  model.doGenerate = async (params: any) => {
+    logChat({
+      tipo: "PROVEDOR",
+      modelo: model.modelId,
+      provider: model.provider,
+      mensagem: "Acionado para geração (Tool Call/Text).",
+    });
+    return originalDoGenerate(params);
+  };
+
+  return model;
+}
+
 const resilientModel = createFallback({
   models: [
-    // TIER 1: Ultra Rápidos (Foco em Baixa Latência)
-    groq("llama-3.3-70b-versatile"),
-    google("gemini-3.1-flash-lite-preview"),
-    groq("llama-3.1-8b-instant"),
+    // TIER 1: Velocidade Extrema (Garante resposta instantânea)
+    withLog(groq("llama-3.1-8b-instant")), 
+    withLog(google("gemini-3.1-flash-lite-preview")),
 
-    // TIER 2: Balanceados (Maior raciocínio, limites um pouco menores)
-    google("gemini-2.5-flash-lite"),
-    google("gemini-2.5-flash"),
+    // TIER 2: Raciocínio Pesado (Entra se os rápidos falharem)
+    withLog(groq("llama-3.3-70b-versatile")),
+    withLog(google("gemini-2.5-flash-lite")),
+    withLog(google("gemini-2.5-flash")),
 
-    // TIER 3: GitHub Models (Fallback de Segurança)
-    github("gpt-5-mini"),
-    github("gpt-4.1-mini"),
-    github("gpt-4.1"),
+    // TIER 3: Fallback de Segurança
+    withLog(github("gpt-5-mini")),
+    withLog(github("gpt-4.1-mini")),
+    withLog(github("gpt-4.1")),
   ],
-  // Quarentena: Se um modelo falhar (ex: Rate Limit 429), ele é ignorado por 1 minuto
-  modelResetInterval: 60000,
+  // Quarentena: Se um modelo falhar (ex: Rate Limit 429), ele é ignorado por 2 minuto
+  modelResetInterval: 120000,
   onError: (error, modelId) => {
     // Dispara a cada tombo individual. 
     // Ex: Groq caiu? Registra e vai pro Google silenciosamente.
     logChat({
       tipo: "FALLBACK",
       modelo: modelId,
-      mensagem: `O modelo ${modelId} falhou e entrou em quarentena de 1 minuto.`,
+      mensagem: `O modelo ${modelId} falhou e entrou em quarentena de 2 minutos.`,
       detalhes: String(error)
     });
   },
@@ -63,7 +95,7 @@ const resilientModel = createFallback({
 // Gestão de Contexto Ativa
 // ─────────────────────────────────────────────────
 const MAX_CONTEXT_CHARS = 8000;
-const MAX_MESSAGES = 10; // 5 trocas completas usuário/IA
+const MAX_MESSAGES = 8; // 4 trocas completas usuário/IA
 const MAX_INPUT_CHARS = 500;
 const TOOL_ONLY_PLACEHOLDER = "[Consulta de dados realizada com sucesso]";
 
@@ -78,33 +110,34 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
     const msg = ultimasMensagens[i];
 
-    // Extrai apenas as partes de texto puro, ignorando estruturas específicas
-    // de ferramentas que variam entre provedores (Groq x Gemini x OpenAI).
-    const textParts = msg.parts.filter(
-      (p): p is { type: "text"; text: string } => p.type === "text"
-    );
+    // Extrai apenas as partes de texto puro.
+    // Na v6 da SDK 'ai', toolInvocations e outros tipos ficam dentro de 'parts'.
+    // Para compatibilidade cross-provider, filtramos apenas o que é texto.
+    // Na v6 da SDK 'ai', mensagens de ferramenta precisam manter suas 'parts' originais
+    // para que provedores como Gemini validem a assinatura da chamada.
+    // Filtramos apenas para garantir que não enviamos partes vazias ou inválidas.
+    const validParts = msg.parts.filter((p) => {
+      if (p.type === "text") return p.text.trim().length > 0;
+      return true; // Mantém tool-invocation e outros metadados essenciais
+    });
 
-    const contentStr = textParts.map((p) => p.text).join("");
+    const contentStr = validParts
+      .filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+
+    // REGRA DE SEGURANÇA: Se uma mensagem do assistente era composta apenas por
+    // chamadas de ferramentas, o texto fica vazio e alguns provedores rejeitam.
+    if (msg.role === "assistant" && contentStr.trim() === "") {
+      validParts.push({ type: "text", text: TOOL_ONLY_PLACEHOLDER });
+    }
 
     if (charCount + contentStr.length > MAX_CONTEXT_CHARS) break;
 
-    // REGRA DE SEGURANÇA: Se uma mensagem do assistente era composta apenas por
-    // chamadas de ferramentas, o texto fica vazio e o Gemini rejeita o histórico.
-    // Adicionamos um texto neutro para que a mensagem seja aceita por todos os provedores.
-    const partsFinais = [...textParts];
-    if (msg.role === "assistant" && contentStr.trim() === "") {
-      partsFinais.push({ type: "text", text: TOOL_ONLY_PLACEHOLDER });
-    }
-
-    // Recria a mensagem higienizada: sem 'toolInvocations' e apenas com partes de texto.
-    // Isso garante compatibilidade cross-provider ao fazer fallback entre Groq/Gemini/OpenAI.
-    // Usamos desestruturação para excluir 'toolInvocations' em vez de defini-lo como undefined,
-    // garantindo que a propriedade seja completamente removida do objeto resultante.
-    const { toolInvocations: _removed, ...rest } = msg;
     const msgHigienizada: UIMessage = {
-      ...rest,
-      parts: partsFinais,
-      content: contentStr || TOOL_ONLY_PLACEHOLDER,
+      id: msg.id,
+      role: msg.role,
+      parts: validParts,
     };
 
     resultado.unshift(msgHigienizada);
@@ -113,15 +146,14 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
 
   // 3. REGRA CRÍTICA PARA GEMINI/ANTHROPIC:
   // O histórico deve SEMPRE começar com uma mensagem do usuário ('user').
-  // Se cortarmos no meio e sobrar um 'assistant' no topo, o provedor rejeita.
-  while (resultado.length > 0 && (resultado[0] as any).role !== "user") {
+  while (resultado.length > 0 && resultado[0].role !== "user") {
     resultado.shift();
   }
 
   logChat({
     tipo: "CONTEXTO",
-    mensagem: `${messages.length} recebidas → ${resultado.length} limpas e enviadas | Caracteres: ${charCount}`,
-    detalhes: `Limites: ${MAX_MESSAGES} msgs / ${MAX_CONTEXT_CHARS} chars | Final: ${resultado.length > 0 ? resultado[0].role : "vazio"} no topo`,
+    mensagem: `${messages.length} msgs recebidas → ${resultado.length} limpas e enviadas | Caracteres: ${charCount}`,
+    detalhes: `Limites: ${MAX_MESSAGES} msgs / ${MAX_CONTEXT_CHARS} chars | Topo: ${resultado.length > 0 ? resultado[0].role : "vazio"}`,
   });
 
   return resultado;
@@ -339,11 +371,6 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
   const tools = criarFerramentas(userId);
   const modelMessages = await convertToModelMessages(recentMessages);
 
-  logChat({
-    tipo: "PROVEDOR",
-    userId,
-    mensagem: "Conectando ao motor resiliente (fallback + quarentena ativos)...",
-  });
 
   const result = streamText({
     model: resilientModel,
@@ -357,7 +384,7 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
         modelo: model.modelId,
         provider: model.provider,
         mensagem: text,
-        detalhes: `Etapas executadas: ${steps.length}`,
+        detalhes: `Etapas lógicas realizadas: ${steps.length}`,
       });
     },
   });

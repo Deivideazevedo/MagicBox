@@ -558,7 +558,7 @@ const TransactionHeatmap = () => {
               flexGrow: 1,
               overflowY: "auto",
               p: 2,
-              bgcolor: alpha(theme.palette.background.paper, 0.4),
+              bgcolor: theme.palette.background.paper,
             }}
           >
             {selectedData?.items && selectedData.items.length > 0 ? (
@@ -576,133 +576,155 @@ const TransactionHeatmap = () => {
                         : theme.palette.primary.main);
 
                   return (
-                    <Card
+                    <Tooltip
                       key={idx}
-                      variant="outlined"
-                      sx={{
-                        borderRadius: 3,
-                        border: "none",
-                        borderLeft: `4px solid ${isProjected ? theme.palette.warning.main : isExpense ? theme.palette.error.main : theme.palette.success.main}`,
-                        bgcolor: theme.palette.background.paper,
-                        transition: "all 0.2s",
-                        boxShadow: theme.shadows[1],
-                        "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: theme.shadows[2],
-                          bgcolor: alpha(theme.palette.background.paper, 0.9),
-                        },
-                      }}
+                      title={
+                        item.observacao
+                          ? `Observação: ${item.observacao}`
+                          : "Sem observação"
+                      }
+                      arrow
+                      placement="left"
                     >
-                      <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
-                        <Box
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          borderRadius: 3,
+                          border: "none",
+                          borderLeft: `4px solid ${isProjected ? theme.palette.warning.main : isExpense ? theme.palette.error.main : theme.palette.success.main}`,
+                          bgcolor:
+                            theme.palette.mode === "dark"
+                              ? alpha(theme.palette.background.paper, 0.8)
+                              : theme.palette.background.paper,
+                          transition: "all 0.2s",
+                          boxShadow: theme.shadows[1],
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: theme.shadows[2],
+                            bgcolor: alpha(theme.palette.background.paper, 0.9),
+                          },
+                        }}
+                      >
+                        <CardContent
+                          sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}
                         >
-                          <Box display="flex" alignItems="center" gap={2}>
-                            <Box
-                              sx={{
-                                p: 1.2,
-                                borderRadius: 1.5,
-                                bgcolor: alpha(itemColor, 0.1),
-                                color: itemColor,
-                                display: "flex",
-                                boxShadow: `0 0 5px ${alpha(itemColor, 0.1)}`,
-                              }}
-                            >
-                              {item.icone ? (
-                                <DynamicIcon name={item.icone} size={22} />
-                              ) : item.origem === "meta" ? (
-                                <IconLock size={22} />
-                              ) : isExpense ? (
-                                <IconTrendingDown size={22} />
-                              ) : (
-                                <IconTrendingUp size={22} />
-                              )}
-                            </Box>
-                            <Box>
-                              <Typography
-                                variant="subtitle2"
-                                fontWeight={700}
-                                sx={{ lineHeight: 1.2, mb: 0.5 }}
-                              >
-                                {item.nome}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
-                                }}
-                              >
-                                <Box
-                                  component="span"
-                                  sx={{ textTransform: "capitalize" }}
-                                >
-                                  {item.origem}
-                                </Box>
-                                {item.categoria && (
-                                  <>
-                                    <Box component="span" sx={{ opacity: 0.5 }}>
-                                      •
-                                    </Box>
-                                    <Box component="span">{item.categoria}</Box>
-                                  </>
-                                )}
-                              </Typography>
-                            </Box>
-                          </Box>
-
                           <Box
                             display="flex"
-                            flexDirection="column"
-                            alignItems="flex-end"
-                            gap={0.5}
+                            justifyContent="space-between"
+                            alignItems="center"
                           >
-                            <Typography
-                              variant="subtitle1"
-                              fontWeight={800}
-                              color={isExpense ? "error.main" : "success.main"}
-                              sx={{ lineHeight: 1, mb: 0.5 }}
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Box
+                                sx={{
+                                  p: 1.2,
+                                  borderRadius: 1.5,
+                                  bgcolor: alpha(itemColor, 0.1),
+                                  color: itemColor,
+                                  display: "flex",
+                                  boxShadow: `0 0 5px ${alpha(itemColor, 0.1)}`,
+                                }}
+                              >
+                                {item.icone ? (
+                                  <DynamicIcon name={item.icone} size={22} />
+                                ) : item.origem === "meta" ? (
+                                  <IconLock size={22} />
+                                ) : isExpense ? (
+                                  <IconTrendingDown size={22} />
+                                ) : (
+                                  <IconTrendingUp size={22} />
+                                )}
+                              </Box>
+                              <Box>
+                                <Typography
+                                  variant="subtitle2"
+                                  fontWeight={700}
+                                  sx={{ lineHeight: 1.2, mb: 0.5 }}
+                                >
+                                  {item.nome}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <Box
+                                    component="span"
+                                    sx={{ textTransform: "capitalize" }}
+                                  >
+                                    {item.origem}
+                                  </Box>
+                                  {item.categoria && (
+                                    <>
+                                      <Box
+                                        component="span"
+                                        sx={{ opacity: 0.5 }}
+                                      >
+                                        •
+                                      </Box>
+                                      <Box component="span">
+                                        {item.categoria}
+                                      </Box>
+                                    </>
+                                  )}
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Box
+                              display="flex"
+                              flexDirection="column"
+                              alignItems="flex-end"
+                              gap={0.5}
                             >
-                              {isExpense ? "-" : "+"}{" "}
-                              {formatCurrency(item.valor)}
-                            </Typography>
-                            {isProjected ? (
-                              <Chip
-                                icon={<IconCalendarEvent size={12} />}
-                                label="Projetado"
-                                size="small"
-                                color="warning"
-                                variant="outlined"
-                                sx={{
-                                  fontSize: "9px",
-                                  height: 18,
-                                  fontWeight: 700,
-                                  px: 0.5,
-                                }}
-                              />
-                            ) : (
-                              <Chip
-                                icon={<IconCheck size={12} />}
-                                label="Realizado"
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{
-                                  fontSize: "9px",
-                                  height: 18,
-                                  fontWeight: 700,
-                                  px: 0.5,
-                                }}
-                              />
-                            )}
+                              <Typography
+                                variant="subtitle1"
+                                fontWeight={800}
+                                color={
+                                  isExpense ? "error.main" : "success.main"
+                                }
+                                sx={{ lineHeight: 1, mb: 0.5 }}
+                              >
+                                {isExpense ? "-" : "+"}{" "}
+                                {formatCurrency(item.valor)}
+                              </Typography>
+                              {isProjected ? (
+                                <Chip
+                                  icon={<IconCalendarEvent size={12} />}
+                                  label="Projetado"
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: "9px",
+                                    height: 18,
+                                    fontWeight: 700,
+                                    px: 0.5,
+                                  }}
+                                />
+                              ) : (
+                                <Chip
+                                  icon={<IconCheck size={12} />}
+                                  label="Realizado"
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{
+                                    fontSize: "9px",
+                                    height: 18,
+                                    fontWeight: 700,
+                                    px: 0.5,
+                                  }}
+                                />
+                              )}
+                            </Box>
                           </Box>
-                        </Box>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </Tooltip>
                   );
                 })}
               </Stack>

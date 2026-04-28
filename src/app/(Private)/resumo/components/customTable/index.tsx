@@ -85,9 +85,11 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     label: "Lançamento",
     render: (row) => {
       // Busca o ícone no mapa de ícones disponíveis ou usa um padrão
-      const IconeElemento = row.icone
-        ? AVAILABLE_ICONS[row.icone as keyof typeof AVAILABLE_ICONS]
-        : <IconCategory size={20} />;
+      const IconeElemento = row.icone ? (
+        AVAILABLE_ICONS[row.icone as keyof typeof AVAILABLE_ICONS]
+      ) : (
+        <IconCategory size={20} />
+      );
 
       return (
         <Stack direction="row" spacing={1.5} alignItems="center">
@@ -376,10 +378,11 @@ export function CustomTable({
           // color: theme.palette.text.primary,
         }}
       >
-        {`Total: ${filteredData.length !== data.length
-          ? `${filteredData.length} / ${data.length}`
-          : data.length
-          }`}
+        {`Total: ${
+          filteredData.length !== data.length
+            ? `${filteredData.length} / ${data.length}`
+            : data.length
+        }`}
       </Box>
     </Paper>
   );
@@ -408,7 +411,6 @@ const CustomRow = memo(
       [row, columns],
     );
 
-    console.log('row.detalhe', row.detalhes)
     return (
       <>
         <TableRow
@@ -440,7 +442,7 @@ const CustomRow = memo(
               aria-label={
                 isExpanded ? "Recolher detalhes" : "Expandir detalhes"
               }
-            // onClick={() => setIsExpanded((prev) => !prev)}
+              // onClick={() => setIsExpanded((prev) => !prev)}
             >
               {isExpanded ? (
                 <IconChevronUp size={18} />
@@ -657,10 +659,7 @@ const CustomRow = memo(
                               >
                                 {formatarValor(detalhe.valor)}
                               </Typography>
-                              <ActionsIconMode
-                                row={row}
-                                actions={actions}
-                              />
+                              <ActionsIconMode row={row} actions={actions} />
                             </Stack>
                           </Paper>
                         </Box>

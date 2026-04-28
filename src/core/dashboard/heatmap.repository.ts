@@ -9,6 +9,7 @@ export interface HeatmapItem {
   origem: "despesa" | "receita" | "meta";
   icone?: string;
   cor?: string;
+  observacao?: string;
 }
 
 export interface HeatmapDay {
@@ -42,6 +43,7 @@ export const heatmapRepository = {
           c.nome as categoria,
           COALESCE(d.icone, r.icone, m.icone) as icone,
           COALESCE(d.cor, r.cor, m.cor) as cor,
+          COALESCE(l.observacao, l."observacaoAutomatica", 'Sem observação') as observacao,
           l."despesaId",
           l."receitaId"
         FROM lancamento l
@@ -103,7 +105,8 @@ export const heatmapRepository = {
           rb.nome,
           rb.categoria,
           rb.icone,
-          rb.cor
+          rb.cor,
+          'Projeção baseada em histórico fixo' as observacao
         FROM dias_do_periodo d
         CROSS JOIN recorrencias_base rb
         WHERE 
@@ -126,9 +129,9 @@ export const heatmapRepository = {
           )
       ),
       uniao_final AS (
-        SELECT dia, valor, tipo, origem, nome, categoria, icone, cor FROM lancamentos_reais
+        SELECT dia, valor, tipo, origem, nome, categoria, icone, cor, observacao FROM lancamentos_reais
         UNION ALL
-        SELECT dia, valor, tipo, origem, nome, categoria, icone, cor FROM projeções_virtuais
+        SELECT dia, valor, tipo, origem, nome, categoria, icone, cor, observacao FROM projeções_virtuais
       )
       SELECT 
         to_char(dia, 'YYYY-MM-DD') as date,
@@ -140,7 +143,8 @@ export const heatmapRepository = {
             'tipo', tipo,
             'origem', origem,
             'icone', icone,
-            'cor', cor
+            'cor', cor,
+            'observacao', observacao
           )
         ) as items
       FROM uniao_final

@@ -106,6 +106,7 @@ export const resumoRepository = {
               EXTRACT(YEAR FROM l.data) as "ano",
               SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as "valorPrevisto",
               SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as "valorPago",
+              MAX(EXTRACT(DAY FROM l.data)) as "diaReferencia",
               JSON_AGG(
                 JSON_BUILD_OBJECT(
                   'id', l.id, 
@@ -150,7 +151,7 @@ export const resumoRepository = {
                 )
               ) as "detalhes",
               COALESCE(rec.nome, d.nome, f.nome) as "nome",
-              COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento") as "diaVencido",
+              COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento", real."diaReferencia") as "diaVencido",
               COALESCE(rec.icone, d.icone, f.icone) as "icone",
               COALESCE(rec.cor, d.cor, f.cor) as "cor",
               CASE WHEN real."origemId" IS NULL THEN true ELSE false END as "isProjetado"
