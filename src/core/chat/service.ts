@@ -65,6 +65,7 @@ const resilientModel = createFallback({
 const MAX_CONTEXT_CHARS = 8000;
 const MAX_MESSAGES = 10; // 5 trocas completas usuário/IA
 const MAX_INPUT_CHARS = 500;
+const TOOL_ONLY_PLACEHOLDER = "[Consulta de dados realizada com sucesso]";
 
 function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   let charCount = 0;
@@ -73,31 +74,54 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   // 1. Pega as últimas N mensagens
   const ultimasMensagens = messages.slice(-MAX_MESSAGES);
 
-  // 2. Filtra por tamanho de caracteres de trás para frente
+  // 2. Filtra por tamanho e HIGIENIZA o histórico de trás para frente
   for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
     const msg = ultimasMensagens[i];
-    const contentStr = msg.parts
-      .filter((p): p is { type: "text"; text: string } => p.type === "text")
-      .map((p) => p.text)
-      .join("");
+
+    // Extrai apenas as partes de texto puro, ignorando estruturas específicas
+    // de ferramentas que variam entre provedores (Groq x Gemini x OpenAI).
+    const textParts = msg.parts.filter(
+      (p): p is { type: "text"; text: string } => p.type === "text"
+    );
+
+    const contentStr = textParts.map((p) => p.text).join("");
 
     if (charCount + contentStr.length > MAX_CONTEXT_CHARS) break;
 
-    resultado.unshift(msg);
+    // REGRA DE SEGURANÇA: Se uma mensagem do assistente era composta apenas por
+    // chamadas de ferramentas, o texto fica vazio e o Gemini rejeita o histórico.
+    // Adicionamos um texto neutro para que a mensagem seja aceita por todos os provedores.
+    const partsFinais = [...textParts];
+    if (msg.role === "assistant" && contentStr.trim() === "") {
+      partsFinais.push({ type: "text", text: TOOL_ONLY_PLACEHOLDER });
+    }
+
+    // Recria a mensagem higienizada: sem 'toolInvocations' e apenas com partes de texto.
+    // Isso garante compatibilidade cross-provider ao fazer fallback entre Groq/Gemini/OpenAI.
+    // Usamos desestruturação para excluir 'toolInvocations' em vez de defini-lo como undefined,
+    // garantindo que a propriedade seja completamente removida do objeto resultante.
+    const { toolInvocations: _removed, ...rest } = msg;
+    const msgHigienizada: UIMessage = {
+      ...rest,
+      parts: partsFinais,
+      content: contentStr || TOOL_ONLY_PLACEHOLDER,
+    };
+
+    resultado.unshift(msgHigienizada);
     charCount += contentStr.length;
   }
 
-  // 3. REGRA CRÍTICA PARA GEMINI/ANTHROPIC: 
+  // 3. REGRA CRÍTICA PARA GEMINI/ANTHROPIC:
   // O histórico deve SEMPRE começar com uma mensagem do usuário ('user').
-  // Se cortarmos no meio e sobrar um 'assistant' ou 'tool' no topo, o provedor rejeita.
+  // Se cortarmos no meio e sobrar um 'assistant' no topo, o provedor rejeita.
   while (resultado.length > 0 && (resultado[0] as any).role !== "user") {
     resultado.shift();
   }
 
   logChat({
     tipo: "CONTEXTO",
-    mensagem: `${messages.length} mensagens recebidas → ${resultado.length} enviadas à IA | Caracters: ${charCount}`,
-    detalhes: `Limites: ${MAX_MESSAGES} msgs / ${MAX_CONTEXT_CHARS} chars | Final: ${resultado.length > 0 ? resultado[0].role : 'vazio'} no topo`,
+    mensagem: `${messages.length} recebidas → ${resultado.length} limpas e enviadas | Caracteres: ${charCount}`,
+    detalhes: `Limites: ${MAX_MESSAGES} msgs / ${MAX_CONTEXT_CHARS} chars | Final: ${resultado.length > 0 ? resultado[0].role : "vazio"} no topo`,
   });
 
   return resultado;
