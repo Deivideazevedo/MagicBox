@@ -24,8 +24,10 @@ const metaSchema = z.object({
   valor: z.union([z.number(), z.string()]).refine((v) => Number(v) > 0, "Valor obrigatório").nullable(),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
-
+  observacaoAutomatica: z.string().optional(),
+  
   // Campos exclusivos para Retirada de Meta (Destino)
+
   destinoOrigem: z.enum(["despesa", "receita"]).optional(),
   destinoId: z.number().optional(),
 });
@@ -59,7 +61,9 @@ export function useMetaForm({
       valor: "",
       data: fnGetTodayISO(),
       observacao: "",
+      observacaoAutomatica: "",
       destinoOrigem: "despesa" as const,
+
       destinoId: 0,
     }),
     [],
@@ -139,8 +143,9 @@ export function useMetaForm({
               valor: -valorNum,
               data: formData.data,
               vinculoId,
-              observacao: `Retirada destinada para: ${destinoNome}`,
+              observacaoAutomatica: `Retirada destinada para: ${destinoNome}`,
             }).unwrap(),
+
 
             // 2. Entrada no Destino
             createLancamento({
@@ -151,8 +156,10 @@ export function useMetaForm({
               valor: valorNum,
               data: formData.data,
               vinculoId,
-              observacao: formData.observacao || `Dinheiro realocado da meta: ${metaNome}`,
+              observacao: formData.observacao || undefined,
+              observacaoAutomatica: `Dinheiro realocado da meta: ${metaNome}`,
             }).unwrap(),
+
           ]);
 
           SwalToast.fire({ icon: "success", title: "Retirada e destino lançados com sucesso" });
@@ -169,7 +176,9 @@ export function useMetaForm({
             valor: isRetirada ? -Math.abs(Number(formData.valor)) : Math.abs(Number(formData.valor)),
             data: formData.data,
             observacao: formData.observacao || undefined,
+            observacaoAutomatica: formData.observacaoAutomatica || undefined,
             parcelas: null,
+
           };
 
           if (formData.id) {

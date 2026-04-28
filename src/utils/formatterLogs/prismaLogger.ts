@@ -84,7 +84,7 @@ const formatLineWithBorder = (content: string, width: number): string => {
   // Calcula preenchimento
   const padding = Math.max(0, width - visualLength);
   const spaces = " ".repeat(padding);
-  
+
   return `${colors.gray}│${colors.reset} ${content}${spaces} ${colors.gray}│${colors.reset}`;
 };
 
@@ -100,7 +100,7 @@ const formatQuery = (query: string, params: string): string => {
         else if (param instanceof Date) value = `'${param.toISOString()}'`;
         else if (param === null) value = "NULL";
         else if (typeof param === "boolean") value = param ? "TRUE" : "FALSE";
-        
+
         const regex = new RegExp(`\\$${index + 1}(?![0-9])`, "g");
         cleanQuery = cleanQuery.replace(regex, `${colors.cyan}${value}${colors.reset}`);
       });
@@ -137,8 +137,18 @@ export function prismaLogger(prisma: PrismaClient) {
     const metaInfo = `⏰ ${colors.dim}${timestamp}${colors.reset}  Tempo: ${durationColor}${durationMs}ms${colors.reset}`;
     const metaLine = formatLineWithBorder(metaInfo, contentWidth);
 
+    const MAX_QUERY_LINES = 4;
     const sqlLines = wrapText(cleanSql, contentWidth);
-    const formattedSqlLines = sqlLines.map(line => formatLineWithBorder(line, contentWidth)).join("\n");
+
+    // Resume a query se for muito longa
+    const displayLines = sqlLines.length > MAX_QUERY_LINES
+      ? [
+        ...sqlLines.slice(0, MAX_QUERY_LINES),
+        `${colors.dim}... [Query resumida para ${MAX_QUERY_LINES} linhas de ${sqlLines.length}]${colors.reset}`
+      ]
+      : sqlLines;
+
+    const formattedSqlLines = displayLines.map(line => formatLineWithBorder(line, contentWidth)).join("\n");
 
     console.log(
       `${colors.gray}┌${borderTop}┐${colors.reset}\n` +

@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { resumoServico } from "@/core/lancamentos/resumo/service";
 import { logChat, resetLogStep } from "@/core/chat/utils";
+import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 
 // ─────────────────────────────────────────────────
 // Provedores
@@ -64,7 +65,7 @@ function withLog(model: any): any {
 const resilientModel = createFallback({
   models: [
     // TIER 1: Velocidade Extrema (Garante resposta instantânea)
-    withLog(groq("llama-3.1-8b-instant")), 
+    withLog(groq("llama-3.1-8b-instant")),
     withLog(google("gemini-3.1-flash-lite-preview")),
 
     // TIER 2: Raciocínio Pesado (Entra se os rápidos falharem)
@@ -86,7 +87,8 @@ const resilientModel = createFallback({
       tipo: "FALLBACK",
       modelo: modelId,
       mensagem: `O modelo ${modelId} falhou e entrou em quarentena de 2 minutos.`,
-      detalhes: String(error)
+      detalhes: String(error),
+      erro: error // Passa o objeto completo para depuração técnica
     });
   },
 });
@@ -106,37 +108,25 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   // 1. Pega as últimas N mensagens
   const ultimasMensagens = messages.slice(-MAX_MESSAGES);
 
-  // 2. Filtra por tamanho e HIGIENIZA o histórico de trás para frente
+  // 2. Higieniza o histórico de trás para frente mantendo metadados
   for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
     const msg = ultimasMensagens[i];
 
-    // Extrai apenas as partes de texto puro.
-    // Na v6 da SDK 'ai', toolInvocations e outros tipos ficam dentro de 'parts'.
-    // Para compatibilidade cross-provider, filtramos apenas o que é texto.
-    // Na v6 da SDK 'ai', mensagens de ferramenta precisam manter suas 'parts' originais
-    // para que provedores como Gemini validem a assinatura da chamada.
-    // Filtramos apenas para garantir que não enviamos partes vazias ou inválidas.
-    const validParts = msg.parts.filter((p) => {
-      if (p.type === "text") return p.text.trim().length > 0;
-      return true; // Mantém tool-invocation e outros metadados essenciais
-    });
+    // Higienização de partes: Apenas filtramos textos vazios
+    const validParts = msg.parts.filter((p) => (p.type === "text") && (p.text.trim().length > 0));
 
     const contentStr = validParts
       .filter((p): p is { type: "text"; text: string } => p.type === "text")
       .map((p) => p.text)
       .join("");
 
-    // REGRA DE SEGURANÇA: Se uma mensagem do assistente era composta apenas por
-    // chamadas de ferramentas, o texto fica vazio e alguns provedores rejeitam.
-    if (msg.role === "assistant" && contentStr.trim() === "") {
-      validParts.push({ type: "text", text: TOOL_ONLY_PLACEHOLDER });
-    }
-
+    // REGRA DE S
     if (charCount + contentStr.length > MAX_CONTEXT_CHARS) break;
 
+    // IMPORTANTE: Usamos spread para manter propriedades "não documentadas" do SDK v6
+    // que podem conter assinaturas de provedor (como providerMetadata).
     const msgHigienizada: UIMessage = {
-      id: msg.id,
-      role: msg.role,
+      ...msg,
       parts: validParts,
     };
 
@@ -176,6 +166,10 @@ function construirSystemPrompt(): string {
     console.error("Erro ao ler agente-chat.md:", err);
   }
 
+  const dataLocal = fnFormatDateInTimeZone({ format: "date" }); // yyyy-MM-dd
+  const diaSemana = fnFormatDateInTimeZone({ format: "eeee", date: new Date() }); // terça-feira (usando formato eeee do date-fns)
+  const anoAtual = fnFormatDateInTimeZone({ format: "yyyy" });
+
   return `
 Você é o Assistente Virtual Oficial do MagicBox. Sua prioridade absoluta é a precisão dos dados.
 
@@ -183,7 +177,7 @@ Você é o Assistente Virtual Oficial do MagicBox. Sua prioridade absoluta é a 
 - NUNCA invente valores, contas, datas ou saldos. 
 - Para QUALQUER pergunta sobre finanças, saldo, gastos ou contas, você deve OBRIGATORIAMENTE chamar uma ferramenta ("obterResumoFinanceiro" ou "consultarLancamentos") antes de dar a primeira palavra ao usuário.
 - Se a ferramenta retornar vazio, diga explicitamente: "Não encontrei registros para este período no seu MagicBox. 🧐".
-- DATA ATUAL: ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Bahia" })} (Use esta data como referência real para calcular "ontem", "hoje", "amanhã" ao chamar as ferramentas).
+- DATA ATUAL: ${dataLocal} (${diaSemana}). Use esta data como referência real para calcular "ontem", "hoje", "amanhã" ao chamar as ferramentas. Mantenha SEMPRE o ano atual (${anoAtual}) a menos que solicitado o contrário.
 
 # ENTENDIMENTO DE DADOS
 - **Pagamento Parcial**: Ocorre quando o 'valorPago' é maior que zero mas menor que o 'valorPrevisto'. Explique isso ao usuário como "Pago parcialmente".

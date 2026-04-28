@@ -5,8 +5,12 @@
 // O .env.local é carregado automaticamente pelo dotenv-cli
 // ============================================
 
-import 'dotenv/config'
+import { config } from 'dotenv'
 import { defineConfig, env } from 'prisma/config'
+
+// Carrega .env.local explicitamente para alinhar com o comportamento do Next.js
+config({ path: '.env.local' })
+config()
 
 export default defineConfig({
   schema: "prisma/schemas",

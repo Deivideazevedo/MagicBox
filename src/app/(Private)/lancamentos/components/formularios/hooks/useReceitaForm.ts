@@ -22,7 +22,9 @@ const receitaSchema = z.object({
   valor: z.number().min(0.01, "Valor obrigatório"),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
+  observacaoAutomatica: z.string().optional(),
   parcelas: z.number().nullable().optional(),
+
   parcelar: z.boolean(),
 });
 
@@ -55,7 +57,9 @@ export function useReceitaForm({
       valor: "" as any,
       data: fnGetTodayISO(),
       observacao: "",
+      observacaoAutomatica: "",
       parcelas: null,
+
       parcelar: false,
     }),
     [],
@@ -104,8 +108,10 @@ export function useReceitaForm({
         valor: dadosIniciais.valorPrevisto,
         data: fnGetTodayISO(),
         tipo: "pagamento",
-        observacao: `Pagamento: ${dadosIniciais.nome}`,
+        observacao: "",
+        observacaoAutomatica: `Pagamento: ${dadosIniciais.nome}`,
       });
+
     }
   }, [lancamentoParaEditar, dadosIniciais, reset, defaultValues]);
 
@@ -142,7 +148,9 @@ export function useReceitaForm({
           valor: formData.valor,
           data: formData.data,
           observacao: formData.observacao || undefined,
+          observacaoAutomatica: formData.observacaoAutomatica || undefined,
           parcelas: formData.parcelar && formData.parcelas ? formData.parcelas : null,
+
         };
 
         if (formData.id) {

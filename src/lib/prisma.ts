@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg"; 
+import { Pool } from "pg";
 import { prismaLogger } from "@/utils/formatterLogs/prismaLogger";
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -9,14 +9,16 @@ const createPrismaClient = () => {
   const connectionString = process.env.DATABASE_URL;
 
   // Configuração otimizada do Pool PostgreSQL
-  const pool = new Pool({ 
+  const pool = new Pool({
     connectionString,
     // Performance optimizations
     max: 20, // Máximo de conexões no pool (padrão: 10)
     idleTimeoutMillis: 30000, // Fecha conexões ociosas após 30s
     connectionTimeoutMillis: 5000, // Timeout para obter conexão: 5s (padrão: 0 = sem timeout)
     allowExitOnIdle: true, // Permite que o processo termine se não houver conexões ativas
-    ssl: connectionString?.includes("sslmode=require") ? { rejectUnauthorized: false } : false,
+    // Habilita SSL se 'sslmode' estiver na URL (ex: Neon). 
+    // rejectUnauthorized: false permite conexões sem validar o certificado CA completo.
+    ssl: connectionString?.includes("sslmode=") ? { rejectUnauthorized: false } : false,
   });
 
   // Monitoramento do pool em desenvolvimento
@@ -47,11 +49,11 @@ const createPrismaClient = () => {
     log: isProduction
       ? ["error"]
       : [
-          { emit: "event", level: "query" },
-          { emit: "stdout", level: "error" },
-          { emit: "stdout", level: "info" },
-          { emit: "stdout", level: "warn" },
-        ],
+        { emit: "event", level: "query" },
+        { emit: "stdout", level: "error" },
+        { emit: "stdout", level: "info" },
+        { emit: "stdout", level: "warn" },
+      ],
   });
 
   // Ativa o log personalizado

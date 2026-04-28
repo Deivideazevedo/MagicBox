@@ -40,6 +40,7 @@ interface ChatLogParams {
   ferramenta?: string;
   mensagem?: string;
   detalhes?: string;
+  erro?: any; // Objeto de erro bruto
 }
 
 // ─────────────────────────────────────────────────
@@ -96,7 +97,7 @@ export function logChat(params: ChatLogParams) {
 
   stepCounter++;
   const hora = fnFormatDateInTimeZone();
-  const { tipo, modelo, provider, userId, ferramenta, mensagem, detalhes } = params;
+  const { tipo, modelo, provider, userId, ferramenta, mensagem, detalhes, erro } = params;
 
   const cor = corPorTipo[tipo] || c.white;
   const icon = icons[tipo] || "📌";
@@ -117,7 +118,7 @@ export function logChat(params: ChatLogParams) {
   if (modelo) log += `Modelo:   🤖 ${c.cyan}${modelo}${c.reset}\n`;
   if (ferramenta) log += `Tool:     🔧 ${c.yellow}${ferramenta}${c.reset}\n`;
 
-  if (mensagem || detalhes) {
+  if (mensagem || detalhes || erro) {
     log += `Mensagem:\n`;
     if (mensagem) {
       const msgTruncada = mensagem.length > 500 ? mensagem.substring(0, 500) + "..." : mensagem;
@@ -125,6 +126,10 @@ export function logChat(params: ChatLogParams) {
     }
     if (detalhes) {
       log += `🔍 ${c.dim}${detalhes}${c.reset}\n`;
+    }
+    if (erro) {
+      const erroStr = typeof erro === 'object' ? JSON.stringify(erro, null, 2) : String(erro);
+      log += `🚨 ${c.red}${c.dim}${erroStr.substring(0, 800)}${c.reset}\n`;
     }
   }
 

@@ -33,6 +33,8 @@ import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi
 import { useDispatch } from "@/store/hooks";
 import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
 import { SwalToast, Swalert } from "@/utils/swalert";
+import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
+
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
 
@@ -125,10 +127,11 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
         await createLancamento({
           tipo: "pagamento",
           valor: bill.valorPrevisto,
-          data: new Date().toISOString(), // Today
+          data: fnGetTodayISO(), // Today correctly formatted
           despesaId: bill.despesaId,
-          observacao: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`
+          observacaoAutomatica: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`
         }).unwrap();
+
 
         SwalToast.fire({
           icon: "success",
@@ -260,7 +263,9 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                         borderBottom: index < Math.min(bills.length, 5) - 1 ? "1px solid #f0f0f0" : "none",
                         "&:hover .action-buttons": {
                           opacity: 1,
+                          display: 'flex',
                         }
+
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 48 }}>
@@ -313,7 +318,12 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                               />
                             </Tooltip>
                             
-                            <Box display="flex" alignItems="center" gap={1}>
+                            <Box 
+                              display="flex" 
+                              alignItems="center" 
+                              gap={1}
+                              sx={{ flexDirection: "row-reverse" }}
+                            >
                               <Typography variant="caption" color="text.secondary">
                                 {formatDueDate(dueDateString)}
                               </Typography>
@@ -323,7 +333,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                                 sx={{ 
                                   opacity: 0, 
                                   transition: 'opacity 0.2s',
-                                  display: 'flex',
+                                  display: 'none',
                                   gap: 0.5 
                                 }}
                               >
@@ -339,6 +349,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                                 </Tooltip>
                               </Box>
                             </Box>
+
                           </Box>
                         }
                       />
