@@ -5,10 +5,26 @@ import { ResumoFiltros } from "./resumo.dto";
 
 export type TipoLancamento = "pagamento" | "agendamento";
 
+export enum OrigemResumo {
+  receita = "receita",
+  despesa = "despesa",
+  meta = "meta",
+}
+
+export interface TotaisHistoricos {
+  receitas: number;
+  despesas: number;
+  metas: number;
+  receitasPagas: number;
+  receitasPrevistas: number;
+  despesasPagas: number;
+  despesasPrevistas: number;
+}
+
 export interface ResumoResposta {
   id: string;
   origemId: number;
-  origem: "receita" | "despesa";
+  origem: "receita" | "despesa" | "meta";
   nome: string;
   valorPrevisto: number;
   valorPago: number;
@@ -67,6 +83,8 @@ export interface ResumoMiniCardsProps {
   saldoProjetado: number;
   saldoBloqueado: number; // Valor reservado em metas ativas
   saldoLivre: number;     // Saldo Atual - Saldo Bloqueado
+  metasPagas?: number;
+  metasAgendadas?: number;
 }
 
 export type ResumoParametros = ResumoFiltros;

@@ -23,10 +23,10 @@ const metaSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
   nome: z.string().min(1, "Nome é obrigatório").optional(),
   valorMeta: z
-    .union([z.number(), z.string()])
-    .transform((val) => (val === "" || val === undefined ? undefined : Number(val)))
-    .pipe(z.number().min(0.01, "Valor deve ser maior que zero")),
-  dataAlvo: z.string().min(1, "Data é obrigatória"),
+    .union([z.number(), z.string(), z.null()])
+    .transform((val) => (val === "" || val === undefined || val === null ? undefined : Number(val)))
+    .optional(),
+  dataAlvo: z.string().nullable().optional(),
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
   // Campos virtuais para contexto de validação
@@ -35,8 +35,8 @@ const metaSchema = z.object({
 }).superRefine((data, ctx) => {
   const hoje = getHojeLocal();
 
-  // Validação de Data Alvo (apenas para Meta, não para Aporte)
-  if (!data.isAporte && data.dataAlvo < hoje) {
+  // Validação de Data Alvo (apenas se informada e não for Aporte)
+  if (!data.isAporte && data.dataAlvo && data.dataAlvo < hoje) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "A data alvo deve ser hoje ou uma data futura.",
@@ -44,11 +44,11 @@ const metaSchema = z.object({
     });
   }
 
-  // Se for um aporte, validar contra o saldo restante
-  if (data.isAporte) {
+  // Se for um aporte, validar contra o saldo restante (se houver valorMeta)
+  if (data.isAporte && data.valorMeta) {
     const restante = data.valorRestante ?? 0;
 
-    if (restante <= 0) {
+    if (restante <= 0 && data.valorRestante !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Meta concluída! Edite o valor objetivo para novos aportes.",
@@ -57,7 +57,7 @@ const metaSchema = z.object({
       return;
     }
 
-    if (data.valorMeta > restante) {
+    if (restante > 0 && data.valorMeta > restante) {
       const valorFormatado = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
@@ -123,13 +123,14 @@ export function useMetas() {
           // Lógica de Aporte
           await createLancamento({
             tipo: "pagamento",
-            valor: Math.abs(data.valorMeta),
-            data: data.dataAlvo,
+            valor: Math.abs(Number(data.valorMeta || 0)),
+            data: data.dataAlvo || getHojeLocal(),
             metaId: targetMeta.id,
             userId,
             observacao: `Aporte`,
             observacaoAutomatica: `Aporte manual para a meta: ${targetMeta.nome}`,
           }).unwrap();
+
 
           SwalToast.fire({
             icon: "success",
@@ -162,7 +163,7 @@ export function useMetas() {
     reset({
       id: meta.id,
       nome: meta.nome,
-      valorMeta: meta.valorMeta,
+      valorMeta: meta.valorMeta ?? undefined,
       dataAlvo: meta.dataAlvo ? new Date(meta.dataAlvo).toISOString().split("T")[0] : "",
       icone: meta.icone,
       cor: meta.cor,
@@ -175,7 +176,7 @@ export function useMetas() {
   const handleAporte = (meta: Meta) => {
     setIsAporte(true);
     setTargetMeta(meta);
-    const restante = Number(meta.valorMeta) - (Number(meta.valorAcumulado) || 0);
+    const restante = meta.valorMeta ? (Number(meta.valorMeta) - (Number(meta.valorAcumulado) || 0)) : undefined;
 
     reset({
       id: undefined,

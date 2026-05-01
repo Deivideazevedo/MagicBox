@@ -105,7 +105,6 @@ function withLog(model: any): any {
 const resilientModel = createFallback({
   models: [
     // TIER 1: Velocidade Extrema (Garante resposta instantânea)
-    // withLog(google("gemini-3.1-flash-lite")),
     withLog(groq("llama-3.1-8b-instant")),
     withLog(google("gemini-3.1-flash-lite-preview")),
 
@@ -229,7 +228,7 @@ Você é o Assistente Virtual Oficial do MagicBox. Sua prioridade absoluta é a 
 
 # REGRAS DE FORMATAÇÃO (ESTRITA)
 1. Pule DUAS LINHAS entre cada parágrafo ou item de lista para garantir o "respiro" visual.
-2. Valores financeiros devem estar sempre em **Negrito** no formato brasileiro: **R$ 1.250,50**.
+2. Valores financeiros devem estar sempre em **Negrito** no formato brasileiro: **R$ [VALOR]**.
 3. Use links markdown para navegação: [Texto](/rota).
 4. Listas: Cada item deve começar com um emoji temático e ter espaçamento duplo entre eles.
 
@@ -251,62 +250,55 @@ function criarFerramentas(userId: number) {
   const agora = new Date();
 
   return {
-    obterResumoFinanceiro: {
+    consultarResumoGeral: {
       description:
-        "Retorna o resumo financeiro (saldo disponível, livre, total de gastos e receitas) para um período específico. Use para responder sobre a situação financeira geral ou saldo em datas específicas (hoje, ontem, este mês).",
+        "Diagnóstico financeiro 360º. Retorna Saldo Livre, Bruto, Bloqueado e o status de todas as Metas e Dívidas ativas. Use para perguntas amplas como 'Quanto eu tenho?', 'Como está minha saúde financeira?', 'Me fale dos meus sonhos/metas' ou panoramas temporais. Forneça datas para incluir projeções futuras no PERÍODO solicitado.",
       inputSchema: z.object({
         dataInicio: z
           .string()
           .optional()
-          .describe("Data de início no formato YYYY-MM-DD. Padrão: primeiro dia do mês atual."),
+          .describe("Opcional: Data de início (YYYY-MM-DD). Use para ver projeções de um período específico."),
         dataFim: z
           .string()
           .optional()
-          .describe("Data de fim no formato YYYY-MM-DD. Padrão: último dia do mês atual."),
+          .describe("Opcional: Data de fim (YYYY-MM-DD)."),
       }),
       execute: async ({ dataInicio, dataFim }: { dataInicio?: string; dataFim?: string }) => {
-        const dInicio = dataInicio || new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split("T")[0];
-        const dFim = dataFim || new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split("T")[0];
-
         logChat({
           tipo: "TOOL_CALL",
           userId,
-          ferramenta: "obterResumoFinanceiro",
-          mensagem: `Período: ${dInicio} → ${dFim}`,
+          ferramenta: "consultarResumoGeral",
+          mensagem: dataInicio ? `Período: ${dataInicio} → ${dataFim}` : "Visão Atemporal",
         });
 
-        const card = await resumoServico.obterCardResumo({
+        const diagnostico = await resumoServico.obterDiagnosticoCompleto(userId, dataInicio && dataFim ? {
           userId,
-          dataInicio: dInicio,
-          dataFim: dFim,
-        });
+          dataInicio,
+          dataFim
+        } : undefined);
 
         logChat({
           tipo: "TOOL_RESULT",
-          ferramenta: "obterResumoFinanceiro",
-          mensagem: `Saldo Atual: R$${card.saldoAtual} | Livre: R$${card.saldoLivre}`,
-          detalhes: `Período: ${dInicio} a ${dFim}`,
+          ferramenta: "consultarResumoGeral",
+          mensagem: `Contexto: ${diagnostico.contexto} | Saldo Livre: R$${diagnostico.saldos.saldoLivre}`,
         });
 
-        return {
-          ...card,
-          periodoReferencia: `${dInicio} a ${dFim}`,
-        };
+        return diagnostico;
       },
     },
 
     consultarLancamentos: {
       description:
-        "Consulta o detalhamento de lançamentos (receitas e despesas) em um período. Retorna status de pagamento (Pago, Parcial, Pendente), valores e se o lançamento é uma projeção virtual. Use para perguntas como 'o que eu gastei ontem?', 'quais contas estão pendentes?' ou 'tenho algo projetado?'.",
+        "Extrato detalhado de lançamentos. Use para granularidade diária, semanal, mensal (Ex: 'O que gastei ontem?', 'vencimentos de hoje', 'gastos da semana', 'quanto gastei esse mês'). Retorna status de pagamento, categorias e nomes dos itens. Para períodos longos (>3 meses), retorna um sumário agrupado.",
       inputSchema: z.object({
         dataInicio: z
           .string()
           .optional()
-          .describe("Data de início no formato YYYY-MM-DD. Padrão: primeiro dia do mês atual."),
+          .describe("Data de início (YYYY-MM-DD). Padrão: primeiro dia do mês atual."),
         dataFim: z
           .string()
           .optional()
-          .describe("Data de fim no formato YYYY-MM-DD. Padrão: último dia do mês atual."),
+          .describe("Data de fim (YYYY-MM-DD). Padrão: último dia do mês atual."),
         tipo: z
           .enum(["receita", "despesa", "todos"])
           .optional()
@@ -330,28 +322,69 @@ function criarFerramentas(userId: number) {
           dataFim: dFim,
         });
 
-        const filtrados = itens
-          .filter((item) => tipo === "todos" || item.origem === tipo)
-          .map((item) => ({
-            nome: item.nome,
-            tipo: item.origem,
-            valorPrevisto: item.valorPrevisto,
-            valorPago: item.valorPago,
-            status: item.status,
-            atrasado: item.atrasado,
-            isProjetado: item.isProjetado,
-            diaVencimento: item.diaVencido,
-          }));
+        const filtrados = itens.filter((item) => tipo === "todos" || item.origem === tipo);
+
+        // Lógica de Agrupamento para evitar estouro de contexto em períodos longos
+        const diffMs = new Date(dFim).getTime() - new Date(dInicio).getTime();
+        const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30);
+
+        if (diffMonths > 3) {
+          interface ItemAgrupado {
+            nome: string;
+            tipo: string;
+            totalPrevisto: number;
+            totalPago: number;
+            ocorrencias: number;
+          }
+
+          const agrupado = filtrados.reduce((acc: Record<string, ItemAgrupado>, item) => {
+            const chave = `${item.origem}-${item.nome}`;
+            if (!acc[chave]) {
+              acc[chave] = {
+                nome: item.nome,
+                tipo: item.origem,
+                totalPrevisto: 0,
+                totalPago: 0,
+                ocorrencias: 0
+              };
+            }
+            acc[chave].totalPrevisto += item.valorPrevisto;
+            acc[chave].totalPago += item.valorPago;
+            acc[chave].ocorrencias += 1;
+            return acc;
+          }, {});
+
+          return {
+            totalEncontrados: filtrados.length,
+            periodoReferencia: `${dInicio} a ${dFim}`,
+            formato: "SUMARIO_AGRUPADO",
+            aviso: "Período longo detectado. Os dados foram agrupados por item/fonte para facilitar a análise.",
+            sumario: Object.values(agrupado),
+          };
+        }
+
+        const listagem = filtrados.map((item) => ({
+          nome: item.nome,
+          tipo: item.origem,
+          valorPrevisto: item.valorPrevisto,
+          valorPago: item.valorPago,
+          status: item.status,
+          atrasado: item.atrasado,
+          isProjetado: item.isProjetado,
+          diaVencimento: item.diaVencido,
+          mes: item.mes,
+          ano: item.ano
+        }));
 
         logChat({
           tipo: "TOOL_RESULT",
           ferramenta: "consultarLancamentos",
-          mensagem: `Encontrados ${filtrados.length} lançamentos para o período ${dInicio} a ${dFim}`,
+          mensagem: `Encontrados ${listagem.length} lançamentos para o período ${dInicio} a ${dFim}`,
         });
 
         return {
-          totalEncontrados: filtrados.length,
-          lancamentos: filtrados,
+          totalEncontrados: listagem.length,
+          lancamentos: listagem,
           periodoReferencia: `${dInicio} a ${dFim}`,
         };
       },

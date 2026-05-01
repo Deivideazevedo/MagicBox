@@ -25,6 +25,8 @@ import remarkBreaks from "remark-breaks";
 import { styled, useTheme, keyframes } from "@mui/material/styles";
 import { alpha } from "@mui/material";
 
+import ChatSuggestions from "./ChatSuggestions";
+
 // ─── Constants ──────────────────────────────────
 const STORAGE_KEY = "magicbox-chat-history";
 const TIMESTAMPS_KEY = "magicbox-chat-timestamps";
@@ -426,17 +428,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
         {/* Histórico */}
         <MessageList>
           {visibleMessages.length === 0 && !isLoading ? (
-            <Box sx={{ textAlign: "center", opacity: 0.6, mt: 4, px: 2 }}>
-              <Typography variant="body1" fontWeight={600} gutterBottom>
-                Assistente de Consulta MagicBox
-              </Typography>
-              <Typography variant="body2">
-                Estou aqui para tirar suas dúvidas financeiras.
-                <br />
-                Consulte seus lançamentos, metas e situação de dívidas de forma
-                rápida.
-              </Typography>
-            </Box>
+            <ChatSuggestions onSelectQuestion={(q) => sendMessage({ text: q })} />
           ) : (
             visibleMessages.map((msg: UIMessage, index: number) => {
               const texto = extrairTexto(msg);
@@ -476,18 +468,18 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
                             position: "relative",
                             "& p:last-child::after, & li:last-child::after":
                               status === "streaming" &&
-                                index === visibleMessages.length - 1
+                              index === visibleMessages.length - 1
                                 ? {
-                                  content: '""',
-                                  display: "inline-block",
-                                  width: "6px",
-                                  height: "14px",
-                                  backgroundColor: "primary.main",
-                                  ml: 0.5,
-                                  verticalAlign: "middle",
-                                  borderRadius: "2px",
-                                  animation: `${blink} 1s step-end infinite`,
-                                }
+                                    content: '""',
+                                    display: "inline-block",
+                                    width: "6px",
+                                    height: "14px",
+                                    backgroundColor: "primary.main",
+                                    ml: 0.5,
+                                    verticalAlign: "middle",
+                                    borderRadius: "2px",
+                                    animation: `${blink} 1s step-end infinite`,
+                                  }
                                 : {},
                           }}
                         >
@@ -548,51 +540,55 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
           {isLoading &&
             (messages[messages.length - 1]?.role !== "assistant" ||
               !extrairTexto(messages[messages.length - 1])) && (
-            <MessageBubble>
-              <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ py: 0.5, px: 0.5 }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ opacity: 0.8, fontWeight: 500, letterSpacing: "0.5px" }}
+              <MessageBubble>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ py: 0.5, px: 0.5 }}
                 >
-                  Pensando
-                </Typography>
-                <Stack direction="row" spacing={0.5}>
-                  <Box
+                  <Typography
+                    variant="caption"
                     sx={{
-                      width: 5,
-                      height: 5,
-                      bgcolor: theme.palette.primary.main,
-                      borderRadius: "50%",
-                      animation: `${wave} 1.3s infinite 0s`,
+                      opacity: 0.8,
+                      fontWeight: 500,
+                      letterSpacing: "0.5px",
                     }}
-                  />
-                  <Box
-                    sx={{
-                      width: 5,
-                      height: 5,
-                      bgcolor: theme.palette.primary.main,
-                      borderRadius: "50%",
-                      animation: `${wave} 1.3s infinite 0.2s`,
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 5,
-                      height: 5,
-                      bgcolor: theme.palette.primary.main,
-                      borderRadius: "50%",
-                      animation: `${wave} 1.3s infinite 0.4s`,
-                    }}
-                  />
+                  >
+                    Pensando
+                  </Typography>
+                  <Stack direction="row" spacing={0.5}>
+                    <Box
+                      sx={{
+                        width: 5,
+                        height: 5,
+                        bgcolor: theme.palette.primary.main,
+                        borderRadius: "50%",
+                        animation: `${wave} 1.3s infinite 0s`,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        width: 5,
+                        height: 5,
+                        bgcolor: theme.palette.primary.main,
+                        borderRadius: "50%",
+                        animation: `${wave} 1.3s infinite 0.2s`,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        width: 5,
+                        height: 5,
+                        bgcolor: theme.palette.primary.main,
+                        borderRadius: "50%",
+                        animation: `${wave} 1.3s infinite 0.4s`,
+                      }}
+                    />
+                  </Stack>
                 </Stack>
-              </Stack>
-            </MessageBubble>
-          )}
+              </MessageBubble>
+            )}
           <div ref={messagesEndRef} />
         </MessageList>
 
@@ -648,9 +644,10 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
                 },
                 "&.Mui-disabled": {
                   border: (theme) =>
-                    `1.5px solid ${theme.palette.mode === "dark"
-                      ? theme.palette.divider
-                      : theme.palette.grey[300]
+                    `1.5px solid ${
+                      theme.palette.mode === "dark"
+                        ? theme.palette.divider
+                        : theme.palette.grey[300]
                     }`,
                   boxShadow: "none",
                 },

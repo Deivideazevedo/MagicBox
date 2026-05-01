@@ -76,7 +76,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
         <Box sx={{ space: 3 }}>
           {goals.map((goal, index) => {
             const progress = calculateProgress(goal.current, goal.target);
-            const remaining = goal.target - goal.current;
+            const remaining = goal.target > 0 ? Math.max(goal.target - goal.current, 0) : 0;
             
             return (
               <Box key={goal.id} sx={{ mb: index < goals.length - 1 ? 3 : 0 }}>
@@ -98,7 +98,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
                 
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                   <Typography variant="body2" color="text.secondary">
-                    {formatCurrency(goal.current)} de {formatCurrency(goal.target)}
+                    {formatCurrency(goal.current)} {goal.target > 0 ? `de ${formatCurrency(goal.target)}` : "(Reserva Livre)"}
                   </Typography>
                   <Typography variant="body2" fontWeight={600} color={goal.color}>
                     {progress.toFixed(1)}%
@@ -121,7 +121,9 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
                 
                 <Box mt={1}>
                   <Typography variant="caption" color="text.secondary">
-                    Faltam {formatCurrency(remaining)} para atingir a meta
+                    {goal.target > 0 
+                      ? `Faltam ${formatCurrency(remaining)} para atingir a meta` 
+                      : "Guardando para o futuro"}
                   </Typography>
                 </Box>
               </Box>

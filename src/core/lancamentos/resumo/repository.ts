@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ResumoMiniCardsProps, ResumoResposta } from "./types";
+import { ResumoMiniCardsProps, ResumoResposta, TotaisHistoricos } from "./types";
 import { Prisma, Lancamento as PrismaResumo } from "@prisma/client";
 import {
   ResumoCardFiltros,
@@ -7,6 +7,21 @@ import {
   ResumoTodosFiltros,
 } from "./resumo.dto";
 import { calcularStatus } from "./utils";
+
+interface ResumoCardDB {
+  pagoCount: number;
+  agendadoCount: number;
+  entradasPagas: number;
+  entradasAgendadas: number;
+  saidasPagas: number;
+  saidasAgendadas: number;
+  metasPagas: number;
+  metasAgendadas: number;
+  total_projetado: number;
+  entradas_projetadas: number;
+  saidas_projetadas: number;
+  saldoBloqueado: number;
+}
 
 export const resumoRepository = {
 
@@ -100,8 +115,12 @@ export const resumoRepository = {
       ),
       lancamentos_reais_agrupados AS (
           SELECT
-              COALESCE(l."receitaId", l."despesaId") as "origemId",
-              CASE WHEN l."receitaId" IS NOT NULL THEN 'receita' ELSE 'despesa' END as "origem",
+              COALESCE(l."receitaId", l."despesaId", l."metaId") as "origemId",
+              CASE 
+                WHEN l."receitaId" IS NOT NULL THEN 'receita' 
+                WHEN l."metaId" IS NOT NULL THEN 'meta'
+                ELSE 'despesa' 
+              END as "origem",
               EXTRACT(MONTH FROM l.data) as "mes",
               EXTRACT(YEAR FROM l.data) as "ano",
               SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as "valorPrevisto",
@@ -109,11 +128,11 @@ export const resumoRepository = {
               MAX(EXTRACT(DAY FROM l.data)) as "diaReferencia",
               JSON_AGG(
                 JSON_BUILD_OBJECT(
-                  'id', l.id, 
-                  'data', l.data, 
-                  'valor', l.valor, 
-                  'tipo', l.tipo, 
-                  'observacao', COALESCE(l.observacao, l."observacaoAutomatica")
+                   'id', l.id, 
+                   'data', l.data, 
+                   'valor', l.valor, 
+                   'tipo', l.tipo, 
+                   'observacao', COALESCE(l.observacao, l."observacaoAutomatica")
                 ) ORDER BY l.data DESC
               ) as "detalhes"
           FROM lancamento l
@@ -150,10 +169,10 @@ export const resumoRepository = {
                   )
                 )
               ) as "detalhes",
-              COALESCE(rec.nome, d.nome, f.nome) as "nome",
+              COALESCE(rec.nome, d.nome, f.nome, m.nome) as "nome",
               COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento", real."diaReferencia") as "diaVencido",
-              COALESCE(rec.icone, d.icone, f.icone) as "icone",
-              COALESCE(rec.cor, d.cor, f.cor) as "cor",
+              COALESCE(rec.icone, d.icone, f.icone, m.icone) as "icone",
+              COALESCE(rec.cor, d.cor, f.cor, m.cor) as "cor",
               CASE WHEN real."origemId" IS NULL THEN true ELSE false END as "isProjetado"
           -- União de dados: Cruza o planejado (recorrências) com o realizado (lançamentos)
           FROM itens_recorrentes_base rec
@@ -162,6 +181,7 @@ export const resumoRepository = {
             AND rec."mes" = real."mes" AND rec."ano" = real."ano"
           LEFT JOIN despesa d ON real."origemId" = d.id AND real."origem" = 'despesa'
           LEFT JOIN receita f ON real."origemId" = f.id AND real."origem" = 'receita'
+          LEFT JOIN meta m ON real."origemId" = m.id AND real."origem" = 'meta'
       )
       SELECT * FROM uniao_de_dados ORDER BY "ano", "mes", "nome";
     `;
@@ -196,20 +216,7 @@ export const resumoRepository = {
   },
 
   async obterCardResumo({ userId, dataInicio, dataFim }: ResumoCardFiltros): Promise<ResumoMiniCardsProps> {
-    type ResumoCardDB = {
-      pagoCount: number;
-      agendadoCount: number;
-      entradasPagas: number;
-      entradasAgendadas: number;
-      saidasPagas: number;
-      saidasAgendadas: number;
-      total_projetado: number;
-      entradas_projetadas: number;
-      saidas_projetadas: number;
-      saldoBloqueado: number;
-    };
-
-    const [res] = await prisma.$queryRaw<ResumoCardDB[]>`
+    const res = await prisma.$queryRaw<ResumoCardDB[]>`
       WITH meses_do_periodo AS (
         SELECT 
           mes_referencia::date,
@@ -265,7 +272,7 @@ export const resumoRepository = {
         )
       ),
       metas_ativas AS (
-        -- Saldo Bloqueado: Dinheiro já aportado em metas que o usuário não deve "tocar"
+        -- Saldo Bloqueado NO PERÍODO: Aportes feitos no intervalo de data selecionado
         SELECT 
           COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
         FROM lancamento l
@@ -274,6 +281,8 @@ export const resumoRepository = {
           AND m.status = 'A' 
           AND m."deletedAt" IS NULL
           AND l.tipo = 'pagamento'
+          AND l.data >= ${dataInicio}::date 
+          AND l.data <= ${dataFim}::date
       )
       SELECT
         real.*,
@@ -283,12 +292,18 @@ export const resumoRepository = {
         SELECT
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN 1 ELSE 0 END), 0)::float as "pagoCount",
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN 1 ELSE 0 END), 0)::float as "agendadoCount",
+          -- entradasPagas
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasPagas",
           -- entradasAgendadas: Valores de lançamentos manuais do tipo agendamento
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasAgendadas",
+          -- saidasPagas
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasPagas",
           -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasAgendadas"
+          -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasAgendadas",
+          -- Metas
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."metaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasPagas",
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."metaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasAgendadas"
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
@@ -315,18 +330,12 @@ export const resumoRepository = {
       metas_ativas metas;
     `;
 
-    const resData = res;
-
-    const totais = {
-      transacoes: Number(resData.pagoCount) + Number(resData.agendadoCount) + Number(resData.total_projetado),
-      entradas: Number(resData.entradasPagas) + Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas),
-      saidas: Number(resData.saidasPagas) + Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas),
-    };
+    const resData = res[0] as ResumoCardDB;
 
     // LÓGICA DE CÁLCULO ESTABELECIDA
-    const saidasPagas = Number(resData.saidasPagas);
-    const saidasPrevistas = Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas);
-    
+    const saidasPagas = Number(resData.saidasPagas) + Number(resData.metasPagas);
+    const saidasPrevistas = Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas) + Number(resData.metasAgendadas);
+
     const entradasPagas = Number(resData.entradasPagas);
     const entradasPrevistas = Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas);
 
@@ -339,21 +348,24 @@ export const resumoRepository = {
       // ENTRADAS (RECEITAS)
       totalEntradas: entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas,
       entradasPagas: entradasPagas,
-      entradasAgendadas: entradasPrevistas, 
-      diferencaEntradas: entradasPrevistas - entradasPagas, // Positivo: Pendente, Negativo: Excedente
+      entradasAgendadas: entradasPrevistas,
+      diferencaEntradas: entradasPrevistas - entradasPagas,
 
-      // SAÍDAS (DESPESAS)
+      // SAÍDAS (DESPESAS + METAS)
       totalSaidas: saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas,
       saidasPagas: saidasPagas,
       saidasAgendadas: saidasPrevistas,
-      diferencaSaidas: saidasPrevistas - saidasPagas, // Positivo: Pendente, Negativo: Excedente
+      diferencaSaidas: saidasPrevistas - saidasPagas,
 
       // SALDOS
-      totalSaldo: (entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas) - (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas),
+      totalSaldo: (entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas) - (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas) + Number(resData.saldoBloqueado),
       saldoAtual: entradasPagas - saidasPagas,
       saldoProjetado: entradasPrevistas - saidasPrevistas,
       saldoBloqueado: Number(resData.saldoBloqueado),
-      saldoLivre: (entradasPagas - saidasPagas) - Number(resData.saldoBloqueado)
+      saldoLivre: (entradasPagas - saidasPagas),
+      // Campos Adicionais para IA
+      metasPagas: Number(resData.metasPagas),
+      metasAgendadas: Number(resData.metasAgendadas)
     };
   },
 
@@ -374,4 +386,40 @@ export const resumoRepository = {
       },
     });
   },
+
+  async obterTotaisHistoricos(userId: number): Promise<TotaisHistoricos> {
+    const results = await prisma.$queryRaw`
+      WITH totais_base AS (
+        SELECT 
+          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as rec_paga,
+          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as rec_prev,
+          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
+          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
+          SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
+        FROM lancamento l
+        WHERE l."userId" = ${userId}
+      )
+      SELECT 
+        COALESCE(rec_paga, 0)::float as "receitasPagas",
+        COALESCE(rec_prev, 0)::float as "receitasPrevistas",
+        COALESCE(desp_paga, 0)::float as "despesasPagas",
+        COALESCE(desp_prev, 0)::float as "despesasPrevistas",
+        COALESCE(meta_paga, 0)::float as "metasPagas"
+      FROM totais_base;
+    ` as any[];
+
+    const data = results[0];
+    
+    return {
+      receitas: Math.max(data.receitasPagas, data.receitasPrevistas),
+      despesas: Math.max(data.despesasPagas, data.despesasPrevistas),
+      metas: data.metasPagas,
+      receitasPagas: data.receitasPagas,
+      receitasPrevistas: data.receitasPrevistas,
+      despesasPagas: data.despesasPagas,
+      despesasPrevistas: data.despesasPrevistas
+    };
+  }
+
 };
+

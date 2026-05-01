@@ -141,19 +141,19 @@ export const Listagem = ({
     <Grid container spacing={3}>
       {metas.map((meta) => {
         const acumulado = meta.valorAcumulado || 0;
-        const metaValor = meta.valorMeta || 1;
-        const progresso = (acumulado / metaValor) * 100;
+        const metaValor = meta.valorMeta ? Number(meta.valorMeta) : 0;
+        const progresso = metaValor > 0 ? (acumulado / metaValor) * 100 : 0;
         const cor = meta.cor || theme.palette.primary.main;
-        const faltante = Math.max(metaValor - acumulado, 0);
-        const isMetaAtingida = progresso >= 100 && meta.status === "A";
+        const faltante = metaValor > 0 ? Math.max(metaValor - acumulado, 0) : 0;
+        const isMetaAtingida = metaValor > 0 && progresso >= 100 && meta.status === "A";
 
         // Lógica de Atraso (usando arquitetura Naive)
         const hoje = new Date().toLocaleDateString("sv-SE");
         const dataAlvoStr = meta.dataAlvo
           ? fnFormatNaiveDate(meta.dataAlvo, "yyyy-MM-dd")
-          : "";
+          : null;
         const isMetaAtrasada =
-          meta.status === "A" && progresso < 100 && dataAlvoStr < hoje;
+          meta.status === "A" && metaValor > 0 && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
 
         return (
           <Grid item xs={12} sm={6} md={4} key={meta.id}>
@@ -311,7 +311,7 @@ export const Listagem = ({
                       OBJETIVO
                     </Typography>
                     <Typography variant="subtitle1" fontWeight={800}>
-                      {formatCurrency(meta.valorMeta)}
+                      {meta.valorMeta ? formatCurrency(Number(meta.valorMeta)) : "---"}
                     </Typography>
                   </Grid>
                 </Grid>

@@ -7,7 +7,7 @@ export const metaSchema = z.object({
   id: z.number().int().positive(),
   userId: z.number().int().positive(),
   nome: z.string().min(1, "Nome é obrigatório").max(100),
-  valorMeta: z.number().positive("Valor da meta deve ser maior que zero"),
+  valorMeta: z.number().positive("Valor da meta deve ser maior que zero").nullable().optional(),
   valorAtual: z.number().default(0),
   dataAlvo: z.coerce.date().nullable().optional(),
   icone: z.string().nullable().optional(),
@@ -22,7 +22,7 @@ export const metaSchema = z.object({
 export const createMetaSchema = z.object({
   userId: z.number().int().positive().optional(),
   nome: z.string().min(1, "Nome é obrigatório").max(100),
-  valorMeta: z.number().positive("Valor da meta deve ser maior que zero"), // Mapeado para valorObjetivo no banco
+  valorMeta: z.number().positive("Valor da meta deve ser maior que zero").nullable().optional(), // Mapeado para valorObjetivo no banco
   valorInicial: z.number().nonnegative().optional().default(0),
   categoriaId: z.number().int().positive().optional(),
   dataAlvo: z.coerce.date().nullable().optional(),

@@ -54,5 +54,9 @@ export const metaService = {
    */
   async atualizarValorAtual(id: number, novoValor: number): Promise<Meta> {
     return await repositorio.atualizar(id, { valorAtual: novoValor });
+  },
+
+  async obterResumo(userId: number) {
+    return await repositorio.obterResumoMetas(userId);
   }
 };

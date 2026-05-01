@@ -3,8 +3,8 @@ model Meta {
   userId       Int
   categoriaId  Int?
   nome         String
-  valorMeta    Decimal      @db.Decimal(10, 2)
-  dataAlvo     DateTime
+  valorMeta    Decimal?      @db.Decimal(10, 2)
+  dataAlvo     DateTime?
   status       String       @default("A") // A: Ativo, I: Inativo
   icone        String?
   cor          String?

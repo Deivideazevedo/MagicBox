@@ -52,15 +52,15 @@ export const metasRepository = {
 
     const metasDetalhadas = metas.map(m => {
       const valorAcumulado = aportesMap.get(m.id) || 0;
-      const valorMeta = Number(m.valorMeta);
-      const progresso = valorMeta > 0 ? (valorAcumulado / valorMeta) * 100 : 0;
-      
+      const valorMeta = m.valorMeta ? Number(m.valorMeta) : null;
+      const progresso = valorMeta && valorMeta > 0 ? (valorAcumulado / valorMeta) * 100 : null;
+
       return {
         ...m,
         valorAcumulado,
         valorMeta,
         progresso,
-        concluida: valorAcumulado >= valorMeta && valorMeta > 0
+        concluida: valorMeta && valorMeta > 0 ? valorAcumulado >= valorMeta : false
       } as unknown as Meta;
     });
 
@@ -120,13 +120,8 @@ export const metasRepository = {
   },
 
   async criar(dados: CreateMetaDTO & { userId: number }): Promise<Meta> {
-    const { valorInicial, ...dadosParaSalvar } = dados;
-
     return await prisma.meta.create({
-      data: {
-        ...dadosParaSalvar,
-        dataAlvo: dadosParaSalvar.dataAlvo ? new Date(dadosParaSalvar.dataAlvo) : new Date(),
-      }
+      data: dados
     }) as unknown as Meta;
   },
 

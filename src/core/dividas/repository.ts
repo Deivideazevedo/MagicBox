@@ -37,17 +37,50 @@ export const dividasRepository = {
     return despesas.map((d) => this.mapearDividaUnica(d as DespesaComRelacoes));
   },
 
-  async listarVolateis(userId: number): Promise<DividaVolatil[]> {
+  async listarVolateis(userId: number, incluirPagos: boolean = false, filtros?: { dataInicio: string; dataFim: string }): Promise<DividaVolatil[]> {
+    const dataInicio = filtros ? new Date(filtros.dataInicio) : null;
+    const dataFim = filtros ? new Date(filtros.dataFim) : null;
+
+    type LancamentoOtimizado = {
+      id: number;
+      tipo: string;
+      valor: Prisma.Decimal;
+      data: Date;
+    };
+
     const despesasBase = await prisma.despesa.findMany({
       where: {
         userId,
         tipo: "VARIAVEL",
         deletedAt: null,
-        status: "A"
+        status: "A",
+        ...(filtros ? {
+          lancamentos: {
+            some: {
+              data: { gte: dataInicio!, lte: dataFim! }
+            }
+          }
+        } : {})
       },
-      include: {
-        categoria: true,
+      select: {
+        id: true,
+        nome: true,
+        icone: true,
+        cor: true,
+        userId: true,
+        categoria: {
+          select: { nome: true }
+        },
         lancamentos: {
+          where: filtros ? {
+            data: { gte: dataInicio!, lte: dataFim! }
+          } : {},
+          select: {
+            id: true,
+            tipo: true,
+            valor: true,
+            data: true
+          },
           orderBy: { data: "asc" }
         }
       }
@@ -57,74 +90,65 @@ export const dividasRepository = {
     const volateis: DividaVolatil[] = [];
 
     for (const d of despesasBase) {
-      const lancamentos = d.lancamentos || [];
+      const lancamentos = d.lancamentos as LancamentoOtimizado[];
 
-      const mesesComAgendamento = new Map<string, Lancamento[]>();
-      lancamentos.filter(l => l.tipo === 'agendamento').forEach(a => {
-        const key = `${new Date(a.data).getUTCMonth()}-${new Date(a.data).getUTCFullYear()}`;
-        const list = mesesComAgendamento.get(key) || [];
-        list.push(a);
-        mesesComAgendamento.set(key, list);
-      });
+      // Agrupamento cronológico em passada única (Preserva ordem ASC do banco)
+      const mesesAgrupados = new Map<string, { 
+        dataReferencia: Date; 
+        valorAgendado: number; 
+        valorPago: number 
+      }>();
+
+      for (const l of lancamentos) {
+        const date = new Date(l.data);
+        const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+        
+        const grupo = mesesAgrupados.get(key) || { 
+          dataReferencia: l.data, 
+          valorAgendado: 0, 
+          valorPago: 0 
+        };
+
+        if (l.tipo === 'agendamento') {
+          grupo.valorAgendado += Number(l.valor);
+        } else if (l.tipo === 'pagamento') {
+          grupo.valorPago += Number(l.valor);
+        }
+
+        mesesAgrupados.set(key, grupo);
+      }
 
       const situacaoParcelas: SituacaoParcela[] = [];
       let numeroSeq = 1;
 
-      const chavesOrdenadas = Array.from(mesesComAgendamento.keys()).sort((a, b) => {
-        const [m1, y1] = a.split('-').map(Number);
-        const [m2, y2] = b.split('-').map(Number);
-        return y1 !== y2 ? y1 - y2 : m1 - m2;
-      });
+      // Iteramos o Map que já está em ordem cronológica de inserção (devido ao orderBy ASC do prisma)
+      mesesAgrupados.forEach((grupo, key) => {
+        const { dataReferencia, valorAgendado, valorPago } = grupo;
 
-      for (const key of chavesOrdenadas) {
-        const ags = mesesComAgendamento.get(key)!;
-        const [mes, ano] = key.split('-').map(Number);
-        const dataReferencia = ags[0].data;
+        // REGRA: Se foi TOTALMENTE paga e não solicitamos incluir pagos, IGNORA
+        const isTotalmentePaga = Math.round(valorPago * 100) >= Math.round(valorAgendado * 100);
+        if (!incluirPagos && isTotalmentePaga) return;
 
-        const valorAgendadoNoMes = ags.reduce((acc, l) => acc + Number(l.valor), 0);
-        const pagamentosNoMes = lancamentos.filter(l =>
-          l.tipo === 'pagamento' &&
-          new Date(l.data).getUTCMonth() === mes &&
-          new Date(l.data).getUTCFullYear() === ano
-        );
-        const valorPagoNoMes = pagamentosNoMes.reduce((acc, l) => acc + Number(l.valor), 0);
-
-        // REGRA: Se foi TOTALMENTE paga, IGNORA do Card de Dívidas
-        if (valorPagoNoMes >= valorAgendadoNoMes - 0.01) continue;
-
-        let status: StatusSituacaoParcela = (valorPagoNoMes > 0) ? 'parcial' : 'pendente';
+        let status: StatusSituacaoParcela = isTotalmentePaga ? 'pago' : (valorPago > 0 ? 'parcial' : 'pendente');
         if (status === 'pendente' && new Date(dataReferencia) < hoje && !isSameMonth(new Date(dataReferencia), hoje)) {
           status = 'atrasada';
         }
 
-        const label = `Referência: ${format(new Date(dataReferencia), 'MM/yyyy', { locale: ptBR })}`;
-
         situacaoParcelas.push({
           numero: numeroSeq++,
-          label,
+          label: `Referência: ${format(new Date(dataReferencia), 'MM/yyyy', { locale: ptBR })}`,
           dataVencimento: new Date(dataReferencia).toISOString().split('T')[0],
-          valorAgendado: valorAgendadoNoMes,
-          valorPago: valorPagoNoMes,
+          valorAgendado,
+          valorPago,
           status
         });
-      }
+      });
 
       if (situacaoParcelas.length === 0) continue;
 
       const proximo = situacaoParcelas.find(p => p.status !== 'pago');
       const valorTotalPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorAgendado, 0);
       const valorPagoPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorPago, 0);
-
-      // Otimização: Retornar apenas lançamentos que pertencem aos meses exibidos
-      const mesesVisiveis = new Set(situacaoParcelas.map(p => {
-        const d = new Date(p.dataVencimento);
-        return `${d.getUTCMonth()}-${d.getUTCFullYear()}`;
-      }));
-
-      const lancamentosFiltrados = lancamentos.filter(l => {
-        const d = new Date(l.data);
-        return mesesVisiveis.has(`${d.getUTCMonth()}-${d.getUTCFullYear()}`);
-      });
 
       volateis.push({
         id: `vol-${d.id}`,
@@ -143,7 +167,7 @@ export const dividasRepository = {
         atrasada: situacaoParcelas.some(p => p.status === 'atrasada'),
         categoriaNome: d.categoria?.nome,
         userId: d.userId,
-        lancamentos: lancamentosFiltrados,
+        lancamentos: lancamentos as unknown as Lancamento[],
         situacaoParcelas
       });
     }

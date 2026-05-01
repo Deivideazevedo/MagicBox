@@ -39,7 +39,7 @@ export const useGoalsProgress = (date?: Date) => {
     id: meta.id,
     title: meta.nome,
     current: meta.valorAcumulado || 0,
-    target: meta.valorMeta,
+    target: meta.valorMeta ? Number(meta.valorMeta) : 0,
     deadline: meta.dataAlvo,
     color: meta.cor || "#5D87FF",
   }));
@@ -47,6 +47,7 @@ export const useGoalsProgress = (date?: Date) => {
   const overallProgress = goals.length > 0 
     ? goals.reduce((acc, goal) => acc + calculateProgress(goal.current, goal.target), 0) / goals.length 
     : 0;
+
 
   return {
     goals,

@@ -4,8 +4,8 @@ export interface Meta {
   id: number;
   userId: number;
   nome: string;
-  valorMeta: number;
-  dataAlvo: string | Date;
+  valorMeta: number | null;
+  dataAlvo: string | Date | null;
   status: string;
   icone: string | null;
   cor: string | null;
@@ -15,7 +15,7 @@ export interface Meta {
 
   // Campos calculados (opcionais)
   valorAcumulado?: number;
-  progresso?: number;
+  progresso?: number | null;
   concluida?: boolean;
   lancamentos?: LancamentoResposta[];
 }
@@ -23,7 +23,7 @@ export interface Meta {
 export interface MetaPayload {
   id?: number;
   nome?: string;
-  valorMeta?: number;
+  valorMeta?: number | null;
   dataAlvo?: string | Date | null;
   status?: string;
   icone?: string | null;
