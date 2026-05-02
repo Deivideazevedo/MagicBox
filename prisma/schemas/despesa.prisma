@@ -9,13 +9,12 @@ model Despesa {
   totalParcelas Int?
   diaVencimento Int?
   dataInicio    DateTime?
-  status        String       @default("A") // A: Ativo, I: Inativo
+  status        String       @default("A")
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
   icone         String?
   cor           String?
-  
   categoria     Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   lancamentos   Lancamento[]
@@ -26,4 +25,3 @@ model Despesa {
   @@index([status])
   @@map("despesa")
 }
-

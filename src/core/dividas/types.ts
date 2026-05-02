@@ -10,6 +10,7 @@ export interface SituacaoParcela {
   valorAgendado: number;
   valorPago: number;
   status: StatusSituacaoParcela;
+  observacao?: string;
 }
 
 export interface DividaBase {

@@ -1,20 +1,19 @@
 model Meta {
-  id           Int          @id @default(autoincrement())
-  userId       Int
-  categoriaId  Int?
-  nome         String
-  valorMeta    Decimal?      @db.Decimal(10, 2)
-  dataAlvo     DateTime?
-  status       String       @default("A") // A: Ativo, I: Inativo
-  icone        String?
-  cor          String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  deletedAt    DateTime?
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoria    Categoria?   @relation(fields: [categoriaId], references: [id])
-  lancamentos  Lancamento[]
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  categoriaId Int?
+  nome        String
+  valorMeta   Decimal      @db.Decimal(10, 2)
+  dataAlvo    DateTime
+  status      String       @default("A")
+  icone       String?
+  cor         String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  lancamentos Lancamento[]
+  categoria   Categoria?   @relation(fields: [categoriaId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, deletedAt])
   @@index([userId])

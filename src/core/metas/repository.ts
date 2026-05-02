@@ -120,17 +120,23 @@ export const metasRepository = {
   },
 
   async criar(dados: CreateMetaDTO & { userId: number }): Promise<Meta> {
+    const { valorInicial, ...rest } = dados;
     return await prisma.meta.create({
-      data: dados
+      data: {
+        ...rest,
+        valorMeta: rest.valorMeta ?? 0,
+        dataAlvo: rest.dataAlvo ? new Date(rest.dataAlvo) : new Date(),
+      }
     }) as unknown as Meta;
   },
 
   async atualizar(id: number, dados: UpdateMetaDTO): Promise<Meta> {
+    const { valorAtual, ...rest } = dados as any;
     return await prisma.meta.update({
       where: { id },
       data: {
-        ...dados,
-        dataAlvo: dados.dataAlvo ? new Date(dados.dataAlvo) : undefined,
+        ...rest,
+        dataAlvo: rest.dataAlvo ? new Date(rest.dataAlvo) : undefined,
       }
     }) as unknown as Meta;
   },

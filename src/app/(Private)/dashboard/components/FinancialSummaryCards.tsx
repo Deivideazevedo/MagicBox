@@ -34,7 +34,7 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
     dataInicio,
     dataFim,
   });
-  
+
   const resumo = dashboard?.cards;
 
   const cards = [
@@ -44,7 +44,8 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       subtitle: "Livre para gastar",
       icon: <IconWallet size={20} stroke={2} />,
       color: "#13DEB9",
-      tooltip: "Saldo Atual menos o valor reservado em Metas ativas."
+      tooltip:
+        "Saldo do período selecionado menos os aportes em Metas no período.",
     },
     {
       title: "Receitas do Mês",
@@ -66,7 +67,8 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       subtitle: "Valor reservado",
       icon: <IconLock size={20} stroke={2} />,
       color: "#FFAE1F",
-      tooltip: "Somatório do valor atual acumulado em todas as suas Metas financeiras."
+      tooltip:
+        "Somatório de aportes pagos em Metas ativas no período selecionado.",
     },
   ];
 
@@ -126,7 +128,12 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
             />
 
             <CardContent sx={{ p: 2.5, pt: 2 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-start"
+                mb={1.5}
+              >
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -151,22 +158,36 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
                   {card.icon}
                 </Box>
               </Box>
-              
-              <Typography variant="h4" fontWeight={800} sx={{ 
-                color: "text.primary",
-                mb: 0.5,
-                fontSize: { xs: "1.25rem", lg: "1.5rem" }
-              }}>
+
+              <Typography
+                variant="h4"
+                fontWeight={800}
+                sx={{
+                  color: "text.primary",
+                  mb: 0.5,
+                  fontSize: { xs: "1.25rem", lg: "1.5rem" },
+                }}
+              >
                 {formatCurrency(card.value)}
               </Typography>
-              
+
               <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography variant="caption" fontWeight={500} color="text.secondary">
+                <Typography
+                  variant="caption"
+                  fontWeight={500}
+                  color="text.secondary"
+                >
                   {card.subtitle}
                 </Typography>
                 {card.tooltip && (
                   <Tooltip title={card.tooltip} arrow placement="top">
-                    <Box sx={{ display: 'flex', color: 'text.disabled', cursor: 'help' }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        color: "text.disabled",
+                        cursor: "help",
+                      }}
+                    >
                       <IconInfoCircle size={14} />
                     </Box>
                   </Tooltip>

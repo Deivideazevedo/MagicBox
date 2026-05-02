@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { dividasRepository as coreDividasRepository } from "@/core/dividas/repository";
-import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format } from "date-fns";
+import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format, isBefore, startOfDay, set, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export interface DividaResumoItem {
@@ -21,6 +21,9 @@ export interface DividaResumoItem {
   tipo: 'DIVIDA' | 'FIXA' | 'VARIAVEL';
   labelParcela?: string;
   status: string;
+  dataVencimento: string;
+  diasParaVencer: number;
+  observacao?: string;
 }
 
 export const dividasRepository = {
@@ -49,9 +52,10 @@ export const dividasRepository = {
         )
         SELECT 
           d.id, d.nome, d."valorEstimado" as "valorTotal", d.icone, d.cor, d."diaVencimento",
-          c.nome as "catNome", c.icone as "catIcone", c.cor as "catCor"
+          c.nome as "catNome", c.icone as "catIcone", c.cor as "catCor",
+          (m.mes_referencia + (d."diaVencimento" - 1) * interval '1 day')::date as "dataVencimento"
         FROM despesa d
-        LEFT JOIN categoria c ON d."categoriaId" = c.id
+        LEFT JOIN categorias c ON d."categoriaId" = c.id
         CROSS JOIN meses_do_periodo m
         WHERE d."userId" = ${userId} 
           AND d.status = 'A' 
@@ -83,7 +87,9 @@ export const dividasRepository = {
         cor: p.cor,
         diaVencimento: p.diaVencimento,
         tipo: 'FIXA',
-        status: 'projetada'
+        status: 'projetada',
+        dataVencimento: p.dataVencimento.toISOString(),
+        diasParaVencer: differenceInDays(parseISO(p.dataVencimento.toISOString()), startOfDay(new Date()))
       }));
     } else {
       const fixasAtivas = await prisma.despesa.findMany({
@@ -106,7 +112,9 @@ export const dividasRepository = {
         cor: f.cor,
         diaVencimento: f.diaVencimento,
         tipo: 'FIXA',
-        status: 'ativa'
+        status: 'ativa',
+        dataVencimento: set(startOfDay(new Date()), { date: f.diaVencimento || 1 }).toISOString(),
+        diasParaVencer: differenceInDays(set(startOfDay(new Date()), { date: f.diaVencimento || 1 }), startOfDay(new Date()))
       }));
     }
 
@@ -118,9 +126,9 @@ export const dividasRepository = {
       const parcelas = d.situacaoParcelas || [];
       const parcelasNoPeriodo = (filtros && dataInicio && dataFim)
         ? parcelas.filter(p => {
-            const dataVenc = parseISO(p.dataVencimento);
-            return dataVenc >= startOfMonth(dataInicio) && dataVenc <= endOfMonth(dataFim);
-          })
+          const dataVenc = parseISO(p.dataVencimento);
+          return dataVenc >= startOfMonth(dataInicio) && dataVenc <= endOfMonth(dataFim);
+        })
         : parcelas;
 
       parcelasNoPeriodo.forEach(p => {
@@ -141,7 +149,10 @@ export const dividasRepository = {
           diaVencimento: d.diaVencimento || 0,
           tipo: 'DIVIDA',
           labelParcela: p.label,
-          status: p.status
+          status: p.status,
+          dataVencimento: p.dataVencimento,
+          diasParaVencer: differenceInDays(parseISO(p.dataVencimento), startOfDay(new Date())),
+          observacao: p.observacao
         });
       });
     });
@@ -149,14 +160,8 @@ export const dividasRepository = {
     // Processar Volateis (Variáveis)
     volateis.forEach(v => {
       const parcelas = v.situacaoParcelas || [];
-      const parcelasNoPeriodo = (filtros && dataInicio && dataFim)
-        ? parcelas.filter(p => {
-            const dataVenc = parseISO(p.dataVencimento);
-            return dataVenc >= startOfMonth(dataInicio) && dataVenc <= endOfMonth(dataFim);
-          })
-        : parcelas;
 
-      parcelasNoPeriodo.forEach(p => {
+      parcelas.forEach(p => {
         listagemCompleta.push({
           id: `${v.id}-${p.numero}`,
           nome: v.nome,
@@ -174,7 +179,9 @@ export const dividasRepository = {
           diaVencimento: null,
           tipo: 'VARIAVEL',
           labelParcela: p.label,
-          status: p.status
+          status: p.status,
+          dataVencimento: p.dataVencimento,
+          diasParaVencer: differenceInDays(parseISO(p.dataVencimento), startOfDay(new Date()))
         });
       });
     });

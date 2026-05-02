@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { ResumoMiniCardsProps, ResumoResposta, TotaisHistoricos } from "./types";
+import {
+  ResumoMiniCardsProps,
+  ResumoResposta,
+  TotaisHistoricos,
+} from "./types";
 import { Prisma, Lancamento as PrismaResumo } from "@prisma/client";
 import {
   ResumoCardFiltros,
@@ -24,8 +28,11 @@ interface ResumoCardDB {
 }
 
 export const resumoRepository = {
-
-  async obterResumo({ userId, dataInicio, dataFim }: ResumoFiltros): Promise<ResumoResposta[]> {
+  async obterResumo({
+    userId,
+    dataInicio,
+    dataFim,
+  }: ResumoFiltros): Promise<ResumoResposta[]> {
     const response = await prisma.$queryRaw<ResumoResposta[]>`
       WITH meses_do_periodo AS (
         SELECT 
@@ -197,7 +204,7 @@ export const resumoRepository = {
         valorPrevisto,
         item.diaVencido,
         mes,
-        ano
+        ano,
       );
 
       return {
@@ -210,12 +217,16 @@ export const resumoRepository = {
         status: label,
         atrasado: isAtrasado,
         isProjetado: item.isProjetado,
-        detalhes: item.detalhes
+        detalhes: item.detalhes,
       };
     });
   },
 
-  async obterCardResumo({ userId, dataInicio, dataFim }: ResumoCardFiltros): Promise<ResumoMiniCardsProps> {
+  async obterCardResumo({
+    userId,
+    dataInicio,
+    dataFim,
+  }: ResumoCardFiltros): Promise<ResumoMiniCardsProps> {
     const res = await prisma.$queryRaw<ResumoCardDB[]>`
       WITH meses_do_periodo AS (
         SELECT 
@@ -272,12 +283,13 @@ export const resumoRepository = {
         )
       ),
       metas_ativas AS (
-        -- Saldo Bloqueado NO PERÍODO: Aportes feitos no intervalo de data selecionado
+        -- Saldo Bloqueado NO PERÍODO: aportes feitos em metas ativas no intervalo selecionado
         SELECT 
           COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
         FROM lancamento l
         INNER JOIN meta m ON l."metaId" = m.id
         WHERE m."userId" = ${userId} 
+          AND l."userId" = ${userId}
           AND m.status = 'A' 
           AND m."deletedAt" IS NULL
           AND l.tipo = 'pagamento'
@@ -333,39 +345,56 @@ export const resumoRepository = {
     const resData = res[0] as ResumoCardDB;
 
     // LÓGICA DE CÁLCULO ESTABELECIDA
-    const saidasPagas = Number(resData.saidasPagas) + Number(resData.metasPagas);
-    const saidasPrevistas = Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas) + Number(resData.metasAgendadas);
+    // IMPORTANTÍSSIMO: aportes em metas NÃO são gastos.
+    // Eles são controlados via `saldoBloqueado` e devem impactar o `saldoLivre`, não as saídas.
+    const saidasPagas = Number(resData.saidasPagas);
+    const saidasPrevistas =
+      Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas);
 
     const entradasPagas = Number(resData.entradasPagas);
-    const entradasPrevistas = Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas);
+    const entradasPrevistas =
+      Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas);
+
+    const saldoAtual = entradasPagas - saidasPagas;
+    const saldoProjetado = entradasPrevistas - saidasPrevistas;
+    const saldoBloqueado = Number(resData.saldoBloqueado);
 
     return {
       // CONTADORES TOTAIS
-      totalTransacoes: (Number(resData.pagoCount)) + (Number(resData.agendadoCount) + Number(resData.total_projetado)),
+      totalTransacoes:
+        Number(resData.pagoCount) +
+        (Number(resData.agendadoCount) + Number(resData.total_projetado)),
       transacoesPagas: Number(resData.pagoCount),
-      transacoesAgendadas: Number(resData.agendadoCount) + Number(resData.total_projetado),
+      transacoesAgendadas:
+        Number(resData.agendadoCount) + Number(resData.total_projetado),
 
       // ENTRADAS (RECEITAS)
-      totalEntradas: entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas,
+      totalEntradas:
+        entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas,
       entradasPagas: entradasPagas,
       entradasAgendadas: entradasPrevistas,
       diferencaEntradas: entradasPrevistas - entradasPagas,
 
       // SAÍDAS (DESPESAS + METAS)
-      totalSaidas: saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas,
+      totalSaidas:
+        saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas,
       saidasPagas: saidasPagas,
       saidasAgendadas: saidasPrevistas,
       diferencaSaidas: saidasPrevistas - saidasPagas,
 
       // SALDOS
-      totalSaldo: (entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas) - (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas) + Number(resData.saldoBloqueado),
-      saldoAtual: entradasPagas - saidasPagas,
-      saldoProjetado: entradasPrevistas - saidasPrevistas,
-      saldoBloqueado: Number(resData.saldoBloqueado),
-      saldoLivre: (entradasPagas - saidasPagas),
+      totalSaldo:
+        (entradasPagas > entradasPrevistas
+          ? entradasPagas
+          : entradasPrevistas) -
+        (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas),
+      saldoAtual,
+      saldoProjetado,
+      saldoBloqueado,
+      saldoLivre: saldoAtual - saldoBloqueado,
       // Campos Adicionais para IA
       metasPagas: Number(resData.metasPagas),
-      metasAgendadas: Number(resData.metasAgendadas)
+      metasAgendadas: Number(resData.metasAgendadas),
     };
   },
 
@@ -374,21 +403,42 @@ export const resumoRepository = {
     return await prisma.lancamento.findMany({
       where: {
         ...restoDosFiltros,
-        data: dataInicio || dataFim ? {
-          ...(dataInicio && { gte: dataInicio }),
-          ...(dataFim && { lte: dataFim }),
-        } : undefined,
+        data:
+          dataInicio || dataFim
+            ? {
+                ...(dataInicio && { gte: dataInicio }),
+                ...(dataFim && { lte: dataFim }),
+              }
+            : undefined,
       },
       orderBy: { data: "desc" },
       include: {
-        despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true, icone: true, cor: true } },
-        receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true, icone: true, cor: true } },
+        despesa: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaVencimento: true,
+            icone: true,
+            cor: true,
+          },
+        },
+        receita: {
+          select: {
+            id: true,
+            nome: true,
+            valorEstimado: true,
+            diaRecebimento: true,
+            icone: true,
+            cor: true,
+          },
+        },
       },
     });
   },
 
   async obterTotaisHistoricos(userId: number): Promise<TotaisHistoricos> {
-    const results = await prisma.$queryRaw`
+    const results = (await prisma.$queryRaw`
       WITH totais_base AS (
         SELECT 
           SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as rec_paga,
@@ -397,7 +447,15 @@ export const resumoRepository = {
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
           SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
         FROM lancamento l
+        LEFT JOIN despesa d ON l."despesaId" = d.id
+        LEFT JOIN receita r ON l."receitaId" = r.id
+        LEFT JOIN meta m ON l."metaId" = m.id
         WHERE l."userId" = ${userId}
+          AND (
+            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
+            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
+            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+          )
       )
       SELECT 
         COALESCE(rec_paga, 0)::float as "receitasPagas",
@@ -406,10 +464,10 @@ export const resumoRepository = {
         COALESCE(desp_prev, 0)::float as "despesasPrevistas",
         COALESCE(meta_paga, 0)::float as "metasPagas"
       FROM totais_base;
-    ` as any[];
+    `) as any[];
 
     const data = results[0];
-    
+
     return {
       receitas: Math.max(data.receitasPagas, data.receitasPrevistas),
       despesas: Math.max(data.despesasPagas, data.despesasPrevistas),
@@ -417,9 +475,7 @@ export const resumoRepository = {
       receitasPagas: data.receitasPagas,
       receitasPrevistas: data.receitasPrevistas,
       despesasPagas: data.despesasPagas,
-      despesasPrevistas: data.despesasPrevistas
+      despesasPrevistas: data.despesasPrevistas,
     };
-  }
-
+  },
 };
-

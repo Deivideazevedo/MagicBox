@@ -17,14 +17,7 @@ export interface DiagnosticoFinanceiro {
     previstoNoPeriodo: number;
     totalProjetadoNoPeriodo: number;
     totalDevedorDividas: number;
-    detalheDividas: Array<{
-      id: number | string;
-      nome: string;
-      valorTotal: number;
-      valorPago: number;
-      saldoDevedor: number;
-      status: string;
-    }>;
+    detalheDividas: ItemPilarDespesa[];
   };
   pilarMetas: {
     totalAcumulado: number;
@@ -45,10 +38,72 @@ export interface DiagnosticoFinanceiro {
     }>;
   };
   saldos: {
-    saldoBruto: number; // Receitas - Despesas
-    saldoBloqueado: number; // Acumulado em Metas
-    saldoLivre: number; // Bruto - Bloqueado
+    saldoAtual: number;
+    saldoBloqueado: number;
+    saldoLivre: number;
+    saldoAtualNoPeriodo?: number;
+    saldoBloqueadoNoPeriodo?: number;
+    saldoLivreNoPeriodo?: number;
+    saldoProjetadoNoPeriodo?: number;
   };
+}
+
+/**
+ * NOVO MODELO: Hierárquico e Consolidado
+ */
+export interface ResultadoPilarDespesas {
+  totalHistorico: number;
+  pagoNoPeriodo: number;
+  previstoNoPeriodo: number;
+  totalDevedorDividas: number;
+  totalItens: number;
+  despesasConsolidadas: Array<{
+    id: number | string;
+    nome: string;
+    tipo: string;
+    totalPrevisto: number;
+    totalPago: number;
+    saldoDevedor: number;
+    status: 'QUITADA' | 'ATIVA' | 'PARCIAL';
+    detalhesMensais: ItemDetalheMensal[];
+  }>;
+}
+
+/**
+ * Interface para os detalhes mensais do NOVO modelo
+ */
+export interface ItemDetalheMensal {
+  id: number | string;
+  nome: string;
+  valorPrevisto: number;
+  valorPago: number;
+  saldoDevedor: number;
+  dataVencimento: string | null;
+  dataLancamento: string | null;
+  diasParaVencer: number | null;
+  status: string;
+  isProjecao: boolean;
+  labelParcela?: string;
+  observacao?: string;
+}
+
+/**
+ * Interface CLÁSSICA (para manter o global funcionando)
+ */
+export interface ItemPilarDespesa {
+  id: number | string;
+  nome: string;
+  valorTotal: number;
+  valorPago: number;
+  saldoDevedor: number;
+  status: string;
+  diasParaVencer: number | null;
+  dataVencimento: string | null;
+  dataLancamento: string | null;
+  isProjecao: boolean;
+  labelParcela?: string;
+  observacao?: string;
+  tipo?: string;
 }
 
 export interface LancamentoSimplificado {
@@ -56,7 +111,7 @@ export interface LancamentoSimplificado {
   data: string;
   nome: string;
   valor: number;
-  tipo: string; // receita, despesa, meta
+  tipo: string;
   origem: string;
   status: string;
   isProjetado: boolean;

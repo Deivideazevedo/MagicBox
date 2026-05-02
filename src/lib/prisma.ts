@@ -12,13 +12,15 @@ const createPrismaClient = () => {
   const pool = new Pool({
     connectionString,
     // Performance optimizations
-    max: 20, // Máximo de conexões no pool (padrão: 10)
-    idleTimeoutMillis: 30000, // Fecha conexões ociosas após 30s
-    connectionTimeoutMillis: 5000, // Timeout para obter conexão: 5s (padrão: 0 = sem timeout)
-    allowExitOnIdle: true, // Permite que o processo termine se não houver conexões ativas
-    // Habilita SSL se 'sslmode' estiver na URL (ex: Neon). 
-    // rejectUnauthorized: false permite conexões sem validar o certificado CA completo.
-    ssl: connectionString?.includes("sslmode=") ? { rejectUnauthorized: false } : false,
+    max: 10, // Reduzido para 10 para maior compatibilidade com planos gratuitos (ex: Neon)
+    idleTimeoutMillis: 60000, // Aumentado para 60s para manter conexões vivas por mais tempo
+    connectionTimeoutMillis: 5000, 
+    // Em desenvolvimento, evitamos fechar o pool agressivamente
+    allowExitOnIdle: isProduction, 
+    // Satisfaz o aviso de segurança do pg e garante o modo correto
+    ssl: connectionString?.includes("sslmode=") 
+      ? { rejectUnauthorized: false } 
+      : false,
   });
 
   // Monitoramento do pool em desenvolvimento

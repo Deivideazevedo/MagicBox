@@ -6,15 +6,15 @@ model Receita {
   tipo           TipoReceita  @default(FIXA)
   valorEstimado  Decimal?     @db.Decimal(10, 2)
   diaRecebimento Int?
-  status         String       @default("A") // A: Ativo, I: Inativo
+  status         String       @default("A")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
   icone          String?
   cor            String?
+  lancamentos    Lancamento[]
   categoria      Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lancamentos    Lancamento[]
 
   @@index([userId, status, deletedAt, tipo])
   @@index([userId])
@@ -22,5 +22,3 @@ model Receita {
   @@index([status])
   @@map("receita")
 }
-
-

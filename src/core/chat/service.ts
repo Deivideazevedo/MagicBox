@@ -7,6 +7,7 @@ import { z } from "zod";
 import fs from "fs";
 import path from "path";
 import { resumoServico } from "@/core/lancamentos/resumo/service";
+import { chatDiagnosisService } from "./diagnosis.service";
 import { logChat, resetLogStep } from "@/core/chat/utils";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 
@@ -139,7 +140,6 @@ const resilientModel = createFallback({
 const MAX_CONTEXT_CHARS = 8000;
 const MAX_MESSAGES = 8; // 4 trocas completas usuário/IA
 const MAX_INPUT_CHARS = 500;
-const TOOL_ONLY_PLACEHOLDER = "[Consulta de dados realizada com sucesso]";
 
 function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
   let charCount = 0;
@@ -190,55 +190,55 @@ function aplicarJanelaDeContexto(messages: UIMessage[]): UIMessage[] {
 // System Prompt Builder
 // ─────────────────────────────────────────────────
 function construirSystemPrompt(): string {
-  const chatSkillPath = path.join(process.cwd(), "docs", "skills", "agente-chat.md");
+  const skillsPath = path.join(process.cwd(), "docs", "skills");
+  const arquivosSkills = [
+    "01-comportamento.md",
+    "02-ferramentas.md",
+    "05-orientacoes-questionamento.md",
+    "03-conhecimento-app.md"
+  ];
   let relatorioSkills = "";
 
   try {
-    if (fs.existsSync(chatSkillPath)) {
-      relatorioSkills = fs.readFileSync(chatSkillPath, "utf8");
-    } else {
-      relatorioSkills = "Documentação do agente não encontrada.";
+    for (const arquivo of arquivosSkills) {
+      const filePath = path.join(skillsPath, arquivo);
+      if (fs.existsSync(filePath)) {
+        relatorioSkills += fs.readFileSync(filePath, "utf8") + "\n\n---\n\n";
+      }
     }
   } catch (err) {
-    console.error("Erro ao ler agente-chat.md:", err);
+    console.error("Erro ao ler skills:", err);
   }
 
-  const dataLocal = fnFormatDateInTimeZone({ format: "date" }); // yyyy-MM-dd
-  const diaSemana = fnFormatDateInTimeZone({ format: "eeee", date: new Date() }); // terça-feira (usando formato eeee do date-fns)
+  const dataLocal = fnFormatDateInTimeZone({ format: "date" });
+  const diaSemana = fnFormatDateInTimeZone({ format: "eeee", date: new Date() });
   const anoAtual = fnFormatDateInTimeZone({ format: "yyyy" });
 
   return `
-Você é o Assistente Virtual Oficial do MagicBox. Sua prioridade absoluta é a precisão dos dados.
+Você é o Assistente Virtual Oficial do MagicBox. Sua missão é ser um consultor financeiro proativo e ultra-preciso.
 
-# DIRETRIZ DE OURO: CONSULTA OBRIGATÓRIA
-- NUNCA invente valores, contas, datas ou saldos. 
-- Para QUALQUER pergunta sobre finanças, saldo, gastos ou contas, você deve OBRIGATORIAMENTE chamar uma ferramenta ("obterResumoFinanceiro" ou "consultarLancamentos") antes de dar a primeira palavra ao usuário.
-- Se a ferramenta retornar vazio, diga explicitamente: "Não encontrei registros para este período no seu MagicBox. 🧐".
-- DATA ATUAL: ${dataLocal} (${diaSemana}). Use esta data como referência real para calcular "ontem", "hoje", "amanhã" ao chamar as ferramentas. Mantenha SEMPRE o ano atual (${anoAtual}) a menos que solicitado o contrário.
+# 🚨 REGRAS CRÍTICAS DE COMPORTAMENTO (PROIBIDO FALHAR)
 
-# ENTENDIMENTO DE DADOS
-- **Pagamento Parcial**: Ocorre quando o 'valorPago' é maior que zero mas menor que o 'valorPrevisto'. Explique isso ao usuário como "Pago parcialmente".
-- **Lançamento Projetado (Virtual)**: Identificado por 'isProjetado: true'. São projeções automáticas de despesas fixas (ex: Luz, Aluguel) que ainda não possuem um agendamento manual ou pagamento real. Trate-os como "Previsões".
-- **Granularidade**: Se o usuário perguntar por um dia específico, passe a mesma data para 'dataInicio' e 'dataFim'.
+1. **PROIBIÇÃO DE METACONVERSA:** NUNCA explique o que você vai fazer. NUNCA diga "vou chamar a ferramenta", "preciso consultar" ou "aguarde". Se precisar de dados, chame a ferramenta IMEDIATAMENTE e em silêncio.
 
-# COMPORTAMENTO E TOM
-- Responda de forma amigável, lúdica e PREMIUM.
-- Use emojis em todas as listas e para enfatizar ações.
-- Mantenha sigilo total sobre a arquitetura técnica (APIs, tabelas, código). Fale apenas da interface do usuário.
+2. **DEVER DE RESUMO REAL:** É terminantemente PROIBIDO dizer "verifique o resultado" ou "veja a lista". VOCÊ deve ler os dados retornados, extrair informações relevantes (nomes, valores, datas) e apresentá-las formatadas ao usuário.
+
+3. **ANÁLISE 360º:** Ao receber um resultado, não apenas repita números. Analise se há contas atrasadas, se o saldo livre está baixo ou se uma meta está próxima de ser batida. Ofereça insights reais.
+
+4. **SILÊNCIO TÉCNICO:** O usuário nunca deve saber nomes de ferramentas ou detalhes de implementação. Fale apenas da experiência dele no MagicBox.
 
 # REGRAS DE FORMATAÇÃO (ESTRITA)
-1. Pule DUAS LINHAS entre cada parágrafo ou item de lista para garantir o "respiro" visual.
-2. Valores financeiros devem estar sempre em **Negrito** no formato brasileiro: **R$ [VALOR]**.
-3. Use links markdown para navegação: [Texto](/rota).
-4. Listas: Cada item deve começar com um emoji temático e ter espaçamento duplo entre eles.
 
-# FLUXO DE RESPOSTA
-- Passo 1: Analisar se a pergunta exige dados reais.
-- Passo 2: Se sim, chamar a ferramenta adequada.
-- Passo 3: Formatar a resposta usando APENAS os dados retornados.
-- Passo 4: Sugerir um link útil de navegação.
+- **RESPIRO:** Pule DUAS LINHAS entre cada parágrafo ou item.
+- **MOEDA:** Use sempre **Negrito** no formato **R$ [VALOR]**.
+- **EMOJIS:** Use emojis em todas as listas para visual premium.
+- **LINKS:** Sempre sugira um link de navegação relevante ao final.
 
-# DOCUMENTAÇÃO DE APOIO:
+# CONTEXTO TEMPORAL
+- HOJE: ${dataLocal} (${diaSemana}).
+- ANO ATUAL: ${anoAtual}.
+
+# CONHECIMENTO DO ASSISTENTE
 ${relatorioSkills}
   `;
 }
@@ -252,30 +252,39 @@ function criarFerramentas(userId: number) {
   return {
     consultarResumoGeral: {
       description:
-        "Diagnóstico financeiro 360º. Retorna Saldo Livre, Bruto, Bloqueado e o status de todas as Metas e Dívidas ativas. Use para perguntas amplas como 'Quanto eu tenho?', 'Como está minha saúde financeira?', 'Me fale dos meus sonhos/metas' ou panoramas temporais. Forneça datas para incluir projeções futuras no PERÍODO solicitado.",
+        "Retorna diagnóstico financeiro. Use para saldos, metas e dívidas. Se não passar datas, retorna a visão global. Se passar, inclui projeções. RETORNO: possui campos pilarReceitas, pilarDespesas, pilarMetas e saldos.",
       inputSchema: z.object({
         dataInicio: z
           .string()
+          .nullable()
           .optional()
-          .describe("Opcional: Data de início (YYYY-MM-DD). Use para ver projeções de um período específico."),
+          .describe("Data início (YYYY-MM-DD)."),
         dataFim: z
           .string()
+          .nullable()
           .optional()
-          .describe("Opcional: Data de fim (YYYY-MM-DD)."),
+          .describe("Data fim (YYYY-MM-DD)."),
       }),
-      execute: async ({ dataInicio, dataFim }: { dataInicio?: string; dataFim?: string }) => {
+      execute: async ({
+        dataInicio,
+        dataFim,
+      }: {
+        dataInicio?: string;
+        dataFim?: string;
+      }) => {
         logChat({
           tipo: "TOOL_CALL",
           userId,
           ferramenta: "consultarResumoGeral",
-          mensagem: dataInicio ? `Período: ${dataInicio} → ${dataFim}` : "Visão Atemporal",
+          mensagem: dataInicio
+            ? `Período: ${dataInicio} → ${dataFim}`
+            : "Visão Global Atemporal",
         });
 
-        const diagnostico = await resumoServico.obterDiagnosticoCompleto(userId, dataInicio && dataFim ? {
+        const diagnostico = await chatDiagnosisService.obterDiagnosticoCompleto(
           userId,
-          dataInicio,
-          dataFim
-        } : undefined);
+          dataInicio && dataFim ? { userId, dataInicio, dataFim } : undefined,
+        );
 
         logChat({
           tipo: "TOOL_RESULT",
@@ -286,28 +295,89 @@ function criarFerramentas(userId: number) {
         return diagnostico;
       },
     },
-
-    consultarLancamentos: {
+consultarDespesas: {
       description:
-        "Extrato detalhado de lançamentos. Use para granularidade diária, semanal, mensal (Ex: 'O que gastei ontem?', 'vencimentos de hoje', 'gastos da semana', 'quanto gastei esse mês'). Retorna status de pagamento, categorias e nomes dos itens. Para períodos longos (>3 meses), retorna um sumário agrupado.",
+        "Retorna despesas consolidadas (FIXA, DIVIDA, VARIAVEL) com totais e detalhes mensais. RETORNO: totalHistorico, pagoNoPeriodo, totalDevedorDividas, despesasConsolidadas[]. OBRIGATÓRIO: SEMPRE passe período (dataInicio=dataInicio, dataFim=dataFim). Use período padrão: primeiro dia do mês anterior até último dia do mês atual. Use para: contas atrasadas (filtre detalhesMensais onde diasParaVencer < 0), quanto falta pagar (totalDevedorDividas), gastos do período (pagoNoPeriodo), próximos vencimentos (detalhesMensais onde diasParaVencer > 0).",
       inputSchema: z.object({
         dataInicio: z
           .string()
+          .nullable()
           .optional()
-          .describe("Data de início (YYYY-MM-DD). Padrão: primeiro dia do mês atual."),
+          .describe("Data início (YYYY-MM-DD)."),
         dataFim: z
           .string()
+          .nullable()
           .optional()
-          .describe("Data de fim (YYYY-MM-DD). Padrão: último dia do mês atual."),
+          .describe("Data fim (YYYY-MM-DD)."),
+      }),
+      execute: async ({
+        dataInicio,
+        dataFim,
+      }: {
+        dataInicio?: string;
+        dataFim?: string;
+      }) => {
+        logChat({
+          tipo: "TOOL_CALL",
+          userId,
+          ferramenta: "consultarDespesas",
+          mensagem: dataInicio
+            ? `Período: ${dataInicio} → ${dataFim}`
+            : "Visão Geral (Atemporal)",
+        });
+
+        const despesas = await chatDiagnosisService.obterPilarDespesas(
+          userId,
+          dataInicio && dataFim ? { userId, dataInicio, dataFim } : undefined,
+        );
+
+        logChat({
+          tipo: "TOOL_RESULT",
+          ferramenta: "consultarDespesas",
+          mensagem: `Total Devedor: R$${despesas.totalDevedorDividas} | Itens: ${despesas.despesasConsolidadas.length}`,
+        });
+
+        return despesas;
+      },
+    },
+    consultarLancamentos: {
+      description:
+        "Retorna extrato detalhado agrupado por item. SEMPRE exige período. RETORNO: possui campos totalEncontrados, formato e sumario (lista de itens).",
+      inputSchema: z.object({
+        dataInicio: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Data início (YYYY-MM-DD)."),
+        dataFim: z
+          .string()
+          .nullable()
+          .optional()
+          .describe("Data fim (YYYY-MM-DD)."),
         tipo: z
           .enum(["receita", "despesa", "todos"])
           .optional()
-          .default("todos")
-          .describe("Filtra por tipo de lançamento."),
+          .default("todos"),
       }),
-      execute: async ({ dataInicio, dataFim, tipo }: { dataInicio?: string; dataFim?: string; tipo?: "receita" | "despesa" | "todos" }) => {
-        const dInicio = dataInicio || new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString().split("T")[0];
-        const dFim = dataFim || new Date(agora.getFullYear(), agora.getMonth() + 1, 0).toISOString().split("T")[0];
+      execute: async ({
+        dataInicio,
+        dataFim,
+        tipo,
+      }: {
+        dataInicio?: string;
+        dataFim?: string;
+        tipo?: "receita" | "despesa" | "todos";
+      }) => {
+        const dInicio =
+          dataInicio ||
+          new Date(agora.getFullYear(), agora.getMonth(), 1)
+            .toISOString()
+            .split("T")[0];
+        const dFim =
+          dataFim ||
+          new Date(agora.getFullYear(), agora.getMonth() + 1, 0)
+            .toISOString()
+            .split("T")[0];
 
         logChat({
           tipo: "TOOL_CALL",
@@ -322,7 +392,9 @@ function criarFerramentas(userId: number) {
           dataFim: dFim,
         });
 
-        const filtrados = itens.filter((item) => tipo === "todos" || item.origem === tipo);
+        const filtrados = itens.filter(
+          (item) => tipo === "todos" || item.origem === tipo,
+        );
 
         // Lógica de Agrupamento para evitar estouro de contexto em períodos longos
         const diffMs = new Date(dFim).getTime() - new Date(dInicio).getTime();
@@ -337,44 +409,61 @@ function criarFerramentas(userId: number) {
             ocorrencias: number;
           }
 
-          const agrupado = filtrados.reduce((acc: Record<string, ItemAgrupado>, item) => {
-            const chave = `${item.origem}-${item.nome}`;
-            if (!acc[chave]) {
-              acc[chave] = {
-                nome: item.nome,
-                tipo: item.origem,
-                totalPrevisto: 0,
-                totalPago: 0,
-                ocorrencias: 0
-              };
-            }
-            acc[chave].totalPrevisto += item.valorPrevisto;
-            acc[chave].totalPago += item.valorPago;
-            acc[chave].ocorrencias += 1;
-            return acc;
-          }, {});
+          const agrupado = filtrados.reduce(
+            (acc: Record<string, ItemAgrupado>, item: any) => {
+              const chave = `${item.origem}-${item.nome}`;
+              if (!acc[chave]) {
+                acc[chave] = {
+                  nome: item.nome,
+                  tipo: item.origem,
+                  totalPrevisto: 0,
+                  totalPago: 0,
+                  ocorrencias: 0,
+                };
+              }
+              acc[chave].totalPrevisto += item.valorPrevisto;
+              acc[chave].totalPago += item.valorPago;
+              acc[chave].ocorrencias += 1;
+              return acc;
+            },
+            {},
+          );
 
           return {
             totalEncontrados: filtrados.length,
             periodoReferencia: `${dInicio} a ${dFim}`,
             formato: "SUMARIO_AGRUPADO",
-            aviso: "Período longo detectado. Os dados foram agrupados por item/fonte para facilitar a análise.",
+            aviso:
+              "Período longo detectado. Os dados foram agrupados por item/fonte para facilitar a análise.",
             sumario: Object.values(agrupado),
           };
         }
 
-        const listagem = filtrados.map((item) => ({
-          nome: item.nome,
-          tipo: item.origem,
-          valorPrevisto: item.valorPrevisto,
-          valorPago: item.valorPago,
-          status: item.status,
-          atrasado: item.atrasado,
-          isProjetado: item.isProjetado,
-          diaVencimento: item.diaVencido,
-          mes: item.mes,
-          ano: item.ano
-        }));
+        const listagem = filtrados.map((item: any) => {
+          const detalhes = (item.detalhes ?? []).map((d: any) => ({
+            ...d,
+            data:
+              typeof d.data === "string"
+                ? d.data
+                : new Date(
+                  d.data as unknown as string | number | Date,
+                ).toISOString(),
+          }));
+
+          return {
+            nome: item.nome,
+            tipo: item.origem,
+            valorPrevisto: item.valorPrevisto,
+            valorPago: item.valorPago,
+            status: item.status,
+            atrasado: item.atrasado,
+            isProjetado: item.isProjetado,
+            detalhes,
+            diaVencimento: item.diaVencido,
+            mes: item.mes,
+            ano: item.ano,
+          };
+        });
 
         logChat({
           tipo: "TOOL_RESULT",
@@ -419,7 +508,7 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
         mensagem: `Input excedeu limite de ${MAX_INPUT_CHARS} caracteres (${textoUser.length} chars)`,
       });
       throw new Error(
-        `A sua última mensagem está muito longa (máximo ${MAX_INPUT_CHARS} caracteres). Por favor, resuma sua pergunta.`
+        `A sua última mensagem está muito longa (máximo ${MAX_INPUT_CHARS} caracteres). Por favor, resuma sua pergunta.`,
       );
     }
 
@@ -435,7 +524,6 @@ async function executarChat({ messages, userId }: ExecutarChatParams) {
   const systemPrompt = construirSystemPrompt();
   const tools = criarFerramentas(userId);
   const modelMessages = await convertToModelMessages(recentMessages);
-
 
   const result = streamText({
     model: resilientModel,

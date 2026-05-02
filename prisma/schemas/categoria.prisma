@@ -1,17 +1,17 @@
 model Categoria {
-  id          Int          @id @default(autoincrement())
-  userId      Int
-  nome        String
-  descricao   String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  deletedAt   DateTime?
-  icone       String?
-  cor         String?
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  despesas    Despesa[]
-  receitas    Receita[]
-  metas       Meta[]
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  nome      String
+  descricao String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  icone     String?
+  cor       String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  despesas  Despesa[]
+  metas     Meta[]
+  receitas  Receita[]
 
   @@index([userId])
   @@index([nome])

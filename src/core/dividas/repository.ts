@@ -46,6 +46,8 @@ export const dividasRepository = {
       tipo: string;
       valor: Prisma.Decimal;
       data: Date;
+      observacao: string | null;
+      observacaoAutomatica: string | null;
     };
 
     const despesasBase = await prisma.despesa.findMany({
@@ -79,7 +81,9 @@ export const dividasRepository = {
             id: true,
             tipo: true,
             valor: true,
-            data: true
+            data: true,
+            observacao: true,
+            observacaoAutomatica: true
           },
           orderBy: { data: "asc" }
         }
@@ -93,20 +97,22 @@ export const dividasRepository = {
       const lancamentos = d.lancamentos as LancamentoOtimizado[];
 
       // Agrupamento cronológico em passada única (Preserva ordem ASC do banco)
-      const mesesAgrupados = new Map<string, { 
-        dataReferencia: Date; 
-        valorAgendado: number; 
-        valorPago: number 
+      const mesesAgrupados = new Map<string, {
+        dataReferencia: Date;
+        valorAgendado: number;
+        valorPago: number;
+        observacao?: string;
       }>();
 
       for (const l of lancamentos) {
         const date = new Date(l.data);
         const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
-        
-        const grupo = mesesAgrupados.get(key) || { 
-          dataReferencia: l.data, 
-          valorAgendado: 0, 
-          valorPago: 0 
+
+        const grupo = mesesAgrupados.get(key) || {
+          dataReferencia: l.data,
+          valorAgendado: 0,
+          valorPago: 0,
+          observacao: l.observacao || l.observacaoAutomatica || undefined
         };
 
         if (l.tipo === 'agendamento') {
@@ -123,7 +129,7 @@ export const dividasRepository = {
 
       // Iteramos o Map que já está em ordem cronológica de inserção (devido ao orderBy ASC do prisma)
       mesesAgrupados.forEach((grupo, key) => {
-        const { dataReferencia, valorAgendado, valorPago } = grupo;
+        const { dataReferencia, valorAgendado, valorPago, observacao } = grupo;
 
         // REGRA: Se foi TOTALMENTE paga e não solicitamos incluir pagos, IGNORA
         const isTotalmentePaga = Math.round(valorPago * 100) >= Math.round(valorAgendado * 100);
@@ -140,7 +146,8 @@ export const dividasRepository = {
           dataVencimento: new Date(dataReferencia).toISOString().split('T')[0],
           valorAgendado,
           valorPago,
-          status
+          status,
+          observacao
         });
       });
 

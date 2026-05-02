@@ -13,4 +13,3 @@ enum TipoReceita {
   FIXA
   VARIAVEL
 }
-

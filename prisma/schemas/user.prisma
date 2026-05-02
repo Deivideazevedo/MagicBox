@@ -11,15 +11,13 @@ model User {
   deletedAt   DateTime?
   origem      String       @default("credenciais")
   status      String       @default("A")
-  
   categorias  Categoria[]
   despesas    Despesa[]
-  receitas    Receita[]
   lancamentos Lancamento[]
   metas       Meta[]
+  receitas    Receita[]
 
   @@index([username])
   @@index([email])
   @@map("user")
 }
-
