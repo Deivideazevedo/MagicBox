@@ -12,14 +12,15 @@ interface GuestGuardProps {
  * Redireciona para o dashboard se o usuário já estiver autenticado.
  */
 const GuestGuard: React.FC<GuestGuardProps> = ({ children }) => {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.replace("/dashboard");
+      const isNewUser = session?.isNewUser;
+      router.replace(isNewUser ? "/cadastros" : "/dashboard");
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   // Apenas verifica o status da sessão e redireciona no frontend.
   // A middleware já faz o bloqueio de rotas no backend/servidor.

@@ -31,8 +31,7 @@ export const registerUserSchema = z.object({
       /^[a-zA-Z0-9_-]+$/,
       "Username deve conter apenas letras, números, _ ou -"
     )
-    .trim()
-    .toLowerCase(),
+    .trim(),
   email: z
     .string()
     .email("Email inválido")
@@ -52,7 +51,7 @@ export const registerUserSchema = z.object({
 // Schema para LOGIN
 export const loginUserSchema = z.object({
   username: z.string().optional(),
-  email: z.email().optional(),
+  email: z.string().email().optional(), // Corrigido de z.email() para z.string().email()
   password: z.string().min(1, "Senha é obrigatória"),
 }).refine((data) => data.username || data.email, {
   message: "Username ou email é obrigatório",
@@ -67,7 +66,6 @@ export const updateUserSchema = z.object({
     .max(50)
     .regex(/^[a-zA-Z0-9_-]+$/)
     .trim()
-    .toLowerCase()
     .optional(),
   email: z.string().email().trim().toLowerCase().optional(),
   password: z.string().min(6).max(100).optional().nullable(),

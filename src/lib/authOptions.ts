@@ -73,14 +73,19 @@ export const authOptions: AuthOptions = {
     signOut: "/",
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session }) {
+      // 🔹 Lógica para limpar a flag de novo usuário via session.update()
+      if (trigger === "update" && session?.isNewUser === false) {
+        token.isNewUser = false;
+      }
+
       // 🔹 Primeira vez que o usuário faz login
       if (user && account) {
         if (account.provider !== "credentials") {
           // OAuth login - Busca ou cria usuário no banco
           if (user.email) {
             try {
-              const dbUser = await authService.findOrCreateByOAuth({
+              const { user: dbUser, isNew } = await authService.findOrCreateByOAuth({
                 email: user.email,
                 name: user.name || "",
                 image: user.image || undefined,
@@ -90,10 +95,15 @@ export const authOptions: AuthOptions = {
               // Substitui o usuário do provider pelo usuário do banco
               token.user = {
                 ...dbUser,
-                id: dbUser.id, // ✅ Já é number do Prisma
+                id: dbUser.id,
                 createdAt: new Date(dbUser.createdAt).toISOString(),
                 updatedAt: new Date(dbUser.updatedAt).toISOString(),
               } as User;
+
+              // Sinaliza que é um novo usuário para redirecionamento
+              if (isNew) {
+                token.isNewUser = true;
+              }
             } catch (error: any) {
               const { body } = parseError(error);
               consoleErrorLogger({
@@ -120,6 +130,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (token.user) session.user = token.user;
+      if (token.isNewUser) (session as any).isNewUser = true;
       return session;
     },
   },

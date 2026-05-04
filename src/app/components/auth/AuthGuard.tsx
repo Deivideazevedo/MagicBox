@@ -12,7 +12,7 @@ interface AuthGuardProps {
  * Redireciona para o login se o usuário não estiver autenticado.
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -21,8 +21,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       // Codifica a URL atual para redirecionar de volta após o login
       const callbackUrl = encodeURIComponent(pathname);
       router.replace(`/auth/login?callbackUrl=${callbackUrl}`);
+    } else if (status === "authenticated" && session?.isNewUser) {
+      if (pathname !== "/cadastros") {
+        router.replace("/cadastros");
+      } else {
+        // Se já chegou em /cadastros, "consome" a flag para não redirecionar mais
+        update({ isNewUser: false });
+      }
     }
-  }, [status, router, pathname]);
+  }, [status, session, router, pathname, update]);
 
   // Apenas verifica o status da sessão e redireciona no frontend.
   // A middleware já faz o bloqueio de rotas no backend/servidor.

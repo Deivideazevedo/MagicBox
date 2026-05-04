@@ -7,6 +7,7 @@ declare module "next-auth" {
    */
   interface User extends CoreUser {
     id: number;
+    isNewUser?: boolean;
   }
 
   /**
@@ -15,6 +16,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: User;
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
+    isNewUser?: boolean;
   }
 }
 
@@ -25,9 +27,10 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   import { User } from "next-auth";
 
-  interface JWT extends DefaultJWT {
+  interface JWT {
     user?: User;
     oauthAccessToken?: string; // Token OAuth do provider (Google, GitHub, etc.)
+    isNewUser?: boolean;
   }
 }
 

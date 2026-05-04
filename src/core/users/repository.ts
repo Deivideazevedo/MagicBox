@@ -82,7 +82,7 @@ export const authRepository = {
       data: {
         email: data.email,
         username: data.username,
-        password: data.password, 
+        password: data.password,
         name: data.name,
         image: data.image,
         origem: data.origem,
@@ -116,8 +116,8 @@ export const authRepository = {
 
     const orConditions: Prisma.UserWhereInput[] = [];
 
-    if (dados.username?.trim()) orConditions.push({ username: dados.username });
-    if (dados.email?.trim()) orConditions.push({ email: dados.email });
+    if (dados.username?.trim()) orConditions.push({ username: { equals: dados.username, mode: "insensitive" } });
+    if (dados.email?.trim()) orConditions.push({ email: { equals: dados.email, mode: "insensitive" } });
 
     if (orConditions.length === 0) return null;
 

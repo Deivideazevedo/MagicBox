@@ -126,7 +126,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
       });
 
       if (signInResult?.ok) {
-        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+        const callbackUrl = searchParams.get("callbackUrl") || "/cadastros";
         router.push(callbackUrl);
       } else {
         // Se falhar o login automático, redireciona para página de login

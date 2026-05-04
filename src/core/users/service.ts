@@ -70,10 +70,10 @@ export const authService = {
     if (usuario.email || usuario.username) {
       const existing = await repositorio.findByUsernameOrEmail({ email: usuario.email, username: usuario.username });
       if (existing && existing.id !== userId) {
-        if (usuario.email === existing.email) {
+        if (usuario.email && existing.email && usuario.email.toLowerCase() === existing.email.toLowerCase()) {
           throw new ValidationError("Email já está em uso");
         }
-        if (usuario.username === existing.username) {
+        if (usuario.username && existing.username && usuario.username.toLowerCase() === existing.username.toLowerCase()) {
           throw new ValidationError("Username já está em uso");
         }
       }
@@ -128,7 +128,7 @@ export const authService = {
     name: string;
     image?: string | null;
     provider: string
-  }): Promise<User> {
+  }): Promise<{ user: User; isNew: boolean }> {
     const existingUser = await repositorio.findByUsernameOrEmail({ email: dados.email });
 
     if (existingUser) {
@@ -141,9 +141,12 @@ export const authService = {
       });
 
       return {
-        ...updatedUser,
-        hasPassword: !!updatedUser.password,
-        image: dados.image ?? updatedUser.image,
+        user: {
+          ...updatedUser,
+          hasPassword: !!updatedUser.password,
+          image: dados.image ?? updatedUser.image,
+        },
+        isNew: false
       };
     }
 
@@ -157,8 +160,11 @@ export const authService = {
     });
 
     return {
-      ...newUser,
-      hasPassword: false
+      user: {
+        ...newUser,
+        hasPassword: false
+      },
+      isNew: true
     };
   },
 
