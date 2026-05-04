@@ -1,201 +1,146 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Chip,
-  Grid,
-  Collapse,
-  IconButton,
   Typography,
-  TextField,
+  alpha,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
+  useTheme,
+  Grid,
 } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import {
+  IconFilter,
+  IconChevronDown,
+} from "@tabler/icons-react";
+import { SeletorPeriodo, TipoPeriodo } from "@/app/components/forms/SeletorPeriodo";
+import { CustomDateRangePicker } from "../../resumo/components/CustomDateRangePicker";
 
 interface FiltrosRelatorioProps {
-  onApplyFilters?: (filters: any) => void;
+  dataInicio: string;
+  setDataInicio: (d: string) => void;
+  dataFim: string;
+  setDataFim: (d: string) => void;
 }
 
-export default function FiltrosRelatorio({
-  onApplyFilters,
-}: FiltrosRelatorioProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [filters, setFilters] = useState({
-    periodo: "mes_atual", // mes_atual, ultimos_3_meses, ultimos_6_meses, ano_atual, personalizado
-    dataInicio: null as Date | null,
-    dataFim: null as Date | null,
-    categoria: "", // Filtro por categoria específica
-    conta: "", // Filtro por conta específica
-    status: "", // Filtro por status (pago, agendado, vencido)
-  });
-
-  const periodoOptions = [
-    { value: "mes_atual", label: "Mês Atual" },
-    { value: "ultimos_3_meses", label: "Últimos 3 Meses" },
-    { value: "ultimos_6_meses", label: "Últimos 6 Meses" },
-    { value: "ano_atual", label: "Ano Atual" },
-    { value: "personalizado", label: "Período Personalizado" },
-  ];
-
-  const statusOptions = [
-    { value: "", label: "Todos" },
-    { value: "pago", label: "Pago" },
-    { value: "agendado", label: "Agendado" },
-    { value: "vencido", label: "Vencido" },
-  ];
-
-  const handleFilterChange = (field: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleApplyFilters = () => {
-    onApplyFilters?.(filters);
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      periodo: "mes_atual",
-      dataInicio: null,
-      dataFim: null,
-      categoria: "",
-      conta: "",
-      status: "",
-    });
-  };
-
-  const hasActiveFilters =
-    filters.categoria ||
-    filters.conta ||
-    filters.status ||
-    filters.periodo !== "mes_atual";
+export default function FiltrosRelatorio({ dataInicio, setDataInicio, dataFim, setDataFim }: FiltrosRelatorioProps) {
+  const theme = useTheme();
+  const [expandido, setExpandido] = useState(false);
+  const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
 
   return (
-    <Box>
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={2}
+    <Accordion
+      expanded={expandido}
+      onChange={(_, exp) => setExpandido(exp)}
+      sx={{
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: alpha(theme.palette.primary.main, 0.2),
+        "&:before": { display: "none" },
+        boxShadow: "none",
+        mb: 3,
+      }}
+    >
+      <AccordionSummary
+        expandIcon={<IconChevronDown size={20} />}
+        sx={{
+          px: 2.5,
+          minHeight: "auto",
+          "&.Mui-expanded": { minHeight: "auto" },
+          py: 0.5,
+          position: "relative",
+          "& .MuiAccordionSummary-expandIconWrapper": {
+            position: { xs: "absolute", sm: "static" },
+            top: { xs: 24, sm: "auto" },
+            right: { xs: 20, sm: "auto" },
+            color: "primary.main",
+            borderRadius: "50%",
+            p: 0.5,
+            transition: "transform 0.2s",
+            "&:hover": {
+              bgcolor: "primary.light",
+            },
+          },
+          "& .MuiAccordionSummary-content": {
+            margin: "12px 0",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            gap: 2,
+            width: "100%",
+          },
+          "& .MuiAccordionSummary-content.Mui-expanded": {
+            mt: "12px !important",
+            mb: "0px !important",
+          },
+        }}
       >
-        <Typography variant="h6" color="primary">
-          Filtros de Análise
-        </Typography>
-        <IconButton onClick={() => setIsExpanded(!isExpanded)}>
-          {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-        </IconButton>
-      </Box>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={1.5}
+          sx={{ flex: { xs: "1 1 100%", sm: "0 1 auto" }, mr: 2 }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: 2,
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "primary.main",
+            }}
+          >
+            <IconFilter size={20} />
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={600}>
+              Filtros
+            </Typography>
+          </Box>
+        </Box>
 
-      <Collapse in={isExpanded}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Período</InputLabel>
-              <Select
-                value={filters.periodo}
-                onChange={(e) => handleFilterChange("periodo", e.target.value)}
-                label="Período"
-              >
-                {periodoOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+        {!expandido && (
+          <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
+            <SeletorPeriodo
+              onClick={(e) => e.stopPropagation()}
+              dataInicio={dataInicio}
+              dataFim={dataFim}
+              tipo={tipoPeriodo}
+              onTipoChange={setTipoPeriodo}
+              onChange={(periodo) => {
+                if (periodo.dataInicio) setDataInicio(periodo.dataInicio);
+                if (periodo.dataFim) setDataFim(periodo.dataFim);
+              }}
+            />
+          </Box>
+        )}
+      </AccordionSummary>
 
-          {filters.periodo === "personalizado" && (
-            <>
-              <Grid item xs={12} md={3}>
-                <DatePicker
-                  label="Data Início"
-                  value={filters.dataInicio}
-                  onChange={(date) => handleFilterChange("dataInicio", date)}
-                  renderInput={(params) => <TextField {...params} />}
-                />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <DatePicker
-                  label="Data Fim"
-                  value={filters.dataFim}
-                  onChange={(date) => handleFilterChange("dataFim", date)}
-                  renderInput={(params) => <TextField {...params} />}
-                />
-              </Grid>
-            </>
-          )}
+      <AccordionDetails sx={{ px: 2.5, pb: 2.5, pt: 0 }}>
+        <Divider sx={{ mb: 2, opacity: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">
+            BUSCA CUSTOMIZADA
+          </Typography>
+        </Divider>
 
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filters.status}
-                onChange={(e) => handleFilterChange("status", e.target.value)}
-                label="Status"
-              >
-                {statusOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} display="flex" gap={2} alignItems="center">
-            <Button
-              variant="contained"
-              onClick={handleApplyFilters}
-              color="primary"
-            >
-              Aplicar Filtros
-            </Button>
-
-            {hasActiveFilters && (
-              <Button
-                variant="outlined"
-                onClick={clearFilters}
-                color="secondary"
-              >
-                Limpar Filtros
-              </Button>
-            )}
-
-            {hasActiveFilters && (
-              <Box display="flex" gap={1} ml={2}>
-                {filters.categoria && (
-                  <Chip
-                    label={`Categoria: ${filters.categoria}`}
-                    onDelete={() => handleFilterChange("categoria", "")}
-                    size="small"
-                  />
-                )}
-                {filters.conta && (
-                  <Chip
-                    label={`Conta: ${filters.conta}`}
-                    onDelete={() => handleFilterChange("conta", "")}
-                    size="small"
-                  />
-                )}
-                {filters.status && (
-                  <Chip
-                    label={`Status: ${filters.status}`}
-                    onDelete={() => handleFilterChange("status", "")}
-                    size="small"
-                  />
-                )}
-              </Box>
-            )}
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12}>
+            <CustomDateRangePicker
+              startDate={dataInicio || null}
+              endDate={dataFim || null}
+              onChange={(start, end) => {
+                if (start) setDataInicio(start);
+                if (end) setDataFim(end);
+              }}
+            />
           </Grid>
         </Grid>
-      </Collapse>
-    </Box>
+      </AccordionDetails>
+    </Accordion>
   );
 }

@@ -1,295 +1,303 @@
-"use client";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
   Box,
-  Chip,
-  LinearProgress,
-  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Checkbox,
+  Typography,
   IconButton,
-  Tooltip,
+  Collapse,
+  Stack,
+  Chip,
+  alpha,
+  useTheme,
+  Grid,
+  CircularProgress,
+  Avatar,
 } from "@mui/material";
-import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import {
-  TrendingUp,
-  TrendingDown,
-  Info,
-  ArrowUpward,
-  ArrowDownward,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  InfoOutlined,
+  History,
 } from "@mui/icons-material";
+import { 
+  IconArrowDown, 
+  IconArrowUp, 
+  IconTarget,
+  IconCategory
+} from "@tabler/icons-react";
+import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker";
+import { CategoriaRelatorio, ItemRelatorio } from "@/core/relatorios/relatorio.dto";
 
-interface AnaliseRow {
-  id: string;
-  categoria: string;
-  orcamento: number;
-  gasto: number;
-  diferenca: number;
-  percentual: number;
-  tendencia: "up" | "down" | "stable";
-  icon: string;
-  color: string;
+interface TabelaAnaliseProps {
+  categorias: CategoriaRelatorio[];
+  selectedIds: Set<number>;
+  onToggle: (id: number) => void;
+  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA") => void;
+  historicoItem: any[];
+  loadingHistorico: boolean;
+  itemSelecionadoParaHistorico: number | null;
 }
 
-export default function TabelaAnalise() {
-  const [pageSize, setPageSize] = useState(5);
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  // Dados mockados - conectar com API real
-  const rows: AnaliseRow[] = [
-    {
-      id: "1",
-      categoria: "Alimentação",
-      orcamento: 1200,
-      gasto: 1520,
-      diferenca: -320,
-      percentual: 126.7,
-      tendencia: "up",
-      icon: "🍽️",
-      color: "#FA896B",
-    },
-    {
-      id: "2", 
-      categoria: "Transporte",
-      orcamento: 800,
-      gasto: 890,
-      diferenca: -90,
-      percentual: 111.3,
-      tendencia: "up",
-      icon: "🚗",
-      color: "#5D87FF",
-    },
-    {
-      id: "3",
-      categoria: "Moradia",
-      orcamento: 1000,
-      gasto: 650,
-      diferenca: 350,
-      percentual: 65.0,
-      tendencia: "down",
-      icon: "🏠",
-      color: "#13DEB9",
-    },
-    {
-      id: "4",
-      categoria: "Saúde", 
-      orcamento: 500,
-      gasto: 420,
-      diferenca: 80,
-      percentual: 84.0,
-      tendencia: "stable",
-      icon: "⚕️",
-      color: "#FFAE1F",
-    },
-    {
-      id: "5",
-      categoria: "Lazer",
-      orcamento: 600,
-      gasto: 380,
-      diferenca: 220,
-      percentual: 63.3,
-      tendencia: "down",
-      icon: "🎮",
-      color: "#539BFF",
-    },
-    {
-      id: "6",
-      categoria: "Educação",
-      orcamento: 400,
-      gasto: 280,
-      diferenca: 120,
-      percentual: 70.0,
-      tendencia: "stable",
-      icon: "📚",
-      color: "#9C27B0",
-    },
-  ];
-
-  const columns: GridColDef[] = [
-    {
-      field: "categoria",
-      headerName: "Categoria",
-      width: 180,
-      renderCell: (params: GridRenderCellParams) => (
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar
-            sx={{
-              bgcolor: params.row.color,
-              width: 32,
-              height: 32,
-              fontSize: "14px",
-            }}
-          >
-            {params.row.icon}
-          </Avatar>
-          <Typography variant="body2" fontWeight={500}>
-            {params.value}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      field: "orcamento",
-      headerName: "Orçamento",
-      width: 120,
-      align: "right",
-      headerAlign: "right",
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant="body2" color="textSecondary">
-          R$ {params.value.toLocaleString("pt-BR")}
-        </Typography>
-      ),
-    },
-    {
-      field: "gasto",
-      headerName: "Gasto Real",
-      width: 120,
-      align: "right",
-      headerAlign: "right",
-      renderCell: (params: GridRenderCellParams) => (
-        <Typography variant="body2" fontWeight={600}>
-          R$ {params.value.toLocaleString("pt-BR")}
-        </Typography>
-      ),
-    },
-    {
-      field: "diferenca",
-      headerName: "Diferença",
-      width: 120,
-      align: "right", 
-      headerAlign: "right",
-      renderCell: (params: GridRenderCellParams) => {
-        const value = params.value as number;
-        const isPositive = value > 0;
-        return (
-          <Box display="flex" alignItems="center" gap={0.5}>
-            {isPositive ? (
-              <ArrowDownward sx={{ fontSize: 16, color: "success.main" }} />
-            ) : (
-              <ArrowUpward sx={{ fontSize: 16, color: "error.main" }} />
-            )}
-            <Typography
-              variant="body2"
-              color={isPositive ? "success.main" : "error.main"}
-              fontWeight={600}
-            >
-              R$ {Math.abs(value).toLocaleString("pt-BR")}
-            </Typography>
-          </Box>
-        );
-      },
-    },
-    {
-      field: "percentual",
-      headerName: "% do Orçamento",
-      width: 200,
-      renderCell: (params: GridRenderCellParams) => {
-        const value = params.value as number;
-        const isOverBudget = value > 100;
-        
-        return (
-          <Box width="100%">
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-              <Typography
-                variant="caption"
-                color={isOverBudget ? "error.main" : "textPrimary"}
-                fontWeight={600}
-              >
-                {value.toFixed(1)}%
-              </Typography>
-              {isOverBudget && (
-                <Tooltip title="Acima do orçamento">
-                  <Info sx={{ fontSize: 14, color: "error.main" }} />
-                </Tooltip>
-              )}
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(value, 100)}
-              color={isOverBudget ? "error" : value > 80 ? "warning" : "success"}
-              sx={{ height: 6, borderRadius: 3 }}
-            />
-          </Box>
-        );
-      },
-    },
-    {
-      field: "tendencia",
-      headerName: "Tendência",
-      width: 100,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params: GridRenderCellParams) => {
-        const tendencia = params.value as string;
-        const getChipProps = () => {
-          switch (tendencia) {
-            case "up":
-              return {
-                icon: <TrendingUp />,
-                label: "Alta",
-                color: "error" as const,
-              };
-            case "down":
-              return {
-                icon: <TrendingDown />,
-                label: "Baixa",
-                color: "success" as const,
-              };
-            default:
-              return {
-                label: "Estável",
-                color: "default" as const,
-              };
-          }
-        };
-
-        const chipProps = getChipProps();
-        return <Chip size="small" {...chipProps} />;
-      },
-    },
-  ];
+function Row({ 
+  categoria, 
+  selectedIds, 
+  onToggle, 
+  onSelectItem,
+  itemSelecionadoParaHistorico 
+}: { 
+  categoria: CategoriaRelatorio; 
+  selectedIds: Set<number>; 
+  onToggle: (id: number) => void;
+  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA") => void;
+  itemSelecionadoParaHistorico: number | null;
+}) {
+  const [open, setOpen] = useState(true);
+  const theme = useTheme();
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 3 }}>
-      <CardHeader
-        title={
-          <Box>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              Análise por Categoria
+    <React.Fragment>
+      {/* Linha da Categoria */}
+      <TableRow 
+        sx={{ 
+          bgcolor: alpha(theme.palette.primary.main, 0.03),
+          "& td": { borderBottom: "1px solid", borderColor: "divider", py: 1.5 } 
+        }}
+      >
+        <TableCell padding="checkbox" width={50}>
+          <IconButton size="small" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+          </IconButton>
+        </TableCell>
+        <TableCell component="th" scope="row">
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: categoria.cor ? alpha(categoria.cor, 0.15) : "primary.light",
+                color: categoria.cor || "primary.main",
+                "& svg": { width: 18, height: 18 },
+              }}
+            >
+              {categoria.icone && AVAILABLE_ICONS[categoria.icone as keyof typeof AVAILABLE_ICONS] ? (
+                AVAILABLE_ICONS[categoria.icone as keyof typeof AVAILABLE_ICONS]
+              ) : (
+                <IconCategory />
+              )}
+            </Avatar>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {categoria.nome}
             </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Comparação entre orçamento planejado e gastos reais
-            </Typography>
-          </Box>
-        }
-      />
-      <CardContent>
-        <Box height={400}>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            pageSize={pageSize}
-            onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-            rowsPerPageOptions={[5, 10, 20]}
-            disableSelectionOnClick
-            sx={{
-              border: "none",
-              "& .MuiDataGrid-cell": {
-                borderBottom: "1px solid #f0f0f0",
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: "#f8f9fa",
-                borderBottom: "2px solid #e0e0e0",
-              },
-              "& .MuiDataGrid-row:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            }}
-          />
-        </Box>
-      </CardContent>
-    </Card>
+          </Stack>
+        </TableCell>
+        <TableCell align="right">
+          <Typography fontWeight={600} color="textSecondary">{formatCurrency(categoria.valorPlanejado)}</Typography>
+        </TableCell>
+        <TableCell align="right">
+          <Typography fontWeight={700}>{formatCurrency(categoria.valorRealizado)}</Typography>
+        </TableCell>
+        <TableCell align="right">
+          <Typography 
+            fontWeight={700} 
+            color={categoria.deficit > 0 ? "error.main" : "success.main"}
+          >
+            {formatCurrency(categoria.deficit)}
+          </Typography>
+        </TableCell>
+        <TableCell align="right">-</TableCell>
+      </TableRow>
+      
+      {/* Itens da Categoria */}
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0, border: 0 }} colSpan={6}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box sx={{ margin: 1 }}>
+              <Table size="small">
+                <TableBody>
+                  {categoria.itens.map((item) => {
+                    const isDespesa = item.tipo === "DESPESA";
+                    const isMeta = item.tipo === "META";
+                    
+                    let chipIcon = <IconArrowUp size={14} />;
+                    let chipColor: any = "success";
+                    let chipLabel = "Receita";
+                    
+                    if (isDespesa) {
+                      chipIcon = <IconArrowDown size={14} />;
+                      chipColor = "error";
+                      chipLabel = "Despesa";
+                    } else if (isMeta) {
+                      chipIcon = <IconTarget size={14} />;
+                      chipColor = "info";
+                      chipLabel = "Meta";
+                    }
+
+                    return (
+                      <TableRow 
+                        key={item.id} 
+                        hover 
+                        selected={itemSelecionadoParaHistorico === item.id}
+                        sx={{ 
+                          cursor: "pointer",
+                          "& td": { borderBottom: "1px solid", borderColor: "divider" },
+                          "&:last-child td": { borderBottom: 0 },
+                          "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                          ...(selectedIds.has(item.id) && { bgcolor: alpha(theme.palette.primary.main, 0.08) })
+                        }}
+                        onClick={() => onSelectItem(item.id, item.tipo as any)}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={selectedIds.has(item.id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              onToggle(item.id);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Chip 
+                              size="small" 
+                              icon={chipIcon} 
+                              label={chipLabel} 
+                              color={chipColor} 
+                              variant="outlined" 
+                              sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24 }} 
+                            />
+                            <Typography variant="body2">{item.nome}</Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color="textSecondary">{formatCurrency(item.valorPlanejado)}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight={600}>{formatCurrency(item.valorRealizado)}</Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color={item.deficit > 0 ? "error.main" : "success.main"}>
+                            {formatCurrency(item.deficit)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" color="textSecondary">{formatCurrency(item.mediaMensal)}</Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </React.Fragment>
+  );
+}
+
+export default function TabelaAnalise({ 
+  categorias, 
+  selectedIds, 
+  onToggle,
+  onSelectItem,
+  historicoItem,
+  loadingHistorico,
+  itemSelecionadoParaHistorico
+}: TabelaAnaliseProps) {
+  const theme = useTheme();
+
+  return (
+    <Grid container spacing={3}>
+      <Grid item xs={12} lg={8}>
+        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08) }}>
+                <TableCell width={50} />
+                <TableCell><Typography variant="subtitle2" fontWeight={700}>Categoria / Conta</Typography></TableCell>
+                <TableCell align="right"><Typography variant="subtitle2" fontWeight={700}>Vlr. Est.</Typography></TableCell>
+                <TableCell align="right"><Typography variant="subtitle2" fontWeight={700}>Vlr. Gasto</Typography></TableCell>
+                <TableCell align="right"><Typography variant="subtitle2" fontWeight={700}>Déficit</Typography></TableCell>
+                <TableCell align="right"><Typography variant="subtitle2" fontWeight={700}>Média Mensal</Typography></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {categorias.map((cat) => (
+                <Row 
+                  key={cat.id} 
+                  categoria={cat} 
+                  selectedIds={selectedIds} 
+                  onToggle={onToggle} 
+                  onSelectItem={onSelectItem}
+                  itemSelecionadoParaHistorico={itemSelecionadoParaHistorico}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Grid>
+
+      <Grid item xs={12} lg={4}>
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            borderRadius: 3, 
+            border: `1px solid ${theme.palette.divider}`,
+            height: "100%",
+            p: 3,
+            bgcolor: alpha(theme.palette.primary.main, 0.01)
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center" mb={3}>
+            <History color="primary" />
+            <Typography variant="h6" fontWeight={700}>Resumo de Gastos Mensais</Typography>
+          </Stack>
+
+          {!itemSelecionadoParaHistorico ? (
+            <Box sx={{ textAlign: "center", py: 8, opacity: 0.6 }}>
+              <InfoOutlined sx={{ fontSize: 48, mb: 2 }} />
+              <Typography>Selecione um item na tabela para ver o histórico</Typography>
+            </Box>
+          ) : loadingHistorico ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><Typography variant="caption" fontWeight={700}>Mês</Typography></TableCell>
+                    <TableCell><Typography variant="caption" fontWeight={700}>Ano</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="caption" fontWeight={700}>Total</Typography></TableCell>
+                    <TableCell align="right"><Typography variant="caption" fontWeight={700}>Déficit</Typography></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {historicoItem.map((h, i) => (
+                    <TableRow key={i} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                      <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.mes}</TableCell>
+                      <TableCell>{h.ano}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.total)}</TableCell>
+                      <TableCell align="right" sx={{ color: "error.main" }}>{formatCurrency(h.deficit)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Paper>
+      </Grid>
+    </Grid>
   );
 }
