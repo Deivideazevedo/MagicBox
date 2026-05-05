@@ -1,5 +1,5 @@
 import { relatoriosRepository } from "@/core/relatorios/repository";
-import { 
+import {
   RelatorioResponse, CategoriaRelatorio, DetalheRelatorio, HistoricoMensal,
   RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso
 } from "@/core/relatorios/relatorio.dto";
@@ -35,7 +35,7 @@ export const relatoriosService = {
 
       const planejado = db.valorAgendado > 0 ? db.valorAgendado : db.valorPlanejado;
       const realizado = db.valorRealizado;
-      
+
       // Restante = Realizado - Planejado (Conforme imagem do usuário)
       // Ex: Realizado 25 - Planejado 1777 = -1752 (Déficit/Restante negativo em vermelho)
       const restante = realizado - planejado;
@@ -151,16 +151,19 @@ export const relatoriosService = {
 
   async obterHistoricoAgrupado(userId: number, itens: { id: number; tipo: string }[], ano: number): Promise<HistoricoMensal[]> {
     const historicoRaw = await relatoriosRepository.obterHistoricoAgrupado(userId, itens, ano) as RawHistoricoAgrupado[];
-    
+
     return historicoRaw.map((h) => ({
       mes: fnFormatNaiveDate(h.mes, "MMM").toUpperCase(),
+      referencia: `${fnFormatNaiveDate(h.mes, "MMM").toUpperCase()} ${h.ano}`,
       ano: h.ano,
-      realizado: h.realizado,
-      planejado: h.planejado,
-      projetado: h.projetado,
+      totalPago: h.totalPago,
+      realAgendado: h.realAgendado,
+      totalProjetado: h.totalProjetado,
+      totalPrevisto: h.totalPrevisto,
+      totalPrevistoComProjecao: h.totalPrevistoComProjecao,
       restanteReal: h.restanteReal,
       restanteComProjecao: h.restanteComProjecao,
-      dataRef: h.mes.toISOString()
+      dataRef: format(h.mes, 'yyyy-MM-dd')
     }));
   },
 };

@@ -85,7 +85,7 @@ export default function RelatoriosPage() {
     return historicoItem
       .map((h) => ({
         ...h,
-        totalPago: h.realizado,
+        previsto: incluirProjecaoTabela ? h.totalPrevistoComProjecao : h.totalPrevisto,
         restante: incluirProjecaoTabela ? h.restanteComProjecao : h.restanteReal,
       }))
       .sort((a, b) => fnCompareValues(a.dataRef, b.dataRef));
@@ -271,9 +271,9 @@ export default function RelatoriosPage() {
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell><Typography variant="caption" fontWeight={700}>Mês</Typography></TableCell>
-                            <TableCell><Typography variant="caption" fontWeight={700}>Ano</Typography></TableCell>
-                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Total Pago</Typography></TableCell>
+                            <TableCell><Typography variant="caption" fontWeight={700}>Referência</Typography></TableCell>
+                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Previsto</Typography></TableCell>
+                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Pago</Typography></TableCell>
                             <TableCell align="right"><Typography variant="caption" fontWeight={700}>Restante</Typography></TableCell>
                           </TableRow>
                         </TableHead>
@@ -286,9 +286,11 @@ export default function RelatoriosPage() {
                                 "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.02) }
                               }}
                             >
-                              <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.mes}</TableCell>
-                              <TableCell>{h.ano}</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.realizado)}</TableCell>
+                              <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                                {formatCurrency(h.previsto)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
                               <TableCell 
                                 align="right" 
                                 sx={{ 

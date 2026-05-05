@@ -131,25 +131,19 @@ export const relatoriosRepository = {
 
     return await prisma.$queryRaw`
       WITH itens_base AS (
-        SELECT id, "valorEstimado", 'DESPESA' as tipo FROM despesa WHERE id = ANY(${dIds}::int[])
+        SELECT id, "valorEstimado" as estimado, 'DESPESA' as tipo FROM despesa WHERE id = ANY(${dIds}::int[])
         UNION ALL
-        SELECT id, "valorEstimado", 'RECEITA' as tipo FROM receita WHERE id = ANY(${rIds}::int[])
+        SELECT id, "valorEstimado" as estimado, 'RECEITA' as tipo FROM receita WHERE id = ANY(${rIds}::int[])
         UNION ALL
-        SELECT id, "valorMeta" as "valorEstimado", 'META' as tipo FROM meta WHERE id = ANY(${mIds}::int[])
+        SELECT id, "valorMeta" as estimado, 'META' as tipo FROM meta WHERE id = ANY(${mIds}::int[])
       ),
-      reais AS (
+      reais_detalhado AS (
         SELECT 
           date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
-          false as is_projecao,
-          SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END)::float as realizado,
-          COALESCE(
-            NULLIF(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0),
-            (SELECT SUM("valorEstimado") FROM itens_base ib WHERE 
-              (ib.tipo = 'DESPESA' AND l."despesaId" = ib.id) OR 
-              (ib.tipo = 'RECEITA' AND l."receitaId" = ib.id) OR
-              (ib.tipo = 'META' AND l."metaId" = ib.id)
-            )
-          )::float as planejado
+          EXTRACT(YEAR FROM l.data)::int as ano,
+          l."despesaId", l."receitaId", l."metaId",
+          SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END)::float as real_pago,
+          SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as real_agendado
         FROM lancamento l
         WHERE l."userId" = ${userId}
           AND (
@@ -158,51 +152,82 @@ export const relatoriosRepository = {
             (l."metaId" = ANY(${mIds}::int[]))
           )
           AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        GROUP BY 1, l."despesaId", l."receitaId", l."metaId"
+        GROUP BY 1, 2, 3, 4, 5
+      ),
+      reais_agrupado AS (
+        SELECT 
+          r.mes_ref, 
+          r.ano,
+          SUM(r.real_pago) as total_pago,
+          SUM(r.real_agendado) as real_agendado,
+          SUM(
+            CASE 
+              WHEN ib.tipo = 'RECEITA' THEN COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0)
+              ELSE -COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0)
+            END
+          )::float as total_alvo,
+          SUM(
+            CASE 
+              WHEN ib.tipo = 'RECEITA' THEN (COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0) - r.real_pago)
+              ELSE (r.real_pago - COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0))
+            END
+          )::float as restante_real
+        FROM reais_detalhado r
+        JOIN itens_base ib ON (
+          (ib.tipo = 'DESPESA' AND r."despesaId" = ib.id) OR
+          (ib.tipo = 'RECEITA' AND r."receitaId" = ib.id) OR
+          (ib.tipo = 'META' AND r."metaId" = ib.id)
+        )
+        GROUP BY 1, 2
       ),
       projecoes AS (
         SELECT 
           m.d as mes_ref,
-          true as is_projecao,
-          0::float as realizado,
-          SUM(COALESCE(val."valorEstimado", 0))::float as planejado
+          EXTRACT(YEAR FROM m.d)::int as ano,
+          SUM(COALESCE(val."valorEstimado", 0))::float as total_projetado,
+          SUM(
+            CASE 
+              WHEN val.origem = 'RECEITA' THEN val."valorEstimado"
+              ELSE -val."valorEstimado"
+            END
+          )::float as total_alvo_projetado,
+          SUM(
+            CASE 
+              WHEN val.origem = 'RECEITA' THEN val."valorEstimado"
+              ELSE (0 - val."valorEstimado")
+            END
+          )::float as restante_projetado
         FROM (
           SELECT date_trunc('month', d)::date as d
           FROM generate_series(${dataInicio}::date, ${dataFim}::date, '1 month'::interval) d
         ) m
         CROSS JOIN (
-          SELECT id, "userId", "valorEstimado", tipo::text, "createdAt", 'DESPESA' as origem FROM despesa WHERE id = ANY(${dIds}::int[]) AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
+          SELECT id, "userId", "valorEstimado", "createdAt", 'DESPESA' as origem FROM despesa WHERE id = ANY(${dIds}::int[]) AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
           UNION ALL
-          SELECT id, "userId", "valorEstimado", tipo::text, "createdAt", 'RECEITA' as origem FROM receita WHERE id = ANY(${rIds}::int[]) AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
+          SELECT id, "userId", "valorEstimado", "createdAt", 'RECEITA' as origem FROM receita WHERE id = ANY(${rIds}::int[]) AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
         ) val
         WHERE val."userId" = ${userId}
           AND m.d >= date_trunc('month', val."createdAt" AT TIME ZONE 'UTC')
           AND NOT EXISTS (
             SELECT 1 FROM lancamento la 
-            WHERE (
-              (val.origem = 'DESPESA' AND la."despesaId" = val.id) OR 
-              (val.origem = 'RECEITA' AND la."receitaId" = val.id)
-            )
+            WHERE (la."despesaId" = val.id OR la."receitaId" = val.id)
             AND date_trunc('month', la.data AT TIME ZONE 'UTC') = m.d
           )
         GROUP BY 1, 2
       )
       SELECT 
-        u.mes_ref as "mes",
-        EXTRACT(YEAR FROM u.mes_ref)::int as "ano",
-        SUM(u.realizado)::float as "realizado",
-        SUM(CASE WHEN NOT u.is_projecao THEN u.planejado ELSE 0 END)::float as "planejado",
-        SUM(CASE WHEN u.is_projecao THEN u.planejado ELSE 0 END)::float as "projetado",
-        (SUM(u.realizado) - SUM(CASE WHEN NOT u.is_projecao THEN u.planejado ELSE 0 END))::float as "restanteReal",
-        (SUM(u.realizado) - SUM(u.planejado))::float as "restanteComProjecao"
-      FROM (
-        SELECT mes_ref, is_projecao, realizado, planejado FROM reais
-        UNION ALL
-        SELECT mes_ref, is_projecao, realizado, planejado FROM projecoes
-      ) as u
-      GROUP BY u.mes_ref
-      HAVING SUM(u.realizado) <> 0 OR SUM(u.planejado) <> 0
-      ORDER BY u.mes_ref ASC
+        COALESCE(r.mes_ref, p.mes_ref) as "mes",
+        COALESCE(r.ano, p.ano) as "ano",
+        COALESCE(r.total_pago, 0)::float as "totalPago",
+        COALESCE(r.real_agendado, 0)::float as "realAgendado",
+        COALESCE(p.total_projetado, 0)::float as "totalProjetado",
+        COALESCE(r.total_alvo, 0)::float as "totalPrevisto",
+        (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0))::float as "totalPrevistoComProjecao",
+        COALESCE(r.restante_real, 0)::float as "restanteReal",
+        (COALESCE(r.restante_real, 0) + COALESCE(p.restante_projetado, 0))::float as "restanteComProjecao"
+      FROM reais_agrupado r
+      FULL OUTER JOIN projecoes p ON r.mes_ref = p.mes_ref
+      ORDER BY 1 ASC
     `;
   },
 };

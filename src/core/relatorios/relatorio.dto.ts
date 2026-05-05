@@ -62,10 +62,13 @@ export interface RelatorioResponse {
 
 export interface HistoricoMensal {
   mes: string;
+  referencia: string;
   ano: number;
-  realizado: number;
-  planejado: number;
-  projetado: number;
+  totalPago: number;
+  realAgendado: number;
+  totalProjetado: number;
+  totalPrevisto: number;
+  totalPrevistoComProjecao: number;
   restanteReal: number;
   restanteComProjecao: number;
   dataRef: string;
@@ -110,9 +113,11 @@ export interface RawMetasProgresso {
 export interface RawHistoricoAgrupado {
   mes: Date;
   ano: number;
-  realizado: number;
-  planejado: number;
-  projetado: number;
+  totalPago: number;
+  realAgendado: number;
+  totalProjetado: number;
+  totalPrevisto: number;
+  totalPrevistoComProjecao: number;
   restanteReal: number;
   restanteComProjecao: number;
 }
