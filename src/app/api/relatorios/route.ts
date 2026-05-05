@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * GET /api/relatorios
- * Query Params: dataInicio, dataFim, itemId (opcional), tipo (opcional)
+ * Retorna TODOS os dados (reais + projeções) em uma única chamada.
+ * O filtro de projeção é feito no frontend via switch.
  */
 export const GET = errorHandler(buscarRelatorio);
 
@@ -13,21 +14,16 @@ async function buscarRelatorio(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const dataInicioParam = searchParams.get("dataInicio");
   const dataFimParam = searchParams.get("dataFim");
-  
+
   const dataInicio = dataInicioParam ? new Date(dataInicioParam) : new Date();
   const dataFim = dataFimParam ? new Date(dataFimParam) : new Date();
   const itemId = searchParams.get("itemId");
   const tipo = searchParams.get("tipo") as "RECEITA" | "DESPESA" | null;
+  const page = parseInt(searchParams.get("page") || "0");
+  const limit = parseInt(searchParams.get("limit") || "10");
 
   const { userId } = await getAuthUser(req);
 
-  // Se houver itemId, busca o histórico detalhado do item (tabela lateral)
-  if (itemId && tipo) {
-    const detalhes = await servico.obterDetalhesItem(userId, parseInt(itemId), tipo);
-    return NextResponse.json(detalhes);
-  }
-
-  // Caso contrário, busca o relatório completo do período
-  const relatorio = await servico.gerarRelatorio(userId, dataInicio, dataFim);
+  const relatorio = await servico.gerarRelatorio(userId, dataInicio, dataFim, page, limit);
   return NextResponse.json(relatorio);
 }

@@ -1,89 +1,111 @@
-import { useState, useEffect, useMemo } from "react";
-import { RelatorioResponse, ResumoRelatorio, ItemRelatorio, CategoriaRelatorio } from "@/core/relatorios/relatorio.dto";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { 
+  RelatorioResponse, 
+  DetalheRelatorio, 
+  HistoricoMensal,
+  CategoriaRelatorio 
+} from "@/core/relatorios/relatorio.dto";
+import { 
+  useGetRelatorioQuery, 
+  useGetHistoricoAgrupadoMutation 
+} from "@/services/endpoints/relatoriosApi";
 
 export function useRelatorios() {
-  const [data, setData] = useState<RelatorioResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [dataInicio, setDataInicio] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
   );
   const [dataFim, setDataFim] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
   );
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [historicoItem, setHistoricoItem] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [limit, setLimit] = useState(10);
+  
+  // Seleção via composite key: "TIPO-ID"
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  const [historicoAgrupado, setHistoricoAgrupado] = useState<HistoricoMensal[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/relatorios?dataInicio=${dataInicio}&dataFim=${dataFim}`);
-      if (!response.ok) throw new Error("Erro ao buscar dados do relatório");
-      const json = await response.json();
-      setData(json);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // RTK Query
+  const { data, isLoading: loading, error } = useGetRelatorioQuery({
+    dataInicio,
+    dataFim,
+    page,
+    limit,
+  });
 
+  const [triggerHistorico] = useGetHistoricoAgrupadoMutation();
+
+  // Switch de projeções — filtro client-side
+  const [incluirProjecaoTabela, setIncluirProjecaoTabela] = useState(false);
+
+  // ==================== SELEÇÃO ====================
+  const toggleSelection = useCallback((idOrIds: string | string[]) => {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+    setSelectedIds(prev => {
+      const newSelection = new Set(prev);
+      ids.forEach(id => {
+        if (newSelection.has(id)) {
+          newSelection.delete(id);
+        } else {
+          newSelection.add(id);
+        }
+      });
+      return newSelection;
+    });
+  }, []);
+
+  const selectItemForHistory = useCallback((id: number, tipo: "RECEITA" | "DESPESA" | "META") => {
+    const key = `${tipo}-${id}`;
+    setSelectedIds(new Set([key]));
+  }, []);
+
+  // ==================== METADADOS DINÂMICOS ====================
+  
+  // Encontra os itens selecionados no relatório para pegar os nomes
+  const selectedItemsDetails = useMemo(() => {
+    if (!data?.categorias) return [];
+    const allDetails: DetalheRelatorio[] = data.categorias.flatMap((c: CategoriaRelatorio) => c.detalhes);
+    return allDetails.filter(item => selectedIds.has(`${item.tipo}-${item.id}`));
+  }, [data, selectedIds]);
+
+  const selectedNames = useMemo(() => {
+    return selectedItemsDetails.map(i => i.nome).join(", ");
+  }, [selectedItemsDetails]);
+
+  const titleHistorico = useMemo(() => {
+    if (selectedIds.size === 0) return "Geral";
+    if (selectedIds.size === 1) return selectedItemsDetails[0]?.nome || "Item";
+    return `Múltiplos (${selectedIds.size})`;
+  }, [selectedIds, selectedItemsDetails]);
+
+  // ==================== HISTÓRICO ====================
   useEffect(() => {
-    fetchData();
-  }, [dataInicio, dataFim]);
+    const fetchHistorico = async () => {
+      if (selectedIds.size === 0) {
+        setHistoricoAgrupado([]);
+        return;
+      }
 
-  const toggleSelection = (id: number) => {
-    const newSelection = new Set(selectedIds);
-    if (newSelection.has(id)) {
-      newSelection.delete(id);
-    } else {
-      newSelection.add(id);
-    }
-    setSelectedIds(newSelection);
-  };
+      setLoadingHistorico(true);
+      try {
+        const itens = Array.from(selectedIds).map(key => {
+          const [tipo, id] = key.split("-");
+          return { id: parseInt(id), tipo };
+        });
 
-  const fetchHistorico = async (itemId: number, tipo: "RECEITA" | "DESPESA") => {
-    setLoadingHistorico(true);
-    try {
-      const response = await fetch(`/api/relatorios?itemId=${itemId}&tipo=${tipo}`);
-      if (!response.ok) throw new Error("Erro ao buscar histórico do item");
-      const json = await response.json();
-      setHistoricoItem(json);
-    } catch (err: any) {
-      console.error(err);
-    } finally {
-      setLoadingHistorico(false);
-    }
-  };
-
-  // Resumo dinâmico baseado na seleção
-  const resumoExibido = useMemo(() => {
-    if (!data) return null;
-    if (selectedIds.size === 0) return data.resumo;
-
-    const allItems: ItemRelatorio[] = data.categorias.flatMap((c: CategoriaRelatorio) => c.itens);
-    const selectedItems = allItems.filter(i => selectedIds.has(i.id));
-
-    const resumo: ResumoRelatorio = {
-      totalReceitas: selectedItems.filter(i => i.tipo === 'RECEITA').reduce((acc, i) => acc + i.valorPlanejado, 0),
-      receitasPagas: selectedItems.filter(i => i.tipo === 'RECEITA').reduce((acc, i) => acc + i.valorRealizado, 0),
-      totalDespesas: selectedItems.filter(i => i.tipo === 'DESPESA').reduce((acc, i) => acc + i.valorPlanejado, 0),
-      despesasPagas: selectedItems.filter(i => i.tipo === 'DESPESA').reduce((acc, i) => acc + i.valorRealizado, 0),
-      totalMetas: data.resumo.totalMetas, // Misto
-      metasPorcentagem: data.resumo.metasPorcentagem, // Misto
-      saldoLivre: 0,
-      saldoProjetado: 0,
-      saldoBloqueado: data.resumo.saldoBloqueado,
-      dividaPendente: data.resumo.dividaPendente // Misto
+        const ano = new Date(dataInicio).getFullYear();
+        const response = await triggerHistorico({ itens, ano }).unwrap();
+        setHistoricoAgrupado(response);
+      } catch (err) {
+        console.error("Erro ao buscar histórico:", err);
+      } finally {
+        setLoadingHistorico(false);
+      }
     };
 
-    resumo.saldoLivre = resumo.receitasPagas - (resumo.despesasPagas + resumo.totalMetas);
-    resumo.saldoProjetado = resumo.totalReceitas - resumo.totalDespesas;
-
-    return resumo;
-  }, [data, selectedIds]);
+    fetchHistorico();
+  }, [selectedIds, triggerHistorico, dataInicio]);
 
   return {
     data,
@@ -93,12 +115,19 @@ export function useRelatorios() {
     setDataInicio,
     dataFim,
     setDataFim,
+    page,
+    setPage,
+    limit,
+    setLimit,
     selectedIds,
     toggleSelection,
-    resumoExibido,
-    historicoItem,
+    selectItemForHistory,
+    historicoItem: historicoAgrupado,
     loadingHistorico,
-    fetchHistorico,
-    setSelectedIds
+    incluirProjecaoTabela,
+    setIncluirProjecaoTabela,
+    selectedNames,
+    titleHistorico,
+    resumoExibido: data?.resumo
   };
 }

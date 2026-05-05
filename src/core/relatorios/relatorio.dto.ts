@@ -4,23 +4,20 @@ export interface RelatorioFiltros {
   userId: number;
   dataInicio: string; // ISO String (yyyy-mm-dd)
   dataFim: string;    // ISO String (yyyy-mm-dd)
+  page?: number;
+  limit?: number;
 }
 
-export interface ItemRelatorio {
+export interface DetalheRelatorio {
   id: number;
   nome: string;
   tipo: "RECEITA" | "DESPESA" | "META";
   valorPlanejado: number;
   valorRealizado: number;
-  deficit: number;
+  restante: number;
   mediaMensal: number;
+  isProjecao: boolean;
   status: string;
-  historicoMensal: Array<{
-    mes: string;
-    ano: number;
-    valor: number;
-    deficit: number;
-  }>;
 }
 
 export interface CategoriaRelatorio {
@@ -30,8 +27,8 @@ export interface CategoriaRelatorio {
   cor?: string;
   valorPlanejado: number;
   valorRealizado: number;
-  deficit: number;
-  itens: ItemRelatorio[];
+  restante: number;
+  detalhes: DetalheRelatorio[];
 }
 
 export interface ResumoRelatorio {
@@ -40,11 +37,11 @@ export interface ResumoRelatorio {
   totalDespesas: number;
   despesasPagas: number;
   totalMetas: number;
-  metasPorcentagem: number; // Porcentagem de conclusão das metas com alvo
+  metasPorcentagem: number;
   saldoLivre: number;
   saldoProjetado: number;
-  saldoBloqueado: number; // Valor em metas
-  dividaPendente: number; // Qtd de despesas agendadas e não pagas no período
+  saldoBloqueado: number;
+  dividaPendente: number;
 }
 
 export interface RelatorioResponse {
@@ -54,10 +51,68 @@ export interface RelatorioResponse {
   };
   resumo: ResumoRelatorio;
   categorias: CategoriaRelatorio[];
+  totalCategorias: number;
   evolucao: Array<{
     mes: string;
     receitas: number;
     despesas: number;
-    investimentos: number; // Metas
+    investimentos: number;
   }>;
+}
+
+export interface HistoricoMensal {
+  mes: string;
+  ano: number;
+  realizado: number;
+  planejado: number;
+  projetado: number;
+  restanteReal: number;
+  restanteComProjecao: number;
+  dataRef: string;
+}
+
+// Interfaces para os resultados brutos do Banco (SQL Raw)
+export interface RawDadosBrutosCategoria {
+  categoriaId: number;
+  categoriaNome: string;
+  categoriaIcone: string;
+  categoriaCor: string;
+  categoriaTipo: string;
+  itemId: number;
+  itemName: string;
+  itemTipo: "RECEITA" | "DESPESA" | "META";
+  valorRealizado: number;
+  valorAgendado: number;
+  valorPlanejado: number;
+}
+
+export interface RawTotaisMetas {
+  valorTotalMeta: number;
+  valorAlcancadoMeta: number;
+}
+
+export interface RawCardResumo {
+  mes_referencia: Date;
+  receitas_reais: number;
+  despesas_reais: number;
+  projecoes: number;
+}
+
+export interface RawMetasProgresso {
+  id: number;
+  nome: string;
+  icone: string;
+  cor: string;
+  planejado: number;
+  realizado: number;
+}
+
+export interface RawHistoricoAgrupado {
+  mes: Date;
+  ano: number;
+  realizado: number;
+  planejado: number;
+  projetado: number;
+  restanteReal: number;
+  restanteComProjecao: number;
 }

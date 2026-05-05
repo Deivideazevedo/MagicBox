@@ -1,30 +1,56 @@
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, useMemo, memo } from "react";
 import {
   Box,
   Container,
-  Typography,
   Grid,
   Paper,
+  Typography,
+  alpha,
+  useTheme,
   CircularProgress,
   Alert,
-  Button,
-  FormControlLabel,
-  Switch,
-  Stack,
-  Backdrop
+  IconButton,
+  Tooltip,
+  Collapse,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from "@mui/material";
-import { IconDownload } from "@tabler/icons-react";
+import {
+  IconChartBar,
+  IconTable,
+  IconDownload,
+  IconHistory,
+  IconChevronDown,
+  IconChevronUp,
+} from "@tabler/icons-react";
 import { useRelatorios } from "./hooks/useRelatorios";
+import { fnCompareValues } from "@/utils/functions/fnComparison";
+import { pdf } from "@react-pdf/renderer";
+import { RelatorioPDFTemplate } from "./components/pdf/RelatorioPDFTemplate";
 
-// Components
+// Componentes internos (Importados como Default)
 import FiltrosRelatorio from "./components/FiltrosRelatorio";
-import CardsKPI from "./components/CardsKPI";
 import GraficoDistribuicao from "./components/GraficoDistribuicao";
 import GraficoEvolucao from "./components/GraficoEvolucao";
-import TabelaAnalise from "./components/TabelaAnalise";
+import CardsKPI from "./components/CardsKPI";
+import { CustomTable } from "./components/customTable";
+
+// Utilidade de formatação local para garantir compilação
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
 
 export default function RelatoriosPage() {
+  const theme = useTheme();
   const {
     data,
     loading,
@@ -33,143 +59,257 @@ export default function RelatoriosPage() {
     setDataInicio,
     dataFim,
     setDataFim,
+    page,
+    setPage,
+    limit,
+    setLimit,
     selectedIds,
     toggleSelection,
+    selectItemForHistory,
     resumoExibido,
     historicoItem,
     loadingHistorico,
-    fetchHistorico,
+    titleHistorico,
+    selectedNames,
+    incluirProjecaoTabela,
+    setIncluirProjecaoTabela,
   } = useRelatorios();
 
-  const [itemSelecionadoId, setItemSelecionadoId] = useState<number | null>(null);
-
-  const handleSelectItem = (id: number, tipo: "RECEITA" | "DESPESA") => {
-    setItemSelecionadoId(id);
-    fetchHistorico(id, tipo);
-  };
-
-  const [incluirProjecao, setIncluirProjecao] = useState(true);
+  const [showKPIs, setShowKPIs] = useState(true);
+  const [showCharts, setShowCharts] = useState(true);
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
+  const historicoConsolidado = useMemo(() => {
+    if (!historicoItem || !Array.isArray(historicoItem)) return [];
+
+    return historicoItem
+      .map((h) => ({
+        ...h,
+        totalPago: h.realizado,
+        restante: incluirProjecaoTabela ? h.restanteComProjecao : h.restanteReal,
+      }))
+      .sort((a, b) => fnCompareValues(a.dataRef, b.dataRef));
+  }, [historicoItem, incluirProjecaoTabela]);
+
   const handleExportPDF = async () => {
+    if (!data?.resumo || !data?.categorias) return;
     setGerandoPdf(true);
     try {
-      const element = document.getElementById("report-content");
-      if (!element) return;
-      
-      const html2pdf = (await import("html2pdf.js")).default;
-      
-      const opt = {
-        margin:       [10, 10, 10, 10] as [number, number, number, number],
-        filename:     `Relatorio-360-${dataInicio}-a-${dataFim}.pdf`,
-        image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false },
-        jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'landscape' as const }
-      };
-
-      await html2pdf().set(opt).from(element).save();
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
+      const blob = await pdf(
+        <RelatorioPDFTemplate 
+          resumo={data.resumo} 
+          categorias={data.categorias} 
+          dataInicio={dataInicio}
+          dataFim={dataFim}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `relatorio-financeiro-${dataInicio}-a-${dataFim}.pdf`;
+      link.click();
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
     } finally {
       setGerandoPdf(false);
     }
   };
 
-  if (error) {
+  if (loading && !data) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Backdrop
-        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 9999, flexDirection: "column", gap: 2 }}
-        open={gerandoPdf}
-      >
-        <CircularProgress color="inherit" />
-        <Typography variant="h6" fontWeight={600}>Gerando Documento Premium...</Typography>
-      </Backdrop>
-
-      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 2 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box>
-          <Typography variant="h3" gutterBottom fontWeight={800} sx={{ letterSpacing: "-0.02em" }}>
-            Relatório Financeiro <Box component="span" sx={{ color: "primary.main" }}>360º</Box>
+          <Typography variant="h4" fontWeight={800} gutterBottom>
+            Relatório Financeiro 360º
           </Typography>
-          <Typography variant="h6" color="textSecondary" fontWeight={500}>
+          <Typography variant="body2" color="text.secondary">
             Análise sistêmica de suas receitas, despesas e metas.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <FormControlLabel
-            control={<Switch checked={incluirProjecao} onChange={(e) => setIncluirProjecao(e.target.checked)} />}
-            label={<Typography fontWeight={600} color="textSecondary">Incluir Projeções</Typography>}
-          />
-          <Button
-            variant="contained"
-            startIcon={<IconDownload size={20} />}
-            onClick={handleExportPDF}
-            disabled={gerandoPdf || loading}
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              px: 3,
-              py: 1,
-              boxShadow: (theme) => `0 8px 16px ${theme.palette.primary.main}40`
-            }}
-          >
-            Exportar PDF
-          </Button>
-        </Stack>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Tooltip title={selectedIds.size > 0 ? `Exportar PDF (${selectedNames})` : "Exportar PDF Geral"}>
+            <IconButton 
+              onClick={handleExportPDF} 
+              disabled={gerandoPdf}
+              sx={{ 
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: 'primary.main',
+                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
+              }}
+            >
+              {gerandoPdf ? <CircularProgress size={24} /> : <IconDownload />}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
-      <Paper 
-        className="no-print"
-        elevation={0} 
-        sx={{ 
-          borderRadius: 4, 
-          p: 0, 
-          mb: 4, 
-          bgcolor: "transparent"
-        }}
-      >
-        <FiltrosRelatorio dataInicio={dataInicio} setDataInicio={setDataInicio} dataFim={dataFim} setDataFim={setDataFim} />
-      </Paper>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Erro ao carregar dados do relatório. Por favor, tente novamente.
+        </Alert>
+      )}
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-          <CircularProgress size={60} thickness={4} />
-        </Box>
-      ) : (
-        <Box id="report-content" sx={{ p: gerandoPdf ? 2 : 0, bgcolor: gerandoPdf ? "background.default" : "transparent" }}>
-          {/* KPIs Dinâmicos */}
-          <CardsKPI resumo={resumoExibido} />
+      {/* Filtros */}
+      <FiltrosRelatorio
+        dataInicio={dataInicio}
+        setDataInicio={setDataInicio}
+        dataFim={dataFim}
+        setDataFim={setDataFim}
+      />
 
-          {/* Gráficos Principais */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} md={7}>
-              <GraficoEvolucao evolucao={data?.evolucao || []} />
-            </Grid>
-            <Grid item xs={12} md={5}>
-              <GraficoDistribuicao categorias={data?.categorias || []} />
-            </Grid>
+      <Box sx={{ mt: 3 }}>
+        {/* KPI Section */}
+        <Paper sx={{ mb: 3, overflow: "hidden" }}>
+          <Box 
+            onClick={() => setShowKPIs(!showKPIs)}
+            sx={{ 
+              p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), 
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconChartBar size={20} />
+              <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                Resumo de Indicadores
+              </Typography>
+            </Box>
+            {showKPIs ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+          </Box>
+          <Collapse in={showKPIs}>
+            <Box sx={{ p: 3 }}>
+              {resumoExibido && <CardsKPI resumo={resumoExibido} />}
+            </Box>
+          </Collapse>
+        </Paper>
+
+        {/* Charts Section */}
+        <Paper sx={{ mb: 3, overflow: "hidden" }}>
+          <Box 
+            onClick={() => setShowCharts(!showCharts)}
+            sx={{ 
+              p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), 
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconTable size={20} />
+              <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                Distribuição e Evolução
+              </Typography>
+            </Box>
+            {showCharts ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+          </Box>
+          <Collapse in={showCharts}>
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  {data?.categorias && <GraficoDistribuicao categorias={data.categorias} />}
+                </Grid>
+                <Grid item xs={12} md={6}>
+                   {data?.evolucao && <GraficoEvolucao evolucao={data.evolucao} />}
+                </Grid>
+              </Grid>
+            </Box>
+          </Collapse>
+        </Paper>
+
+        {/* Main Table & History Panel */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
+            <Paper sx={{ p: 0, overflow: 'hidden' }}>
+              {data?.categorias && (
+                <CustomTable
+                  data={data.categorias}
+                  selectedIds={selectedIds}
+                  onToggle={toggleSelection}
+                  onSelectItem={selectItemForHistory}
+                  itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
+                  incluirProjecao={incluirProjecaoTabela}
+                  onToggleProjecao={setIncluirProjecaoTabela}
+                  pagination={{
+                    page: page,
+                    rowsPerPage: limit,
+                    count: data.totalCategorias,
+                    onPageChange: (_: any, newPage: number) => setPage(newPage),
+                    onRowsPerPageChange: (e: any) => setLimit(parseInt(e.target.value))
+                  }}
+                  isLoading={loading}
+                />
+              )}
+            </Paper>
           </Grid>
 
-          {/* Tabela de Análise Sistêmica */}
-          <TabelaAnalise 
-            categorias={data?.categorias || []}
-            selectedIds={selectedIds}
-            onToggle={toggleSelection}
-            onSelectItem={handleSelectItem}
-            historicoItem={historicoItem}
-            loadingHistorico={loadingHistorico}
-            itemSelecionadoParaHistorico={itemSelecionadoId}
-          />
-        </Box>
-      )}
+          {/* Lateral History Panel */}
+          {selectedIds.size > 0 && (
+            <Grid item xs={12} lg={4}>
+              <Paper sx={{ p: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconHistory size={20} color={theme.palette.primary.main} />
+                  <Typography variant="subtitle1" fontWeight={800}>
+                    Resumo: {titleHistorico}
+                  </Typography>
+                </Box>
+                
+                {loadingHistorico ? (
+                  <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+                    <CircularProgress size={32} />
+                  </Box>
+                ) : (
+                  <Box sx={{ flex: 1, overflow: 'auto' }}>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell><Typography variant="caption" fontWeight={700}>Mês</Typography></TableCell>
+                            <TableCell><Typography variant="caption" fontWeight={700}>Ano</Typography></TableCell>
+                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Total Pago</Typography></TableCell>
+                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Restante</Typography></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {historicoConsolidado.map((h, i) => (
+                            <TableRow 
+                              key={i} 
+                              sx={{ 
+                                "&:last-child td, &:last-child th": { border: 0 },
+                                "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.02) }
+                              }}
+                            >
+                              <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.mes}</TableCell>
+                              <TableCell>{h.ano}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.realizado)}</TableCell>
+                              <TableCell 
+                                align="right" 
+                                sx={{ 
+                                  color: h.restante < 0 ? "error.main" : "success.main",
+                                  fontWeight: 700 
+                                }}
+                              >
+                                {formatCurrency(h.restante)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+      </Box>
     </Container>
   );
 }

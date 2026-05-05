@@ -12,7 +12,7 @@ export default function GraficoDistribuicao({ categorias }: { categorias: Catego
   const despesasPorCategoria = categorias
     .map(c => ({
       nome: c.nome,
-      valor: c.itens.filter(i => i.tipo === 'DESPESA').reduce((acc, i) => acc + i.valorRealizado, 0)
+      valor: c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((acc, i) => acc + i.valorRealizado, 0)
     }))
     .filter(c => c.valor > 0);
 

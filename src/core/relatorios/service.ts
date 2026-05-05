@@ -1,21 +1,23 @@
-import { relatoriosRepository } from "./repository";
-import { RelatorioFiltros, RelatorioResponse, CategoriaRelatorio, ItemRelatorio } from "./relatorio.dto";
-import { startOfMonth, endOfMonth, format, subMonths } from "date-fns";
+import { relatoriosRepository } from "@/core/relatorios/repository";
+import { 
+  RelatorioResponse, CategoriaRelatorio, DetalheRelatorio, HistoricoMensal,
+  RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso
+} from "@/core/relatorios/relatorio.dto";
+import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 export const relatoriosService = {
-  async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
-    // 1. Busca dados brutos do período
+  async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date, page: number = 0, limit: number = 10): Promise<RelatorioResponse> {
     const [dadosBrutos, totalMetas, metasComProgresso] = await Promise.all([
-      relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim),
-      relatoriosRepository.obterTotaisMetas(userId, dataInicio, dataFim),
-      relatoriosRepository.obterMetasComProgresso(userId)
+      relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim) as Promise<RawDadosBrutosCategoria[]>,
+      relatoriosRepository.obterTotaisMetas(userId, dataInicio, dataFim) as Promise<RawTotaisMetas[]>,
+      relatoriosRepository.obterMetasComProgresso(userId) as Promise<RawMetasProgresso[]>
     ]);
 
     const categoriasMap = new Map<number, CategoriaRelatorio>();
 
-    // 2. Processa itens e agrupa por categoria
-    (dadosBrutos as any[]).forEach((db) => {
+    dadosBrutos.forEach((db) => {
       if (!categoriasMap.has(db.categoriaId)) {
         categoriasMap.set(db.categoriaId, {
           id: db.categoriaId,
@@ -24,88 +26,87 @@ export const relatoriosService = {
           cor: db.categoriaCor,
           valorPlanejado: 0,
           valorRealizado: 0,
-          deficit: 0,
-          itens: []
+          restante: 0,
+          detalhes: []
         });
       }
 
       const categoria = categoriasMap.get(db.categoriaId)!;
-      
-      // Cálculo do planejado soberano: se houver agendamento manual, ele é o planejado. 
-      // Se não, o valorEstimado da despesa/receita é o planejado.
+
       const planejado = db.valorAgendado > 0 ? db.valorAgendado : db.valorPlanejado;
       const realizado = db.valorRealizado;
-      const deficit = realizado - planejado;
+      
+      // Restante = Realizado - Planejado (Conforme imagem do usuário)
+      // Ex: Realizado 25 - Planejado 1777 = -1752 (Déficit/Restante negativo em vermelho)
+      const restante = realizado - planejado;
 
-      const item: ItemRelatorio = {
+      const detalhe: DetalheRelatorio = {
         id: db.itemId,
-        nome: db.itemNome,
+        nome: db.itemName,
         tipo: db.itemTipo,
         valorPlanejado: planejado,
         valorRealizado: realizado,
-        deficit: deficit,
-        mediaMensal: 0, // Será calculado em uma etapa posterior se necessário
+        restante,
+        mediaMensal: 0,
+        isProjecao: false,
         status: realizado >= planejado && planejado > 0 ? "OK" : (realizado > 0 ? "PARCIAL" : "PENDENTE"),
-        historicoMensal: []
       };
 
-      categoria.itens.push(item);
+      categoria.detalhes.push(detalhe);
       categoria.valorPlanejado += planejado;
       categoria.valorRealizado += realizado;
-      categoria.deficit += deficit;
+      categoria.restante += restante;
     });
 
-    // 2.1 Adiciona a Categoria Virtual "Metas Gerais" para aparecer na tabela 360
-    const metasItens: ItemRelatorio[] = (metasComProgresso as any[]).map((m) => {
-      const deficit = m.valorRealizado - m.valorPlanejado;
+    // Metas
+    const metasDetalhes: DetalheRelatorio[] = metasComProgresso.map((m) => {
+      const restante = m.realizado - m.planejado;
       return {
-        id: m.itemId,
-        nome: m.itemNome,
-        tipo: 'META',
-        valorPlanejado: m.valorPlanejado,
-        valorRealizado: m.valorRealizado,
-        deficit: deficit,
+        id: m.id,
+        nome: m.nome,
+        tipo: 'META' as const,
+        valorPlanejado: m.planejado,
+        valorRealizado: m.realizado,
+        restante,
         mediaMensal: 0,
-        status: m.valorRealizado >= m.valorPlanejado && m.valorPlanejado > 0 ? "OK" : "PENDENTE",
-        historicoMensal: []
+        isProjecao: false,
+        status: m.realizado >= m.planejado && m.planejado > 0 ? "OK" : "PENDENTE",
       };
     });
 
-    if (metasItens.length > 0) {
+    if (metasDetalhes.length > 0) {
       categoriasMap.set(-1, {
         id: -1,
         nome: "Metas e Investimentos",
         icone: "Target",
-        cor: "#1976d2", // info.main
-        valorPlanejado: metasItens.reduce((acc, i) => acc + i.valorPlanejado, 0),
-        valorRealizado: metasItens.reduce((acc, i) => acc + i.valorRealizado, 0),
-        deficit: metasItens.reduce((acc, i) => acc + i.deficit, 0),
-        itens: metasItens
+        cor: "#1976d2",
+        valorPlanejado: metasDetalhes.reduce((acc, i) => acc + i.valorPlanejado, 0),
+        valorRealizado: metasDetalhes.reduce((acc, i) => acc + i.valorRealizado, 0),
+        restante: metasDetalhes.reduce((acc, i) => acc + i.restante, 0),
+        detalhes: metasDetalhes
       });
     }
 
     const categorias = Array.from(categoriasMap.values());
 
-    // 3. Resumo Geral
-    const totalReceitasPagas = categorias.reduce((acc, c) => acc + c.itens.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
-    const totalDespesasPagas = categorias.reduce((acc, c) => acc + c.itens.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
-    const totalMetasPagas = Number(totalMetas._sum.valor) || 0;
+    // Resumo
+    const totalReceitasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
+    const totalDespesasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
+    const totalMetasPagas = totalMetas?.[0]?.valorAlcancadoMeta || 0;
 
-    const totalReceitasPlanejadas = categorias.reduce((acc, c) => acc + c.itens.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
-    const totalDespesasPlanejadas = categorias.reduce((acc, c) => acc + c.itens.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
+    const totalReceitasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
+    const totalDespesasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
 
-    // Dívida pendente: qtd de despesas com agendamento > 0 e pagamento == 0
     let dividaPendente = 0;
-    (dadosBrutos as any[]).forEach(db => {
+    dadosBrutos.forEach(db => {
       if (db.itemTipo === 'DESPESA' && db.valorAgendado > 0 && db.valorRealizado === 0) {
         dividaPendente++;
       }
     });
 
-    // % de Metas: apenas as com valorMeta definido > 0
     let somaRealizadoMetas = 0;
     let somaPlanejadoMetas = 0;
-    metasItens.forEach(m => {
+    metasDetalhes.forEach(m => {
       if (m.valorPlanejado > 0) {
         somaRealizadoMetas += m.valorRealizado;
         somaPlanejadoMetas += m.valorPlanejado;
@@ -123,10 +124,9 @@ export const relatoriosService = {
       saldoLivre: totalReceitasPagas - (totalDespesasPagas + totalMetasPagas),
       saldoProjetado: totalReceitasPlanejadas - totalDespesasPlanejadas,
       saldoBloqueado: somaRealizadoMetas,
-      dividaPendente: dividaPendente
+      dividaPendente
     };
 
-    // 4. Evolução (Dados fictícios para agora, podem ser implementados com query real depois)
     const evolucao = Array.from({ length: 6 }).map((_, i) => {
       const d = subMonths(dataInicio, 5 - i);
       return {
@@ -137,24 +137,30 @@ export const relatoriosService = {
       };
     });
 
+    const totalCategorias = categorias.length;
+    const paginatedCategorias = limit > 0 ? categorias.slice(page * limit, (page * limit) + limit) : categorias;
+
     return {
       periodo: { dataInicio: dataInicio.toISOString().split('T')[0], dataFim: dataFim.toISOString().split('T')[0] },
       resumo,
-      categorias,
+      categorias: paginatedCategorias,
+      totalCategorias,
       evolucao
     };
   },
 
-  /**
-   * Obtém o histórico detalhado de um item para a tabela lateral.
-   */
-  async obterDetalhesItem(userId: number, itemId: number, tipo: "RECEITA" | "DESPESA") {
-    const historico = await relatoriosRepository.obterHistoricoItem(userId, itemId, tipo);
-    return (historico as any[]).map(h => ({
-      mes: format(h.mes, "MMM", { locale: ptBR }).toUpperCase(),
-      ano: new Date(h.mes).getFullYear(),
-      total: h.valor,
-      deficit: 0 // Pode ser calculado se tivermos o planejado histórico
+  async obterHistoricoAgrupado(userId: number, itens: { id: number; tipo: string }[], ano: number): Promise<HistoricoMensal[]> {
+    const historicoRaw = await relatoriosRepository.obterHistoricoAgrupado(userId, itens, ano) as RawHistoricoAgrupado[];
+    
+    return historicoRaw.map((h) => ({
+      mes: fnFormatNaiveDate(h.mes, "MMM").toUpperCase(),
+      ano: h.ano,
+      realizado: h.realizado,
+      planejado: h.planejado,
+      projetado: h.projetado,
+      restanteReal: h.restanteReal,
+      restanteComProjecao: h.restanteComProjecao,
+      dataRef: h.mes.toISOString()
     }));
-  }
+  },
 };
