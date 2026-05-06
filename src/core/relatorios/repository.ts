@@ -130,20 +130,30 @@ export const relatoriosRepository = {
     const dataFim = `${ano}-12-31`;
 
     return await prisma.$queryRaw`
-      WITH itens_base AS (
-        SELECT id, "valorEstimado" as estimado, 'DESPESA' as tipo FROM despesa WHERE id = ANY(${dIds}::int[])
-        UNION ALL
-        SELECT id, "valorEstimado" as estimado, 'RECEITA' as tipo FROM receita WHERE id = ANY(${rIds}::int[])
-        UNION ALL
-        SELECT id, "valorMeta" as estimado, 'META' as tipo FROM meta WHERE id = ANY(${mIds}::int[])
-      ),
-      reais_detalhado AS (
+      WITH reais_detalhado AS (
         SELECT 
           date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
           EXTRACT(YEAR FROM l.data)::int as ano,
-          l."despesaId", l."receitaId", l."metaId",
           SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END)::float as real_pago,
-          SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as real_agendado
+          SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as real_agendado,
+          -- Alvo com sinal: Receita (+) , Despesa/Meta (-)
+          SUM(
+            CASE 
+              WHEN l."receitaId" IS NOT NULL THEN (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)
+              ELSE -(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)
+            END
+          )::float as alvo_sinalizado,
+          -- Restante como Saldo Pendente:
+          -- Receita: Mostra quanto falta receber (positivo) ou 0 se já recebeu tudo/mais.
+          -- Despesa: Mostra quanto falta pagar (negativo) ou 0 se já pagou tudo/mais.
+          SUM(
+            CASE 
+              WHEN l."receitaId" IS NOT NULL THEN 
+                GREATEST(0, (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END) - (CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END))
+              ELSE 
+                LEAST(0, (CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END) - (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END))
+            END
+          )::float as restante_sinalizado
         FROM lancamento l
         WHERE l."userId" = ${userId}
           AND (
@@ -152,32 +162,17 @@ export const relatoriosRepository = {
             (l."metaId" = ANY(${mIds}::int[]))
           )
           AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        GROUP BY 1, 2, 3, 4, 5
+        GROUP BY 1, 2
       ),
       reais_agrupado AS (
         SELECT 
-          r.mes_ref, 
-          r.ano,
-          SUM(r.real_pago) as total_pago,
-          SUM(r.real_agendado) as real_agendado,
-          SUM(
-            CASE 
-              WHEN ib.tipo = 'RECEITA' THEN COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0)
-              ELSE -COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0)
-            END
-          )::float as total_alvo,
-          SUM(
-            CASE 
-              WHEN ib.tipo = 'RECEITA' THEN (COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0) - r.real_pago)
-              ELSE (r.real_pago - COALESCE(NULLIF(r.real_agendado, 0), ib.estimado, 0))
-            END
-          )::float as restante_real
-        FROM reais_detalhado r
-        JOIN itens_base ib ON (
-          (ib.tipo = 'DESPESA' AND r."despesaId" = ib.id) OR
-          (ib.tipo = 'RECEITA' AND r."receitaId" = ib.id) OR
-          (ib.tipo = 'META' AND r."metaId" = ib.id)
-        )
+          mes_ref, 
+          ano,
+          SUM(real_pago) as total_pago,
+          SUM(real_agendado) as real_agendado,
+          SUM(alvo_sinalizado) as total_alvo,
+          SUM(restante_sinalizado) as restante_real
+        FROM reais_detalhado
         GROUP BY 1, 2
       ),
       projecoes AS (
@@ -194,7 +189,7 @@ export const relatoriosRepository = {
           SUM(
             CASE 
               WHEN val.origem = 'RECEITA' THEN val."valorEstimado"
-              ELSE (0 - val."valorEstimado")
+              ELSE -val."valorEstimado"
             END
           )::float as restante_projetado
         FROM (
@@ -211,6 +206,7 @@ export const relatoriosRepository = {
           AND NOT EXISTS (
             SELECT 1 FROM lancamento la 
             WHERE (la."despesaId" = val.id OR la."receitaId" = val.id)
+            AND la.tipo = 'agendamento'
             AND date_trunc('month', la.data AT TIME ZONE 'UTC') = m.d
           )
         GROUP BY 1, 2
@@ -224,7 +220,12 @@ export const relatoriosRepository = {
         COALESCE(r.total_alvo, 0)::float as "totalPrevisto",
         (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0))::float as "totalPrevistoComProjecao",
         COALESCE(r.restante_real, 0)::float as "restanteReal",
-        (COALESCE(r.restante_real, 0) + COALESCE(p.restante_projetado, 0))::float as "restanteComProjecao"
+        CASE 
+          WHEN (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)) >= 0 THEN
+            GREATEST(0, (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)) - COALESCE(r.total_pago, 0))
+          ELSE
+            LEAST(0, COALESCE(r.total_pago, 0) + (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)))
+        END::float as "restanteComProjecao"
       FROM reais_agrupado r
       FULL OUTER JOIN projecoes p ON r.mes_ref = p.mes_ref
       ORDER BY 1 ASC
