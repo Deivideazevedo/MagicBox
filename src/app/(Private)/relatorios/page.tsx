@@ -95,6 +95,9 @@ export default function RelatoriosPage() {
     selectedNames,
     incluirProjecaoTabela,
     setIncluirProjecaoTabela,
+    tiposFiltro,
+    toggleTipoFiltro,
+    tiposExistentes,
   } = useRelatorios();
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
@@ -473,8 +476,9 @@ export default function RelatoriosPage() {
                                           onToggle={toggleSelection}
                                           onSelectItem={selectItemForHistory}
                                           itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
-                                          incluirProjecao={incluirProjecaoTabela}
-                                          onToggleProjecao={setIncluirProjecaoTabela}
+                                          tiposFiltro={tiposFiltro}
+                                          onToggleTipo={toggleTipoFiltro}
+                                          tiposExistentes={tiposExistentes}
                                           pagination={{
                                             page: page,
                                             rowsPerPage: limit,

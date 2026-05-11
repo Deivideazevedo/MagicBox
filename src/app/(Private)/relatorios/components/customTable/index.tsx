@@ -23,6 +23,8 @@ import {
   Switch,
   FormControlLabel,
   Tooltip,
+  Chip,
+  Badge,
 } from "@mui/material";
 import React, { useState, useMemo, memo } from "react";
 import {
@@ -30,6 +32,10 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconBolt,
+  IconArrowDown,
+  IconArrowUp,
+  IconTarget,
+  IconFilter,
 } from "@tabler/icons-react";
 
 // Types
@@ -57,7 +63,7 @@ const formatCurrency = (value: number) =>
 const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
   {
     key: "nome",
-    label: "Categoria / Conta",
+    label: "Categoria",
     align: "left",
     sortValue: (row) => row.nome,
     render: (row) => {
@@ -76,7 +82,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
             }}
           >
             {iconeStr &&
-            AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
+              AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
               AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS]
             ) : (
               <IconCategory />
@@ -92,22 +98,22 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
   },
   {
     key: "valorPlanejado",
-    label: "Vlr. Estimado",
+    label: "Previsto",
     align: "right",
     sortValue: (row) => row.valorPlanejado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={600} color="textSecondary">
+      <Typography variant="body2" fontWeight={600} color="textSecondary" sx={{ whiteSpace: "nowrap" }}>
         {formatCurrency(row.valorPlanejado)}
       </Typography>
     ),
   },
   {
     key: "valorRealizado",
-    label: "Vlr. Pago",
+    label: "Pago",
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={700}>
+      <Typography variant="body2" fontWeight={700} sx={{ whiteSpace: "nowrap" }}>
         {formatCurrency(row.valorRealizado)}
       </Typography>
     ),
@@ -121,6 +127,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
       <Typography
         variant="body2"
         fontWeight={700}
+        sx={{ whiteSpace: "nowrap" }}
         color={
           row.restante < 0
             ? "error.main"
@@ -151,8 +158,9 @@ interface CustomTableProps {
     onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   };
   isLoading?: boolean;
-  incluirProjecao: boolean;
-  onToggleProjecao: (val: boolean) => void;
+  tiposFiltro: string[];
+  onToggleTipo: (tipo: string) => void;
+  tiposExistentes: Set<string>;
 }
 
 // ==================== COMPONENTE PRINCIPAL ====================
@@ -165,15 +173,24 @@ export function CustomTable({
   itemSelecionadoParaHistorico,
   pagination,
   isLoading = false,
-  incluirProjecao,
-  onToggleProjecao,
+  tiposFiltro,
+  onToggleTipo,
+  tiposExistentes,
 }: CustomTableProps) {
-  // Filtro de projeção client-side
+  const theme = useTheme();
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [incluirProjecao, setIncluirProjecao] = useState(true);
+
+  // Filtro de projeção e tipo client-side
   const dataFiltrada = useMemo(() => {
-    if (incluirProjecao) return data;
     return data
       .map((cat) => {
-        const detalhesFiltrados = cat.detalhes.filter((d) => !d.isProjecao);
+        const detalhesFiltrados = cat.detalhes.filter((d) => {
+          const matchesProjecao = incluirProjecao ? true : !d.isProjecao;
+          const matchesTipo = tiposFiltro.length === 0 || tiposFiltro.includes(d.tipo);
+          return matchesProjecao && matchesTipo;
+        });
+
         return {
           ...cat,
           detalhes: detalhesFiltrados,
@@ -189,7 +206,7 @@ export function CustomTable({
         };
       })
       .filter((cat) => cat.detalhes.length > 0); // Remove categorias vazias
-  }, [data, incluirProjecao]);
+  }, [data, incluirProjecao, tiposFiltro]);
 
   const { filteredData, filterText, setFilterText } = useTableFilter({
     data: dataFiltrada,
@@ -219,7 +236,7 @@ export function CustomTable({
           <Switch
             size="small"
             checked={incluirProjecao}
-            onChange={(e) => onToggleProjecao(e.target.checked)}
+            onChange={(e) => setIncluirProjecao(e.target.checked)}
             color="warning"
           />
         }
@@ -247,7 +264,86 @@ export function CustomTable({
         onFilterChange={setFilterText}
         onReset={handleReset}
         selectedCount={selectedIds.size}
-        leftActions={projecaoSwitch}
+        leftActions={
+          <Stack direction="row" spacing={1} alignItems="center">
+            {projecaoSwitch}
+            <Box sx={{ width: "1px", height: "24px", bgcolor: "divider", mx: 0.5 }} />
+
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Tooltip title="Filtrar por tipo" arrow>
+                <IconButton
+                  size="small"
+                  color={tiposFiltro.length > 0 ? "warning" : "primary"}
+                  onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
+                  sx={{
+                    ...(tiposFiltro.length > 0 && {
+                      bgcolor: alpha(theme.palette.warning.main, 0.12),
+                    }),
+                  }}
+                >
+                  <Badge
+                    badgeContent={tiposFiltro.length}
+                    color="warning"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        fontSize: '0.6rem',
+                        height: 16,
+                        minWidth: 16,
+                        width: 16,
+                        borderRadius: '50%',
+                        top: -4,
+                        right: -4,
+                        padding: 0,
+                        fontWeight: 800,
+                        border: `1px solid ${theme.palette.background.paper}`,
+                      }
+                    }}
+                  >
+                    <IconFilter size={18} />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+
+              <Collapse orientation="horizontal" in={filtrosVisiveis}>
+                <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+                  {tiposExistentes.has("DESPESA") && (
+                    <Chip
+                      size="small"
+                      icon={<IconArrowDown size={14} />}
+                      label="Despesas"
+                      color="error"
+                      variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
+                      onClick={() => onToggleTipo("DESPESA")}
+                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                    />
+                  )}
+                  {tiposExistentes.has("RECEITA") && (
+                    <Chip
+                      size="small"
+                      icon={<IconArrowUp size={14} />}
+                      label="Receitas"
+                      color="success"
+                      variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
+                      onClick={() => onToggleTipo("RECEITA")}
+                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                    />
+                  )}
+                  {tiposExistentes.has("META") && (
+                    <Chip
+                      size="small"
+                      icon={<IconTarget size={14} />}
+                      label="Metas"
+                      color="info"
+                      variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
+                      onClick={() => onToggleTipo("META")}
+                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                    />
+                  )}
+                </Stack>
+              </Collapse>
+            </Stack>
+          </Stack>
+        }
       />
 
       <TableContainer>

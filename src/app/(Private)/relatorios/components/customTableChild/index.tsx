@@ -90,20 +90,20 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
   },
   {
     key: "valorPlanejado",
-    label: "Vlr. Estimado",
+    label: "Previsto",
     align: "right",
     sortValue: (row) => row.valorPlanejado,
     render: (row) => (
-      <Typography variant="body2" color="textSecondary">{formatCurrency(row.valorPlanejado)}</Typography>
+      <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.valorPlanejado)}</Typography>
     ),
   },
   {
     key: "valorRealizado",
-    label: "Vlr. Pago",
+    label: "Pago",
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={600}>{formatCurrency(row.valorRealizado)}</Typography>
+      <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.valorRealizado)}</Typography>
     ),
   },
   {
@@ -115,6 +115,7 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
       <Typography
         variant="body2"
         fontWeight={700}
+        sx={{ whiteSpace: "nowrap" }}
         color={row.restante < 0 ? "error.main" : row.restante > 0 ? "success.main" : "textSecondary"}
       >
         {formatCurrency(row.restante)}
@@ -127,7 +128,7 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.mediaMensal,
     render: (row) => (
-      <Typography variant="body2" color="textSecondary">{formatCurrency(row.mediaMensal)}</Typography>
+      <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.mediaMensal)}</Typography>
     ),
   },
 ];
@@ -154,18 +155,9 @@ export const CustomTableChild = memo(function CustomTableChild({
   itemSelecionadoParaHistorico,
 }: CustomTableChildProps) {
   const theme = useTheme();
-  const [tiposFiltro, setTiposFiltro] = useState<TipoFiltro[]>([]);
-  const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
-
-  // Filtrar por tipo
-  const itensFiltradosPorTipo = useMemo(() => {
-    if (tiposFiltro.length === 0) return itens;
-    return itens.filter(item => tiposFiltro.includes(item.tipo as TipoFiltro));
-  }, [itens, tiposFiltro]);
-
   // Hook de filtro por texto
   const { filteredData, filterText, setFilterText } = useTableFilter({
-    data: itensFiltradosPorTipo,
+    data: itens,
     columns: TABLE_COLUMNS,
   });
 
@@ -178,80 +170,7 @@ export const CustomTableChild = memo(function CustomTableChild({
   const handleReset = useCallback(() => {
     setFilterText("");
     resetSort();
-    setTiposFiltro([]);
-    setFiltrosVisiveis(false);
   }, [setFilterText, resetSort]);
-
-  const toggleTipo = useCallback((tipo: TipoFiltro) => {
-    setTiposFiltro(prev =>
-      prev.includes(tipo) ? prev.filter(t => t !== tipo) : [...prev, tipo]
-    );
-  }, []);
-
-  const tiposExistentes = useMemo(() => {
-    const tipos = new Set<string>();
-    itens.forEach(i => tipos.add(i.tipo));
-    return tipos;
-  }, [itens]);
-
-  const filtrosAtivos = tiposFiltro.length > 0;
-
-  const filterActions = tiposExistentes.size > 1 ? (
-    <Stack direction="row" spacing={0.5} alignItems="center">
-      <Tooltip title="Filtrar por tipo" arrow>
-        <IconButton
-          size="small"
-          color={filtrosAtivos ? "warning" : "primary"}
-          onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
-          sx={{
-            ...(filtrosAtivos && {
-              bgcolor: alpha(theme.palette.warning.main, 0.12),
-            }),
-          }}
-        >
-          <IconFilter size={18} />
-        </IconButton>
-      </Tooltip>
-
-      <Collapse orientation="horizontal" in={filtrosVisiveis}>
-        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ ml: 1 }}>
-          {tiposExistentes.has("DESPESA") && (
-            <Chip
-              size="small"
-              icon={<IconArrowDown size={12} />}
-              label="Despesas"
-              color="error"
-              variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
-              onClick={() => toggleTipo("DESPESA")}
-              sx={{ fontSize: "0.65rem", height: 22, fontWeight: 600, cursor: "pointer" }}
-            />
-          )}
-          {tiposExistentes.has("RECEITA") && (
-            <Chip
-              size="small"
-              icon={<IconArrowUp size={12} />}
-              label="Receitas"
-              color="success"
-              variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
-              onClick={() => toggleTipo("RECEITA")}
-              sx={{ fontSize: "0.65rem", height: 22, fontWeight: 600, cursor: "pointer" }}
-            />
-          )}
-          {tiposExistentes.has("META") && (
-            <Chip
-              size="small"
-              icon={<IconTarget size={12} />}
-              label="Metas"
-              color="info"
-              variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
-              onClick={() => toggleTipo("META")}
-              sx={{ fontSize: "0.65rem", height: 22, fontWeight: 600, cursor: "pointer" }}
-            />
-          )}
-        </Stack>
-      </Collapse>
-    </Stack>
-  ) : null;
 
   const totalColumns = TABLE_COLUMNS.length + 2;
 
@@ -262,7 +181,7 @@ export const CustomTableChild = memo(function CustomTableChild({
         onFilterChange={setFilterText}
         onReset={handleReset}
         selectedCount={0}
-        leftActions={filterActions}
+        leftActions={null}
       />
 
       <Table size="small">
