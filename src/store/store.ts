@@ -4,6 +4,7 @@ import { persistReducer, persistStore, createTransform } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import CustomizerReducer from "./customizer/CustomizerSlice";
 import LancamentoUiReducer from "./apps/lancamentos/LancamentoSlice";
+import RelatorioUiReducer from "./apps/relatorios/RelatoriosSlice";
 import { api } from "../services/api";
 
 /**
@@ -45,6 +46,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   customizer: CustomizerReducer,
   lancamentoUi: LancamentoUiReducer,
+  relatorioUi: RelatorioUiReducer,
   [api.reducerPath]: api.reducer,
 });
 
@@ -65,6 +67,11 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-export type RootState = ReturnType<typeof store.getState>;
+// 1. Tipagem baseada no rootReducer (contém todos os slices)
+export type RootState = ReturnType<typeof rootReducer>;
+
+// 2. Tipagem do Dispatch vinda da store configurada
 export type AppDispatch = typeof store.dispatch;
-export type AppState = ReturnType<typeof rootReducer>;
+
+// 3. Opcional: Se precisar do estado incluindo os campos do persist (_persist)
+export type AppState = ReturnType<typeof store.getState>;

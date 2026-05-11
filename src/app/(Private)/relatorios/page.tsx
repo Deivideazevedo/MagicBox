@@ -30,16 +30,26 @@ import {
   IconChevronUp,
   IconGripVertical,
 } from "@tabler/icons-react";
-import { 
-  DragDropContext, 
-  Droppable, 
-  Draggable, 
-  DropResult 
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult
 } from "@hello-pangea/dnd";
 import { useRelatorios } from "./hooks/useRelatorios";
 import { fnCompareValues } from "@/utils/functions/fnComparison";
 import { pdf } from "@react-pdf/renderer";
 import { RelatorioPDFTemplate } from "./components/pdf/RelatorioPDFTemplate";
+import { HistoricoMensal } from "@/core/relatorios/relatorio.dto";
+
+// Redux
+import { useDispatch, useSelector } from "@/store/hooks";
+import { RootState } from "@/store/store";
+import {
+  setSectionsOrder,
+  toggleOverview,
+  toggleTable
+} from "@/store/apps/relatorios/RelatoriosSlice";
 
 // Componentes internos (Importados como Default)
 import FiltrosRelatorio from "./components/FiltrosRelatorio";
@@ -58,6 +68,11 @@ const formatCurrency = (value: number) => {
 
 export default function RelatoriosPage() {
   const theme = useTheme();
+  const dispatch = useDispatch();
+
+  // Redux States
+  const { sectionsOrder, showOverview, showTable } = useSelector((state: RootState) => state.relatorioUi);
+
   const {
     data,
     loading,
@@ -82,36 +97,24 @@ export default function RelatoriosPage() {
     setIncluirProjecaoTabela,
   } = useRelatorios();
 
-  const [showKPIs, setShowKPIs] = useState(true);
-  const [showCharts, setShowCharts] = useState(true);
   const [gerandoPdf, setGerandoPdf] = useState(false);
-
-  // Drag and Drop State
-  const [sectionsOrder, setSectionsOrder] = useState<string[]>(['kpis', 'charts', 'table']);
   const [isReady, setIsReady] = useState(false);
 
-  // Carregar ordem do localStorage
+  // Garantir que o componente está montado para evitar erros de hidratação com DND
   useEffect(() => {
-    const savedOrder = localStorage.getItem('relatorios-sections-order');
-    if (savedOrder) {
-      try {
-        setSectionsOrder(JSON.parse(savedOrder));
-      } catch (e) {
-        console.error("Erro ao carregar ordem das seções:", e);
-      }
-    }
     setIsReady(true);
   }, []);
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
+    const { source, destination } = result;
+
+    if (!destination || destination.index === source.index) return;
 
     const newOrder = Array.from(sectionsOrder);
-    const [reorderedItem] = newOrder.splice(result.source.index, 1);
-    newOrder.splice(result.destination.index, 0, reorderedItem);
+    const [reorderedItem] = newOrder.splice(source.index, 1);
+    newOrder.splice(destination.index, 0, reorderedItem);
 
-    setSectionsOrder(newOrder);
-    localStorage.setItem('relatorios-sections-order', JSON.stringify(newOrder));
+    dispatch(setSectionsOrder(newOrder));
   };
 
   const historicoConsolidado = useMemo(() => {
@@ -138,11 +141,13 @@ export default function RelatoriosPage() {
           dataFim={dataFim}
         />
       ).toBlob();
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `relatorio-financeiro-${dataInicio}-a-${dataFim}.pdf`;
+      link.download = `Relatorio_Financeiro_${new Date().toLocaleDateString()}.pdf`;
       link.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Erro ao gerar PDF:", err);
     } finally {
@@ -225,68 +230,123 @@ export default function RelatoriosPage() {
                             ...provided.draggableProps.style,
                             ...(snapshot.isDragging && {
                               '& > div': {
-                                boxShadow: theme.shadows[10],
-                                border: `1px solid ${theme.palette.primary.main}`,
+                                boxShadow: theme.shadows[9],
+                                border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
+                                bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                borderRadius: 3,
                               }
                             })
                           }}
                         >
-                          {sectionId === 'kpis' && (
-                            <Paper sx={{ overflow: "hidden" }}>
+                          {sectionId === 'overview' && (
+                            <Paper
+                              elevation={0}
+                              variant="outlined"
+                              sx={{
+                                overflow: "hidden",
+                                borderRadius: 3,
+                                borderColor: alpha(theme.palette.primary.main, 0.15),
+                                bgcolor: 'background.paper',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                                '&:hover': {
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                                  borderColor: alpha(theme.palette.primary.main, 0.25),
+                                }
+                              }}
+                            >
                               <Box
+                                {...provided.dragHandleProps} onClick={() => dispatch(toggleOverview())}
                                 sx={{
-                                  p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05),
-                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  p: 2,
+                                  bgcolor: alpha(theme.palette.primary.main, 0.02),
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  borderBottom: showOverview ? `1px solid ${alpha(theme.palette.divider, 0.08)}` : 'none',
+                                  transition: 'background-color 0.2s',
+                                  userSelect: 'none',
+                                  cursor: 'grab',
+                                  '&:hover': {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                    '& .section-icon': { color: 'primary.main' },
+                                    '& .section-title': { color: 'primary.main' }
+                                  }
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-                                    <IconGripVertical size={20} />
-                                  </Box>
-                                  <Box onClick={() => setShowKPIs(!showKPIs)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                                    <IconChartBar size={20} />
-                                    <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-                                      Resumo de Indicadores
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Tooltip title="Clique e arraste para reordenar esta seção" arrow>
+                                    <Box
+                                      className="drag-handle"
+                                      sx={{
+                                        display: 'flex',
+                                        color: alpha(theme.palette.text.primary, 0.3),
+                                        p: 0.5,
+                                        borderRadius: 1,
+                                        border: '1px solid transparent',
+                                        transition: 'all 0.2s',
+                                        '&:hover': {
+                                          color: 'primary.main',
+                                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                          borderColor: alpha(theme.palette.primary.main, 0.2)
+                                        }
+                                      }}
+                                    >
+                                      <IconGripVertical size={20} />
+                                    </Box>
+                                  </Tooltip>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 1.5,
+                                      cursor: 'pointer !important'
+                                    }}
+                                  >
+                                    <Box
+                                      className="section-icon"
+                                      sx={{
+                                        display: 'flex',
+                                        color: 'text.secondary',
+                                        transition: 'color 0.2s'
+                                      }}
+                                    >
+                                      <IconChartBar size={22} />
+                                    </Box>
+                                    <Typography
+                                      variant="subtitle2"
+                                      fontWeight={800}
+                                      className="section-title"
+                                      sx={{
+                                        textTransform: 'uppercase',
+                                        letterSpacing: 1.2,
+                                        color: theme.palette.text.primary,
+                                        transition: 'color 0.2s'
+                                      }}
+                                    >
+                                      Resumo e Análise de Indicadores
                                     </Typography>
                                   </Box>
                                 </Box>
-                                <IconButton size="small" onClick={() => setShowKPIs(!showKPIs)}>
-                                  {showKPIs ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                <IconButton
+                                  size="small"
+                                  sx={{
+                                    color: 'primary.main',
+                                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                                  }}
+                                >
+                                  {showOverview ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
                                 </IconButton>
                               </Box>
-                              <Collapse in={showKPIs}>
+                              <Collapse in={showOverview}>
                                 <Box sx={{ p: 3 }}>
-                                  {resumoExibido && <CardsKPI resumo={resumoExibido} />}
-                                </Box>
-                              </Collapse>
-                            </Paper>
-                          )}
+                                  {resumoExibido && (
+                                    <Box sx={{ mb: 4 }}>
+                                      <CardsKPI resumo={resumoExibido} />
+                                    </Box>
+                                  )}
 
-                          {sectionId === 'charts' && (
-                            <Paper sx={{ overflow: "hidden" }}>
-                              <Box
-                                sx={{
-                                  p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05),
-                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                }}
-                              >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-                                    <IconGripVertical size={20} />
-                                  </Box>
-                                  <Box onClick={() => setShowCharts(!showCharts)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                                    <IconTable size={20} />
-                                    <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-                                      Distribuição e Evolução
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                                <IconButton size="small" onClick={() => setShowCharts(!showCharts)}>
-                                  {showCharts ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
-                                </IconButton>
-                              </Box>
-                              <Collapse in={showCharts}>
-                                <Box sx={{ p: 3 }}>
                                   <Grid container spacing={3}>
                                     <Grid item xs={12} md={6}>
                                       {data?.categorias && <GraficoDistribuicao categorias={data.categorias} />}
@@ -301,98 +361,198 @@ export default function RelatoriosPage() {
                           )}
 
                           {sectionId === 'table' && (
-                            <Grid container spacing={3}>
-                              <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, ml: 1 }}>
-                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
-                                    <IconGripVertical size={20} />
-                                  </Box>
-                                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
-                                    Tabela Principal (Arraste para mover a seção)
-                                  </Typography>
-                                </Box>
-                                {data?.categorias && (
-                                  <CustomTable
-                                    data={data.categorias}
-                                    selectedIds={selectedIds}
-                                    onToggle={toggleSelection}
-                                    onSelectItem={selectItemForHistory}
-                                    itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
-                                    incluirProjecao={incluirProjecaoTabela}
-                                    onToggleProjecao={setIncluirProjecaoTabela}
-                                    pagination={{
-                                      page: page,
-                                      rowsPerPage: limit,
-                                      count: data.totalCategorias,
-                                      onPageChange: (_: any, newPage: number) => setPage(newPage),
-                                      onRowsPerPageChange: (e: any) => setLimit(parseInt(e.target.value))
-                                    }}
-                                    isLoading={loading}
-                                  />
-                                )}
-                              </Grid>
-
-                              {/* Lateral History Panel */}
-                              {selectedIds.size > 0 && (
-                                <Grid item xs={12} lg={4}>
-                                  <Paper sx={{ p: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                    <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <IconHistory size={20} color={theme.palette.primary.main} />
-                                      <Typography variant="subtitle1" fontWeight={800}>
-                                        Resumo: {titleHistorico}
-                                      </Typography>
+                            <Paper
+                              elevation={0}
+                              variant="outlined"
+                              sx={{
+                                overflow: "hidden",
+                                borderRadius: 3,
+                                border: "1px solid",
+                                borderColor: alpha(theme.palette.primary.main, 0.2),
+                                bgcolor: 'background.default',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                                '&:hover': {
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                                  borderColor: alpha(theme.palette.primary.main, 0.25),
+                                }
+                              }}
+                            >
+                              <Box
+                                {...provided.dragHandleProps} onClick={() => dispatch(toggleTable())}
+                                sx={{
+                                  p: 2,
+                                  bgcolor: 'background.paper',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  borderBottom: showTable ? `1px solid ${alpha(theme.palette.divider, 0.08)}` : 'none',
+                                  transition: 'background-color 0.2s',
+                                  userSelect: 'none',
+                                  cursor: 'grab',
+                                  '&:hover': {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                    '& .section-icon': { color: 'primary.main' },
+                                    '& .section-title': { color: 'primary.main' }
+                                  }
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Tooltip title="Clique e arraste para reordenar esta seção" arrow>
+                                    <Box
+                                      className="drag-handle"
+                                      sx={{
+                                        display: 'flex',
+                                        color: alpha(theme.palette.text.primary, 0.3),
+                                        p: 0.5,
+                                        borderRadius: 1,
+                                        border: '1px solid transparent',
+                                        transition: 'all 0.2s',
+                                        '&:hover': {
+                                          color: 'primary.main',
+                                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                          borderColor: alpha(theme.palette.primary.main, 0.2)
+                                        }
+                                      }}
+                                    >
+                                      <IconGripVertical size={20} />
                                     </Box>
+                                  </Tooltip>
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 1.5,
+                                      cursor: 'pointer !important'
+                                    }}
+                                  >
+                                    <Box
+                                      className="section-icon"
+                                      sx={{
+                                        display: 'flex',
+                                        color: 'text.secondary',
+                                        transition: 'color 0.2s'
+                                      }}
+                                    >
+                                      <IconTable size={22} />
+                                    </Box>
+                                    <Typography
+                                      variant="subtitle2"
+                                      fontWeight={800}
+                                      className="section-title"
+                                      sx={{
+                                        textTransform: 'uppercase',
+                                        letterSpacing: 1.2,
+                                        color: theme.palette.text.primary,
+                                        transition: 'color 0.2s'
+                                      }}
+                                    >
+                                      Detalhamento por Categorias
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <IconButton
+                                  size="small"
+                                  sx={{
+                                    color: 'primary.main',
+                                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                                  }}
+                                >
+                                  {showTable ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                </IconButton>
+                              </Box>
+                              <Collapse in={showTable}>
+                                <Box sx={{ p: 3 }}>
+                                  <Grid container spacing={3}>
+                                    <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
+                                      {data?.categorias && (
+                                        <CustomTable
+                                          data={data.categorias}
+                                          selectedIds={selectedIds}
+                                          onToggle={toggleSelection}
+                                          onSelectItem={selectItemForHistory}
+                                          itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
+                                          incluirProjecao={incluirProjecaoTabela}
+                                          onToggleProjecao={setIncluirProjecaoTabela}
+                                          pagination={{
+                                            page: page,
+                                            rowsPerPage: limit,
+                                            count: data.totalCategorias,
+                                            onPageChange: (_: unknown, newPage: number) => setPage(newPage),
+                                            onRowsPerPageChange: (e: React.ChangeEvent<HTMLInputElement>) => setLimit(parseInt(e.target.value))
+                                          }}
+                                          isLoading={loading}
+                                        />
+                                      )}
+                                    </Grid>
 
-                                    {loadingHistorico ? (
-                                      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-                                        <CircularProgress size={32} />
-                                      </Box>
-                                    ) : (
-                                      <Box sx={{ flex: 1, overflow: 'auto' }}>
-                                        <TableContainer>
-                                          <Table size="small">
-                                            <TableHead>
-                                              <TableRow>
-                                                <TableCell><Typography variant="caption" fontWeight={700}>Referência</Typography></TableCell>
-                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Previsto</Typography></TableCell>
-                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Pago</Typography></TableCell>
-                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Restante</Typography></TableCell>
-                                              </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                              {historicoConsolidado.map((h, i) => (
-                                                <TableRow
-                                                  key={i}
-                                                  sx={{
-                                                    "&:last-child td, &:last-child th": { border: 0 },
-                                                    "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.02) }
-                                                  }}
-                                                >
-                                                  <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
-                                                  <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                                                    {formatCurrency(h.previsto)}
-                                                  </TableCell>
-                                                  <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
-                                                  <TableCell
-                                                    align="right"
-                                                    sx={{
-                                                      color: h.restante < 0 ? "error.main" : "success.main",
-                                                      fontWeight: 700
-                                                    }}
-                                                  >
-                                                    {formatCurrency(h.restante)}
-                                                  </TableCell>
-                                                </TableRow>
-                                              ))}
-                                            </TableBody>
-                                          </Table>
-                                        </TableContainer>
-                                      </Box>
+                                    {/* Lateral History Panel */}
+                                    {selectedIds.size > 0 && (
+                                      <Grid item xs={12} lg={4}>
+                                        <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderColor: alpha(theme.palette.divider, 0.15) }}>
+                                          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                            <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 1, display: 'flex' }}>
+                                              <IconHistory size={18} color={theme.palette.primary.main} />
+                                            </Box>
+                                            <Typography variant="subtitle2" fontWeight={800}>
+                                              Histórico: {titleHistorico}
+                                            </Typography>
+                                          </Box>
+
+                                          {loadingHistorico ? (
+                                            <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+                                              <CircularProgress size={32} />
+                                            </Box>
+                                          ) : (
+                                            <Box sx={{ flex: 1, overflow: 'auto' }}>
+                                              <TableContainer>
+                                                <Table size="small">
+                                                  <TableHead>
+                                                    <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+                                                      <TableCell><Typography variant="caption" fontWeight={800} color="text.secondary">REFERÊNCIA</Typography></TableCell>
+                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PREVISTO</Typography></TableCell>
+                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PAGO</Typography></TableCell>
+                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">RESTANTE</Typography></TableCell>
+                                                    </TableRow>
+                                                  </TableHead>
+                                                  <TableBody>
+                                                    {historicoConsolidado.map((h, i) => (
+                                                      <TableRow
+                                                        key={i}
+                                                        sx={{
+                                                          "&:last-child td, &:last-child th": { border: 0 },
+                                                          "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) }
+                                                        }}
+                                                      >
+                                                        <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
+                                                        <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                                                          {formatCurrency(h.previsto)}
+                                                        </TableCell>
+                                                        <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
+                                                        <TableCell
+                                                          align="right"
+                                                          sx={{
+                                                            color: h.restante < 0 ? "error.main" : h.restante > 0 ? "success.main" : "text.secondary",
+                                                            fontWeight: 800
+                                                          }}
+                                                        >
+                                                          {formatCurrency(h.restante)}
+                                                        </TableCell>
+                                                      </TableRow>
+                                                    ))}
+                                                  </TableBody>
+                                                </Table>
+                                              </TableContainer>
+                                            </Box>
+                                          )}
+                                        </Paper>
+                                      </Grid>
                                     )}
-                                  </Paper>
-                                </Grid>
-                              )}
-                            </Grid>
+                                  </Grid>
+                                </Box>
+                              </Collapse>
+                            </Paper>
                           )}
                         </Box>
                       )}
