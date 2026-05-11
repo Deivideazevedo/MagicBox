@@ -146,13 +146,13 @@ interface CustomTableChildProps {
 
 // ==================== COMPONENTE PRINCIPAL ====================
 
-export const CustomTableChild = memo(({
+export const CustomTableChild = memo(function CustomTableChild({
   itens,
   selectedIds,
   onToggle,
   onSelectItem,
   itemSelecionadoParaHistorico,
-}: CustomTableChildProps) => {
+}: CustomTableChildProps) {
   const theme = useTheme();
   const [tiposFiltro, setTiposFiltro] = useState<TipoFiltro[]>([]);
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
