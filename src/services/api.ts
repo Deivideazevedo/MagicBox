@@ -97,6 +97,8 @@ export const api = createApi({
   reducerPath: "api",
   keepUnusedDataFor: 300, // Mantém dados por 5 minutos se não houver componentes montados
   refetchOnMountOrArgChange: 300, // Revalida automaticamente se o cache for mais antigo que 5 min ao montar
+  refetchOnFocus: true, // Revalida quando a janela ganha foco
+  refetchOnReconnect: true, // Revalida quando a conexão é recuperada
   baseQuery: baseQueryInterceptor,
   tagTypes: [
     "Categorias",

@@ -117,42 +117,6 @@ export function TableTopBar({
 
             {/* Área para ações customizadas */}
             {leftActions}
-
-            {/* Botão de Excluir em Lote com Badge */}
-            {selectedCount > 0 && (
-              <Tooltip title="Excluir selecionados" arrow>
-                <IconButton
-                  onClick={onBulkDelete}
-                  size="small"
-                  sx={{
-                    color: "error.main",
-                    bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                    "&:hover": {
-                      color: "error.dark",
-                      bgcolor: (theme) => alpha(theme.palette.error.main, 0.4),
-                    },
-                    ml: 1,
-                  }}
-                >
-                  <Badge
-                    badgeContent={selectedCount}
-                    color="error"
-                    sx={{
-                      "& .MuiBadge-badge": {
-                        fontSize: "0.65rem",
-                        height: "16px",
-                        minWidth: "16px",
-                        padding: "0 4px", // Ajuste aqui para mover para o topo e para a direita
-                        top: -2,
-                        right: -2,
-                      },
-                    }}
-                  >
-                    <IconTrash size={20} />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-            )}
           </Stack>
         </Collapse>
       </Stack>

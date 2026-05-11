@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useEffect } from "react";
 import {
   Box,
   Container,
@@ -28,7 +28,14 @@ import {
   IconHistory,
   IconChevronDown,
   IconChevronUp,
+  IconGripVertical,
 } from "@tabler/icons-react";
+import { 
+  DragDropContext, 
+  Droppable, 
+  Draggable, 
+  DropResult 
+} from "@hello-pangea/dnd";
 import { useRelatorios } from "./hooks/useRelatorios";
 import { fnCompareValues } from "@/utils/functions/fnComparison";
 import { pdf } from "@react-pdf/renderer";
@@ -79,6 +86,34 @@ export default function RelatoriosPage() {
   const [showCharts, setShowCharts] = useState(true);
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
+  // Drag and Drop State
+  const [sectionsOrder, setSectionsOrder] = useState<string[]>(['kpis', 'charts', 'table']);
+  const [isReady, setIsReady] = useState(false);
+
+  // Carregar ordem do localStorage
+  useEffect(() => {
+    const savedOrder = localStorage.getItem('relatorios-sections-order');
+    if (savedOrder) {
+      try {
+        setSectionsOrder(JSON.parse(savedOrder));
+      } catch (e) {
+        console.error("Erro ao carregar ordem das seções:", e);
+      }
+    }
+    setIsReady(true);
+  }, []);
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const newOrder = Array.from(sectionsOrder);
+    const [reorderedItem] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, reorderedItem);
+
+    setSectionsOrder(newOrder);
+    localStorage.setItem('relatorios-sections-order', JSON.stringify(newOrder));
+  };
+
   const historicoConsolidado = useMemo(() => {
     if (!historicoItem || !Array.isArray(historicoItem)) return [];
 
@@ -96,9 +131,9 @@ export default function RelatoriosPage() {
     setGerandoPdf(true);
     try {
       const blob = await pdf(
-        <RelatorioPDFTemplate 
-          resumo={data.resumo} 
-          categorias={data.categorias} 
+        <RelatorioPDFTemplate
+          resumo={data.resumo}
+          categorias={data.categorias}
           dataInicio={dataInicio}
           dataFim={dataFim}
         />
@@ -137,10 +172,10 @@ export default function RelatoriosPage() {
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Tooltip title={selectedIds.size > 0 ? `Exportar PDF (${selectedNames})` : "Exportar PDF Geral"}>
-            <IconButton 
-              onClick={handleExportPDF} 
+            <IconButton
+              onClick={handleExportPDF}
               disabled={gerandoPdf}
-              sx={{ 
+              sx={{
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 color: 'primary.main',
                 '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
@@ -167,150 +202,208 @@ export default function RelatoriosPage() {
       />
 
       <Box sx={{ mt: 3 }}>
-        {/* KPI Section */}
-        <Paper sx={{ mb: 3, overflow: "hidden" }}>
-          <Box 
-            onClick={() => setShowKPIs(!showKPIs)}
-            sx={{ 
-              p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), 
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconChartBar size={20} />
-              <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-                Resumo de Indicadores
-              </Typography>
-            </Box>
-            {showKPIs ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+        {!isReady ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+            <CircularProgress />
           </Box>
-          <Collapse in={showKPIs}>
-            <Box sx={{ p: 3 }}>
-              {resumoExibido && <CardsKPI resumo={resumoExibido} />}
-            </Box>
-          </Collapse>
-        </Paper>
-
-        {/* Charts Section */}
-        <Paper sx={{ mb: 3, overflow: "hidden" }}>
-          <Box 
-            onClick={() => setShowCharts(!showCharts)}
-            sx={{ 
-              p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), 
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconTable size={20} />
-              <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-                Distribuição e Evolução
-              </Typography>
-            </Box>
-            {showCharts ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
-          </Box>
-          <Collapse in={showCharts}>
-            <Box sx={{ p: 3 }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  {data?.categorias && <GraficoDistribuicao categorias={data.categorias} />}
-                </Grid>
-                <Grid item xs={12} md={6}>
-                   {data?.evolucao && <GraficoEvolucao evolucao={data.evolucao} />}
-                </Grid>
-              </Grid>
-            </Box>
-          </Collapse>
-        </Paper>
-
-        {/* Main Table & History Panel */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
-            <Paper sx={{ p: 0, overflow: 'hidden' }}>
-              {data?.categorias && (
-                <CustomTable
-                  data={data.categorias}
-                  selectedIds={selectedIds}
-                  onToggle={toggleSelection}
-                  onSelectItem={selectItemForHistory}
-                  itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
-                  incluirProjecao={incluirProjecaoTabela}
-                  onToggleProjecao={setIncluirProjecaoTabela}
-                  pagination={{
-                    page: page,
-                    rowsPerPage: limit,
-                    count: data.totalCategorias,
-                    onPageChange: (_: any, newPage: number) => setPage(newPage),
-                    onRowsPerPageChange: (e: any) => setLimit(parseInt(e.target.value))
-                  }}
-                  isLoading={loading}
-                />
-              )}
-            </Paper>
-          </Grid>
-
-          {/* Lateral History Panel */}
-          {selectedIds.size > 0 && (
-            <Grid item xs={12} lg={4}>
-              <Paper sx={{ p: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconHistory size={20} color={theme.palette.primary.main} />
-                  <Typography variant="subtitle1" fontWeight={800}>
-                    Resumo: {titleHistorico}
-                  </Typography>
-                </Box>
-                
-                {loadingHistorico ? (
-                  <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-                    <CircularProgress size={32} />
-                  </Box>
-                ) : (
-                  <Box sx={{ flex: 1, overflow: 'auto' }}>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell><Typography variant="caption" fontWeight={700}>Referência</Typography></TableCell>
-                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Previsto</Typography></TableCell>
-                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Pago</Typography></TableCell>
-                            <TableCell align="right"><Typography variant="caption" fontWeight={700}>Restante</Typography></TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {historicoConsolidado.map((h, i) => (
-                            <TableRow 
-                              key={i} 
-                              sx={{ 
-                                "&:last-child td, &:last-child th": { border: 0 },
-                                "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.02) }
-                              }}
-                            >
-                              <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                                {formatCurrency(h.previsto)}
-                              </TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
-                              <TableCell 
-                                align="right" 
-                                sx={{ 
-                                  color: h.restante < 0 ? "error.main" : "success.main",
-                                  fontWeight: 700 
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="relatorios-sections">
+              {(provided) => (
+                <Box
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {sectionsOrder.map((sectionId, index) => (
+                    <Draggable key={sectionId} draggableId={sectionId} index={index}>
+                      {(provided, snapshot) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          sx={{
+                            mb: 3,
+                            ...provided.draggableProps.style,
+                            ...(snapshot.isDragging && {
+                              '& > div': {
+                                boxShadow: theme.shadows[10],
+                                border: `1px solid ${theme.palette.primary.main}`,
+                              }
+                            })
+                          }}
+                        >
+                          {sectionId === 'kpis' && (
+                            <Paper sx={{ overflow: "hidden" }}>
+                              <Box
+                                sx={{
+                                  p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                 }}
                               >
-                                {formatCurrency(h.restante)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                )}
-              </Paper>
-            </Grid>
-          )}
-        </Grid>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
+                                    <IconGripVertical size={20} />
+                                  </Box>
+                                  <Box onClick={() => setShowKPIs(!showKPIs)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                                    <IconChartBar size={20} />
+                                    <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                                      Resumo de Indicadores
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <IconButton size="small" onClick={() => setShowKPIs(!showKPIs)}>
+                                  {showKPIs ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                </IconButton>
+                              </Box>
+                              <Collapse in={showKPIs}>
+                                <Box sx={{ p: 3 }}>
+                                  {resumoExibido && <CardsKPI resumo={resumoExibido} />}
+                                </Box>
+                              </Collapse>
+                            </Paper>
+                          )}
+
+                          {sectionId === 'charts' && (
+                            <Paper sx={{ overflow: "hidden" }}>
+                              <Box
+                                sx={{
+                                  p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
+                                    <IconGripVertical size={20} />
+                                  </Box>
+                                  <Box onClick={() => setShowCharts(!showCharts)} sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                                    <IconTable size={20} />
+                                    <Typography variant="subtitle2" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+                                      Distribuição e Evolução
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <IconButton size="small" onClick={() => setShowCharts(!showCharts)}>
+                                  {showCharts ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                </IconButton>
+                              </Box>
+                              <Collapse in={showCharts}>
+                                <Box sx={{ p: 3 }}>
+                                  <Grid container spacing={3}>
+                                    <Grid item xs={12} md={6}>
+                                      {data?.categorias && <GraficoDistribuicao categorias={data.categorias} />}
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                      {data?.evolucao && <GraficoEvolucao evolucao={data.evolucao} />}
+                                    </Grid>
+                                  </Grid>
+                                </Box>
+                              </Collapse>
+                            </Paper>
+                          )}
+
+                          {sectionId === 'table' && (
+                            <Grid container spacing={3}>
+                              <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, ml: 1 }}>
+                                  <Box {...provided.dragHandleProps} sx={{ display: 'flex', cursor: 'grab', color: 'text.secondary', '&:hover': { color: 'primary.main' } }}>
+                                    <IconGripVertical size={20} />
+                                  </Box>
+                                  <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                                    Tabela Principal (Arraste para mover a seção)
+                                  </Typography>
+                                </Box>
+                                {data?.categorias && (
+                                  <CustomTable
+                                    data={data.categorias}
+                                    selectedIds={selectedIds}
+                                    onToggle={toggleSelection}
+                                    onSelectItem={selectItemForHistory}
+                                    itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
+                                    incluirProjecao={incluirProjecaoTabela}
+                                    onToggleProjecao={setIncluirProjecaoTabela}
+                                    pagination={{
+                                      page: page,
+                                      rowsPerPage: limit,
+                                      count: data.totalCategorias,
+                                      onPageChange: (_: any, newPage: number) => setPage(newPage),
+                                      onRowsPerPageChange: (e: any) => setLimit(parseInt(e.target.value))
+                                    }}
+                                    isLoading={loading}
+                                  />
+                                )}
+                              </Grid>
+
+                              {/* Lateral History Panel */}
+                              {selectedIds.size > 0 && (
+                                <Grid item xs={12} lg={4}>
+                                  <Paper sx={{ p: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                    <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderBottom: `1px solid ${theme.palette.divider}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <IconHistory size={20} color={theme.palette.primary.main} />
+                                      <Typography variant="subtitle1" fontWeight={800}>
+                                        Resumo: {titleHistorico}
+                                      </Typography>
+                                    </Box>
+
+                                    {loadingHistorico ? (
+                                      <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+                                        <CircularProgress size={32} />
+                                      </Box>
+                                    ) : (
+                                      <Box sx={{ flex: 1, overflow: 'auto' }}>
+                                        <TableContainer>
+                                          <Table size="small">
+                                            <TableHead>
+                                              <TableRow>
+                                                <TableCell><Typography variant="caption" fontWeight={700}>Referência</Typography></TableCell>
+                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Previsto</Typography></TableCell>
+                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Pago</Typography></TableCell>
+                                                <TableCell align="right"><Typography variant="caption" fontWeight={700}>Restante</Typography></TableCell>
+                                              </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                              {historicoConsolidado.map((h, i) => (
+                                                <TableRow
+                                                  key={i}
+                                                  sx={{
+                                                    "&:last-child td, &:last-child th": { border: 0 },
+                                                    "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.02) }
+                                                  }}
+                                                >
+                                                  <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
+                                                  <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                                                    {formatCurrency(h.previsto)}
+                                                  </TableCell>
+                                                  <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
+                                                  <TableCell
+                                                    align="right"
+                                                    sx={{
+                                                      color: h.restante < 0 ? "error.main" : "success.main",
+                                                      fontWeight: 700
+                                                    }}
+                                                  >
+                                                    {formatCurrency(h.restante)}
+                                                  </TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                        </TableContainer>
+                                      </Box>
+                                    )}
+                                  </Paper>
+                                </Grid>
+                              )}
+                            </Grid>
+                          )}
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
       </Box>
     </Container>
   );

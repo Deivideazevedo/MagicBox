@@ -401,11 +401,28 @@ const CustomRow = memo(function CustomRow({
             }}
           />
         </TableCell>
-        {columns.map((col) => (
-          <TableCell key={String(col.key)} align={col.align || "left"}>
-            {renderColumn(col.key)}
-          </TableCell>
-        ))}
+        {columns.map((col) => {
+          const align = col.align || "left";
+          return (
+            <TableCell key={String(col.key)} align={align}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent:
+                    align === "right"
+                      ? "flex-end"
+                      : align === "left"
+                        ? "flex-start"
+                        : "center",
+                }}
+              >
+                {renderColumn(col.key)}
+                <MultiSortIcon />
+              </Box>
+            </TableCell>
+          );
+        })}
       </TableRow>
 
       <TableRow>

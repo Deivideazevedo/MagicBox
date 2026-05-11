@@ -314,6 +314,8 @@ export const CustomTableChild = memo(({
   );
 });
 
+CustomTableChild.displayName = "CustomTableChild";
+
 // ==================== ROW FILHA MEMOIZADA ====================
 
 interface ChildRowProps {
@@ -363,11 +365,28 @@ const ChildRow = memo(function ChildRow({
           size="small"
         />
       </TableCell>
-      {TABLE_COLUMNS.map((c) => (
-        <TableCell key={String(c.key)} align={c.align || "left"}>
-          {c.render ? c.render(item) : String(item[c.key as keyof DetalheRelatorio] ?? "-")}
-        </TableCell>
-      ))}
+      {TABLE_COLUMNS.map((c) => {
+        const align = c.align || "left";
+        return (
+          <TableCell key={String(c.key)} align={align}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  align === "right"
+                    ? "flex-end"
+                    : align === "left"
+                      ? "flex-start"
+                      : "center",
+              }}
+            >
+              {c.render ? c.render(item) : String(item[c.key as keyof DetalheRelatorio] ?? "-")}
+              <MultiSortIcon />
+            </Box>
+          </TableCell>
+        );
+      })}
     </TableRow>
   );
 }, (prev, next) => {

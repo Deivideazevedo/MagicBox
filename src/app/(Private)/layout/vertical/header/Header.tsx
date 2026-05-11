@@ -7,7 +7,7 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { styled } from "@mui/material/styles";
+import { styled, keyframes } from "@mui/material/styles";
 import { useSelector, useDispatch } from "@/store/hooks";
 import {
   toggleSidebar,
@@ -20,9 +20,12 @@ import {
   IconMoon,
   IconSun,
   IconTrendingUp,
-  IconMaximize,
-  IconMinimize,
+  IconRefresh,
+  IconLoader2,
 } from "@tabler/icons-react";
+import { api } from "@/services/api";
+import { persistor } from "@/store/store";
+import { SwalToast } from "@/utils/swalert";
 import Notifications from "./Notification";
 import Profile from "./Profile";
 import Search from "./Search";
@@ -33,6 +36,15 @@ import MobileRightSidebar from "./MobileRightSidebar";
 import { usePathname } from "next/navigation";
 import { ProductTourButton } from "@/app/components/shared/ProductTour";
 
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+`;
+
 const Header = () => {
   const pathname = usePathname();
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up("lg"));
@@ -42,7 +54,6 @@ const Header = () => {
   const customizer = useSelector((state: AppState) => state.customizer);
   const dispatch = useDispatch();
 
-  const isDashboard = pathname === "/dashboard";
 
   const AppBarStyled = styled(AppBar)(({ theme }) => ({
     boxShadow: "none",
@@ -61,28 +72,32 @@ const Header = () => {
     color: theme.palette.text.secondary,
   }));
 
-  // Logica de Fullscreen Real (F11)
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // Logica de Sincronização Manual
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement
-        .requestFullscreen()
-        .then(() => setIsFullScreen(true));
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().then(() => setIsFullScreen(false));
-      }
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+
+      // Reseta o estado da API (limpa o cache e refaz queries ativas)
+      dispatch(api.util.resetApiState());
+
+      // Persiste o estado atual (vazio/resetado) no storage
+      await persistor.flush();
+
+      // Pequeno delay para a animação ser visível e o cache atualizar
+      setTimeout(() => {
+        setIsSyncing(false);
+        SwalToast.fire({
+          icon: "success",
+          title: "Dados sincronizados com sucesso!",
+        });
+      }, 800);
+    } catch (error) {
+      setIsSyncing(false);
+      console.error("Erro ao sincronizar:", error);
     }
   };
-
-  // Monitorar mudanças externas (ex: Esc ou F11 do teclado)
-  useEffect(() => {
-    const handleFsChange = () => setIsFullScreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", handleFsChange);
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFsChange);
-  }, []);
 
   return (
     <AppBarStyled position="sticky" color="default">
@@ -121,40 +136,29 @@ const Header = () => {
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-          {/* ------------------------------------------- */}
-          {/* Dashboard Tour Button */}
-          {/* ------------------------------------------- */}
-          {isDashboard && (
-            <ProductTourButton 
-              onClick={() => window.dispatchEvent(new CustomEvent("start-dashboard-tour"))}
-              title="Tour do Dashboard"
-              size="small"
-            />
-          )}
 
           {/* ------------------------------------------- */}
-          {/* Toggle Fullscreen Button (Real F11) */}
+          {/* Botão de Sincronização Manual */}
           {/* ------------------------------------------- */}
-          {lgUp && (
-            <IconButton
-              size="large"
-              color="inherit"
-              aria-label="fullscreen"
-              onClick={toggleFullScreen}
-              sx={{
-                borderRadius: 2,
-                "&:hover": {
-                  backgroundColor: "primary.light",
-                },
-              }}
-            >
-              {isFullScreen ? (
-                <IconMinimize size="22" stroke="1.5" />
-              ) : (
-                <IconMaximize size="22" stroke="1.5" />
-              )}
-            </IconButton>
-          )}
+          {/* {lgUp && ( */}
+          <IconButton
+            size="large"
+            color="inherit"
+            aria-label="sync"
+            onClick={handleSync}
+            disabled={isSyncing}
+            sx={{
+              "&:hover": {
+                backgroundColor: "primary.light",
+              },
+              "& svg": {
+                animation: isSyncing ? `${rotate} 1s linear infinite` : "none",
+              },
+            }}
+          >
+            <IconRefresh size="20" stroke="1.6" />
+          </IconButton>
+          {/* )} */}
 
           {/* ------------------------------------------- */}
           {/* Dark/Light Mode Toggle */}
