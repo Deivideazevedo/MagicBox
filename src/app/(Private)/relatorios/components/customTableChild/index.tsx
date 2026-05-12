@@ -140,9 +140,11 @@ type TipoFiltro = "DESPESA" | "RECEITA" | "META";
 interface CustomTableChildProps {
   itens: DetalheRelatorio[];
   selectedIds: Set<string>;
-  onToggle: (idOrIds: string | string[]) => void;
+  onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
   onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
   itemSelecionadoParaHistorico: string | null;
+  filterText?: string;
+  resetToggle?: number;
 }
 
 // ==================== COMPONENTE PRINCIPAL ====================
@@ -153,13 +155,20 @@ export const CustomTableChild = memo(function CustomTableChild({
   onToggle,
   onSelectItem,
   itemSelecionadoParaHistorico,
+  filterText: parentFilterText = "",
+  resetToggle = 0,
 }: CustomTableChildProps) {
   const theme = useTheme();
   // Hook de filtro por texto
-  const { filteredData, filterText, setFilterText } = useTableFilter({
+  const { filteredData, setFilterText } = useTableFilter({
     data: itens,
     columns: TABLE_COLUMNS,
   });
+
+  // Sincroniza busca com o pai
+  React.useEffect(() => {
+    setFilterText(parentFilterText);
+  }, [parentFilterText, setFilterText]);
 
   // Ordenação multicoluna
   const { sortedData, requestSort, getSortIcon, resetSort } = useMultiSort(
@@ -167,28 +176,24 @@ export const CustomTableChild = memo(function CustomTableChild({
     TABLE_COLUMNS,
   );
 
-  const handleReset = useCallback(() => {
-    setFilterText("");
-    resetSort();
-  }, [setFilterText, resetSort]);
+  // Reseta ordenação quando o pai disparar reset
+  React.useEffect(() => {
+    if (resetToggle > 0) {
+      resetSort();
+    }
+  }, [resetToggle, resetSort]);
 
   const totalColumns = TABLE_COLUMNS.length + 2;
 
   return (
     <Box sx={{ mx: 0, mb: 0 }}>
-      <TableTopBar
-        filterText={filterText}
-        onFilterChange={setFilterText}
-        onReset={handleReset}
-        selectedCount={0}
-        leftActions={null}
-      />
+
 
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell padding="checkbox" width={50} />
-            <TableCell padding="checkbox" width={50} />
+            <TableCell padding="checkbox" sx={{ width: 48 }} />
+            <TableCell padding="checkbox" sx={{ width: 48 }} />
             {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
               <TableCell
                 key={String(key)}
@@ -241,7 +246,7 @@ interface ChildRowProps {
   item: DetalheRelatorio;
   isSelected: boolean;
   isHistoricoActive: boolean;
-  onToggle: (idOrIds: string | string[]) => void;
+  onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
   onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
 }
 
@@ -272,16 +277,17 @@ const ChildRow = memo(function ChildRow({
         }),
       }}
     >
-      <TableCell padding="checkbox" sx={{ width: 50 }} />
+      <TableCell padding="checkbox" sx={{ width: 48 }} />
       <TableCell
         padding="checkbox"
-        sx={{ width: 50 }}
+        sx={{ width: 48 }}
         onClick={(e) => e.stopPropagation()}
       >
         <Checkbox
           checked={isSelected}
           onChange={() => onToggle(`${item.tipo}-${item.id}`)}
           size="small"
+          sx={{ '& .MuiSvgIcon-root': { fontSize: 18 } }}
         />
       </TableCell>
       {TABLE_COLUMNS.map((c) => {

@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { LancamentoResposta } from "@/core/lancamentos/types";
 
 interface LancamentoState {
   estaAberto: boolean;

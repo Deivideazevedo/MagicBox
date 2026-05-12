@@ -7,6 +7,10 @@ import {
   Paper,
   Stack,
   Tooltip,
+  useMediaQuery,
+  useTheme,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import {
   Search,
@@ -19,6 +23,8 @@ import {
   IconChevronRight,
   IconReload,
   IconTrash,
+  IconSearch,
+  IconX,
 } from "@tabler/icons-react";
 import { SearchTextField } from "./SearchTextField";
 import { ReactNode, useState } from "react";
@@ -50,7 +56,9 @@ export function TableTopBar({
   selectedCount = 0,
   onBulkDelete,
 }: TableTopBarProps) {
-  const [topBarOpen, setTopBarOpen] = useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [topBarOpen, setTopBarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Hook para controlar animação de rotação do ícone de reset
@@ -75,14 +83,16 @@ export function TableTopBar({
     <Box
       sx={{
         display: "flex",
+        flexWrap: "wrap",
         justifyContent: "space-between",
         alignItems: "center",
         p: 1,
         pt: 0,
+        gap: 1,
       }}
     >
       {/* ESQUERDA */}
-      <Stack direction="row" spacing={1} alignItems="center" pt={1.2}>
+      <Stack direction="row" spacing={isMobile ? 0.5 : 1} alignItems="center" pt={1.2} sx={{ flexGrow: 1, minWidth: 'max-content' }}>
         <Tooltip title={topBarOpen ? "Fechar menu" : "Abrir menu"} arrow>
           <IconButton
             onClick={() => setTopBarOpen(!topBarOpen)}
@@ -120,8 +130,6 @@ export function TableTopBar({
           </Stack>
         </Collapse>
       </Stack>
-
-      {/* DIREITA */}
       <Stack
         direction="row"
         spacing={0.5}
@@ -129,6 +137,11 @@ export function TableTopBar({
         position="relative"
         overflow="hidden"
         pt={1.2}
+        sx={{
+          flexGrow: searchOpen ? 1 : 0,
+          justifyContent: "flex-end",
+          minWidth: searchOpen ? (isMobile ? '100%' : 200) : 'auto'
+        }}
       >
         <Tooltip title={!searchOpen ? "Procurar" : ""} arrow>
           <IconButton
@@ -149,7 +162,7 @@ export function TableTopBar({
         <Box
           sx={{
             position: "relative",
-            maxWidth: searchOpen ? 300 : 0,
+            maxWidth: searchOpen ? (isMobile ? "100%" : 300) : 0,
             width: "100%",
             opacity: searchOpen ? 1 : 0,
             transition: "max-width 0.4s ease, opacity 0.4s ease",

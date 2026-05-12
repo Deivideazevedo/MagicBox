@@ -17,8 +17,7 @@ export function useRelatorios() {
   const [dataFim, setDataFim] = useState(
     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
   );
-  const [page, setPage] = useState(0);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(999); // Exibição acumulativa, sem paginação real no UI
   
   // Seleção via composite key: "TIPO-ID"
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -30,7 +29,7 @@ export function useRelatorios() {
   const { data, isLoading: loading, error } = useGetRelatorioQuery({
     dataInicio,
     dataFim,
-    page,
+    page: 0,
     limit,
   });
 
@@ -49,15 +48,20 @@ export function useRelatorios() {
   }, []);
 
   // ==================== SELEÇÃO ====================
-  const toggleSelection = useCallback((idOrIds: string | string[]) => {
+  const toggleSelection = useCallback((idOrIds: string | string[], forceState?: boolean) => {
     const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
     setSelectedIds(prev => {
       const newSelection = new Set(prev);
+      
+      const shouldSelect = forceState !== undefined 
+        ? forceState 
+        : !ids.every(id => prev.has(id));
+
       ids.forEach(id => {
-        if (newSelection.has(id)) {
-          newSelection.delete(id);
-        } else {
+        if (shouldSelect) {
           newSelection.add(id);
+        } else {
+          newSelection.delete(id);
         }
       });
       return newSelection;
@@ -122,6 +126,11 @@ export function useRelatorios() {
     fetchHistorico();
   }, [selectedItemsDetails, triggerHistorico, dataInicio]);
 
+  const resetFilters = useCallback(() => {
+    setIncluirProjecaoTabela(true);
+    setTiposFiltro([]);
+  }, []);
+
   return {
     data,
     loading,
@@ -130,10 +139,7 @@ export function useRelatorios() {
     setDataInicio,
     dataFim,
     setDataFim,
-    page,
-    setPage,
     limit,
-    setLimit,
     selectedIds,
     toggleSelection,
     selectItemForHistory,
@@ -143,6 +149,7 @@ export function useRelatorios() {
     setIncluirProjecaoTabela,
     tiposFiltro,
     toggleTipoFiltro,
+    resetFilters,
     tiposExistentes: useMemo(() => {
       if (!data?.categorias) return new Set<string>();
       const tipos = new Set<string>();

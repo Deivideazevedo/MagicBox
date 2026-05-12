@@ -25,8 +25,13 @@ import {
   Tooltip,
   Chip,
   Badge,
+  useMediaQuery,
+  Drawer,
+  List,
+  ListItem,
+  Divider,
 } from "@mui/material";
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useEffect } from "react";
 import {
   IconCategory,
   IconChevronDown,
@@ -36,6 +41,9 @@ import {
   IconArrowUp,
   IconTarget,
   IconFilter,
+  IconAdjustmentsHorizontal,
+  IconSearch,
+  IconX,
 } from "@tabler/icons-react";
 
 // Types
@@ -94,7 +102,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
         </Stack>
       );
     },
-    filterValue: (row) => row.nome,
+    filterValue: (row) => `${row.nome} ${row.detalhes.map(d => d.nome).join(" ")}`,
   },
   {
     key: "valorPlanejado",
@@ -147,19 +155,13 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
 interface CustomTableProps {
   data: CategoriaRelatorio[];
   selectedIds: Set<string>;
-  onToggle: (idOrIds: string | string[]) => void;
+  onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
   onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
   itemSelecionadoParaHistorico: string | null;
-  pagination: {
-    page: number;
-    rowsPerPage: number;
-    count: number;
-    onPageChange: (event: unknown, newPage: number) => void;
-    onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  };
   isLoading?: boolean;
   tiposFiltro: string[];
   onToggleTipo: (tipo: string) => void;
+  onResetFilters: () => void;
   tiposExistentes: Set<string>;
 }
 
@@ -171,15 +173,19 @@ export function CustomTable({
   onToggle,
   onSelectItem,
   itemSelecionadoParaHistorico,
-  pagination,
   isLoading = false,
   tiposFiltro,
   onToggleTipo,
+  onResetFilters,
   tiposExistentes,
 }: CustomTableProps) {
   const theme = useTheme();
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [incluirProjecao, setIncluirProjecao] = useState(true);
+  const [resetToggle, setResetToggle] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Filtro de projeção e tipo client-side
   const dataFiltrada = useMemo(() => {
@@ -221,10 +227,28 @@ export function CustomTable({
   const handleReset = () => {
     setFilterText("");
     resetSort();
-    pagination.onPageChange(null, 0);
+    setIncluirProjecao(true);
+    onResetFilters();
+    setResetToggle(prev => prev + 1);
+    setDrawerOpen(false);
+  };
+
+  const allVisibleIds = useMemo(() => {
+    return sortedData.flatMap(cat => cat.detalhes.map(d => `${d.tipo}-${d.id}`));
+  }, [sortedData]);
+
+  const isAllSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedIds.has(id));
+  const isSomeSelected = allVisibleIds.some(id => selectedIds.has(id));
+  const isIndeterminate = isSomeSelected && !isAllSelected;
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onToggle(allVisibleIds, e.target.checked);
   };
 
   const totalColumns = TABLE_COLUMNS.length + 2;
+  const badgeCount = isMobile
+    ? tiposFiltro.length + (incluirProjecao ? 1 : 0)
+    : tiposFiltro.length;
 
   const projecaoSwitch = (
     <Tooltip
@@ -232,6 +256,7 @@ export function CustomTable({
       arrow
     >
       <FormControlLabel
+        labelPlacement="start"
         control={
           <Switch
             size="small"
@@ -242,39 +267,68 @@ export function CustomTable({
         }
         label={
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <IconBolt size={16} />
-            <Typography
-              variant="caption"
-              fontWeight={600}
-              color={incluirProjecao ? "warning.main" : "textSecondary"}
-            >
-              Projeções
-            </Typography>
+            <IconBolt size={20} color={incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary} />
+            {!isMobile && (
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                sx={{
+                  whiteSpace: "nowrap",
+                  color: incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary
+                }}
+              >
+                Projeções
+              </Typography>
+            )}
           </Stack>
         }
-        sx={{ ml: 0, mr: 0 }}
+        sx={{
+          ml: 0,
+          mr: 0,
+          gap: 1,
+          "& .MuiFormControlLabel-label": {
+            display: "flex",
+            alignItems: "center"
+          }
+        }}
       />
     </Tooltip>
   );
 
   return (
-    <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3 }}>
+    <Paper
+      elevation={0}
+      variant="outlined"
+      sx={{
+        borderRadius: 3,
+        border: "1px solid",
+        borderColor: alpha(theme.palette.primary.main, 0.2),
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+        '&:hover': {
+          boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+          borderColor: alpha(theme.palette.primary.main, 0.25),
+        }
+      }}
+    >
       <TableTopBar
         filterText={filterText}
         onFilterChange={setFilterText}
         onReset={handleReset}
         selectedCount={selectedIds.size}
         leftActions={
-          <Stack direction="row" spacing={1} alignItems="center">
-            {projecaoSwitch}
-            <Box sx={{ width: "1px", height: "24px", bgcolor: "divider", mx: 0.5 }} />
+          <Stack direction="row" spacing={isMobile ? 0.5 : 1} alignItems="center">
+            {!isMobile && projecaoSwitch}
+            {!isMobile && <Box sx={{ width: "1px", height: "24px", bgcolor: "divider", mx: 0.5 }} />}
 
             <Stack direction="row" spacing={0.5} alignItems="center">
               <Tooltip title="Filtrar por tipo" arrow>
                 <IconButton
                   size="small"
                   color={tiposFiltro.length > 0 ? "warning" : "primary"}
-                  onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
+                  onClick={() => isMobile ? setDrawerOpen(true) : setFiltrosVisiveis(!filtrosVisiveis)}
                   sx={{
                     ...(tiposFiltro.length > 0 && {
                       bgcolor: alpha(theme.palette.warning.main, 0.12),
@@ -282,8 +336,9 @@ export function CustomTable({
                   }}
                 >
                   <Badge
-                    badgeContent={tiposFiltro.length}
+                    badgeContent={badgeCount}
                     color="warning"
+                    invisible={badgeCount === 0}
                     sx={{
                       "& .MuiBadge-badge": {
                         fontSize: '0.6rem',
@@ -299,52 +354,195 @@ export function CustomTable({
                       }
                     }}
                   >
-                    <IconFilter size={18} />
+                    {isMobile ? <IconAdjustmentsHorizontal size={20} /> : <IconFilter size={20} />}
                   </Badge>
                 </IconButton>
               </Tooltip>
 
-              <Collapse orientation="horizontal" in={filtrosVisiveis}>
-                <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
-                  {tiposExistentes.has("DESPESA") && (
-                    <Chip
-                      size="small"
-                      icon={<IconArrowDown size={14} />}
-                      label="Despesas"
-                      color="error"
-                      variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
-                      onClick={() => onToggleTipo("DESPESA")}
-                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
-                    />
-                  )}
-                  {tiposExistentes.has("RECEITA") && (
-                    <Chip
-                      size="small"
-                      icon={<IconArrowUp size={14} />}
-                      label="Receitas"
-                      color="success"
-                      variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
-                      onClick={() => onToggleTipo("RECEITA")}
-                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
-                    />
-                  )}
-                  {tiposExistentes.has("META") && (
-                    <Chip
-                      size="small"
-                      icon={<IconTarget size={14} />}
-                      label="Metas"
-                      color="info"
-                      variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
-                      onClick={() => onToggleTipo("META")}
-                      sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
-                    />
-                  )}
-                </Stack>
-              </Collapse>
+              {!isMobile && (
+                <Collapse orientation="horizontal" in={filtrosVisiveis}>
+                  <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
+                    {tiposExistentes.has("DESPESA") && (
+                      <Chip
+                        size="small"
+                        icon={<IconArrowDown size={14} />}
+                        label="Despesas"
+                        color="error"
+                        variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
+                        onClick={() => onToggleTipo("DESPESA")}
+                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                      />
+                    )}
+                    {tiposExistentes.has("RECEITA") && (
+                      <Chip
+                        size="small"
+                        icon={<IconArrowUp size={14} />}
+                        label="Receitas"
+                        color="success"
+                        variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
+                        onClick={() => onToggleTipo("RECEITA")}
+                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                      />
+                    )}
+                    {tiposExistentes.has("META") && (
+                      <Chip
+                        size="small"
+                        icon={<IconTarget size={14} />}
+                        label="Metas"
+                        color="info"
+                        variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
+                        onClick={() => onToggleTipo("META")}
+                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                      />
+                    )}
+                  </Stack>
+                </Collapse>
+              )}
             </Stack>
           </Stack>
         }
       />
+
+      {/* Drawer de Filtros Mobile */}
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: 280,
+            p: 0,
+            backgroundImage: 'none',
+            bgcolor: theme.palette.background.paper
+          }
+        }}
+      >
+        <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="h6" fontWeight={800}>
+              Filtros e Opções
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              Ajuste a visualização dos dados.
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={() => setDrawerOpen(false)}
+            size="small"
+            sx={{
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+              borderRadius: '50%'
+            }}
+          >
+            <IconX size={20} color={theme.palette.primary.main} />
+          </IconButton>
+        </Box>
+
+        <Divider />
+
+        <List sx={{ p: 2 }}>
+          <ListItem disablePadding sx={{ mb: 4, display: 'block' }}>
+            <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+              Exibir
+            </Typography>
+            <Box
+              onClick={() => setIncluirProjecao(!incluirProjecao)}
+              sx={{
+                mt: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                cursor: 'pointer',
+                p: 1,
+                mx: -1,
+                borderRadius: 2,
+                '&:hover': { bgcolor: incluirProjecao ? alpha(theme.palette.warning.main, 0.05) : alpha(theme.palette.text.secondary, 0.05) },
+                border: `1px solid ${incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary}`
+              }}
+            >
+              <IconBolt size={20} color={incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary} />
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{
+                  flexGrow: 1,
+                  color: incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary
+                }}
+              >
+                Projeções
+              </Typography>
+              <Switch
+                size="small"
+                checked={incluirProjecao}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  setIncluirProjecao(e.target.checked);
+                }}
+                color="warning"
+              />
+            </Box>
+          </ListItem>
+
+          <ListItem disablePadding sx={{ display: 'block' }}>
+            <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+              Filtrar:
+            </Typography>
+            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+              {tiposExistentes.has("DESPESA") && (
+                <Chip
+                  icon={<IconArrowDown size={14} />}
+                  label="Despesas"
+                  color="error"
+                  variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
+                  onClick={() => onToggleTipo("DESPESA")}
+                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                />
+              )}
+              {tiposExistentes.has("RECEITA") && (
+                <Chip
+                  icon={<IconArrowUp size={14} />}
+                  label="Receitas"
+                  color="success"
+                  variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
+                  onClick={() => onToggleTipo("RECEITA")}
+                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                />
+              )}
+              {tiposExistentes.has("META") && (
+                <Chip
+                  icon={<IconTarget size={14} />}
+                  label="Metas"
+                  color="info"
+                  variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
+                  onClick={() => onToggleTipo("META")}
+                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                />
+              )}
+            </Stack>
+          </ListItem>
+        </List>
+
+        <Box sx={{ mt: 'auto', p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Chip
+            label="Resetar"
+            variant="outlined"
+            onClick={handleReset}
+            sx={{
+              width: '100%',
+              py: 2.5,
+              fontWeight: 800,
+              borderRadius: 2,
+              borderColor: theme.palette.primary.main,
+              color: theme.palette.primary.main,
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                borderColor: theme.palette.primary.main,
+              }
+            }}
+          />
+        </Box>
+      </Drawer>
 
       <TableContainer>
         <Table>
@@ -355,8 +553,17 @@ export function CustomTable({
                   alpha(theme.palette.primary.main, 0.08),
               }}
             >
-              <TableCell width={50} />
-              <TableCell width={50} />
+              <TableCell colSpan={2} align="center" sx={{ width: 100, py: 0 }}>
+                <Tooltip title="Selecionar todos" arrow>
+                  <Checkbox
+                    indeterminate={isIndeterminate}
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    size="medium"
+                    sx={{ p: 0.5 }}
+                  />
+                </Tooltip>
+              </TableCell>
               {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
                 <TableCell
                   key={String(key)}
@@ -413,6 +620,8 @@ export function CustomTable({
                   onToggle={onToggle}
                   onSelectItem={onSelectItem}
                   itemSelecionadoParaHistorico={itemSelecionadoParaHistorico}
+                  filterText={filterText}
+                  resetToggle={resetToggle}
                 />
               ))
             )}
@@ -420,21 +629,30 @@ export function CustomTable({
         </Table>
       </TableContainer>
 
-      <TablePagination
-        component="div"
-        sx={{ borderTop: "1px solid", borderColor: "divider" }}
-        labelRowsPerPage="Itens por pág."
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}–${to} de ${count}`
-        }
-        count={pagination.count}
-        rowsPerPageOptions={[5, 10, 25]}
-        onPageChange={pagination.onPageChange}
-        onRowsPerPageChange={pagination.onRowsPerPageChange}
-        ActionsComponent={CustomPaginationActions}
-        rowsPerPage={pagination.rowsPerPage}
-        page={pagination.page}
-      />
+      <Box
+        sx={{
+          p: 1.5,
+          px: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: "1px solid",
+          borderColor: "divider",
+          bgcolor: alpha(theme.palette.background.paper, 0.4),
+        }}
+      >
+        <Typography variant="caption" fontWeight={800} color="textSecondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          Total: {sortedData.length} categorias | {sortedData.reduce((acc, curr) => acc + curr.detalhes.length, 0)} itens
+        </Typography>
+        <Stack direction="row" spacing={2}>
+          <Typography variant="caption" fontWeight={800} color="textSecondary">
+            Previsto: {formatCurrency(sortedData.reduce((acc, c) => acc + c.valorPlanejado, 0))}
+          </Typography>
+          <Typography variant="caption" fontWeight={800} color="primary.main">
+            Pago: {formatCurrency(sortedData.reduce((acc, c) => acc + c.valorRealizado, 0))}
+          </Typography>
+        </Stack>
+      </Box>
     </Paper>
   );
 }
@@ -445,9 +663,11 @@ interface CustomRowProps {
   row: CategoriaRelatorio;
   columns: IColumnProps<CategoriaRelatorio>[];
   selectedIds: Set<string>;
-  onToggle: (idOrIds: string | string[]) => void;
+  onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
   onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
   itemSelecionadoParaHistorico: string | null;
+  filterText: string;
+  resetToggle: number;
 }
 
 const CustomRow = memo(function CustomRow({
@@ -457,9 +677,24 @@ const CustomRow = memo(function CustomRow({
   onToggle,
   onSelectItem,
   itemSelecionadoParaHistorico,
+  filterText,
+  resetToggle,
 }: CustomRowProps) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
+
+  // Expansão automática ao pesquisar se houver itens filhos que batem com o filtro
+  useEffect(() => {
+    const query = filterText.trim().toLowerCase();
+    if (query.length > 0) {
+      const hasMatchingChild = row.detalhes.some(d =>
+        d.nome.toLowerCase().includes(query)
+      );
+      if (hasMatchingChild) {
+        setOpen(true);
+      }
+    }
+  }, [filterText, row.detalhes]);
 
   const isAllSelected =
     row.detalhes.length > 0 &&
@@ -482,12 +717,12 @@ const CustomRow = memo(function CustomRow({
           "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.06) },
         }}
       >
-        <TableCell padding="checkbox">
+        <TableCell padding="checkbox" sx={{ width: 48 }}>
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
           </IconButton>
         </TableCell>
-        <TableCell padding="checkbox">
+        <TableCell padding="checkbox" sx={{ width: 48 }}>
           <Checkbox
             indeterminate={isIndeterminate}
             checked={isAllSelected}
@@ -495,6 +730,7 @@ const CustomRow = memo(function CustomRow({
               e.stopPropagation();
               onToggle(row.detalhes.map((i) => `${i.tipo}-${i.id}`));
             }}
+            size="small"
           />
         </TableCell>
         {columns.map((col) => {
@@ -526,14 +762,18 @@ const CustomRow = memo(function CustomRow({
           style={{ paddingBottom: 0, paddingTop: 0, border: 0 }}
           colSpan={columns.length + 2}
         >
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <CustomTableChild
-              itens={row.detalhes}
-              selectedIds={selectedIds}
-              onToggle={onToggle}
-              onSelectItem={onSelectItem}
-              itemSelecionadoParaHistorico={itemSelecionadoParaHistorico}
-            />
+          <Collapse in={open} timeout="auto" unmountOnExit sx={{ border: 'none', bgcolor: 'transparent' }}>
+            <Box sx={{ pt: 1, pb: 2 }}>
+              <CustomTableChild
+                itens={row.detalhes}
+                selectedIds={selectedIds}
+                onToggle={onToggle}
+                onSelectItem={onSelectItem}
+                itemSelecionadoParaHistorico={itemSelecionadoParaHistorico}
+                filterText={filterText}
+                resetToggle={resetToggle}
+              />
+            </Box>
           </Collapse>
         </TableCell>
       </TableRow>

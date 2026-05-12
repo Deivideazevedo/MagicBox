@@ -1,62 +1,61 @@
 "use client";
 
-import React, { useState, useMemo, memo, useEffect } from "react";
+import { fnCompareValues } from "@/utils/functions/fnComparison";
 import {
+  DragDropContext,
+  Draggable,
+  DropResult,
+  Droppable
+} from "@hello-pangea/dnd";
+import {
+  Alert,
   Box,
+  CircularProgress,
+  Collapse,
   Container,
   Grid,
-  Paper,
-  Typography,
-  alpha,
-  useTheme,
-  CircularProgress,
-  Alert,
   IconButton,
-  Tooltip,
-  Collapse,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
+  Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
+import { pdf } from "@react-pdf/renderer";
 import {
   IconChartBar,
-  IconTable,
-  IconDownload,
-  IconHistory,
   IconChevronDown,
   IconChevronUp,
+  IconDownload,
   IconGripVertical,
+  IconHistory,
+  IconTable,
 } from "@tabler/icons-react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult
-} from "@hello-pangea/dnd";
-import { useRelatorios } from "./hooks/useRelatorios";
-import { fnCompareValues } from "@/utils/functions/fnComparison";
-import { pdf } from "@react-pdf/renderer";
+import { useEffect, useMemo, useState } from "react";
 import { RelatorioPDFTemplate } from "./components/pdf/RelatorioPDFTemplate";
-import { HistoricoMensal } from "@/core/relatorios/relatorio.dto";
+import { useRelatorios } from "./hooks/useRelatorios";
 
 // Redux
-import { useDispatch, useSelector } from "@/store/hooks";
-import { RootState } from "@/store/store";
 import {
   setSectionsOrder,
   toggleOverview,
   toggleTable
 } from "@/store/apps/relatorios/RelatoriosSlice";
+import { useDispatch, useSelector } from "@/store/hooks";
+import { RootState } from "@/store/store";
 
 // Componentes internos (Importados como Default)
+import CardsKPI from "./components/CardsKPI";
+import { CustomTable } from "./components/customTable";
 import FiltrosRelatorio from "./components/FiltrosRelatorio";
 import GraficoDistribuicao from "./components/GraficoDistribuicao";
 import GraficoEvolucao from "./components/GraficoEvolucao";
-import CardsKPI from "./components/CardsKPI";
-import { CustomTable } from "./components/customTable";
 
 // Utilidade de formatação local para garantir compilação
 const formatCurrency = (value: number) => {
@@ -81,10 +80,6 @@ export default function RelatoriosPage() {
     setDataInicio,
     dataFim,
     setDataFim,
-    page,
-    setPage,
-    limit,
-    setLimit,
     selectedIds,
     toggleSelection,
     selectItemForHistory,
@@ -97,6 +92,7 @@ export default function RelatoriosPage() {
     setIncluirProjecaoTabela,
     tiposFiltro,
     toggleTipoFiltro,
+    resetFilters,
     tiposExistentes,
   } = useRelatorios();
 
@@ -235,7 +231,7 @@ export default function RelatoriosPage() {
                               '& > div': {
                                 boxShadow: theme.shadows[9],
                                 border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
-                                bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                bgcolor: sectionId === 'overview' ? alpha(theme.palette.background.paper, 0.9) : 'transparent',
                                 borderRadius: 3,
                               }
                             })
@@ -364,37 +360,37 @@ export default function RelatoriosPage() {
                           )}
 
                           {sectionId === 'table' && (
-                            <Paper
-                              elevation={0}
-                              variant="outlined"
+                            <Box
                               sx={{
-                                overflow: "hidden",
                                 borderRadius: 3,
-                                border: "1px solid",
-                                borderColor: alpha(theme.palette.primary.main, 0.2),
-                                bgcolor: 'background.default',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                                '&:hover': {
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                                  borderColor: alpha(theme.palette.primary.main, 0.25),
-                                }
+                                border: 0,
+                                bgcolor: 'transparent',
+                                boxShadow: 'none',
                               }}
                             >
                               <Box
                                 {...provided.dragHandleProps} onClick={() => dispatch(toggleTable())}
                                 sx={{
                                   p: 2,
+                                  position: 'relative',
                                   bgcolor: 'background.paper',
+                                  backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.02)}, ${alpha(theme.palette.primary.main, 0.02)})`,
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
-                                  borderBottom: showTable ? `1px solid ${alpha(theme.palette.divider, 0.08)}` : 'none',
-                                  transition: 'background-color 0.2s',
+                                  border: "1px solid",
+                                  borderColor: alpha(theme.palette.primary.main, 0.15),
+                                  borderTopLeftRadius: 22,
+                                  borderTopRightRadius: 22,
+                                  borderBottomLeftRadius: showTable ? 4 : 22,
+                                  borderBottomRightRadius: showTable ? 4 : 22,
+                                  transition: 'all 0.2s',
                                   userSelect: 'none',
                                   cursor: 'grab',
                                   '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+                                    borderColor: alpha(theme.palette.primary.main, 0.25),
+                                    backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.04)}, ${alpha(theme.palette.primary.main, 0.04)})`,
                                     '& .section-icon': { color: 'primary.main' },
                                     '& .section-title': { color: 'primary.main' }
                                   }
@@ -465,8 +461,9 @@ export default function RelatoriosPage() {
                                   {showTable ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
                                 </IconButton>
                               </Box>
-                              <Collapse in={showTable}>
-                                <Box sx={{ p: 3 }}>
+                              <Collapse in={showTable} unmountOnExit>
+                                <Box sx={{ pt: 2 }}>
+                                  {/* <Box sx={{ p: 3 }}> */}
                                   <Grid container spacing={3}>
                                     <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
                                       {data?.categorias && (
@@ -478,14 +475,8 @@ export default function RelatoriosPage() {
                                           itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
                                           tiposFiltro={tiposFiltro}
                                           onToggleTipo={toggleTipoFiltro}
+                                          onResetFilters={resetFilters}
                                           tiposExistentes={tiposExistentes}
-                                          pagination={{
-                                            page: page,
-                                            rowsPerPage: limit,
-                                            count: data.totalCategorias,
-                                            onPageChange: (_: unknown, newPage: number) => setPage(newPage),
-                                            onRowsPerPageChange: (e: React.ChangeEvent<HTMLInputElement>) => setLimit(parseInt(e.target.value))
-                                          }}
                                           isLoading={loading}
                                         />
                                       )}
@@ -494,7 +485,26 @@ export default function RelatoriosPage() {
                                     {/* Lateral History Panel */}
                                     {selectedIds.size > 0 && (
                                       <Grid item xs={12} lg={4}>
-                                        <Paper elevation={0} variant="outlined" sx={{ borderRadius: 3, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderColor: alpha(theme.palette.divider, 0.15) }}>
+                                        <Paper
+                                          elevation={0}
+                                          variant="outlined"
+                                          sx={{
+                                            borderRadius: 3,
+                                            height: '100%',
+                                            overflow: 'hidden',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            border: "1px solid",
+                                            borderColor: alpha(theme.palette.primary.main, 0.2),
+                                            bgcolor: 'background.paper',
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                                            '&:hover': {
+                                              boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                                              borderColor: alpha(theme.palette.primary.main, 0.25),
+                                            }
+                                          }}
+                                        >
                                           <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                             <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 1, display: 'flex' }}>
                                               <IconHistory size={18} color={theme.palette.primary.main} />
@@ -556,7 +566,7 @@ export default function RelatoriosPage() {
                                   </Grid>
                                 </Box>
                               </Collapse>
-                            </Paper>
+                            </Box>
                           )}
                         </Box>
                       )}
