@@ -9,17 +9,18 @@ export const relatoriosApi = api.injectEndpoints({
       }),
       providesTags: ["Resumo", "Lancamentos", "Metas"],
     }),
-    getHistoricoAgrupado: builder.mutation({
-      query: (body) => ({
+    getHistoricoAgrupado: builder.query({
+      query: (params) => ({
         url: "/relatorios/historico",
-        method: "POST",
-        body,
+        method: "GET",
+        params,
       }),
+      providesTags: ["Resumo", "Lancamentos", "Metas", "Dividas"],
     }),
   }),
 });
 
 export const {
   useGetRelatorioQuery,
-  useGetHistoricoAgrupadoMutation,
+  useGetHistoricoAgrupadoQuery,
 } = relatoriosApi;

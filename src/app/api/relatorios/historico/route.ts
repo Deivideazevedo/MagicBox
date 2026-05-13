@@ -2,23 +2,22 @@ import { relatoriosService } from "@/core/relatorios/service";
 import { getAuthUser } from "@/lib/server-auth";
 import { errorHandler } from "@/lib/error-handler";
 import { NextRequest, NextResponse } from "next/server";
+import { historicoFiltroSchema } from "@/core/relatorios/relatorio.dto";
 
-export const POST = errorHandler(obterHistorico);
+export const GET = errorHandler(obterHistorico);
 
 async function obterHistorico(req: NextRequest) {
   const { userId } = await getAuthUser(req);
   
-  const body = await req.json();
-  const { itens, ano } = body;
-
-  if (!itens || !Array.isArray(itens) || !ano) {
-    return NextResponse.json({ error: "Parâmetros inválidos" }, { status: 400 });
-  }
+  const { searchParams } = req.nextUrl;
+  
+  // Validar via Zod DTO
+  const { itens, ano } = historicoFiltroSchema.parse(Object.fromEntries(searchParams));
 
   const historico = await relatoriosService.obterHistoricoAgrupado(
     userId,
     itens,
-    Number(ano)
+    ano
   );
 
   return NextResponse.json(historico);

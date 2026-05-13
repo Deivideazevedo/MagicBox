@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { TipoDespesa } from "@prisma/client";
 
 export interface RelatorioFiltros {
@@ -121,3 +122,35 @@ export interface RawHistoricoAgrupado {
   restanteReal: number;
   restanteComProjecao: number;
 }
+
+// ============================================
+// SCHEMAS DE VALIDAÇÃO (ZOD)
+// ============================================
+
+export const historicoFiltroSchema = z.object({
+  itens: z.string().transform((val) => {
+    // Suporta o formato novo: TIPO-ID,TIPO-ID
+    // Ou o formato antigo (fallback): JSON string
+    try {
+      if (val.startsWith("[") || val.startsWith("{")) {
+        return JSON.parse(val);
+      }
+      return val.split(',').map(part => {
+        const [tipo, id] = part.split('-');
+        return { tipo, id: Number(id) };
+      });
+    } catch (e) {
+      return val;
+    }
+  }).pipe(
+    z.array(
+      z.object({
+        id: z.coerce.number().int().positive(),
+        tipo: z.enum(["RECEITA", "DESPESA", "META"])
+      })
+    )
+  ),
+  ano: z.coerce.number().int().positive()
+});
+
+export type HistoricoFiltroDTO = z.infer<typeof historicoFiltroSchema>;

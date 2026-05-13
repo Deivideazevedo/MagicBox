@@ -82,11 +82,11 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
         <Stack direction="row" spacing={1.5} alignItems="center">
           <Avatar
             sx={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               bgcolor: corStr ? alpha(corStr, 0.15) : "primary.light",
               color: corStr || "primary.main",
-              "& svg": { width: 18, height: 18 },
+              "& svg": { width: 16, height: 16 },
             }}
           >
             {iconeStr &&
@@ -294,6 +294,38 @@ export function CustomTable({
       />
     </Tooltip>
   );
+
+  const selectedTotals = useMemo(() => {
+    const isAnySelected = selectedIds.size > 0;
+
+    // Se nada selecionado, usamos o total do que está visível (com filtros)
+    if (!isAnySelected) {
+      return {
+        categorias: sortedData.length,
+        itens: sortedData.reduce((acc, curr) => acc + curr.detalhes.length, 0),
+        previsto: sortedData.reduce((acc, c) => acc + c.valorPlanejado, 0),
+        pago: sortedData.reduce((acc, c) => acc + c.valorRealizado, 0)
+      };
+    }
+
+    // Se houver seleção, calculamos apenas sobre os selecionados
+    // Pegamos todos os detalhes de todas as categorias filtradas e verificamos se estão selecionados
+    const allItems = dataFiltrada.flatMap(cat => cat.detalhes);
+    const filteredSelected = allItems.filter(item => selectedIds.has(`${item.tipo}-${item.id}`));
+
+    // Categorias únicas entre os itens selecionados
+    // Percorremos dataFiltrada e vemos quais categorias têm pelo menos um detalhe selecionado
+    const categoriesWithSelected = dataFiltrada.filter(cat =>
+      cat.detalhes.some(d => selectedIds.has(`${d.tipo}-${d.id}`))
+    );
+
+    return {
+      categorias: categoriesWithSelected.length,
+      itens: filteredSelected.length,
+      previsto: filteredSelected.reduce((acc, item) => acc + item.valorPlanejado, 0),
+      pago: filteredSelected.reduce((acc, item) => acc + item.valorRealizado, 0)
+    };
+  }, [sortedData, selectedIds, dataFiltrada]);
 
   return (
     <Paper
@@ -553,7 +585,7 @@ export function CustomTable({
                   alpha(theme.palette.primary.main, 0.08),
               }}
             >
-              <TableCell colSpan={2} align="center" sx={{ width: 100, py: 0 }}>
+              <TableCell colSpan={2} align="center" sx={{ width: 100, py: 1.5 }}>
                 <Tooltip title="Selecionar todos" arrow>
                   <Checkbox
                     indeterminate={isIndeterminate}
@@ -572,6 +604,7 @@ export function CustomTable({
                   sx={{
                     cursor: "pointer",
                     userSelect: "none",
+                    py: 1.5,
                     "&:hover .sort-icon": {
                       opacity: getSortIcon(key) ? 1 : 0.4,
                     },
@@ -642,14 +675,15 @@ export function CustomTable({
         }}
       >
         <Typography variant="caption" fontWeight={800} color="textSecondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Total: {sortedData.length} categorias | {sortedData.reduce((acc, curr) => acc + curr.detalhes.length, 0)} itens
+          {selectedIds.size > 0 ? "Selecionado: " : "Total: "}
+          {selectedTotals.categorias} categorias | {selectedTotals.itens} itens
         </Typography>
         <Stack direction="row" spacing={2}>
           <Typography variant="caption" fontWeight={800} color="textSecondary">
-            Previsto: {formatCurrency(sortedData.reduce((acc, c) => acc + c.valorPlanejado, 0))}
+            Previsto: {formatCurrency(selectedTotals.previsto)}
           </Typography>
           <Typography variant="caption" fontWeight={800} color="primary.main">
-            Pago: {formatCurrency(sortedData.reduce((acc, c) => acc + c.valorRealizado, 0))}
+            Pago: {formatCurrency(selectedTotals.pago)}
           </Typography>
         </Stack>
       </Box>
@@ -717,12 +751,12 @@ const CustomRow = memo(function CustomRow({
           "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.06) },
         }}
       >
-        <TableCell padding="checkbox" sx={{ width: 48 }}>
+        <TableCell padding="checkbox" sx={{ width: 48, py: 0.5 }}>
           <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
           </IconButton>
         </TableCell>
-        <TableCell padding="checkbox" sx={{ width: 48 }}>
+        <TableCell padding="checkbox" sx={{ width: 48, py: 0.5 }}>
           <Checkbox
             indeterminate={isIndeterminate}
             checked={isAllSelected}
@@ -736,7 +770,7 @@ const CustomRow = memo(function CustomRow({
         {columns.map((col) => {
           const align = col.align || "left";
           return (
-            <TableCell key={String(col.key)} align={align}>
+            <TableCell key={String(col.key)} align={align} sx={{ py: 0.5 }}>
               <Box
                 sx={{
                   display: "flex",

@@ -1,50 +1,46 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
+import { Despesa } from "@/core/despesas/types";
+import { Meta } from "@/core/metas/types";
+import { Receita } from "@/core/receitas/types";
 import {
-  Box,
-  Button,
-  Grid,
-  MenuItem,
-  Typography,
-  alpha,
   Accordion,
-  AccordionSummary,
   AccordionDetails,
-  Menu,
-  IconButton,
-  Chip,
+  AccordionSummary,
+  Badge,
+  Box,
   Divider,
+  Grid,
+  IconButton,
   ListItemIcon,
   ListItemText,
-  Badge,
+  Menu,
+  MenuItem,
   Tooltip,
+  Typography,
+  alpha,
 } from "@mui/material";
 import {
+  IconCheck,
+  IconChevronDown,
   IconFilter,
   IconFilterOff,
-  IconChevronDown,
   IconPlus,
   IconX,
-  IconCheck,
 } from "@tabler/icons-react";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
-import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
-import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
-import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
-import { Categoria } from "@/core/categorias/types";
-import { Despesa } from "@/core/despesas/types";
-import { Receita } from "@/core/receitas/types";
-import { Meta } from "@/core/metas/types";
-import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
+import { useForm } from "react-hook-form";
 import { LancamentosTourRefs } from "./LancamentosTourContext";
 
-import { parseISO, isValid } from "date-fns";
 import { FiltrosLancamentos, getDefaultDates } from "../utils";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
 import { FindAllFilters } from "@/dtos";
 import { debounce } from "lodash";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Tipo para item com origem e ID único
 type ItemComOrigem = (Despesa | Receita | Meta) & {

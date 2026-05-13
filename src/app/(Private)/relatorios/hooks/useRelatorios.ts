@@ -7,7 +7,7 @@ import {
 } from "@/core/relatorios/relatorio.dto";
 import { 
   useGetRelatorioQuery, 
-  useGetHistoricoAgrupadoMutation 
+  useGetHistoricoAgrupadoQuery 
 } from "@/services/endpoints/relatoriosApi";
 
 export function useRelatorios() {
@@ -22,9 +22,6 @@ export function useRelatorios() {
   // Seleção via composite key: "TIPO-ID"
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
-  const [historicoAgrupado, setHistoricoAgrupado] = useState<HistoricoMensal[]>([]);
-  const [loadingHistorico, setLoadingHistorico] = useState(false);
-
   // RTK Query
   const { data, isLoading: loading, error } = useGetRelatorioQuery({
     dataInicio,
@@ -32,8 +29,6 @@ export function useRelatorios() {
     page: 0,
     limit,
   });
-
-  const [triggerHistorico] = useGetHistoricoAgrupadoMutation();
 
   // Switch de projeções — filtro client-side
   const [incluirProjecaoTabela, setIncluirProjecaoTabela] = useState(true);
@@ -98,33 +93,21 @@ export function useRelatorios() {
   }, [selectedIds.size, selectedItemsDetails]);
 
   // ==================== HISTÓRICO ====================
-  useEffect(() => {
-    const fetchHistorico = async () => {
-      // Usamos selectedItemsDetails para garantir que só buscamos o histórico de itens que estão visíveis/filtrados
-      if (selectedItemsDetails.length === 0) {
-        setHistoricoAgrupado([]);
-        return;
-      }
+  const anoReferencia = useMemo(() => new Date(dataInicio).getFullYear(), [dataInicio]);
 
-      setLoadingHistorico(true);
-      try {
-        const itens = selectedItemsDetails.map(item => ({
-          id: item.id,
-          tipo: item.tipo
-        }));
-
-        const ano = new Date(dataInicio).getFullYear();
-        const response = await triggerHistorico({ itens, ano }).unwrap();
-        setHistoricoAgrupado(response);
-      } catch (err) {
-        console.error("Erro ao buscar histórico:", err);
-      } finally {
-        setLoadingHistorico(false);
-      }
+  const paramsHistorico = useMemo(() => {
+    if (selectedItemsDetails.length === 0) return null;
+    
+    return {
+      itens: selectedItemsDetails.map(item => `${item.tipo}-${item.id}`).join(','),
+      ano: anoReferencia
     };
+  }, [selectedItemsDetails, anoReferencia]);
 
-    fetchHistorico();
-  }, [selectedItemsDetails, triggerHistorico, dataInicio]);
+  const { data: historicoAgrupado, isFetching: loadingHistorico } = useGetHistoricoAgrupadoQuery(
+    paramsHistorico!,
+    { skip: !paramsHistorico }
+  );
 
   const resetFilters = useCallback(() => {
     setIncluirProjecaoTabela(true);
@@ -143,7 +126,7 @@ export function useRelatorios() {
     selectedIds,
     toggleSelection,
     selectItemForHistory,
-    historicoItem: historicoAgrupado,
+    historicoItem: historicoAgrupado || [],
     loadingHistorico,
     incluirProjecaoTabela,
     setIncluirProjecaoTabela,

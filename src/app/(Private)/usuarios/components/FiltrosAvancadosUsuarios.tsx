@@ -1,47 +1,41 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 import {
-  Box,
-  Grid,
-  MenuItem,
-  Typography,
-  alpha,
   Accordion,
-  AccordionSummary,
   AccordionDetails,
-  Menu,
-  IconButton,
+  AccordionSummary,
+  Badge,
+  Box,
   Divider,
+  Grid,
+  IconButton,
   ListItemIcon,
   ListItemText,
-  Badge,
+  Menu,
+  MenuItem,
   Tooltip,
+  Typography,
+  alpha,
 } from "@mui/material";
 import {
+  IconCheck,
+  IconChevronDown,
   IconFilter,
   IconFilterOff,
-  IconChevronDown,
   IconPlus,
   IconX,
-  IconCheck,
 } from "@tabler/icons-react";
-import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
-import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
-import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
-import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
+import { useForm } from "react-hook-form";
 
-import { FiltrosUsuarios, getDefaultUserDates } from "../utils";
-import { useMemo, useState, useEffect, useCallback } from "react";
 import { debounce } from "lodash";
-import { User } from "next-auth";
+import { useCallback, useEffect, useState } from "react";
+import { FiltrosUsuarios, getDefaultUserDates } from "../utils";
 
-type FiltroKey =
-  | "periodo"
-  | "nome"
-  | "email"
-  | "username"
-  | "status";
+type FiltroKey = "periodo" | "nome" | "email" | "username" | "status";
 
 interface FiltroDefinicao {
   key: FiltroKey;
@@ -74,10 +68,9 @@ export default function FiltrosAvancadosUsuarios({
     status: filtros.status || "",
   };
 
-  const { control, reset, watch, setValue } =
-    useForm<FiltrosUsuarios>({
-      defaultValues,
-    });
+  const { control, reset, watch, setValue } = useForm<FiltrosUsuarios>({
+    defaultValues,
+  });
 
   const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>([]);
   const [expandido, setExpandido] = useState(false);
@@ -111,7 +104,7 @@ export default function FiltrosAvancadosUsuarios({
     debounce((data: FiltrosUsuarios) => {
       handleSearch(data);
     }, 500),
-    [handleSearch, debounce]
+    [handleSearch, debounce],
   );
 
   const formValues = watch();
@@ -150,11 +143,14 @@ export default function FiltrosAvancadosUsuarios({
     setExpandido(false);
     setFiltrosAtivos([]);
     setTipoPeriodo("ano");
-    handleSearch({
-      ...dates,
-      page: 0,
-      limit: 10,
-    }, true);
+    handleSearch(
+      {
+        ...dates,
+        page: 0,
+        limit: 10,
+      },
+      true,
+    );
   };
 
   const renderCampoFiltro = (key: FiltroKey) => {
@@ -320,7 +316,7 @@ export default function FiltrosAvancadosUsuarios({
           </Typography>
         </Box>
 
-        <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
+        <Box sx={{ width: { xs: "100%", sm: "fit-content" } }}>
           {!filtrosAtivos.includes("periodo") && (
             <SeletorPeriodo
               onClick={(e) => e.stopPropagation()}
@@ -361,11 +357,18 @@ export default function FiltrosAvancadosUsuarios({
                   isActive ? removerFiltro(f.key) : adicionarFiltro(f.key);
                 }}
                 sx={{
-                  bgcolor: isActive ? (theme) => alpha(theme.palette.primary.main, 0.08) : "transparent",
+                  bgcolor: isActive
+                    ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                    : "transparent",
                   color: isActive ? "primary.main" : "text.primary",
                 }}
               >
-                <ListItemIcon sx={{ minWidth: "32px !important", color: isActive ? "primary.main" : "text.disabled" }}>
+                <ListItemIcon
+                  sx={{
+                    minWidth: "32px !important",
+                    color: isActive ? "primary.main" : "text.disabled",
+                  }}
+                >
                   {isActive ? <IconCheck size={18} /> : <IconPlus size={18} />}
                 </ListItemIcon>
                 <ListItemText primary={f.label} />
@@ -380,7 +383,9 @@ export default function FiltrosAvancadosUsuarios({
             }}
             sx={{ color: "error.main" }}
           >
-            <ListItemIcon sx={{ minWidth: "32px !important", color: "error.main" }}>
+            <ListItemIcon
+              sx={{ minWidth: "32px !important", color: "error.main" }}
+            >
               <IconFilterOff size={18} />
             </ListItemIcon>
             <ListItemText primary="Resetar" />
@@ -400,7 +405,13 @@ export default function FiltrosAvancadosUsuarios({
             const definicao = FILTROS_DISPONIVEIS.find((f) => f.key === key);
             const isPeriodo = key === "periodo";
             return (
-              <Grid item xs={12} sm={isPeriodo ? 12 : 6} md={isPeriodo ? 6 : 3} key={key}>
+              <Grid
+                item
+                xs={12}
+                sm={isPeriodo ? 12 : 6}
+                md={isPeriodo ? 6 : 3}
+                key={key}
+              >
                 <Box position="relative">
                   {renderCampoFiltro(key)}
                   <IconButton
