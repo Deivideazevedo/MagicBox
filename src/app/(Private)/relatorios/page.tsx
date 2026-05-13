@@ -525,9 +525,8 @@ export default function RelatoriosPage() {
                                                   <TableHead>
                                                     <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
                                                       <TableCell><Typography variant="caption" fontWeight={800} color="text.secondary">REFERÊNCIA</Typography></TableCell>
-                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PREVISTO</Typography></TableCell>
-                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PAGO</Typography></TableCell>
-                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">RESTANTE</Typography></TableCell>
+                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PREVISTO / PAGO</Typography></TableCell>
+                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">DIFERENÇA</Typography></TableCell>
                                                     </TableRow>
                                                   </TableHead>
                                                   <TableBody>
@@ -540,10 +539,13 @@ export default function RelatoriosPage() {
                                                         }}
                                                       >
                                                         <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
-                                                        <TableCell align="right" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                                                          {formatCurrency(h.previsto)}
+                                                        <TableCell align="right">
+                                                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+                                                            <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>{formatCurrency(h.previsto)}</Box>
+                                                            <Box component="span" sx={{ fontWeight: 700, opacity: 0.3 }}>/</Box>
+                                                            <Box component="span" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</Box>
+                                                          </Typography>
                                                         </TableCell>
-                                                        <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</TableCell>
                                                         <TableCell
                                                           align="right"
                                                           sx={{

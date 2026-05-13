@@ -128,7 +128,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
   },
   {
     key: "restante",
-    label: "Restante",
+    label: "Diferença",
     align: "right",
     sortValue: (row) => row.restante,
     render: (row) => (
