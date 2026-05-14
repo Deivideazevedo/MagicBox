@@ -111,6 +111,7 @@ export interface RawMetasProgresso {
   cor: string;
   planejado: number;
   realizado: number;
+  mediaMensal: number;
 }
 
 export interface RawHistoricoAgrupado {

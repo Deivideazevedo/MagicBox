@@ -67,8 +67,8 @@ export const relatoriosService = {
 
     // Metas
     const metasDetalhes: DetalheRelatorio[] = metasComProgresso.map((m) => {
-      const planejado = m.planejado > 0 ? -m.planejado : m.planejado;
-      const realizado = m.realizado > 0 ? -m.realizado : m.realizado;
+      const planejado = m.planejado;
+      const realizado = m.realizado;
       const restante = realizado - planejado;
       
       return {
@@ -78,7 +78,7 @@ export const relatoriosService = {
         valorPlanejado: planejado,
         valorRealizado: realizado,
         restante,
-        mediaMensal: 0,
+        mediaMensal: m.mediaMensal,
         isProjecao: false,
         status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : "PENDENTE",
       };

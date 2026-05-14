@@ -88,7 +88,15 @@ export const relatoriosRepository = {
         m."valorMeta"::float as planejado,
         COALESCE((
           SELECT SUM(l.valor) FROM lancamento l WHERE l."metaId" = m.id AND l.tipo = 'pagamento'
-        ), 0)::float as realizado
+        ), 0)::float as realizado,
+        COALESCE((
+          SELECT AVG(mensal) FROM (
+            SELECT SUM(l2.valor) as mensal
+            FROM lancamento l2
+            WHERE l2."metaId" = m.id AND l2.tipo = 'pagamento'
+            GROUP BY date_trunc('month', l2.data)
+          ) s
+        ), 0)::float as "mediaMensal"
       FROM meta m
       WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
       ORDER BY m.nome;
