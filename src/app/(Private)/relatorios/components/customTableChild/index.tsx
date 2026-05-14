@@ -40,6 +40,13 @@ import { IColumnProps } from "./utils/renderColumn";
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
+const formatDelta = (value: number) => {
+  const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Math.abs(value));
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
+};
+
 const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
   {
     key: "nome",
@@ -65,24 +72,18 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
       }
 
       return (
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" alignItems="center" spacing={1}>
           <Chip
-            size="small"
             icon={chipIcon}
             label={chipLabel}
             color={chipColor}
+            size="small"
             variant="outlined"
-            sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24 }}
+            sx={{ fontWeight: 600, fontSize: 11, height: 22 }}
           />
-          <Typography variant="body2">{row.nome}</Typography>
-          {row.isProjecao && (
-            <Chip
-              size="small"
-              label="Projeção"
-              color="warning"
-              sx={{ fontWeight: 600, fontSize: "0.65rem", height: 20, opacity: 0.85 }}
-            />
-          )}
+          <Typography variant="body2" fontWeight={500}>
+            {row.nome}
+          </Typography>
         </Stack>
       );
     },
@@ -99,7 +100,7 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
   },
   {
     key: "valorRealizado",
-    label: "Pago",
+    label: "Realizado",
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
@@ -116,9 +117,9 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
         variant="body2"
         fontWeight={700}
         sx={{ whiteSpace: "nowrap" }}
-        color={row.restante < 0 ? "error.main" : row.restante > 0 ? "success.main" : "textSecondary"}
+        color={row.restante > 0 ? "success.main" : row.restante < 0 ? "error.main" : "textSecondary"}
       >
-        {formatCurrency(row.restante)}
+        {formatDelta(row.restante)}
       </Typography>
     ),
   },
@@ -314,9 +315,4 @@ const ChildRow = memo(function ChildRow({
       })}
     </TableRow>
   );
-}, (prev, next) => {
-  return prev.item.id === next.item.id
-    && prev.item.tipo === next.item.tipo
-    && prev.isSelected === next.isSelected
-    && prev.isHistoricoActive === next.isHistoricoActive;
 });

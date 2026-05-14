@@ -117,7 +117,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
   },
   {
     key: "valorRealizado",
-    label: "Pago",
+    label: "Realizado",
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
@@ -144,7 +144,13 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
               : "textSecondary"
         }
       >
-        {formatCurrency(row.restante)}
+        {(() => {
+          const abs = Math.abs(row.restante);
+          const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(abs);
+          if (row.restante > 0) return `+${formatted}`;
+          if (row.restante < 0) return `-${formatted}`;
+          return formatted;
+        })()}
       </Typography>
     ),
   },
@@ -163,6 +169,8 @@ interface CustomTableProps {
   onToggleTipo: (tipo: string) => void;
   onResetFilters: () => void;
   tiposExistentes: Set<string>;
+  incluirProjecao: boolean;
+  onToggleProjecao: (value: boolean) => void;
 }
 
 // ==================== COMPONENTE PRINCIPAL ====================
@@ -178,10 +186,11 @@ export function CustomTable({
   onToggleTipo,
   onResetFilters,
   tiposExistentes,
+  incluirProjecao,
+  onToggleProjecao,
 }: CustomTableProps) {
   const theme = useTheme();
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
-  const [incluirProjecao, setIncluirProjecao] = useState(true);
   const [resetToggle, setResetToggle] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -227,7 +236,7 @@ export function CustomTable({
   const handleReset = () => {
     setFilterText("");
     resetSort();
-    setIncluirProjecao(true);
+    onToggleProjecao(true);
     onResetFilters();
     setResetToggle(prev => prev + 1);
     setDrawerOpen(false);
@@ -261,7 +270,7 @@ export function CustomTable({
           <Switch
             size="small"
             checked={incluirProjecao}
-            onChange={(e) => setIncluirProjecao(e.target.checked)}
+            onChange={(e) => onToggleProjecao(e.target.checked)}
             color="warning"
           />
         }
@@ -479,7 +488,7 @@ export function CustomTable({
               Exibir
             </Typography>
             <Box
-              onClick={() => setIncluirProjecao(!incluirProjecao)}
+              onClick={() => onToggleProjecao(!incluirProjecao)}
               sx={{
                 mt: 1.5,
                 display: 'flex',
@@ -509,7 +518,7 @@ export function CustomTable({
                 checked={incluirProjecao}
                 onChange={(e) => {
                   e.stopPropagation();
-                  setIncluirProjecao(e.target.checked);
+                  onToggleProjecao(e.target.checked);
                 }}
                 color="warning"
               />
@@ -683,7 +692,7 @@ export function CustomTable({
             Previsto: {formatCurrency(selectedTotals.previsto)}
           </Typography>
           <Typography variant="caption" fontWeight={800} color="primary.main">
-            Pago: {formatCurrency(selectedTotals.pago)}
+            Realizado: {formatCurrency(selectedTotals.pago)}
           </Typography>
         </Stack>
       </Box>

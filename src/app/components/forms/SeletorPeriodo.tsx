@@ -43,7 +43,7 @@ import { ptBR } from "date-fns/locale";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 
-export type TipoPeriodo = "ano" | "mes" | "semana" | "dia";
+export type TipoPeriodo = "ano" | "mes" | "semana" | "dia" | "tudo";
 
 export const OPCOES_TIPO: { value: TipoPeriodo; label: string }[] = [
   { value: "ano", label: "Ano" },
@@ -62,7 +62,9 @@ interface SeletorPeriodoProps {
   dataFim?: string;
   tipo: TipoPeriodo;
   onTipoChange: (tipo: TipoPeriodo) => void;
-  onChange: (periodo: Periodo) => void; onClick?: (e: React.MouseEvent) => void;
+  onChange: (periodo: Periodo) => void;
+  onClick?: (e: React.MouseEvent) => void;
+  exibirTodos?: boolean;
 }
 
 export function SeletorPeriodo({
@@ -72,10 +74,18 @@ export function SeletorPeriodo({
   onTipoChange,
   onChange,
   onClick,
+  exibirTodos = false,
 }: SeletorPeriodoProps) {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [pickerAberto, setPickerAberto] = useState(false);
+
+  const opcoesDisponiveis = useMemo(() => {
+    if (exibirTodos) {
+      return [{ value: "tudo" as TipoPeriodo, label: "Tudo" }, ...OPCOES_TIPO];
+    }
+    return OPCOES_TIPO;
+  }, [exibirTodos]);
 
   // Deriva a data de referência das props para cálculos de navegação
   const dataRef = useMemo(() => {
@@ -106,6 +116,11 @@ export function SeletorPeriodo({
         inicio = startOfYear(ref);
         fim = endOfYear(ref);
         break;
+      case "tudo":
+        return {
+          dataInicio: "",
+          dataFim: "",
+        };
       default:
         inicio = ref;
         fim = ref;
@@ -177,6 +192,10 @@ export function SeletorPeriodo({
       return format(dIni, "yyyy");
     }
 
+    if (tipo === "tudo") {
+      return "Tudo";
+    }
+
     return "...";
   }, [dataInicio, dataFim, tipo]);
 
@@ -215,7 +234,7 @@ export function SeletorPeriodo({
             },
           }}
         >
-          {OPCOES_TIPO.find((o) => o.value === tipo)?.label}
+          {opcoesDisponiveis.find((o) => o.value === tipo)?.label}
         </Button>
       </Grid>
 
@@ -235,7 +254,7 @@ export function SeletorPeriodo({
           },
         }}
       >
-        {OPCOES_TIPO.map((opcao) => {
+        {opcoesDisponiveis.map((opcao) => {
           const isActive = tipo === opcao.value;
           return (
             <MenuItem
@@ -297,14 +316,16 @@ export function SeletorPeriodo({
             width: { xs: "100%", md: "fit-content" },
             transition: "all 0.2s",
             "&:hover": {
-              cursor: "auto",
+              cursor: tipo === 'tudo' ? "not-allowed" : "auto",
               color: "text.primary",
               bgcolor: (theme) => theme.palette.background.paper,
               borderColor: "primary.main",
             },
+            opacity: tipo === 'tudo' ? 0.5 : 1,
+            pointerEvents: tipo === 'tudo' ? 'none' : 'auto'
           }}
         >
-          <IconButton size="small" onClick={() => navegar("anterior")} sx={{ color: "primary.main" }}>
+          <IconButton size="small" onClick={() => navegar("anterior")} sx={{ color: "primary.main" }} disabled={tipo === 'tudo'}>
             <IconChevronLeft size={20} />
           </IconButton>
 
@@ -381,7 +402,7 @@ export function SeletorPeriodo({
             )}
           </Box>
 
-          <IconButton size="small" onClick={() => navegar("proximo")} sx={{ color: "primary.main" }}>
+          <IconButton size="small" onClick={() => navegar("proximo")} sx={{ color: "primary.main" }} disabled={tipo === 'tudo'}>
             <IconChevronRight size={20} />
           </IconButton>
         </Box>

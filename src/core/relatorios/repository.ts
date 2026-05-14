@@ -14,11 +14,22 @@ export const relatoriosRepository = {
           r."categoriaId",
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as realizado,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as planejado,
-          COALESCE(r."valorEstimado", 0)::float as estimado
+          COALESCE(r."valorEstimado", 0)::float as estimado,
+          r.tipo::text as "origemTipo",
+          COALESCE((
+            SELECT AVG(mensal) FROM (
+              SELECT SUM(l2.valor) as mensal
+              FROM lancamento l2
+              WHERE l2."receitaId" = r.id AND l2.tipo = 'pagamento'
+              GROUP BY date_trunc('month', l2.data)
+              ORDER BY date_trunc('month', l2.data) DESC
+              LIMIT 12
+            ) s
+          ), 0)::float as media_mensal
         FROM receita r
         LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL
-        GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado"
+        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL AND r.status = 'A'
+        GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado", r.tipo
         
         UNION ALL
         
@@ -28,18 +39,31 @@ export const relatoriosRepository = {
           d."categoriaId",
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as realizado,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as planejado,
-          COALESCE(d."valorEstimado", 0)::float as estimado
+          COALESCE(d."valorEstimado", 0)::float as estimado,
+          d.tipo::text as "origemTipo",
+          COALESCE((
+            SELECT AVG(mensal) FROM (
+              SELECT SUM(l2.valor) as mensal
+              FROM lancamento l2
+              WHERE l2."despesaId" = d.id AND l2.tipo = 'pagamento'
+              GROUP BY date_trunc('month', l2.data)
+              ORDER BY date_trunc('month', l2.data) DESC
+              LIMIT 12
+            ) s
+          ), 0)::float as media_mensal
         FROM despesa d
         LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL
-        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado"
+        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL AND d.status = 'A'
+        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo
       )
       SELECT 
         c.id as "categoriaId", c.nome as "categoriaNome", c.icone as "categoriaIcone", c.cor as "categoriaCor", d.tipo as "categoriaTipo",
         d.id as "itemId", d.nome as "itemName", d.tipo as "itemTipo", 
         d.realizado as "valorRealizado", 
         d.planejado as "valorAgendado",
-        d.estimado as "valorPlanejado"
+        d.estimado as "valorPlanejado",
+        d."origemTipo",
+        d.media_mensal as "mediaMensal"
       FROM categorias_base c
       INNER JOIN detalhes d ON d."categoriaId" = c.id
       ORDER BY c.nome, d.nome;
@@ -134,7 +158,13 @@ export const relatoriosRepository = {
         SELECT 
           date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
           EXTRACT(YEAR FROM l.data)::int as ano,
-          SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END)::float as real_pago,
+          SUM(
+            CASE 
+              WHEN l.tipo = 'pagamento' THEN 
+                CASE WHEN l."receitaId" IS NOT NULL THEN l.valor ELSE -l.valor END
+              ELSE 0 
+            END
+          )::float as real_pago,
           SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as real_agendado,
           -- Alvo com sinal: Receita (+) , Despesa/Meta (-)
           SUM(
@@ -219,13 +249,8 @@ export const relatoriosRepository = {
         COALESCE(p.total_projetado, 0)::float as "totalProjetado",
         COALESCE(r.total_alvo, 0)::float as "totalPrevisto",
         (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0))::float as "totalPrevistoComProjecao",
-        COALESCE(r.restante_real, 0)::float as "restanteReal",
-        CASE 
-          WHEN (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)) >= 0 THEN
-            GREATEST(0, (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)) - COALESCE(r.total_pago, 0))
-          ELSE
-            LEAST(0, COALESCE(r.total_pago, 0) + (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)))
-        END::float as "restanteComProjecao"
+        (COALESCE(r.total_pago, 0) - COALESCE(r.total_alvo, 0))::float as "restanteReal",
+        (COALESCE(r.total_pago, 0) - (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)))::float as "restanteComProjecao"
       FROM reais_agrupado r
       FULL OUTER JOIN projecoes p ON r.mes_ref = p.mes_ref
       ORDER BY 1 ASC

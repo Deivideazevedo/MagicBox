@@ -1,31 +1,32 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { 
-  RelatorioResponse, 
-  DetalheRelatorio, 
+import {
+  RelatorioResponse,
+  DetalheRelatorio,
   HistoricoMensal,
-  CategoriaRelatorio 
+  CategoriaRelatorio
 } from "@/core/relatorios/relatorio.dto";
-import { 
-  useGetRelatorioQuery, 
-  useGetHistoricoAgrupadoQuery 
+import {
+  useGetRelatorioQuery,
+  useGetHistoricoAgrupadoQuery
 } from "@/services/endpoints/relatoriosApi";
 
 export function useRelatorios() {
-  const [dataInicio, setDataInicio] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
-  );
-  const [dataFim, setDataFim] = useState(
-    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
-  );
+  const [datas, setDatas] = useState(() => {
+    const now = new Date();
+    return {
+      dataInicio: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
+      dataFim: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
+    };
+  });
   const [limit] = useState(999); // Exibição acumulativa, sem paginação real no UI
-  
+
   // Seleção via composite key: "TIPO-ID"
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  
+
   // RTK Query
   const { data, isLoading: loading, error } = useGetRelatorioQuery({
-    dataInicio,
-    dataFim,
+    dataInicio: datas.dataInicio,
+    dataFim: datas.dataFim,
     page: 0,
     limit,
   });
@@ -47,9 +48,9 @@ export function useRelatorios() {
     const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
     setSelectedIds(prev => {
       const newSelection = new Set(prev);
-      
-      const shouldSelect = forceState !== undefined 
-        ? forceState 
+
+      const shouldSelect = forceState !== undefined
+        ? forceState
         : !ids.every(id => prev.has(id));
 
       ids.forEach(id => {
@@ -69,10 +70,11 @@ export function useRelatorios() {
   }, []);
 
   // ==================== METADADOS DINÂMICOS ====================
-  
+
   // Encontra os itens selecionados no relatório para pegar os nomes, respeitando os filtros ativos
   const selectedItemsDetails = useMemo(() => {
     if (!data?.categorias) return [];
+    
     const allDetails: DetalheRelatorio[] = data.categorias.flatMap((c: CategoriaRelatorio) => c.detalhes);
     return allDetails.filter(item => {
       const isSelected = selectedIds.has(`${item.tipo}-${item.id}`);
@@ -83,28 +85,35 @@ export function useRelatorios() {
   }, [data, selectedIds, tiposFiltro, incluirProjecaoTabela]);
 
   const selectedNames = useMemo(() => {
-    return selectedItemsDetails.map(i => i.nome).join(", ");
+    if (selectedItemsDetails.length === 0) return "Nenhum selecionado";
+    if (selectedItemsDetails.length <= 2) return selectedItemsDetails.map(d => d.nome).join(', ');
+    return `${selectedItemsDetails.length} itens selecionados`;
   }, [selectedItemsDetails]);
 
   const titleHistorico = useMemo(() => {
-    if (selectedIds.size === 0 || selectedItemsDetails.length === 0) return "Geral";
-    if (selectedItemsDetails.length === 1) return selectedItemsDetails[0]?.nome || "Item";
-    return `Múltiplos (${selectedItemsDetails.length})`;
-  }, [selectedIds.size, selectedItemsDetails]);
+    if (selectedItemsDetails.length === 1) return selectedItemsDetails[0].nome;
+    return "Consolidado";
+  }, [selectedItemsDetails]);
 
   // ==================== HISTÓRICO ====================
-  const anoReferencia = useMemo(() => new Date(dataInicio).getFullYear(), [dataInicio]);
+  const anoReferencia = useMemo(() => {
+    return new Date(datas.dataInicio).getUTCFullYear();
+  }, [datas.dataInicio]);
 
   const paramsHistorico = useMemo(() => {
     if (selectedItemsDetails.length === 0) return null;
-    
+
     return {
       itens: selectedItemsDetails.map(item => `${item.tipo}-${item.id}`).join(','),
       ano: anoReferencia
     };
   }, [selectedItemsDetails, anoReferencia]);
 
-  const { data: historicoAgrupado, isFetching: loadingHistorico } = useGetHistoricoAgrupadoQuery(
+  const {
+    data: historicoAgrupado,
+    isFetching: isFetchingHistorico,
+    isLoading: isLoadingHistorico
+  } = useGetHistoricoAgrupadoQuery(
     paramsHistorico!,
     { skip: !paramsHistorico }
   );
@@ -114,20 +123,23 @@ export function useRelatorios() {
     setTiposFiltro([]);
   }, []);
 
+  const setPeriodo = useCallback((dataInicio: string, dataFim: string) => {
+    setDatas({ dataInicio, dataFim });
+  }, []);
+
   return {
     data,
     loading,
     error,
-    dataInicio,
-    setDataInicio,
-    dataFim,
-    setDataFim,
-    limit,
+    dataInicio: datas.dataInicio,
+    dataFim: datas.dataFim,
+    setPeriodo,
     selectedIds,
     toggleSelection,
     selectItemForHistory,
     historicoItem: historicoAgrupado || [],
-    loadingHistorico,
+    isLoadingHistorico,
+    isFetchingHistorico,
     incluirProjecaoTabela,
     setIncluirProjecaoTabela,
     tiposFiltro,

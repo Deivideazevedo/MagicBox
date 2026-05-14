@@ -19,11 +19,7 @@ async function buscarRelatorio(req: NextRequest) {
   const dataFim = dataFimParam ? new Date(dataFimParam) : new Date();
   const itemId = searchParams.get("itemId");
   const tipo = searchParams.get("tipo") as "RECEITA" | "DESPESA" | null;
-  const page = parseInt(searchParams.get("page") || "0");
-  const limit = parseInt(searchParams.get("limit") || "10");
-
   const { userId } = await getAuthUser(req);
-
-  const relatorio = await servico.gerarRelatorio(userId, dataInicio, dataFim, page, limit);
+  const relatorio = await servico.gerarRelatorio(userId, dataInicio, dataFim);
   return NextResponse.json(relatorio);
 }

@@ -33,7 +33,7 @@ import { useForm } from "react-hook-form";
 
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
-import { FiltrosUsuarios, getDefaultUserDates } from "../utils";
+import { FiltrosUsuarios, getDefaultUserDates, getEmptyDates } from "../utils";
 
 type FiltroKey = "periodo" | "nome" | "email" | "username" | "status";
 
@@ -76,7 +76,7 @@ export default function FiltrosAvancadosUsuarios({
   const [expandido, setExpandido] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuAberto = Boolean(anchorEl);
-  const [tipoPeriodo, setTipoPeriodo] = useState<any>("mes");
+  const [tipoPeriodo, setTipoPeriodo] = useState<any>("tudo");
 
   const adicionarFiltro = (key: FiltroKey) => {
     setFiltrosAtivos((prev) => [...prev, key]);
@@ -92,9 +92,10 @@ export default function FiltrosAvancadosUsuarios({
     else if (key === "username") setValue("username", "");
     else if (key === "status") setValue("status", "");
     else if (key === "periodo") {
-      const dates = getDefaultUserDates();
+      const dates = getEmptyDates();
       setValue("dataInicio", dates.dataInicio);
       setValue("dataFim", dates.dataFim);
+      setTipoPeriodo("tudo");
     }
 
     if (novosAtivos.length === 0) setExpandido(false);
@@ -132,7 +133,7 @@ export default function FiltrosAvancadosUsuarios({
   }, [formValues, filtros, handleSearch, handleSearchDebounced]);
 
   const handleLimpar = () => {
-    const dates = getDefaultUserDates();
+    const dates = getEmptyDates();
     reset({
       ...dates,
       nome: "",
@@ -142,7 +143,7 @@ export default function FiltrosAvancadosUsuarios({
     });
     setExpandido(false);
     setFiltrosAtivos([]);
-    setTipoPeriodo("ano");
+    setTipoPeriodo("tudo");
     handleSearch(
       {
         ...dates,
@@ -328,6 +329,7 @@ export default function FiltrosAvancadosUsuarios({
                 setValue("dataInicio", periodo.dataInicio);
                 setValue("dataFim", periodo.dataFim);
               }}
+              exibirTodos={true}
             />
           )}
         </Box>

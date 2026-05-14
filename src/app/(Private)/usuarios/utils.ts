@@ -19,6 +19,13 @@ export const getDefaultUserDates = () => {
   };
 };
 
+export const getEmptyDates = () => {
+  return {
+    dataInicio: "",
+    dataFim: "",
+  };
+};
+
 export const defaultUserFilters: ListUsersDTO = {
   page: 0,
   limit: 10,
@@ -26,5 +33,5 @@ export const defaultUserFilters: ListUsersDTO = {
   email: "",
   username: "",
   status: "",
-  ...getDefaultUserDates(),
+  ...getEmptyDates(),
 };

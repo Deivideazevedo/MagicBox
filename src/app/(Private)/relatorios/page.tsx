@@ -15,6 +15,7 @@ import {
   Container,
   Grid,
   IconButton,
+  LinearProgress,
   Paper,
   Table,
   TableBody,
@@ -72,20 +73,24 @@ export default function RelatoriosPage() {
   // Redux States
   const { sectionsOrder, showOverview, showTable } = useSelector((state: RootState) => state.relatorioUi);
 
+  // Configurações de densidade da tabela de histórico
+  const histPaddingHeader = 1.8;
+  const histPaddingRow = 1.4;
+
   const {
     data,
     loading,
     error,
     dataInicio,
-    setDataInicio,
     dataFim,
-    setDataFim,
+    setPeriodo,
     selectedIds,
     toggleSelection,
     selectItemForHistory,
     resumoExibido,
     historicoItem,
-    loadingHistorico,
+    isLoadingHistorico,
+    isFetchingHistorico,
     titleHistorico,
     selectedNames,
     incluirProjecaoTabela,
@@ -120,6 +125,15 @@ export default function RelatoriosPage() {
     if (!historicoItem || !Array.isArray(historicoItem)) return [];
 
     return historicoItem
+      .filter((h) => {
+        // Quando projeções desativadas, remover meses que só existem por causa de projeção
+        // (sem pagamentos reais E sem agendamentos reais)
+        if (!incluirProjecaoTabela) {
+          const temDadosReais = Number(h.totalPago || 0) !== 0 || Number(h.realAgendado || 0) !== 0;
+          return temDadosReais;
+        }
+        return true;
+      })
       .map((h) => ({
         ...h,
         previsto: incluirProjecaoTabela ? h.totalPrevistoComProjecao : h.totalPrevisto,
@@ -200,9 +214,8 @@ export default function RelatoriosPage() {
       {/* Filtros */}
       <FiltrosRelatorio
         dataInicio={dataInicio}
-        setDataInicio={setDataInicio}
         dataFim={dataFim}
-        setDataFim={setDataFim}
+        setPeriodo={setPeriodo}
       />
 
       <Box sx={{ mt: 3 }}>
@@ -465,7 +478,7 @@ export default function RelatoriosPage() {
                                 <Box sx={{ pt: 2 }}>
                                   {/* <Box sx={{ p: 3 }}> */}
                                   <Grid container spacing={3}>
-                                    <Grid item xs={12} lg={selectedIds.size > 0 ? 8 : 12}>
+                                    <Grid item xs={12} sm={selectedIds.size > 0 ? 8 : 12}>
                                       {data?.categorias && (
                                         <CustomTable
                                           data={data.categorias}
@@ -478,13 +491,15 @@ export default function RelatoriosPage() {
                                           onResetFilters={resetFilters}
                                           tiposExistentes={tiposExistentes}
                                           isLoading={loading}
+                                          incluirProjecao={incluirProjecaoTabela}
+                                          onToggleProjecao={setIncluirProjecaoTabela}
                                         />
                                       )}
                                     </Grid>
 
                                     {/* Lateral History Panel */}
                                     {selectedIds.size > 0 && (
-                                      <Grid item xs={12} lg={4}>
+                                      <Grid item xs={12} sm={4}>
                                         <Paper
                                           elevation={0}
                                           variant="outlined"
@@ -506,15 +521,29 @@ export default function RelatoriosPage() {
                                           }}
                                         >
                                           <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 1, display: 'flex' }}>
-                                              <IconHistory size={18} color={theme.palette.primary.main} />
+                                            <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 1, display: 'flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+                                              {isFetchingHistorico ? (
+                                                <CircularProgress size={16} />
+                                              ) : (
+                                                <IconHistory size={18} color={theme.palette.primary.main} />
+                                              )}
                                             </Box>
                                             <Typography variant="subtitle2" fontWeight={800}>
                                               Histórico: {titleHistorico}
                                             </Typography>
                                           </Box>
 
-                                          {loadingHistorico ? (
+                                          {isFetchingHistorico && (
+                                            <LinearProgress
+                                              sx={{
+                                                height: 2,
+                                                // bgcolor: 'transparent',
+                                                '& .MuiLinearProgress-bar': { borderRadius: 1 }
+                                              }}
+                                            />
+                                          )}
+
+                                          {isLoadingHistorico ? (
                                             <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
                                               <CircularProgress size={32} />
                                             </Box>
@@ -524,9 +553,9 @@ export default function RelatoriosPage() {
                                                 <Table size="small">
                                                   <TableHead>
                                                     <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-                                                      <TableCell><Typography variant="caption" fontWeight={800} color="text.secondary">REFERÊNCIA</Typography></TableCell>
-                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">PREVISTO / PAGO</Typography></TableCell>
-                                                      <TableCell align="right"><Typography variant="caption" fontWeight={800} color="text.secondary">DIFERENÇA</Typography></TableCell>
+                                                      <TableCell sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>REFERÊNCIA</Typography></TableCell>
+                                                      <TableCell align="center" sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>PREVISTO / REALIZADO</Typography></TableCell>
+                                                      <TableCell align="right" sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>DIFERENÇA</Typography></TableCell>
                                                     </TableRow>
                                                   </TableHead>
                                                   <TableBody>
@@ -538,9 +567,9 @@ export default function RelatoriosPage() {
                                                           "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) }
                                                         }}
                                                       >
-                                                        <TableCell sx={{ color: "primary.main", fontWeight: 700 }}>{h.referencia}</TableCell>
-                                                        <TableCell align="right">
-                                                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5 }}>
+                                                        <TableCell sx={{ color: "primary.main", fontWeight: 700, whiteSpace: "nowrap", py: histPaddingRow }}>{h.referencia}</TableCell>
+                                                        <TableCell align="center" sx={{ py: histPaddingRow }}>
+                                                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
                                                             <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>{formatCurrency(h.previsto)}</Box>
                                                             <Box component="span" sx={{ fontWeight: 700, opacity: 0.3 }}>/</Box>
                                                             <Box component="span" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</Box>
@@ -549,11 +578,19 @@ export default function RelatoriosPage() {
                                                         <TableCell
                                                           align="right"
                                                           sx={{
-                                                            color: h.restante < 0 ? "error.main" : h.restante > 0 ? "success.main" : "text.secondary",
-                                                            fontWeight: 800
+                                                            color: h.restante > 0 ? "success.main" : h.restante < 0 ? "error.main" : "text.secondary",
+                                                            fontWeight: 800,
+                                                            whiteSpace: "nowrap",
+                                                            py: histPaddingRow
                                                           }}
                                                         >
-                                                          {formatCurrency(h.restante)}
+                                                          {(() => {
+                                                            const abs = Math.abs(h.restante);
+                                                            const f = formatCurrency(abs);
+                                                            if (h.restante > 0) return `+${f}`;
+                                                            if (h.restante < 0) return `-${f}`;
+                                                            return f;
+                                                          })()}
                                                         </TableCell>
                                                       </TableRow>
                                                     ))}

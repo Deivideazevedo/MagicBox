@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 export const relatoriosService = {
-  async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date, page: number = 0, limit: number = 10): Promise<RelatorioResponse> {
+  async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
     const [dadosBrutos, totalMetas, metasComProgresso] = await Promise.all([
       relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim) as Promise<RawDadosBrutosCategoria[]>,
       relatoriosRepository.obterTotaisMetas(userId, dataInicio, dataFim) as Promise<RawTotaisMetas[]>,
@@ -33,11 +33,18 @@ export const relatoriosService = {
 
       const categoria = categoriasMap.get(db.categoriaId)!;
 
-      const planejado = db.valorAgendado > 0 ? db.valorAgendado : db.valorPlanejado;
-      const realizado = db.valorRealizado;
+      let planejado = db.valorAgendado > 0 ? db.valorAgendado : (db.origemTipo === 'FIXA' ? db.valorPlanejado : 0);
+      let realizado = db.valorRealizado;
+      let mediaMensal = db.mediaMensal;
 
-      // Restante = Realizado - Planejado (Conforme imagem do usuário)
-      // Ex: Realizado 25 - Planejado 1777 = -1752 (Déficit/Restante negativo em vermelho)
+      // Se for despesa, tanto o previsto quanto o realizado devem ser negativos (débitos)
+      if (db.itemTipo === 'DESPESA') {
+        if (planejado > 0) planejado = -planejado;
+        if (realizado > 0) realizado = -realizado;
+        if (mediaMensal > 0) mediaMensal = -mediaMensal;
+      }
+
+      // Diferença = Realizado - Planejado (impacto no saldo)
       const restante = realizado - planejado;
 
       const detalhe: DetalheRelatorio = {
@@ -47,9 +54,9 @@ export const relatoriosService = {
         valorPlanejado: planejado,
         valorRealizado: realizado,
         restante,
-        mediaMensal: 0,
-        isProjecao: false,
-        status: realizado >= planejado && planejado > 0 ? "OK" : (realizado > 0 ? "PARCIAL" : "PENDENTE"),
+        mediaMensal,
+        isProjecao: db.origemTipo === 'FIXA' && db.valorAgendado === 0 && db.valorRealizado === 0 && db.valorPlanejado > 0,
+        status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : (Math.abs(realizado) > 0 ? "PARCIAL" : "PENDENTE"),
       };
 
       categoria.detalhes.push(detalhe);
@@ -60,17 +67,20 @@ export const relatoriosService = {
 
     // Metas
     const metasDetalhes: DetalheRelatorio[] = metasComProgresso.map((m) => {
-      const restante = m.realizado - m.planejado;
+      const planejado = m.planejado > 0 ? -m.planejado : m.planejado;
+      const realizado = m.realizado > 0 ? -m.realizado : m.realizado;
+      const restante = realizado - planejado;
+      
       return {
         id: m.id,
         nome: m.nome,
         tipo: 'META' as const,
-        valorPlanejado: m.planejado,
-        valorRealizado: m.realizado,
+        valorPlanejado: planejado,
+        valorRealizado: realizado,
         restante,
         mediaMensal: 0,
         isProjecao: false,
-        status: m.realizado >= m.planejado && m.planejado > 0 ? "OK" : "PENDENTE",
+        status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : "PENDENTE",
       };
     });
 
@@ -107,9 +117,9 @@ export const relatoriosService = {
     let somaRealizadoMetas = 0;
     let somaPlanejadoMetas = 0;
     metasDetalhes.forEach(m => {
-      if (m.valorPlanejado > 0) {
-        somaRealizadoMetas += m.valorRealizado;
-        somaPlanejadoMetas += m.valorPlanejado;
+      if (Math.abs(m.valorPlanejado) > 0) {
+        somaRealizadoMetas += Math.abs(m.valorRealizado);
+        somaPlanejadoMetas += Math.abs(m.valorPlanejado);
       }
     });
     const metasPorcentagem = somaPlanejadoMetas > 0 ? (somaRealizadoMetas / somaPlanejadoMetas) * 100 : 0;
@@ -121,8 +131,8 @@ export const relatoriosService = {
       despesasPagas: totalDespesasPagas,
       totalMetas: totalMetasPagas,
       metasPorcentagem: metasPorcentagem > 100 ? 100 : metasPorcentagem,
-      saldoLivre: totalReceitasPagas - (totalDespesasPagas + totalMetasPagas),
-      saldoProjetado: totalReceitasPlanejadas - totalDespesasPlanejadas,
+      saldoLivre: totalReceitasPagas + totalDespesasPagas - totalMetasPagas,
+      saldoProjetado: totalReceitasPlanejadas + totalDespesasPlanejadas,
       saldoBloqueado: somaRealizadoMetas,
       dividaPendente
     };
@@ -137,14 +147,11 @@ export const relatoriosService = {
       };
     });
 
-    const totalCategorias = categorias.length;
-    const paginatedCategorias = limit > 0 ? categorias.slice(page * limit, (page * limit) + limit) : categorias;
-
     return {
       periodo: { dataInicio: dataInicio.toISOString().split('T')[0], dataFim: dataFim.toISOString().split('T')[0] },
       resumo,
-      categorias: paginatedCategorias,
-      totalCategorias,
+      categorias,
+      totalCategorias: categorias.length,
       evolucao
     };
   },

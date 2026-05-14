@@ -19,12 +19,11 @@ import { CustomDateRangePicker } from "../../resumo/components/CustomDateRangePi
 
 interface FiltrosRelatorioProps {
   dataInicio: string;
-  setDataInicio: (d: string) => void;
   dataFim: string;
-  setDataFim: (d: string) => void;
+  setPeriodo: (dataInicio: string, dataFim: string) => void;
 }
 
-export default function FiltrosRelatorio({ dataInicio, setDataInicio, dataFim, setDataFim }: FiltrosRelatorioProps) {
+export default function FiltrosRelatorio({ dataInicio, dataFim, setPeriodo }: FiltrosRelatorioProps) {
   const theme = useTheme();
   const [expandido, setExpandido] = useState(false);
   const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
@@ -113,8 +112,7 @@ export default function FiltrosRelatorio({ dataInicio, setDataInicio, dataFim, s
               tipo={tipoPeriodo}
               onTipoChange={setTipoPeriodo}
               onChange={(periodo) => {
-                if (periodo.dataInicio) setDataInicio(periodo.dataInicio);
-                if (periodo.dataFim) setDataFim(periodo.dataFim);
+                setPeriodo(periodo.dataInicio, periodo.dataFim);
               }}
             />
           </Box>
@@ -134,8 +132,9 @@ export default function FiltrosRelatorio({ dataInicio, setDataInicio, dataFim, s
               startDate={dataInicio || null}
               endDate={dataFim || null}
               onChange={(start, end) => {
-                if (start) setDataInicio(start);
-                if (end) setDataFim(end);
+                if (start && end) {
+                  setPeriodo(start, end);
+                }
               }}
             />
           </Grid>

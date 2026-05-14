@@ -88,6 +88,8 @@ export interface RawDadosBrutosCategoria {
   valorRealizado: number;
   valorAgendado: number;
   valorPlanejado: number;
+  origemTipo: string;
+  mediaMensal: number;
 }
 
 export interface RawTotaisMetas {
