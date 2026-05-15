@@ -12,6 +12,7 @@ export interface DetalheRelatorio {
   tipo: "RECEITA" | "DESPESA" | "META";
   valorPlanejado: number;
   valorRealizado: number;
+  valorAgendado: number;
   restante: number;
   mediaMensal: number;
   isProjecao: boolean;
@@ -87,6 +88,7 @@ export interface RawDadosBrutosCategoria {
   valorPlanejado: number;
   origemTipo: string;
   mediaMensal: number;
+  itemCreatedAt: Date;
 }
 
 export interface RawTotaisMetas {

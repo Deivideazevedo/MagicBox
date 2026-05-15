@@ -7,6 +7,12 @@ import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
+// Função auxiliar para contar meses distintos entre duas datas
+const contarMesesNoPeriodo = (inicio: Date, fim: Date) => {
+  if (inicio > fim) return 0;
+  return (fim.getFullYear() - inicio.getFullYear()) * 12 + (fim.getMonth() - inicio.getMonth()) + 1;
+};
+
 export const relatoriosService = {
   async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
     const [dadosBrutos, dadosMetasCompletos] = await Promise.all([
@@ -32,19 +38,38 @@ export const relatoriosService = {
 
       const categoria = categoriasMap.get(db.categoriaId)!;
 
-      let planejado = db.valorAgendado > 0 ? db.valorAgendado : (db.origemTipo === 'FIXA' ? db.valorPlanejado : 0);
+      // Cálculo de meses ativos dentro do período (desde a criação do item até o fim do período)
+      const dataInicioEfetiva = db.itemCreatedAt > dataInicio ? db.itemCreatedAt : dataInicio;
+      const mesesAtivos = contarMesesNoPeriodo(dataInicioEfetiva, dataFim);
+
+      // Se for FIXA, o planejado é o valor mensal acumulado pelos meses ativos no período
+      // Caso contrário, usa o valor agendado (ou o valor planejado unitário se for agendamento)
+      let planejado = db.origemTipo === 'FIXA' 
+        ? (db.valorPlanejado * mesesAtivos) 
+        : (db.valorAgendado > 0 ? db.valorAgendado : 0);
+
+      // Se houver agendamentos manuais que superam a projeção fixa, priorizamos o agendamento
+      if (db.origemTipo === 'FIXA' && db.valorAgendado > Math.abs(planejado)) {
+         planejado = db.valorAgendado;
+      }
+
       let realizado = db.valorRealizado;
       let mediaMensal = db.mediaMensal;
 
       // Se for despesa, tanto o previsto quanto o realizado devem ser negativos (débitos)
       if (db.itemTipo === 'DESPESA') {
-        if (planejado > 0) planejado = -planejado;
-        if (realizado > 0) realizado = -realizado;
-        if (mediaMensal > 0) mediaMensal = -mediaMensal;
+        planejado = -Math.abs(planejado);
+        realizado = -Math.abs(realizado);
+        mediaMensal = -Math.abs(mediaMensal);
+      } else {
+        planejado = Math.abs(planejado);
+        realizado = Math.abs(realizado);
+        mediaMensal = Math.abs(mediaMensal);
       }
 
       // Diferença = Realizado - Planejado (impacto no saldo)
       const restante = realizado - planejado;
+      const agendadoSinalizado = db.itemTipo === 'DESPESA' ? -Math.abs(db.valorAgendado) : Math.abs(db.valorAgendado);
 
       const detalhe: DetalheRelatorio = {
         id: db.itemId,
@@ -52,6 +77,7 @@ export const relatoriosService = {
         tipo: db.itemTipo,
         valorPlanejado: planejado,
         valorRealizado: realizado,
+        valorAgendado: agendadoSinalizado,
         restante,
         mediaMensal,
         isProjecao: db.origemTipo === 'FIXA' && db.valorAgendado === 0 && db.valorRealizado === 0 && db.valorPlanejado > 0,
@@ -77,6 +103,7 @@ export const relatoriosService = {
         tipo: 'META' as const,
         valorPlanejado: planejado,
         valorRealizado: realizado,
+        valorAgendado: realizado, // Metas usam o realizado como base para visão não projetada
         restante,
         mediaMensal: -Math.abs(m.mediaMensal),
         isProjecao: false,

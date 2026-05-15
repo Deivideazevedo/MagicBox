@@ -216,12 +216,24 @@ export function CustomTable({
   const dataFiltrada = useMemo(() => {
     return data
       .map((cat) => {
-        const detalhesFiltrados = cat.detalhes.filter((d) => {
-          const matchesProjecao = incluirProjecao ? true : !d.isProjecao;
-          const matchesTipo =
-            tiposFiltro.length === 0 || tiposFiltro.includes(d.tipo);
-          return matchesProjecao && matchesTipo;
-        });
+        const detalhesFiltrados = cat.detalhes
+          .map((d) => {
+            if (!incluirProjecao && d.tipo !== "META") {
+              const novoPlanejado = d.valorAgendado;
+              return {
+                ...d,
+                valorPlanejado: novoPlanejado,
+                restante: d.valorRealizado - novoPlanejado,
+              };
+            }
+            return d;
+          })
+          .filter((d) => {
+            const matchesProjecao = incluirProjecao ? true : !d.isProjecao;
+            const matchesTipo =
+              tiposFiltro.length === 0 || tiposFiltro.includes(d.tipo);
+            return matchesProjecao && matchesTipo;
+          });
 
         return {
           ...cat,

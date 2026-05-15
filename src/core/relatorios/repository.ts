@@ -25,11 +25,12 @@ export const relatoriosRepository = {
               ORDER BY date_trunc('month', l2.data) DESC
               LIMIT 12
             ) s
-          ), 0)::float as media_mensal
+          ), 0)::float as media_mensal,
+          r."createdAt"
         FROM receita r
         LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL AND r.status = 'A'
-        GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado", r.tipo
+        GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado", r.tipo, r."createdAt"
         
         UNION ALL
         
@@ -50,11 +51,12 @@ export const relatoriosRepository = {
               ORDER BY date_trunc('month', l2.data) DESC
               LIMIT 12
             ) s
-          ), 0)::float as media_mensal
+          ), 0)::float as media_mensal,
+          d."createdAt"
         FROM despesa d
         LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL AND d.status = 'A'
-        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo
+        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt"
       )
       SELECT 
         c.id as "categoriaId", c.nome as "categoriaNome", c.icone as "categoriaIcone", c.cor as "categoriaCor", d.tipo as "categoriaTipo",
@@ -63,7 +65,8 @@ export const relatoriosRepository = {
         d.planejado as "valorAgendado",
         d.estimado as "valorPlanejado",
         d."origemTipo",
-        d.media_mensal as "mediaMensal"
+        d.media_mensal as "mediaMensal",
+        d."createdAt" as "itemCreatedAt"
       FROM categorias_base c
       INNER JOIN detalhes d ON d."categoriaId" = c.id
       ORDER BY c.nome, d.nome;
