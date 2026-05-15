@@ -14,7 +14,7 @@ type HookCPFFieldProps<TFieldValues extends FieldValues> =
     Omit<TextFieldProps, "name" | "value" | "onChange" | "onBlur"> & {
       showMask?: boolean;
       shrinkLabel?: boolean;
-      maskOptions?: MaskOptions; 
+      maskOptions?: MaskOptions;
     };
 
 export function HookCPFField<TFieldValues extends FieldValues>({
@@ -49,7 +49,10 @@ export function HookCPFField<TFieldValues extends FieldValues>({
   // Atualiza o campo quando o valor vem da API ou setValue
   useEffect(() => {
     if (inputRef.current && field.value !== previousValueRef.current) {
-      console.log("Atualizando campo CPF com valor formatado:", formattedValue);
+      console.warn(
+        "Atualizando campo CPF com valor formatado:",
+        formattedValue,
+      );
 
       // Atualiza o valor do input diretamente
       inputRef.current.value = formattedValue;
@@ -73,7 +76,7 @@ export function HookCPFField<TFieldValues extends FieldValues>({
       field.onChange(unformattedValue);
     }
     field.onBlur();
-  }
+  };
 
   return (
     <CustomTextField

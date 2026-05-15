@@ -794,7 +794,6 @@ const DetalhesDividaModal = ({
                                     const temObservacao = !!(
                                       l.observacao || l.observacaoAutomatica
                                     );
-                                    console.log("l.data", l.data);
 
                                     return (
                                       <Box

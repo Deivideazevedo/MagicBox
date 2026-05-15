@@ -5,17 +5,22 @@ import Grid from "@mui/material/Grid";
 import { signIn } from "next-auth/react";
 import CustomSocialButton from "@/app/components/forms/theme-elements/CustomSocialButton";
 
+import { useSearchParams } from "next/navigation";
+
 interface AuthSocialButtonsProps {
   title?: string;
 }
 
 const AuthSocialButtons = () => {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
   const handleGoogleSignIn = async () => {
-    await signIn("google");
+    await signIn("google", { callbackUrl });
   };
 
   const handleMicrosoftSignIn = async () => {
-    await signIn("azure-ad");
+    await signIn("azure-ad", { callbackUrl });
   };
 
   return (

@@ -5,6 +5,7 @@ import {
   Alert,
   Box,
   Collapse,
+  CircularProgress,
   IconButton,
   LinearProgress,
   Paper,
@@ -58,6 +59,9 @@ interface CustomTableProps {
   /** Estado de loading */
   isLoading?: boolean;
 
+  /** Estado de fetching */
+  isFetching?: boolean;
+
   /** Mensagem customizada quando não houver dados */
   emptyMessage?: string;
 }
@@ -74,6 +78,7 @@ export function CustomTable({
   actions,
   pagination,
   isLoading = false,
+  isFetching = false,
   emptyMessage = 'Nenhum dado foi encontrado',
 }: CustomTableProps) {
   // 🔍 Hook de filtro (interno)
@@ -209,14 +214,37 @@ export function CustomTable({
                 <Typography fontWeight={700}>Ações</Typography>
               </TableCell>
             </TableRow>
+
+            {isFetching && !isLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  sx={{
+                    p: 0,
+                    border: 0,
+                    position: 'relative',
+                  }}
+                >
+                  <LinearProgress
+                    sx={{
+                      height: 5,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
 
           {/* Loading bar */}
           {isLoading && (
             <TableBody>
               <TableRow>
-                <TableCell colSpan={totalColumns} sx={{ p: 0, border: 0 }}>
-                  <LinearProgress />
+                <TableCell colSpan={totalColumns} align="center" sx={{ py: 3 }}>
+                  <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
             </TableBody>

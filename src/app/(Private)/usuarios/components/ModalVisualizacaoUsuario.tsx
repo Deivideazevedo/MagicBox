@@ -102,7 +102,6 @@ export default function ModalVisualizacaoUsuario({
       setEditMode(true);
     }
   };
-  console.log('user', user);
 
   if (!user) return null;
 

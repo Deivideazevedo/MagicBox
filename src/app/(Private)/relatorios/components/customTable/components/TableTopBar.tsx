@@ -58,7 +58,7 @@ export function TableTopBar({
 }: TableTopBarProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [topBarOpen, setTopBarOpen] = useState(false);
+  const [topBarOpen, setTopBarOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
 
   // Hook para controlar animação de rotação do ícone de reset
@@ -92,7 +92,13 @@ export function TableTopBar({
       }}
     >
       {/* ESQUERDA */}
-      <Stack direction="row" spacing={isMobile ? 0.5 : 1} alignItems="center" pt={1.2} sx={{ flexGrow: 1, minWidth: 'max-content' }}>
+      <Stack
+        direction="row"
+        spacing={isMobile ? 0.5 : 1}
+        alignItems="center"
+        pt={1.2}
+        sx={{ flexGrow: 1, minWidth: "max-content" }}
+      >
         <Tooltip title={topBarOpen ? "Fechar menu" : "Abrir menu"} arrow>
           <IconButton
             onClick={() => setTopBarOpen(!topBarOpen)}
@@ -140,7 +146,7 @@ export function TableTopBar({
         sx={{
           flexGrow: searchOpen ? 1 : 0,
           justifyContent: "flex-end",
-          minWidth: searchOpen ? (isMobile ? '100%' : 200) : 'auto'
+          minWidth: searchOpen ? (isMobile ? "100%" : 200) : "auto",
         }}
       >
         <Tooltip title={!searchOpen ? "Procurar" : ""} arrow>

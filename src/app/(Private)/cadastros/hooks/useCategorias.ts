@@ -111,7 +111,6 @@ export const useCategorias = ({
         icone: categoria.icone,
         cor: categoria.cor,
       };
-      console.log('categoria3', categoria);
       setRow(categoria);
       reset(data);
 

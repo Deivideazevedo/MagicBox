@@ -128,9 +128,6 @@ export const useReceitas = ({
     defaultValues,
   });
 
-  console.log('errors', errors);
-  console.log('Number(session?.user?.id)', Number(session?.user?.id))
-
   const [createReceita, { isLoading: isCreating }] =
     useCreateReceitaMutation();
   const [updateReceita, { isLoading: isUpdating }] =

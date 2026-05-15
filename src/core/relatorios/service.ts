@@ -9,10 +9,9 @@ import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 export const relatoriosService = {
   async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
-    const [dadosBrutos, totalMetas, metasComProgresso] = await Promise.all([
+    const [dadosBrutos, dadosMetasCompletos] = await Promise.all([
       relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim) as Promise<RawDadosBrutosCategoria[]>,
-      relatoriosRepository.obterTotaisMetas(userId, dataInicio, dataFim) as Promise<RawTotaisMetas[]>,
-      relatoriosRepository.obterMetasComProgresso(userId) as Promise<RawMetasProgresso[]>
+      relatoriosRepository.obterDadosCompletosMetas(userId, dataInicio, dataFim)
     ]);
 
     const categoriasMap = new Map<number, CategoriaRelatorio>();
@@ -66,11 +65,12 @@ export const relatoriosService = {
     });
 
     // Metas
-    const metasDetalhes: DetalheRelatorio[] = metasComProgresso.map((m) => {
-      const planejado = m.planejado;
-      const realizado = m.realizado;
-      const restante = realizado - planejado;
-      
+    const metasDetalhes: DetalheRelatorio[] = dadosMetasCompletos.detalhes.map((m: RawMetasProgresso) => {
+      const planejado = -Math.abs(m.planejado);
+      const realizado = -Math.abs(m.realizado);
+      // Para metas (tratadas como dívida), se planejado -100 e realizado -20, restante = -80 (Red)
+      const restante = planejado - realizado;
+
       return {
         id: m.id,
         nome: m.nome,
@@ -78,7 +78,7 @@ export const relatoriosService = {
         valorPlanejado: planejado,
         valorRealizado: realizado,
         restante,
-        mediaMensal: m.mediaMensal,
+        mediaMensal: -Math.abs(m.mediaMensal),
         isProjecao: false,
         status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : "PENDENTE",
       };
@@ -102,7 +102,7 @@ export const relatoriosService = {
     // Resumo
     const totalReceitasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
     const totalDespesasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
-    const totalMetasPagas = totalMetas?.[0]?.valorAlcancadoMeta || 0;
+    const totalMetasPagas = dadosMetasCompletos.totais?.valorAlcancadoMeta || 0;
 
     const totalReceitasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
     const totalDespesasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);

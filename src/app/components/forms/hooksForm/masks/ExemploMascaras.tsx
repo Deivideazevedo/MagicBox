@@ -21,7 +21,7 @@ interface ExemploFormData {
   valor: number;
   taxa: number;
   quantidade: number;
-  
+
   // Campos de máscara
   cpf: string;
   cnpj: string;
@@ -51,7 +51,7 @@ export function ExemploMascaras() {
   });
 
   const onSubmit = (data: ExemploFormData) => {
-    console.log("Dados do formulário:", data);
+    console.warn("Dados do formulário:", data);
     alert(JSON.stringify(data, null, 2));
   };
 
@@ -107,11 +107,7 @@ export function ExemploMascaras() {
             }}
           />
 
-          <HookCNPJField
-            name="cnpj"
-            control={control}
-            label="CNPJ"
-          />
+          <HookCNPJField name="cnpj" control={control} label="CNPJ" />
 
           {/* Seção: Endereço */}
           <Typography variant="h6" sx={{ mt: 3 }}>
@@ -167,11 +163,7 @@ export function ExemploMascaras() {
             }}
           />
 
-          <HookTimeField
-            name="horario"
-            control={control}
-            label="Horário"
-          />
+          <HookTimeField name="horario" control={control} label="Horário" />
 
           {/* Seção: Pagamento */}
           <Typography variant="h6" sx={{ mt: 3 }}>

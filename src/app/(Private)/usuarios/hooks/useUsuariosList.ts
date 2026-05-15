@@ -139,7 +139,8 @@ export function useUsuariosList() {
 
   return {
     usuarios,
-    isLoading: isLoading || isFetching,
+    isLoading,
+    isFetching,
     isUpdating: isUpdating || isDeletingBulk,
     page: filtros.page || 0,
     pageSize: filtros.limit || 10,

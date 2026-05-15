@@ -14,6 +14,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  LinearProgress,
   Tooltip,
   Typography,
   alpha,
@@ -252,6 +253,7 @@ interface CustomTableProps {
 
   /** Estado de loading */
   isLoading?: boolean;
+  isFetching?: boolean;
 
   /** Mensagem customizada quando não houver dados */
   emptyMessage?: string;
@@ -277,6 +279,7 @@ export function CustomTable({
   actions,
   pagination,
   isLoading = false,
+  isFetching = false,
   emptyMessage = "Nenhum dado foi encontrado",
   onSelectionChange,
   onBulkDelete,
@@ -419,6 +422,29 @@ export function CustomTable({
                 <Typography fontWeight={700}>Ações</Typography>
               </TableCell>
             </TableRow>
+
+            {isFetching && !isLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  sx={{
+                    p: 0,
+                    border: 0,
+                    position: "relative",
+                  }}
+                >
+                  <LinearProgress
+                    sx={{
+                      height: 5,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
 
           {/* Loading indicator */}

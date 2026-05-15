@@ -17,6 +17,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  LinearProgress,
   TablePagination,
   TableRow,
   Typography,
@@ -330,10 +331,33 @@ export function CustomTable({
                 </TableCell>
               ))}
             </TableRow>
+
+            {isFetching && !isLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  sx={{
+                    p: 0,
+                    border: 0,
+                    position: "relative",
+                  }}
+                >
+                  <LinearProgress
+                    sx={{
+                      height: 5,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
-            {isLoading || isFetching ? (
+            {isLoading ? (
               <TableRow>
                 <TableCell colSpan={totalColumns} align="center">
                   <CircularProgress size={40} />

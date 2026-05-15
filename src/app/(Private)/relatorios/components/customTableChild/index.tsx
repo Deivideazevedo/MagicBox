@@ -38,10 +38,15 @@ import { IColumnProps } from "./utils/renderColumn";
 // ==================== COLUNAS DINÂMICAS ====================
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    value,
+  );
 
 const formatDelta = (value: number) => {
-  const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Math.abs(value));
+  const formatted = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Math.abs(value));
   if (value > 0) return `+${formatted}`;
   if (value < 0) return `-${formatted}`;
   return formatted;
@@ -95,7 +100,13 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.valorPlanejado,
     render: (row) => (
-      <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.valorPlanejado)}</Typography>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{ whiteSpace: "nowrap" }}
+      >
+        {formatCurrency(row.valorPlanejado)}
+      </Typography>
     ),
   },
   {
@@ -104,7 +115,13 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.valorRealizado)}</Typography>
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        sx={{ whiteSpace: "nowrap" }}
+      >
+        {formatCurrency(row.valorRealizado)}
+      </Typography>
     ),
   },
   {
@@ -117,7 +134,13 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
         variant="body2"
         fontWeight={700}
         sx={{ whiteSpace: "nowrap" }}
-        color={row.restante > 0 ? "success.main" : row.restante < 0 ? "error.main" : "textSecondary"}
+        color={
+          row.restante > 0
+            ? "success.main"
+            : row.restante < 0
+              ? "error.main"
+              : "textSecondary"
+        }
       >
         {formatDelta(row.restante)}
       </Typography>
@@ -129,7 +152,13 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.mediaMensal,
     render: (row) => (
-      <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: "nowrap" }}>{formatCurrency(row.mediaMensal)}</Typography>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{ whiteSpace: "nowrap" }}
+      >
+        {formatCurrency(row.mediaMensal)}
+      </Typography>
     ),
   },
 ];
@@ -188,12 +217,9 @@ export const CustomTableChild = memo(function CustomTableChild({
 
   return (
     <Box sx={{ mx: 0, mb: 0 }}>
-
-
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell padding="checkbox" sx={{ width: 48 }} />
             <TableCell padding="checkbox" sx={{ width: 48 }} />
             {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
               <TableCell
@@ -206,8 +232,17 @@ export const CustomTableChild = memo(function CustomTableChild({
                   "&:hover .sort-icon": { opacity: getSortIcon(key) ? 1 : 0.4 },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: align === "right" ? "flex-end" : "flex-start" }}>
-                  <Typography variant="caption" fontWeight={700}>{label}</Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent:
+                      align === "right" ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <Typography variant="caption" fontWeight={700}>
+                    {label}
+                  </Typography>
                   <MultiSortIcon sortInfo={getSortIcon(key)} />
                 </Box>
               </TableCell>
@@ -218,20 +253,82 @@ export const CustomTableChild = memo(function CustomTableChild({
           {sortedData.length === 0 ? (
             <TableRow>
               <TableCell colSpan={totalColumns} align="center" sx={{ py: 2 }}>
-                <Typography variant="body2" color="textSecondary">Nenhum item encontrado</Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Nenhum item encontrado
+                </Typography>
               </TableCell>
             </TableRow>
           ) : (
-            sortedData.map((item) => (
-              <ChildRow
-                key={`${item.tipo}-${item.id}`}
-                item={item}
-                isSelected={selectedIds.has(`${item.tipo}-${item.id}`)}
-                isHistoricoActive={itemSelecionadoParaHistorico === `${item.tipo}-${item.id}`}
-                onToggle={onToggle}
-                onSelectItem={onSelectItem}
-              />
-            ))
+            sortedData.map((item) => {
+              const id = `${item.tipo}-${item.id}`;
+              const isSelected = selectedIds.has(id);
+              const isHistoricoActive = itemSelecionadoParaHistorico === id;
+
+              return (
+                <TableRow
+                  key={id}
+                  hover
+                  selected={isHistoricoActive}
+                  onClick={() => {
+                    onToggle(id);
+                  }}
+                  sx={{
+                    cursor: "pointer",
+                    "& td": {
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    },
+                    "&:last-child td": { borderBottom: 0 },
+                    ...(isSelected && {
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    }),
+                    ...(isHistoricoActive && {
+                      bgcolor: alpha(theme.palette.info.main, 0.08),
+                      borderLeft: `3px solid ${theme.palette.info.main}`,
+                    }),
+                  }}
+                >
+                  <TableCell
+                    padding="checkbox"
+                    sx={{ width: 48 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => onToggle(id)}
+                      size="small"
+                      sx={{ "& .MuiSvgIcon-root": { fontSize: 18 } }}
+                    />
+                  </TableCell>
+                  {TABLE_COLUMNS.map((c) => {
+                    const align = c.align || "left";
+                    return (
+                      <TableCell key={String(c.key)} align={align}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent:
+                              align === "right"
+                                ? "flex-end"
+                                : align === "left"
+                                  ? "flex-start"
+                                  : "center",
+                          }}
+                        >
+                          {c.render
+                            ? c.render(item)
+                            : String(
+                                item[c.key as keyof DetalheRelatorio] ?? "-",
+                              )}
+                          <MultiSortIcon />
+                        </Box>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>
@@ -241,78 +338,4 @@ export const CustomTableChild = memo(function CustomTableChild({
 
 CustomTableChild.displayName = "CustomTableChild";
 
-// ==================== ROW FILHA MEMOIZADA ====================
 
-interface ChildRowProps {
-  item: DetalheRelatorio;
-  isSelected: boolean;
-  isHistoricoActive: boolean;
-  onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
-  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
-}
-
-const ChildRow = memo(function ChildRow({
-  item,
-  isSelected,
-  isHistoricoActive,
-  onToggle,
-  onSelectItem,
-}: ChildRowProps) {
-  const theme = useTheme();
-
-  return (
-    <TableRow
-      hover
-      selected={isHistoricoActive}
-      onClick={() => {
-        onToggle(`${item.tipo}-${item.id}`);
-      }}
-      sx={{
-        cursor: "pointer",
-        "& td": { borderBottom: "1px solid", borderColor: "divider" },
-        "&:last-child td": { borderBottom: 0 },
-        ...(isSelected && { bgcolor: alpha(theme.palette.primary.main, 0.08) }),
-        ...(isHistoricoActive && {
-          bgcolor: alpha(theme.palette.info.main, 0.08),
-          borderLeft: `3px solid ${theme.palette.info.main}`,
-        }),
-      }}
-    >
-      <TableCell padding="checkbox" sx={{ width: 48 }} />
-      <TableCell
-        padding="checkbox"
-        sx={{ width: 48 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Checkbox
-          checked={isSelected}
-          onChange={() => onToggle(`${item.tipo}-${item.id}`)}
-          size="small"
-          sx={{ '& .MuiSvgIcon-root': { fontSize: 18 } }}
-        />
-      </TableCell>
-      {TABLE_COLUMNS.map((c) => {
-        const align = c.align || "left";
-        return (
-          <TableCell key={String(c.key)} align={align}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent:
-                  align === "right"
-                    ? "flex-end"
-                    : align === "left"
-                      ? "flex-start"
-                      : "center",
-              }}
-            >
-              {c.render ? c.render(item) : String(item[c.key as keyof DetalheRelatorio] ?? "-")}
-              <MultiSortIcon />
-            </Box>
-          </TableCell>
-        );
-      })}
-    </TableRow>
-  );
-});

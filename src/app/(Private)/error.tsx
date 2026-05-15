@@ -25,7 +25,6 @@ export default function PrivateError({ error, reset }: PrivateErrorProps) {
     // Loga o erro (pode enviar para serviço de monitoramento)
     console.error("Private route error:", error);
   }, [error]);
-  console.log("error", Object.keys(error));
 
   return (
     <Box

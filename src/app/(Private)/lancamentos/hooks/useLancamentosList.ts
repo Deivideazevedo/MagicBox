@@ -164,7 +164,8 @@ export function useLancamentosList({
     // Dados
     lancamentos,
     totais,
-    isLoading: isLoading || isFetching,
+    isLoading,
+    isFetching,
 
     // Paginação
     page: filtros.page || 0,

@@ -38,7 +38,7 @@ function MeuFormulario() {
   ];
 
   const onSubmit = (data: FormData) => {
-    console.log(data); // { categoriaId: "1" }
+    console.warn(data); // { categoriaId: "1" }
   };
 
   return (
@@ -219,7 +219,7 @@ Verifique se `getOptionValue` está retornando o valor correto:
 
 ```tsx
 getOptionValue={(option) => {
-  console.log("Valor extraído:", option.id);
+  console.warn("Valor extraído:", option.id);
   return option.id;
 }}
 ```
@@ -230,7 +230,7 @@ Verifique se `isOptionEqualToValue` está comparando corretamente:
 
 ```tsx
 isOptionEqualToValue={(option, value) => {
-  console.log("Comparando:", option, value);
+  console.warn("Comparando:", option, value);
   return option.id === value.id;
 }}
 ```

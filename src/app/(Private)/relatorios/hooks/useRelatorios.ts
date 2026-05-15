@@ -18,17 +18,13 @@ export function useRelatorios() {
       dataFim: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
     };
   });
-  const [limit] = useState(999); // Exibição acumulativa, sem paginação real no UI
-
   // Seleção via composite key: "TIPO-ID"
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // RTK Query
-  const { data, isLoading: loading, error } = useGetRelatorioQuery({
+  const { data, isLoading: loading, error, isFetching } = useGetRelatorioQuery({
     dataInicio: datas.dataInicio,
     dataFim: datas.dataFim,
-    page: 0,
-    limit,
   });
 
   // Switch de projeções — filtro client-side
@@ -130,6 +126,7 @@ export function useRelatorios() {
   return {
     data,
     loading,
+    isFetching,
     error,
     dataInicio: datas.dataInicio,
     dataFim: datas.dataFim,

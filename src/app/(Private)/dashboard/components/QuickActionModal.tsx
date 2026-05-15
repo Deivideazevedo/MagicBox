@@ -40,15 +40,15 @@ interface FormData {
   // Campos comuns
   observacao: string;
   valor?: number;
-  
+
   // Campos específicos de despesa
   vencimento?: string;
   categoria?: string;
-  
+
   // Campos específicos de conta
   tipo?: string;
   banco?: string;
-  
+
   // Campos específicos de lançamento
   data?: string;
   contaId?: string;
@@ -56,11 +56,21 @@ interface FormData {
   tipoTransacao?: "receita" | "despesa";
 }
 
-const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActionModalProps) => {
+const QuickActionModal = ({
+  open,
+  onClose,
+  action,
+  onActionComplete,
+}: QuickActionModalProps) => {
   const [step, setStep] = useState<"select" | "form" | "success">("select");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>();
 
   const getActionConfig = () => {
     switch (action) {
@@ -100,14 +110,13 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
-    
+
     // Simular chamada para API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log("Dados enviados:", data);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     setIsSubmitting(false);
     setStep("success");
-    
+
     // Fechar modal após 2 segundos
     setTimeout(() => {
       handleClose();
@@ -149,7 +158,13 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                   name="valor"
                   control={control}
                   defaultValue={0}
-                  rules={{ required: "Valor é obrigatório", min: { value: 0.01, message: "Valor deve ser maior que zero" } }}
+                  rules={{
+                    required: "Valor é obrigatório",
+                    min: {
+                      value: 0.01,
+                      message: "Valor deve ser maior que zero",
+                    },
+                  }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -160,7 +175,9 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                       error={!!errors.valor}
                       helperText={errors.valor?.message}
                       InputProps={{
-                        startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+                        startAdornment: (
+                          <Typography sx={{ mr: 1 }}>R$</Typography>
+                        ),
                       }}
                     />
                   )}
@@ -262,7 +279,9 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                       type="number"
                       variant="outlined"
                       InputProps={{
-                        startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+                        startAdornment: (
+                          <Typography sx={{ mr: 1 }}>R$</Typography>
+                        ),
                       }}
                     />
                   )}
@@ -295,7 +314,13 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                   name="valor"
                   control={control}
                   defaultValue={0}
-                  rules={{ required: "Valor é obrigatório", min: { value: 0.01, message: "Valor deve ser maior que zero" } }}
+                  rules={{
+                    required: "Valor é obrigatório",
+                    min: {
+                      value: 0.01,
+                      message: "Valor deve ser maior que zero",
+                    },
+                  }}
                   render={({ field }) => (
                     <TextField
                       {...field}
@@ -306,7 +331,9 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                       error={!!errors.valor}
                       helperText={errors.valor?.message}
                       InputProps={{
-                        startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+                        startAdornment: (
+                          <Typography sx={{ mr: 1 }}>R$</Typography>
+                        ),
                       }}
                     />
                   )}
@@ -316,7 +343,7 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                 <Controller
                   name="data"
                   control={control}
-                  defaultValue={new Date().toISOString().split('T')[0]}
+                  defaultValue={new Date().toISOString().split("T")[0]}
                   rules={{ required: "Data é obrigatória" }}
                   render={({ field }) => (
                     <TextField
@@ -346,7 +373,7 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
             disabled={isSubmitting}
             sx={{
               background: `linear-gradient(45deg, ${config.color} 30%, ${config.color}AA 90%)`,
-              '&:hover': {
+              "&:hover": {
                 background: `linear-gradient(45deg, ${config.color}DD 30%, ${config.color}77 90%)`,
               },
             }}
@@ -386,7 +413,7 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
           <IconX />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent sx={{ pb: 3 }}>
         {step === "select" && (
           <Box textAlign="center">
@@ -406,15 +433,15 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
             >
               {config.icon}
             </Box>
-            
+
             <Typography variant="h4" fontWeight={600} gutterBottom>
               {config.title}
             </Typography>
-            
+
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               {config.description}
             </Typography>
-            
+
             <Button
               variant="contained"
               size="large"
@@ -424,7 +451,7 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                 borderRadius: 3,
                 px: 4,
                 py: 1.5,
-                '&:hover': {
+                "&:hover": {
                   background: `linear-gradient(45deg, ${config.color}DD 30%, ${config.color}77 90%)`,
                 },
               }}
@@ -460,9 +487,9 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
                 </Typography>
               </Box>
             </Box>
-            
+
             <Divider sx={{ mb: 3 }} />
-            
+
             {renderForm()}
           </Box>
         )}
@@ -485,11 +512,11 @@ const QuickActionModal = ({ open, onClose, action, onActionComplete }: QuickActi
             >
               <IconCheck size={48} />
             </Box>
-            
+
             <Typography variant="h4" fontWeight={600} gutterBottom>
               Sucesso! 🎉
             </Typography>
-            
+
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               {action === "despesa" && "Despesa cadastrada com sucesso!"}
               {action === "conta" && "Conta criada com sucesso!"}

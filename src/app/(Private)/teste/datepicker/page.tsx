@@ -24,25 +24,25 @@ type FormData = {
   // Seção 1: Básicos
   dataSemValidacao: string;
   dataComValidacao: string;
-  
+
   // Seção 2: DateTime e Time
   dataHora: string;
   horario: string;
-  
+
   // Seção 3: Seletores Rápidos
   mes: string;
   ano: string;
   mesAno: string;
-  
+
   // Seção 4: Com Restrições
   dataFutura: string;
   dataPassada: string;
   dataIntervalo: string;
-  
+
   // Seção 5: Intervalo de Datas
   dataInicio: string;
   dataFim: string;
-  
+
   // Seção 6: ActionBar Customizado
   dataTodasAcoes: string;
   dataSemAcoes: string;
@@ -73,7 +73,6 @@ export default function TesteDatePickerPage() {
   const [submittedData, setSubmittedData] = useState<FormData | null>(null);
 
   const onSubmit = (data: FormData) => {
-    console.log("Dados do formulário:", data);
     setSubmittedData(data);
   };
 
@@ -85,12 +84,12 @@ export default function TesteDatePickerPage() {
         Teste de DatePickers - React Hook Form
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
-        Exemplos completos de todos os componentes DatePicker integrados com React Hook Form
+        Exemplos completos de todos os componentes DatePicker integrados com
+        React Hook Form
       </Typography>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
-          
           {/* Seção 1: Básicos */}
           <Grid item xs={12}>
             <Card>
@@ -101,7 +100,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Formato de exibição: dd/MM/yyyy | Retorna: YYYY-MM-DD
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <HookDatePicker
@@ -110,7 +109,7 @@ export default function TesteDatePickerPage() {
                       label="Data sem Validação"
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <HookDatePicker
                       name="dataComValidacao"
@@ -133,7 +132,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="h6" gutterBottom>
                   2. DateTime e Time Pickers
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <HookDateTimePicker
@@ -144,11 +143,16 @@ export default function TesteDatePickerPage() {
                         required: "Data e hora são obrigatórias",
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Formato: dd/MM/yyyy HH:mm | Retorna: YYYY-MM-DDTHH:mm
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <HookTimePicker
                       name="horario"
@@ -158,7 +162,12 @@ export default function TesteDatePickerPage() {
                         required: "Horário é obrigatório",
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Formato: HH:mm | Retorna: HH:mm
                     </Typography>
                   </Grid>
@@ -174,7 +183,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="h6" gutterBottom>
                   3. Seletores de Mês e Ano
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <HookMonthPicker
@@ -182,11 +191,16 @@ export default function TesteDatePickerPage() {
                       control={control}
                       label="Mês e Ano"
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Formato: MM/yyyy | Retorna: YYYY-MM-01
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookMonthPicker
                       name="mes"
@@ -194,18 +208,28 @@ export default function TesteDatePickerPage() {
                       label="Apenas Mês"
                       inputFormat="MMMM"
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Formato: MMMM (nome do mês) | Retorna: YYYY-MM-01
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookYearPicker
                       name="ano"
                       control={control}
                       label="Apenas Ano"
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Formato: yyyy | Retorna: YYYY-01-01
                     </Typography>
                   </Grid>
@@ -221,7 +245,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="h6" gutterBottom>
                   4. DatePickers com Restrições
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
@@ -234,7 +258,7 @@ export default function TesteDatePickerPage() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
                       name="dataPassada"
@@ -243,7 +267,7 @@ export default function TesteDatePickerPage() {
                       disableFuture
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
                       name="dataIntervalo"
@@ -265,7 +289,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="h6" gutterBottom>
                   5. Seleção de Intervalo (Data Início e Fim)
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <HookDatePicker
@@ -277,19 +301,23 @@ export default function TesteDatePickerPage() {
                       }}
                     />
                   </Grid>
-                  
+
                   <Grid item xs={12} md={6}>
                     <HookDatePicker
                       name="dataFim"
                       control={control}
                       label="Data de Fim"
-                      minDate={watchDataInicio ? new Date(watchDataInicio) : undefined}
+                      minDate={
+                        watchDataInicio ? new Date(watchDataInicio) : undefined
+                      }
                       rules={{
                         required: "Data de fim é obrigatória",
                         validate: (value) => {
                           if (!watchDataInicio || !value) return true;
-                          return new Date(value) >= new Date(watchDataInicio) || 
-                            "Data de fim deve ser maior ou igual à data de início";
+                          return (
+                            new Date(value) >= new Date(watchDataInicio) ||
+                            "Data de fim deve ser maior ou igual à data de início"
+                          );
                         },
                       }}
                     />
@@ -309,7 +337,7 @@ export default function TesteDatePickerPage() {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Ações disponíveis: today, clear, cancel, accept
                 </Typography>
-                
+
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
@@ -318,15 +346,20 @@ export default function TesteDatePickerPage() {
                       label="Todas as Ações"
                       componentsProps={{
                         actionBar: {
-                          actions: ['today', 'clear', 'cancel', 'accept'],
+                          actions: ["today", "clear", "cancel", "accept"],
                         },
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Actions: [today, clear, cancel, accept]
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
                       name="dataSemAcoes"
@@ -338,11 +371,16 @@ export default function TesteDatePickerPage() {
                         },
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Actions: [] (vazio)
                     </Typography>
                   </Grid>
-                  
+
                   <Grid item xs={12} md={4}>
                     <HookDatePicker
                       name="dataAcoesPersonalizadas"
@@ -350,11 +388,16 @@ export default function TesteDatePickerPage() {
                       label="Apenas Limpar e OK"
                       componentsProps={{
                         actionBar: {
-                          actions: ['clear', 'accept'],
+                          actions: ["clear", "accept"],
                         },
                       }}
                     />
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ mt: 1 }}
+                    >
                       Actions: [clear, accept]
                     </Typography>
                   </Grid>
@@ -435,11 +478,29 @@ export default function TesteDatePickerPage() {
             </Typography>
             <Typography variant="body2" component="div">
               <ul>
-                <li><strong>Formato de Retorno:</strong> Todos os componentes retornam strings no formato internacional (YYYY-MM-DD, YYYY-MM-DDTHH:mm, HH:mm) para facilitar o envio ao backend.</li>
-                <li><strong>Formato de Exibição:</strong> A exibição é sempre em formato brasileiro (dd/MM/yyyy, dd/MM/yyyy HH:mm) para melhor UX.</li>
-                <li><strong>Timezone:</strong> Utiliza timezone local (America/Bahia) para evitar problemas de deslocamento de datas.</li>
-                <li><strong>ActionBar:</strong> Todos os botões estão traduzidos para português (Hoje, Agora, Limpar, Cancelar, OK).</li>
-                <li><strong>Validação:</strong> Suporta todas as validações do React Hook Form (required, validate, etc.).</li>
+                <li>
+                  <strong>Formato de Retorno:</strong> Todos os componentes
+                  retornam strings no formato internacional (YYYY-MM-DD,
+                  YYYY-MM-DDTHH:mm, HH:mm) para facilitar o envio ao backend.
+                </li>
+                <li>
+                  <strong>Formato de Exibição:</strong> A exibição é sempre em
+                  formato brasileiro (dd/MM/yyyy, dd/MM/yyyy HH:mm) para melhor
+                  UX.
+                </li>
+                <li>
+                  <strong>Timezone:</strong> Utiliza timezone local
+                  (America/Bahia) para evitar problemas de deslocamento de
+                  datas.
+                </li>
+                <li>
+                  <strong>ActionBar:</strong> Todos os botões estão traduzidos
+                  para português (Hoje, Agora, Limpar, Cancelar, OK).
+                </li>
+                <li>
+                  <strong>Validação:</strong> Suporta todas as validações do
+                  React Hook Form (required, validate, etc.).
+                </li>
               </ul>
             </Typography>
           </CardContent>

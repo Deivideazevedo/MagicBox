@@ -58,6 +58,7 @@ function LancamentosPageContent() {
   const {
     lancamentos,
     isLoading,
+    isFetching,
     page,
     pageSize,
     totalRows,
@@ -206,6 +207,7 @@ function LancamentosPageContent() {
                       paginacao.mudarTamanho(parseInt(event.target.value, 10)),
                   }}
                   isLoading={isLoading}
+                  isFetching={isFetching}
                   emptyMessage="Nenhum lançamento foi encontrado"
                   onSelectionChange={onSelectionChange}
                   onBulkDelete={excluirHandlers.bulk}

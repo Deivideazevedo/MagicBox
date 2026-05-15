@@ -13,6 +13,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  LinearProgress,
   Typography,
   alpha,
   Avatar,
@@ -90,7 +91,7 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
             }}
           >
             {iconeStr &&
-              AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
+            AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
               AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS]
             ) : (
               <IconCategory />
@@ -102,7 +103,8 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
         </Stack>
       );
     },
-    filterValue: (row) => `${row.nome} ${row.detalhes.map(d => d.nome).join(" ")}`,
+    filterValue: (row) =>
+      `${row.nome} ${row.detalhes.map((d) => d.nome).join(" ")}`,
   },
   {
     key: "valorPlanejado",
@@ -110,7 +112,12 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.valorPlanejado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={600} color="textSecondary" sx={{ whiteSpace: "nowrap" }}>
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color="textSecondary"
+        sx={{ whiteSpace: "nowrap" }}
+      >
         {formatCurrency(row.valorPlanejado)}
       </Typography>
     ),
@@ -121,7 +128,11 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
     align: "right",
     sortValue: (row) => row.valorRealizado,
     render: (row) => (
-      <Typography variant="body2" fontWeight={700} sx={{ whiteSpace: "nowrap" }}>
+      <Typography
+        variant="body2"
+        fontWeight={700}
+        sx={{ whiteSpace: "nowrap" }}
+      >
         {formatCurrency(row.valorRealizado)}
       </Typography>
     ),
@@ -146,7 +157,10 @@ const TABLE_COLUMNS: IColumnProps<CategoriaRelatorio>[] = [
       >
         {(() => {
           const abs = Math.abs(row.restante);
-          const formatted = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(abs);
+          const formatted = new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(abs);
           if (row.restante > 0) return `+${formatted}`;
           if (row.restante < 0) return `-${formatted}`;
           return formatted;
@@ -165,6 +179,7 @@ interface CustomTableProps {
   onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
   itemSelecionadoParaHistorico: string | null;
   isLoading?: boolean;
+  isFetching?: boolean;
   tiposFiltro: string[];
   onToggleTipo: (tipo: string) => void;
   onResetFilters: () => void;
@@ -182,6 +197,7 @@ export function CustomTable({
   onSelectItem,
   itemSelecionadoParaHistorico,
   isLoading = false,
+  isFetching = false,
   tiposFiltro,
   onToggleTipo,
   onResetFilters,
@@ -202,7 +218,8 @@ export function CustomTable({
       .map((cat) => {
         const detalhesFiltrados = cat.detalhes.filter((d) => {
           const matchesProjecao = incluirProjecao ? true : !d.isProjecao;
-          const matchesTipo = tiposFiltro.length === 0 || tiposFiltro.includes(d.tipo);
+          const matchesTipo =
+            tiposFiltro.length === 0 || tiposFiltro.includes(d.tipo);
           return matchesProjecao && matchesTipo;
         });
 
@@ -238,16 +255,20 @@ export function CustomTable({
     resetSort();
     onToggleProjecao(true);
     onResetFilters();
-    setResetToggle(prev => prev + 1);
+    setResetToggle((prev) => prev + 1);
     setDrawerOpen(false);
   };
 
   const allVisibleIds = useMemo(() => {
-    return sortedData.flatMap(cat => cat.detalhes.map(d => `${d.tipo}-${d.id}`));
+    return sortedData.flatMap((cat) =>
+      cat.detalhes.map((d) => `${d.tipo}-${d.id}`),
+    );
   }, [sortedData]);
 
-  const isAllSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedIds.has(id));
-  const isSomeSelected = allVisibleIds.some(id => selectedIds.has(id));
+  const isAllSelected =
+    allVisibleIds.length > 0 &&
+    allVisibleIds.every((id) => selectedIds.has(id));
+  const isSomeSelected = allVisibleIds.some((id) => selectedIds.has(id));
   const isIndeterminate = isSomeSelected && !isAllSelected;
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,14 +297,23 @@ export function CustomTable({
         }
         label={
           <Stack direction="row" spacing={0.5} alignItems="center">
-            <IconBolt size={20} color={incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary} />
+            <IconBolt
+              size={20}
+              color={
+                incluirProjecao
+                  ? theme.palette.warning.main
+                  : theme.palette.text.secondary
+              }
+            />
             {!isMobile && (
               <Typography
                 variant="caption"
                 fontWeight={700}
                 sx={{
                   whiteSpace: "nowrap",
-                  color: incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary
+                  color: incluirProjecao
+                    ? theme.palette.warning.main
+                    : theme.palette.text.secondary,
                 }}
               >
                 Projeções
@@ -297,8 +327,8 @@ export function CustomTable({
           gap: 1,
           "& .MuiFormControlLabel-label": {
             display: "flex",
-            alignItems: "center"
-          }
+            alignItems: "center",
+          },
         }}
       />
     </Tooltip>
@@ -313,26 +343,34 @@ export function CustomTable({
         categorias: sortedData.length,
         itens: sortedData.reduce((acc, curr) => acc + curr.detalhes.length, 0),
         previsto: sortedData.reduce((acc, c) => acc + c.valorPlanejado, 0),
-        pago: sortedData.reduce((acc, c) => acc + c.valorRealizado, 0)
+        pago: sortedData.reduce((acc, c) => acc + c.valorRealizado, 0),
       };
     }
 
     // Se houver seleção, calculamos apenas sobre os selecionados
     // Pegamos todos os detalhes de todas as categorias filtradas e verificamos se estão selecionados
-    const allItems = dataFiltrada.flatMap(cat => cat.detalhes);
-    const filteredSelected = allItems.filter(item => selectedIds.has(`${item.tipo}-${item.id}`));
+    const allItems = dataFiltrada.flatMap((cat) => cat.detalhes);
+    const filteredSelected = allItems.filter((item) =>
+      selectedIds.has(`${item.tipo}-${item.id}`),
+    );
 
     // Categorias únicas entre os itens selecionados
     // Percorremos dataFiltrada e vemos quais categorias têm pelo menos um detalhe selecionado
-    const categoriesWithSelected = dataFiltrada.filter(cat =>
-      cat.detalhes.some(d => selectedIds.has(`${d.tipo}-${d.id}`))
+    const categoriesWithSelected = dataFiltrada.filter((cat) =>
+      cat.detalhes.some((d) => selectedIds.has(`${d.tipo}-${d.id}`)),
     );
 
     return {
       categorias: categoriesWithSelected.length,
       itens: filteredSelected.length,
-      previsto: filteredSelected.reduce((acc, item) => acc + item.valorPlanejado, 0),
-      pago: filteredSelected.reduce((acc, item) => acc + item.valorRealizado, 0)
+      previsto: filteredSelected.reduce(
+        (acc, item) => acc + item.valorPlanejado,
+        0,
+      ),
+      pago: filteredSelected.reduce(
+        (acc, item) => acc + item.valorRealizado,
+        0,
+      ),
     };
   }, [sortedData, selectedIds, dataFiltrada]);
 
@@ -344,14 +382,14 @@ export function CustomTable({
         borderRadius: 3,
         border: "1px solid",
         borderColor: alpha(theme.palette.primary.main, 0.2),
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
-        transition: 'all 0.3s ease',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-        '&:hover': {
-          boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+        overflow: "hidden",
+        bgcolor: "background.paper",
+        transition: "all 0.3s ease",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+        "&:hover": {
+          boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
           borderColor: alpha(theme.palette.primary.main, 0.25),
-        }
+        },
       }}
     >
       <TableTopBar
@@ -360,16 +398,33 @@ export function CustomTable({
         onReset={handleReset}
         selectedCount={selectedIds.size}
         leftActions={
-          <Stack direction="row" spacing={isMobile ? 0.5 : 1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={isMobile ? 0.5 : 1}
+            alignItems="center"
+          >
             {!isMobile && projecaoSwitch}
-            {!isMobile && <Box sx={{ width: "1px", height: "24px", bgcolor: "divider", mx: 0.5 }} />}
+            {!isMobile && (
+              <Box
+                sx={{
+                  width: "1px",
+                  height: "24px",
+                  bgcolor: "divider",
+                  mx: 0.5,
+                }}
+              />
+            )}
 
             <Stack direction="row" spacing={0.5} alignItems="center">
               <Tooltip title="Filtrar por tipo" arrow>
                 <IconButton
                   size="small"
                   color={tiposFiltro.length > 0 ? "warning" : "primary"}
-                  onClick={() => isMobile ? setDrawerOpen(true) : setFiltrosVisiveis(!filtrosVisiveis)}
+                  onClick={() =>
+                    isMobile
+                      ? setDrawerOpen(true)
+                      : setFiltrosVisiveis(!filtrosVisiveis)
+                  }
                   sx={{
                     ...(tiposFiltro.length > 0 && {
                       bgcolor: alpha(theme.palette.warning.main, 0.12),
@@ -382,20 +437,24 @@ export function CustomTable({
                     invisible={badgeCount === 0}
                     sx={{
                       "& .MuiBadge-badge": {
-                        fontSize: '0.6rem',
+                        fontSize: "0.6rem",
                         height: 16,
                         minWidth: 16,
                         width: 16,
-                        borderRadius: '50%',
+                        borderRadius: "50%",
                         top: -4,
                         right: -4,
                         padding: 0,
                         fontWeight: 800,
                         border: `1px solid ${theme.palette.background.paper}`,
-                      }
+                      },
                     }}
                   >
-                    {isMobile ? <IconAdjustmentsHorizontal size={20} /> : <IconFilter size={20} />}
+                    {isMobile ? (
+                      <IconAdjustmentsHorizontal size={20} />
+                    ) : (
+                      <IconFilter size={20} />
+                    )}
                   </Badge>
                 </IconButton>
               </Tooltip>
@@ -409,9 +468,18 @@ export function CustomTable({
                         icon={<IconArrowDown size={14} />}
                         label="Despesas"
                         color="error"
-                        variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
+                        variant={
+                          tiposFiltro.includes("DESPESA")
+                            ? "filled"
+                            : "outlined"
+                        }
                         onClick={() => onToggleTipo("DESPESA")}
-                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.7rem",
+                          height: 24,
+                          cursor: "pointer",
+                        }}
                       />
                     )}
                     {tiposExistentes.has("RECEITA") && (
@@ -420,9 +488,18 @@ export function CustomTable({
                         icon={<IconArrowUp size={14} />}
                         label="Receitas"
                         color="success"
-                        variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
+                        variant={
+                          tiposFiltro.includes("RECEITA")
+                            ? "filled"
+                            : "outlined"
+                        }
                         onClick={() => onToggleTipo("RECEITA")}
-                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.7rem",
+                          height: 24,
+                          cursor: "pointer",
+                        }}
                       />
                     )}
                     {tiposExistentes.has("META") && (
@@ -431,9 +508,16 @@ export function CustomTable({
                         icon={<IconTarget size={14} />}
                         label="Metas"
                         color="info"
-                        variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
+                        variant={
+                          tiposFiltro.includes("META") ? "filled" : "outlined"
+                        }
                         onClick={() => onToggleTipo("META")}
-                        sx={{ fontWeight: 600, fontSize: "0.7rem", height: 24, cursor: "pointer" }}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.7rem",
+                          height: 24,
+                          cursor: "pointer",
+                        }}
                       />
                     )}
                   </Stack>
@@ -453,12 +537,19 @@ export function CustomTable({
           sx: {
             width: 280,
             p: 0,
-            backgroundImage: 'none',
-            bgcolor: theme.palette.background.paper
-          }
+            backgroundImage: "none",
+            bgcolor: theme.palette.background.paper,
+          },
         }}
       >
-        <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            p: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Box>
             <Typography variant="h6" fontWeight={800}>
               Filtros e Opções
@@ -472,8 +563,8 @@ export function CustomTable({
             size="small"
             sx={{
               bgcolor: alpha(theme.palette.primary.main, 0.1),
-              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
-              borderRadius: '50%'
+              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+              borderRadius: "50%",
             }}
           >
             <IconX size={20} color={theme.palette.primary.main} />
@@ -483,32 +574,55 @@ export function CustomTable({
         <Divider />
 
         <List sx={{ p: 2 }}>
-          <ListItem disablePadding sx={{ mb: 4, display: 'block' }}>
-            <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+          <ListItem disablePadding sx={{ mb: 4, display: "block" }}>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              color="primary"
+              gutterBottom
+              sx={{
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                letterSpacing: 1,
+              }}
+            >
               Exibir
             </Typography>
             <Box
               onClick={() => onToggleProjecao(!incluirProjecao)}
               sx={{
                 mt: 1.5,
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 1.5,
-                cursor: 'pointer',
+                cursor: "pointer",
                 p: 1,
                 mx: -1,
                 borderRadius: 2,
-                '&:hover': { bgcolor: incluirProjecao ? alpha(theme.palette.warning.main, 0.05) : alpha(theme.palette.text.secondary, 0.05) },
-                border: `1px solid ${incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary}`
+                "&:hover": {
+                  bgcolor: incluirProjecao
+                    ? alpha(theme.palette.warning.main, 0.05)
+                    : alpha(theme.palette.text.secondary, 0.05),
+                },
+                border: `1px solid ${incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary}`,
               }}
             >
-              <IconBolt size={20} color={incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary} />
+              <IconBolt
+                size={20}
+                color={
+                  incluirProjecao
+                    ? theme.palette.warning.main
+                    : theme.palette.text.secondary
+                }
+              />
               <Typography
                 variant="body2"
                 fontWeight={600}
                 sx={{
                   flexGrow: 1,
-                  color: incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary
+                  color: incluirProjecao
+                    ? theme.palette.warning.main
+                    : theme.palette.text.secondary,
                 }}
               >
                 Projeções
@@ -525,8 +639,18 @@ export function CustomTable({
             </Box>
           </ListItem>
 
-          <ListItem disablePadding sx={{ display: 'block' }}>
-            <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom sx={{ textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
+          <ListItem disablePadding sx={{ display: "block" }}>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              color="primary"
+              gutterBottom
+              sx={{
+                textTransform: "uppercase",
+                fontSize: "0.75rem",
+                letterSpacing: 1,
+              }}
+            >
               Filtrar:
             </Typography>
             <Stack spacing={1.5} sx={{ mt: 1.5 }}>
@@ -535,9 +659,16 @@ export function CustomTable({
                   icon={<IconArrowDown size={14} />}
                   label="Despesas"
                   color="error"
-                  variant={tiposFiltro.includes("DESPESA") ? "filled" : "outlined"}
+                  variant={
+                    tiposFiltro.includes("DESPESA") ? "filled" : "outlined"
+                  }
                   onClick={() => onToggleTipo("DESPESA")}
-                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                  sx={{
+                    fontWeight: 600,
+                    justifyContent: "flex-start",
+                    px: 1,
+                    height: 36,
+                  }}
                 />
               )}
               {tiposExistentes.has("RECEITA") && (
@@ -545,9 +676,16 @@ export function CustomTable({
                   icon={<IconArrowUp size={14} />}
                   label="Receitas"
                   color="success"
-                  variant={tiposFiltro.includes("RECEITA") ? "filled" : "outlined"}
+                  variant={
+                    tiposFiltro.includes("RECEITA") ? "filled" : "outlined"
+                  }
                   onClick={() => onToggleTipo("RECEITA")}
-                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                  sx={{
+                    fontWeight: 600,
+                    justifyContent: "flex-start",
+                    px: 1,
+                    height: 36,
+                  }}
                 />
               )}
               {tiposExistentes.has("META") && (
@@ -557,29 +695,41 @@ export function CustomTable({
                   color="info"
                   variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
                   onClick={() => onToggleTipo("META")}
-                  sx={{ fontWeight: 600, justifyContent: 'flex-start', px: 1, height: 36 }}
+                  sx={{
+                    fontWeight: 600,
+                    justifyContent: "flex-start",
+                    px: 1,
+                    height: 36,
+                  }}
                 />
               )}
             </Stack>
           </ListItem>
         </List>
 
-        <Box sx={{ mt: 'auto', p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box
+          sx={{
+            mt: "auto",
+            p: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <Chip
             label="Resetar"
             variant="outlined"
             onClick={handleReset}
             sx={{
-              width: '100%',
+              width: "100%",
               py: 2.5,
               fontWeight: 800,
               borderRadius: 2,
               borderColor: theme.palette.primary.main,
               color: theme.palette.primary.main,
-              '&:hover': {
+              "&:hover": {
                 bgcolor: alpha(theme.palette.primary.main, 0.05),
                 borderColor: theme.palette.primary.main,
-              }
+              },
             }}
           />
         </Box>
@@ -594,7 +744,11 @@ export function CustomTable({
                   alpha(theme.palette.primary.main, 0.08),
               }}
             >
-              <TableCell colSpan={2} align="center" sx={{ width: 100, py: 1.5 }}>
+              <TableCell
+                colSpan={2}
+                align="center"
+                sx={{ width: 100, py: 1.5 }}
+              >
                 <Tooltip title="Selecionar todos" arrow>
                   <Checkbox
                     indeterminate={isIndeterminate}
@@ -635,6 +789,29 @@ export function CustomTable({
                 </TableCell>
               ))}
             </TableRow>
+
+            {isFetching && !isLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  sx={{
+                    p: 0,
+                    border: 0,
+                    position: "relative",
+                  }}
+                >
+                  <LinearProgress
+                    sx={{
+                      height: 5,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
@@ -683,7 +860,12 @@ export function CustomTable({
           bgcolor: alpha(theme.palette.background.paper, 0.4),
         }}
       >
-        <Typography variant="caption" fontWeight={800} color="textSecondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        <Typography
+          variant="caption"
+          fontWeight={800}
+          color="textSecondary"
+          sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+        >
           {selectedIds.size > 0 ? "Selecionado: " : "Total: "}
           {selectedTotals.categorias} categorias | {selectedTotals.itens} itens
         </Typography>
@@ -730,8 +912,8 @@ const CustomRow = memo(function CustomRow({
   useEffect(() => {
     const query = filterText.trim().toLowerCase();
     if (query.length > 0) {
-      const hasMatchingChild = row.detalhes.some(d =>
-        d.nome.toLowerCase().includes(query)
+      const hasMatchingChild = row.detalhes.some((d) =>
+        d.nome.toLowerCase().includes(query),
       );
       if (hasMatchingChild) {
         setOpen(true);
@@ -760,12 +942,78 @@ const CustomRow = memo(function CustomRow({
           "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.06) },
         }}
       >
-        <TableCell padding="checkbox" sx={{ width: 48, py: 0.5 }}>
-          <IconButton size="small" onClick={() => setOpen(!open)}>
-            {open ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
-          </IconButton>
+        <TableCell sx={{ width: 60, py: 0.5, px: 1 }}>
+          <Tooltip
+            title={open ? "Recolher Categoria" : "Expandir Categoria"}
+            placement="left"
+            arrow
+            disableInteractive
+            TransitionProps={{ timeout: 0 }}
+            PopperProps={{
+              popperOptions: {
+                strategy: "fixed",
+                modifiers: [
+                  {
+                    name: "computeStyles",
+                    options: {
+                      adaptive: false,
+                      gpuAcceleration: false,
+                    },
+                  },
+                  {
+                    name: "flip",
+                    enabled: false,
+                  },
+                  {
+                    name: "preventOverflow",
+                    options: {
+                      boundary: "window",
+                    },
+                  },
+                ],
+              },
+            }}
+          >
+            <Box
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(!open);
+              }}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                color: theme.palette.primary.main,
+                borderRadius: 1.5,
+                px: 1,
+                pr: 0.5,
+                py: 0,
+                cursor: "pointer",
+                width: 50,
+                height: 26,
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  bgcolor: theme.palette.primary.main,
+                  color: theme.palette.primary.contrastText,
+                },
+              }}
+            >
+              <Typography variant="caption" fontWeight="bold" sx={{ mr: 0.5 }}>
+                {row.detalhes.length}
+              </Typography>
+              <IconChevronDown
+                size={16}
+                stroke={3}
+                style={{
+                  transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+                  transition: "transform 0.3s ease",
+                }}
+              />
+            </Box>
+          </Tooltip>
         </TableCell>
-        <TableCell padding="checkbox" sx={{ width: 48, py: 0.5 }}>
+        <TableCell padding="checkbox" sx={{ width: 38, py: 0.5 }}>
           <Checkbox
             indeterminate={isIndeterminate}
             checked={isAllSelected}
@@ -805,7 +1053,12 @@ const CustomRow = memo(function CustomRow({
           style={{ paddingBottom: 0, paddingTop: 0, border: 0 }}
           colSpan={columns.length + 2}
         >
-          <Collapse in={open} timeout="auto" unmountOnExit sx={{ border: 'none', bgcolor: 'transparent' }}>
+          <Collapse
+            in={open}
+            timeout="auto"
+            unmountOnExit
+            sx={{ border: "none", bgcolor: "transparent" }}
+          >
             <Box sx={{ pt: 1, pb: 2 }}>
               <CustomTableChild
                 itens={row.detalhes}

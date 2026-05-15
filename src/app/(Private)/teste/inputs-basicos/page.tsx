@@ -1,4 +1,4 @@
-    "use client";
+"use client";
 
 import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
@@ -38,7 +38,7 @@ const paises = [
   { id: 5, label: "Chile" },
 ];
 
-type Pais = typeof paises[number];
+type Pais = (typeof paises)[number];
 
 const categorias = [
   { id: 1, nome: "Alimentos" },
@@ -52,7 +52,7 @@ const categorias = [
   { id: 9, nome: "Serviços9" },
 ];
 
-type Categoria = typeof categorias[number];
+type Categoria = (typeof categorias)[number];
 
 export default function TesteInputsBasicos() {
   const { control, handleSubmit, setFocus } = useForm<FormData>({
@@ -79,7 +79,7 @@ export default function TesteInputsBasicos() {
   }, [setFocus]);
 
   const onSubmit = (data: FormData) => {
-    console.log("Dados do formulário:", data);
+    console.warn("Dados do formulário:", data);
   };
 
   return (
@@ -89,7 +89,8 @@ export default function TesteInputsBasicos() {
           📝 Inputs Básicos - HookForm
         </Typography>
         <Typography variant="body1" color="textSecondary">
-          Exemplos de TextField, Select e Autocomplete integrados com React Hook Form
+          Exemplos de TextField, Select e Autocomplete integrados com React Hook
+          Form
         </Typography>
       </Box>
 

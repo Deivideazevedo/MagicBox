@@ -1,12 +1,9 @@
 import { z } from "zod";
-import { TipoDespesa } from "@prisma/client";
 
 export interface RelatorioFiltros {
   userId: number;
   dataInicio: string; // ISO String (yyyy-mm-dd)
   dataFim: string;    // ISO String (yyyy-mm-dd)
-  page?: number;
-  limit?: number;
 }
 
 export interface DetalheRelatorio {
@@ -112,6 +109,11 @@ export interface RawMetasProgresso {
   planejado: number;
   realizado: number;
   mediaMensal: number;
+}
+
+export interface RawRelatorioMetas {
+  totais: RawTotaisMetas;
+  detalhes: RawMetasProgresso[];
 }
 
 export interface RawHistoricoAgrupado {

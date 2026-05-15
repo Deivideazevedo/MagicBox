@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { RelatorioFiltros, RawMetasProgresso, RawCardResumo, RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado } from "./relatorio.dto";
+import { RelatorioFiltros, RawMetasProgresso, RawCardResumo, RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawRelatorioMetas } from "./relatorio.dto";
 
 export const relatoriosRepository = {
   async obterDadosBrutosPorCategoria(userId: number, dataInicio: Date, dataFim: Date) {
@@ -70,37 +70,41 @@ export const relatoriosRepository = {
     `;
   },
 
-  async obterTotaisMetas(userId: number, dataInicio: Date, dataFim: Date): Promise<RawTotaisMetas[]> {
-    return await prisma.$queryRaw`
+  async obterDadosCompletosMetas(userId: number, dataInicio: Date, dataFim: Date): Promise<RawRelatorioMetas> {
+    const result = await prisma.$queryRaw<any[]>`
+      WITH metas_totais AS (
+        SELECT 
+          COALESCE(SUM(m."valorMeta"), 0)::float as "valorTotalMeta",
+          COALESCE(SUM(l.valor), 0)::float as "valorAlcancadoMeta"
+        FROM meta m
+        LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento' AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
+        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
+      ),
+      metas_detalhe AS (
+        SELECT 
+          m.id, m.nome, m.icone, m.cor,
+          m."valorMeta"::float as planejado,
+          COALESCE((
+            SELECT SUM(l.valor) FROM lancamento l WHERE l."metaId" = m.id AND l.tipo = 'pagamento'
+          ), 0)::float as realizado,
+          COALESCE((
+            SELECT AVG(mensal) FROM (
+              SELECT SUM(l2.valor) as mensal
+              FROM lancamento l2
+              WHERE l2."metaId" = m.id AND l2.tipo = 'pagamento'
+              GROUP BY date_trunc('month', l2.data)
+            ) s
+          ), 0)::float as "mediaMensal"
+        FROM meta m
+        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
+        ORDER BY m.nome
+      )
       SELECT 
-        COALESCE(SUM(m."valorMeta"), 0)::float as "valorTotalMeta",
-        COALESCE(SUM(l.valor), 0)::float as "valorAlcancadoMeta"
-      FROM meta m
-      LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento' AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-      WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A';
+        (SELECT row_to_json(metas_totais.*) FROM metas_totais) as totais,
+        (SELECT COALESCE(json_agg(metas_detalhe.*), '[]'::json) FROM metas_detalhe) as detalhes;
     `;
-  },
 
-  async obterMetasComProgresso(userId: number): Promise<RawMetasProgresso[]> {
-    return await prisma.$queryRaw`
-      SELECT 
-        m.id, m.nome, m.icone, m.cor,
-        m."valorMeta"::float as planejado,
-        COALESCE((
-          SELECT SUM(l.valor) FROM lancamento l WHERE l."metaId" = m.id AND l.tipo = 'pagamento'
-        ), 0)::float as realizado,
-        COALESCE((
-          SELECT AVG(mensal) FROM (
-            SELECT SUM(l2.valor) as mensal
-            FROM lancamento l2
-            WHERE l2."metaId" = m.id AND l2.tipo = 'pagamento'
-            GROUP BY date_trunc('month', l2.data)
-          ) s
-        ), 0)::float as "mediaMensal"
-      FROM meta m
-      WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
-      ORDER BY m.nome;
-    `;
+    return result[0];
   },
 
   async obterCardResumo({

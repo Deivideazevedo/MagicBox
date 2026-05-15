@@ -9,6 +9,7 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  LinearProgress,
   Paper,
   Stack,
   Table,
@@ -22,11 +23,7 @@ import {
   Typography,
 } from "@mui/material";
 import CustomAvatar from "@/components/shared/CustomAvatar";
-import {
-  IconMail,
-  IconTrash,
-  IconUser
-} from "@tabler/icons-react";
+import { IconMail, IconTrash, IconUser } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR as ptBRDate } from "date-fns/locale";
 import { memo, ReactNode, useMemo } from "react";
@@ -65,6 +62,7 @@ interface CustomTableUsuariosProps {
     rowsPerPageOptions?: number[];
   };
   isLoading?: boolean;
+  isFetching?: boolean;
   emptyMessage?: string;
   selectedIds: number[];
   onSelectionChange: (ids: number[]) => void;
@@ -78,6 +76,7 @@ export function CustomTableUsuarios({
   actions,
   pagination,
   isLoading = false,
+  isFetching = false,
   emptyMessage = "Nenhum usuário encontrado",
   selectedIds,
   onSelectionChange,
@@ -85,7 +84,6 @@ export function CustomTableUsuarios({
   onStatusClick,
   onReset,
 }: CustomTableUsuariosProps) {
-
   const TABLE_COLUMNS: IColumnProps<UserRow>[] = [
     {
       key: "name",
@@ -148,7 +146,11 @@ export function CustomTableUsuarios({
           size="small"
           color={row.role === "admin" ? "primary" : "default"}
           variant="outlined"
-          sx={{ fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase" }}
+          sx={{
+            fontWeight: 600,
+            fontSize: "0.7rem",
+            textTransform: "uppercase",
+          }}
         />
       ),
       filterValue: (row) => row.role || "",
@@ -169,7 +171,7 @@ export function CustomTableUsuarios({
           />
         </Tooltip>
       ),
-      filterValue: (row) => row.status === "A" ? "Ativo" : "Inativo",
+      filterValue: (row) => (row.status === "A" ? "Ativo" : "Inativo"),
     },
     {
       key: "createdAt",
@@ -178,7 +180,9 @@ export function CustomTableUsuarios({
       sortValue: (row) => new Date(row.createdAt).getTime(),
       render: (row) => {
         try {
-          return format(new Date(row.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBRDate });
+          return format(new Date(row.createdAt), "dd/MM/yyyy HH:mm", {
+            locale: ptBRDate,
+          });
         } catch {
           return "-";
         }
@@ -246,11 +250,22 @@ export function CustomTableUsuarios({
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08) }}>
+            <TableRow
+              sx={{
+                backgroundColor: (theme) =>
+                  alpha(theme.palette.primary.main, 0.08),
+              }}
+            >
               <TableCell padding="checkbox">
                 <Checkbox
-                  indeterminate={selectedIds.length > 0 && selectedIds.length < sortedData.length}
-                  checked={sortedData.length > 0 && selectedIds.length === sortedData.length}
+                  indeterminate={
+                    selectedIds.length > 0 &&
+                    selectedIds.length < sortedData.length
+                  }
+                  checked={
+                    sortedData.length > 0 &&
+                    selectedIds.length === sortedData.length
+                  }
                   onChange={handleSelectAll}
                 />
               </TableCell>
@@ -264,20 +279,60 @@ export function CustomTableUsuarios({
                     cursor: "pointer",
                     userSelect: "none",
                     minWidth: 100,
-                    "&:hover .sort-icon": { opacity: getSortIcon(key) ? 1 : 0.4 },
+                    "&:hover .sort-icon": {
+                      opacity: getSortIcon(key) ? 1 : 0.4,
+                    },
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start" }}>
-                    <Typography fontWeight={700} variant="body2">{label}</Typography>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent:
+                        align === "center"
+                          ? "center"
+                          : align === "right"
+                            ? "flex-end"
+                            : "flex-start",
+                    }}
+                  >
+                    <Typography fontWeight={700} variant="body2">
+                      {label}
+                    </Typography>
                     <MultiSortIcon sortInfo={getSortIcon(key)} />
                   </Box>
                 </TableCell>
               ))}
 
               <TableCell align="center">
-                <Typography fontWeight={700} variant="body2">Ações</Typography>
+                <Typography fontWeight={700} variant="body2">
+                  Ações
+                </Typography>
               </TableCell>
             </TableRow>
+
+            {isFetching && !isLoading && (
+              <TableRow>
+                <TableCell
+                  colSpan={totalColumns}
+                  sx={{
+                    p: 0,
+                    border: 0,
+                    position: "relative",
+                  }}
+                >
+                  <LinearProgress
+                    sx={{
+                      height: 5,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                    }}
+                  />
+                </TableCell>
+              </TableRow>
+            )}
           </TableHead>
 
           <TableBody>
@@ -290,7 +345,10 @@ export function CustomTableUsuarios({
             ) : sortedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={totalColumns} align="center">
-                  <Alert severity="info" sx={{ alignItems: "center", justifyContent: "center" }}>
+                  <Alert
+                    severity="info"
+                    sx={{ alignItems: "center", justifyContent: "center" }}
+                  >
                     {emptyMessage}
                   </Alert>
                 </TableCell>
@@ -315,7 +373,9 @@ export function CustomTableUsuarios({
         component="div"
         sx={{ borderTop: "1px solid", borderColor: "divider" }}
         labelRowsPerPage="Linhas por página"
-        labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}–${to} de ${count}`
+        }
         count={pagination.count}
         rowsPerPageOptions={pagination.rowsPerPageOptions || [10, 20, 50, 100]}
         onPageChange={pagination.onPageChange}
@@ -337,8 +397,17 @@ interface CustomRowProps {
 }
 
 const CustomRow = memo(
-  function CustomRow({ row, columns, actions, isSelected, onSelect }: CustomRowProps) {
-    const renderColumn = useMemo(() => createRenderColumn(row, columns), [row, columns]);
+  function CustomRow({
+    row,
+    columns,
+    actions,
+    isSelected,
+    onSelect,
+  }: CustomRowProps) {
+    const renderColumn = useMemo(
+      () => createRenderColumn(row, columns),
+      [row, columns],
+    );
     const alignsMap = useMemo(() => {
       const map = new Map<string | keyof UserRow, string>();
       columns.forEach(({ key, align }) => map.set(key, align || "left"));
@@ -349,8 +418,12 @@ const CustomRow = memo(
       <TableRow
         sx={{
           "& td": { border: 0 },
-          "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) },
-          ...(isSelected && { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08) }),
+          "&:hover": {
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+          },
+          ...(isSelected && {
+            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+          }),
         }}
       >
         <TableCell padding="checkbox">
@@ -358,7 +431,10 @@ const CustomRow = memo(
         </TableCell>
 
         {columns.map(({ key }) => (
-          <TableCell key={String(key)} align={(alignsMap.get(key) as any) || "left"}>
+          <TableCell
+            key={String(key)}
+            align={(alignsMap.get(key) as any) || "left"}
+          >
             {renderColumn(key)}
           </TableCell>
         ))}
@@ -369,5 +445,6 @@ const CustomRow = memo(
       </TableRow>
     );
   },
-  (prev, next) => prev.row.id === next.row.id && prev.isSelected === next.isSelected
+  (prev, next) =>
+    prev.row.id === next.row.id && prev.isSelected === next.isSelected,
 );

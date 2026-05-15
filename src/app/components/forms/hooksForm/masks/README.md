@@ -180,7 +180,7 @@ export function FormularioCompleto() {
   const { control, handleSubmit } = useForm<FormData>();
 
   const onSubmit = (data: FormData) => {
-    console.log(data);
+    console.warn(data);
   };
 
   return (

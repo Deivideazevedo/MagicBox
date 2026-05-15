@@ -22,6 +22,7 @@ export default function UsuariosPage() {
   const {
     usuarios,
     isLoading,
+    isFetching,
     isUpdating,
     page,
     pageSize,
@@ -85,6 +86,7 @@ export default function UsuariosPage() {
                   paginacao.mudarTamanho(parseInt(event.target.value, 10)),
               }}
               isLoading={isLoading}
+              isFetching={isFetching}
               emptyMessage="Nenhum usuário foi encontrado"
             />
           </Grid>

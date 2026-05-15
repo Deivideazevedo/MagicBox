@@ -2,22 +2,21 @@
 import Typography from "@mui/material/Typography";
 import PageContainer from "@/app/components/container/PageContainer";
 import DashboardCard from "@/app/components/shared/DashboardCard";
-import Breadcrumb from '@/app/(Private)/layout/shared/breadcrumb/Breadcrumb';
+import Breadcrumb from "@/app/(Private)/layout/shared/breadcrumb/Breadcrumb";
 import { useSession } from "next-auth/react";
 
 const BCrumb = [
   {
-    to: '/',
-    title: 'Home',
+    to: "/",
+    title: "Home",
   },
   {
-    title: 'Sample Page',
+    title: "Sample Page",
   },
 ];
 
 export default function Dashboard() {
   const session = useSession();
-  console.log(session);
   return (
     <PageContainer title="Sample Page" description="this is Sample page">
       {/* breadcrumb */}

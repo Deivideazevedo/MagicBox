@@ -80,6 +80,7 @@ export default function RelatoriosPage() {
   const {
     data,
     loading,
+    isFetching,
     error,
     dataInicio,
     dataFim,
@@ -491,6 +492,7 @@ export default function RelatoriosPage() {
                                           onResetFilters={resetFilters}
                                           tiposExistentes={tiposExistentes}
                                           isLoading={loading}
+                                          isFetching={isFetching}
                                           incluirProjecao={incluirProjecaoTabela}
                                           onToggleProjecao={setIncluirProjecaoTabela}
                                         />
