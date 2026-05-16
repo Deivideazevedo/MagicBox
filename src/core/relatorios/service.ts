@@ -3,14 +3,16 @@ import {
   RelatorioResponse, CategoriaRelatorio, DetalheRelatorio, HistoricoMensal,
   RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso
 } from "@/core/relatorios/relatorio.dto";
-import { format, subMonths } from "date-fns";
+import { format, subMonths, differenceInCalendarMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 // Função auxiliar para contar meses distintos entre duas datas
 const contarMesesNoPeriodo = (inicio: Date, fim: Date) => {
-  if (inicio > fim) return 0;
-  return (fim.getFullYear() - inicio.getFullYear()) * 12 + (fim.getMonth() - inicio.getMonth()) + 1;
+  if (!inicio || !fim || inicio > fim) return 0;
+  // Neutraliza o fuso convertendo para string ISO e removendo o 'Z'
+  const toNaive = (d: Date) => parseISO(d.toISOString().substring(0, 19));
+  return differenceInCalendarMonths(toNaive(fim), toNaive(inicio)) + 1;
 };
 
 export const relatoriosService = {
@@ -44,13 +46,13 @@ export const relatoriosService = {
 
       // Se for FIXA, o planejado é o valor mensal acumulado pelos meses ativos no período
       // Caso contrário, usa o valor agendado (ou o valor planejado unitário se for agendamento)
-      let planejado = db.origemTipo === 'FIXA' 
-        ? (db.valorPlanejado * mesesAtivos) 
+      let planejado = db.origemTipo === 'FIXA'
+        ? (db.valorPlanejado * mesesAtivos)
         : (db.valorAgendado > 0 ? db.valorAgendado : 0);
 
       // Se houver agendamentos manuais que superam a projeção fixa, priorizamos o agendamento
       if (db.origemTipo === 'FIXA' && db.valorAgendado > Math.abs(planejado)) {
-         planejado = db.valorAgendado;
+        planejado = db.valorAgendado;
       }
 
       let realizado = db.valorRealizado;
