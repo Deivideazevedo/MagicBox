@@ -12,7 +12,7 @@ import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { useTheme } from "@mui/material";
 
 const getHojeLocal = () => new Date().toLocaleDateString('sv-SE');
@@ -101,7 +101,6 @@ export function useDividas() {
   const {
     handleSubmit: handleSubmitForm,
     reset,
-    setValue,
     control,
     watch,
     setFocus,
@@ -116,7 +115,7 @@ export function useDividas() {
       dataInicio: getHojeLocal(),
       isAporte: false,
       icone: "IconCreditCard",
-      cor: "",
+      cor: theme.palette.primary.main,
     },
   });
 
@@ -138,10 +137,7 @@ export function useDividas() {
             }
           }).unwrap();
 
-          SwalToast.fire({
-            icon: "success",
-            title: "Aporte realizado com sucesso!",
-          });
+          toast.success("Aporte realizado com sucesso!");
           setIsAporte(false);
           setTargetDivida(null);
         } else {
@@ -172,8 +168,8 @@ export function useDividas() {
       valorTotal: divida.valorTotal,
       totalParcelas: divida.totalParcelas,
       dataInicio: new Date(divida.dataInicio).toISOString().split("T")[0],
-      icone: divida.icone,
-      cor: divida.cor,
+      icone: divida.icone || "IconCreditCard",
+      cor: divida.cor || theme.palette.primary.main,
       isAporte: false,
     });
     setTimeout(() => setFocus("nome"), 100);
@@ -216,10 +212,7 @@ export function useDividas() {
         await updateDivida({ id: Number(dividaParaAcao.id), data: { status: novoStatus } as any }).unwrap();
       }
 
-      SwalToast.fire({
-        icon: "success",
-        title: tipoConfirmacao === 'delete' ? "Dívida removida!" : "Status atualizado!",
-      });
+      toast.success(tipoConfirmacao === 'delete' ? "Dívida removida!" : "Status atualizado!");
     } catch {
     } finally {
       setTipoConfirmacao(null);

@@ -20,7 +20,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 
@@ -61,24 +61,9 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
 
     if (errorType) {
       if (errorType === "AccessDenied") {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "info",
-          title: "Autenticação cancelada",
-          showConfirmButton: false,
-          timer: 5000,
-        });
+        toast.error("Autenticação cancelada");
       } else if (errorType === "NetworkError") {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "error",
-          title: "Falha na Conexão",
-          text: "Verifique sua internet e tente novamente.",
-          showConfirmButton: false,
-          timer: 5000,
-        });
+        toast.error("Falha na Conexão: Verifique sua internet.");
       }
 
       // Limpa os parâmetros da URL após exibir o toast
@@ -108,15 +93,7 @@ const AuthRegister = ({ title, subtitle, subtext }: RegisterType) => {
       }).unwrap();
 
       // Sucesso - fazer login automático
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: "Conta criada com sucesso!",
-        text: "Redirecionando...",
-        showConfirmButton: false,
-        timer: 2000,
-      });
+      toast.success("Conta criada com sucesso! Redirecionando...");
 
       // Login automático com as credenciais recém-criadas
       const signInResult = await signIn("credentials", {

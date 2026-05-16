@@ -11,15 +11,20 @@ interface ItemIconAdornmentProps {
 }
 
 /** Renderiza o ícone do item selecionado (Tabler icon por nome string ou fallback) */
-export function ItemIconAdornment({ item, isDespesa, isMeta, isReceita }: ItemIconAdornmentProps) {
+export function ItemIconAdornment({
+  item,
+  isDespesa,
+  isMeta,
+  isReceita,
+}: ItemIconAdornmentProps) {
   const theme = useTheme();
-  
-  const color = isMeta 
-    ? theme.palette.primary.main 
-    : isDespesa 
-      ? theme.palette.error.main 
+
+  const color = isMeta
+    ? theme.palette.primary.main
+    : isDespesa
+      ? theme.palette.error.main
       : theme.palette.success.main;
-      
+
   const itemColor = item?.cor || color;
 
   return (
@@ -41,7 +46,9 @@ export function ItemIconAdornment({ item, isDespesa, isMeta, isReceita }: ItemIc
           name={item?.icone}
           size={18}
           color={itemColor}
-          fallbackIcon={isMeta ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"}
+          fallbackIcon={
+            isMeta ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"
+          }
         />
       </Box>
     </InputAdornment>

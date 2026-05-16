@@ -1,5 +1,1 @@
 
-/* SweetAlert2 Z-Index Fix */
-.swal2-container {
-  z-index: 10000 !important;
-}

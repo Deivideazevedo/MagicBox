@@ -8,7 +8,7 @@ import {
   useUpdateDespesaMutation,
 } from "@/services/endpoints/despesasApi";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "@mui/material";
 import { useSession } from "next-auth/react";
@@ -131,10 +131,10 @@ export function useDespesas(params?: UseDespesasProps) {
             id: String(id),
             data,
           }).unwrap();
-          SwalToast.fire({ icon: "success", title: "Atualizado!" });
+          toast.success("Atualizado!");
         } else {
           await createDespesa(data).unwrap();
-          SwalToast.fire({ icon: "success", title: "Criado!" });
+          toast.success("Criado!");
         }
         reset(defaultValues);
       } catch { }
@@ -183,7 +183,7 @@ export function useDespesas(params?: UseDespesasProps) {
       await deleteDespesa(row.id).unwrap();
       setRow(null);
       setDeleteDialog(false);
-      SwalToast.fire({ icon: "success", title: "Excluído!" });
+      toast.success("Excluído!");
     } catch { }
   }, [deleteDespesa, row]);
 

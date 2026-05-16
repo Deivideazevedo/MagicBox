@@ -7,8 +7,7 @@ import Header from "./layout/vertical/header/Header";
 import Sidebar from "./layout/vertical/sidebar/Sidebar";
 import Customizer from "./layout/shared/customizer/Customizer";
 import GlobalLancamentoButton from "./layout/shared/GlobalLancamentoButton";
-import Navigation from "./layout/horizontal/navbar/Navigation";
-import HorizontalHeader from "./layout/horizontal/header/Header";
+
 import GlobalChatFab from "./layout/vertical/header/GlobalChat/GlobalChatFab";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
@@ -53,7 +52,7 @@ export default function RootLayout({
         {/* ------------------------------------------- */}
         {/* Sidebar */}
         {/* ------------------------------------------- */}
-        {customizer.isHorizontal ? "" : <Sidebar />}
+        <Sidebar />
         {/* ------------------------------------------- */}
         {/* Main Wrapper */}
         {/* ------------------------------------------- */}
@@ -70,9 +69,8 @@ export default function RootLayout({
           {/* ------------------------------------------- */}
           {/* Header */}
           {/* ------------------------------------------- */}
-          {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
+          <Header />
           {/* PageContent */}
-          {customizer.isHorizontal ? <Navigation /> : ""}
           <Container
             sx={{
               maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",

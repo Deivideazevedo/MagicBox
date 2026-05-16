@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import React, { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -57,12 +59,15 @@ const AppDD = () => {
           onClose={handleClose2}
           anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
           transformOrigin={{ horizontal: "left", vertical: "top" }}
-          sx={{
-            "& .MuiMenu-paper": {
-              width: "850px",
-            },
-            "& .MuiMenu-paper ul": {
-              p: 0,
+          slotProps={{
+            paper: {
+              elevation: 0,
+              sx: {
+                width: "850px",
+                "& ul": {
+                  p: 0,
+                },
+              },
             },
           }}
         >

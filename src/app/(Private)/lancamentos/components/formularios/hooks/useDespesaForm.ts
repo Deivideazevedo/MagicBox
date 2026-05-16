@@ -6,7 +6,7 @@ import {
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -155,10 +155,10 @@ export function useDespesaForm({
 
         if (formData.id) {
           await updateLancamento({ id: String(formData.id), data: payload }).unwrap();
-          SwalToast.fire({ icon: "success", title: "Despesa atualizada com sucesso" });
+          toast.success("Despesa atualizada com sucesso");
         } else {
           await createLancamento(payload).unwrap();
-          SwalToast.fire({ icon: "success", title: "Despesa lançada com sucesso" });
+          toast.success("Despesa lançada com sucesso");
         }
 
         // Reseta mantendo o tipo (Pagamento/Agendamento) e a data correta

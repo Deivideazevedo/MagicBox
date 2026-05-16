@@ -4,7 +4,7 @@ import {
   useBulkDeleteLancamentosMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { LancamentoResposta } from "@/core/lancamentos/types";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { FindAllFilters } from "@/dtos";
 import { FiltrosLancamentos, getDefaultDates, getDefaultFilters } from "../utils";
 
@@ -114,18 +114,12 @@ export function useLancamentosList({
         try {
           await bulkDelete({ ids: idsParaExcluir }).unwrap();
 
-          SwalToast.fire({
-            icon: "success",
-            title: `${idsParaExcluir.length} lançamento(s) excluído(s) com sucesso`,
-          });
+          toast.success(`${idsParaExcluir.length} lançamento(s) excluído(s) com sucesso`);
 
           modalHandlers.excluir.fechar();
           setSelectedIds([]);
         } catch (error) {
-          SwalToast.fire({
-            icon: "error",
-            title: "Erro ao excluir lançamento(s)",
-          });
+          toast.error("Erro ao excluir lançamento(s)");
         } finally {
           setIsDeleting(false);
         }

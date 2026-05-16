@@ -9,7 +9,7 @@ import {
   useUpdateCategoriaMutation,
 } from "@/services/endpoints/categoriasApi";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -94,10 +94,7 @@ export const useCategorias = ({
 
         setTimeout(() => setFocus("nome"), 100);
 
-        SwalToast.fire({
-          icon: "success",
-          title: "Categoria salva com sucesso!",
-        });
+        toast.success("Categoria salva com sucesso!");
       } catch { }
     },
     [updateCategoria, createCategoria, reset, setFocus, defaultValues]
@@ -143,10 +140,7 @@ export const useCategorias = ({
       setRow(null);
       setDeleteDialog(false);
 
-      SwalToast.fire({
-        icon: "success",
-        title: "Categoria excluída com sucesso!",
-      });
+      toast.success("Categoria excluída com sucesso!");
     } catch { }
   }, [deleteCategoria, row, setValue]);
 

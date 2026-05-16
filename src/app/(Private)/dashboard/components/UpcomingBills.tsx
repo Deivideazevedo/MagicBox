@@ -16,6 +16,7 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Skeleton,
 } from "@mui/material";
 import {
   IconAlertTriangle,
@@ -24,6 +25,7 @@ import {
   IconArrowRight,
   IconCheck,
   IconEditCircle,
+  IconCash,
 } from "@tabler/icons-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,15 +34,16 @@ import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
 import { useDispatch } from "@/store/hooks";
 import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
-import { SwalToast, Swalert } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
-
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
 
 const UpcomingBills = ({ date }: { date?: Date }) => {
   const { upcomingBillsRef } = useDashboardTourRefs();
   const dispatch = useDispatch();
+  const confirm = useConfirm();
   const baseDate = date || new Date();
   const dataInicio = format(startOfMonth(baseDate), "yyyy-MM-dd");
   const dataFim = format(endOfMonth(baseDate), "yyyy-MM-dd");
@@ -80,10 +83,10 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
     now.setHours(0, 0, 0, 0);
     const due = new Date(dueDate);
     due.setHours(0, 0, 0, 0);
-    
+
     const diffTime = due.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) return { days: Math.abs(diffDays), status: "overdue" };
     if (diffDays === 0) return { days: 0, status: "today" };
     return { days: diffDays, status: "pending" };
@@ -102,7 +105,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
 
   const getStatusLabel = (dueDate: string) => {
     const { days, status } = getDaysUntilDue(dueDate);
-    
+
     switch (status) {
       case "overdue":
         return `${days} dia${days > 1 ? "s" : ""} em atraso`;
@@ -114,50 +117,45 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
   };
 
   const handleQuickPay = async (bill: any) => {
-    const confirm = await Swalert({
-      icon: "question",
+    await confirm.create({
       title: "Pagar Despesa",
-      text: `Deseja pagar a despesa ${bill.nome} com o valor agendado de ${formatCurrency(bill.valorPrevisto)}?`,
-      confirmButtonText: "Sim, pagar agora",
-      cancelButtonText: "Cancelar"
-    });
-
-    if (confirm.isConfirmed) {
-      try {
+      icon: IconCash,
+      description: (
+        <>
+          Deseja pagar a despesa <strong>"{bill.nome}"</strong> com o valor
+          agendado de {formatCurrency(bill.valorPrevisto)}?
+        </>
+      ),
+      confirmText: "Sim, pagar agora",
+      onConfirm: async () => {
         await createLancamento({
           tipo: "pagamento",
           valor: bill.valorPrevisto,
-          data: fnGetTodayISO(), // Today correctly formatted
+          data: fnGetTodayISO(),
           despesaId: bill.despesaId,
-          observacaoAutomatica: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`
+          observacaoAutomatica: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`,
         }).unwrap();
-
-
-        SwalToast.fire({
-          icon: "success",
-          title: "Despesa paga com sucesso!",
-        });
-      } catch (error) {
-        SwalToast.fire({
-          icon: "error",
-          title: "Erro ao registrar pagamento.",
-        });
-      }
-    }
+        // await new Promise((resolve) => setTimeout(resolve, 5000));
+        toast.success("Despesa paga com sucesso!");
+      },
+    });
   };
 
   const openDrawer = (bill: any) => {
-    dispatch(abrirDrawer({ 
-      modo: "pagar", 
-      dados: {
-        ...bill,
-        origem: "despesa" // No dashboard de UpcomingBills são sempre despesas
-      } 
-    }));
+    dispatch(
+      abrirDrawer({
+        modo: "pagar",
+        dados: {
+          ...bill,
+          origemId: bill.despesaId || bill.id,
+          origem: "despesa", // No dashboard de UpcomingBills são sempre despesas
+        },
+      }),
+    );
   };
 
   const totalAmount = bills.reduce((sum, bill) => sum + bill.valorPrevisto, 0);
-  const overdueBills = bills.filter(bill => {
+  const overdueBills = bills.filter((bill) => {
     const dueDate = getDueDateString(bill.diaVencido, bill.mes, bill.ano);
     return getDaysUntilDue(dueDate).status === "overdue" || bill.atrasado;
   });
@@ -172,7 +170,12 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Box display="flex" alignItems="center" gap={1}>
             <Box
               sx={{
@@ -192,7 +195,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
               Contas a Pagar
             </Typography>
           </Box>
-          
+
           <Button
             size="small"
             endIcon={<IconArrowRight size={16} />}
@@ -207,8 +210,47 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
         </Box>
 
         {isLoading ? (
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
+          <Box>
+            <Box mb={3}>
+              <Skeleton variant="text" width="60%" height={20} />
+              <Skeleton variant="text" width="40%" height={40} />
+            </Box>
+            <List disablePadding>
+              {[1, 2, 3].map((i) => (
+                <ListItem
+                  key={i}
+                  sx={{
+                    px: 0,
+                    py: 1.5,
+                    borderBottom: i < 3 ? "1px solid #f0f0f0" : "none",
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 48 }}>
+                    <Skeleton variant="circular" width={40} height={40} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primaryTypographyProps={{ component: "div" }}
+                    secondaryTypographyProps={{ component: "div" }}
+                    primary={
+                      <Box display="flex" justifyContent="space-between">
+                        <Skeleton variant="text" width="50%" />
+                        <Skeleton variant="text" width="20%" />
+                      </Box>
+                    }
+                    secondary={
+                      <Box
+                        display="flex"
+                        justifyContent="space-between"
+                        mt={0.5}
+                      >
+                        <Skeleton variant="text" width="30%" />
+                        <Skeleton variant="text" width="20%" />
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
           </Box>
         ) : (
           <>
@@ -224,7 +266,8 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                   },
                 }}
               >
-                Você tem {overdueBills.length} conta{overdueBills.length > 1 ? "s" : ""} em atraso
+                Você tem {overdueBills.length} conta
+                {overdueBills.length > 1 ? "s" : ""} em atraso
               </Alert>
             )}
 
@@ -244,28 +287,30 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
             </Box>
 
             {bills.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" align="center">
+              <Alert severity="info" sx={{ borderRadius: 2 }}>
                 Nenhuma conta a pagar pendente.
-              </Typography>
+              </Alert>
             ) : (
               <List disablePadding>
                 {bills.slice(0, 5).map((bill, index) => {
-                  const dueDateString = getDueDateString(bill.diaVencido, bill.mes, bill.ano);
+                  const dueDateString = getDueDateString(
+                    bill.diaVencido,
+                    bill.mes,
+                    bill.ano,
+                  );
                   const { status } = getDaysUntilDue(dueDateString);
                   const billColor = bill.cor || "#757575";
-                  
+
                   return (
                     <ListItem
                       key={bill.id}
                       sx={{
                         px: 0,
-                        py: 1.5,
-                        borderBottom: index < Math.min(bills.length, 5) - 1 ? "1px solid #f0f0f0" : "none",
-                        "&:hover .action-buttons": {
-                          opacity: 1,
-                          display: 'flex',
-                        }
-
+                        py: 1,
+                        borderBottom:
+                          index < Math.min(bills.length, 5) - 1
+                            ? "1px solid #f0f0f0"
+                            : "none",
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 48 }}>
@@ -277,79 +322,98 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                             color: billColor,
                           }}
                         >
-                          <DynamicIcon name={bill.icone} size={20} fallbackIcon="IconInvoice" color={billColor} />
+                          <DynamicIcon
+                            name={bill.icone}
+                            size={20}
+                            fallbackIcon="IconInvoice"
+                            color={billColor}
+                          />
                         </Avatar>
                       </ListItemIcon>
-                      
+
                       <ListItemText
                         primaryTypographyProps={{ component: "div" }}
                         secondaryTypographyProps={{ component: "div" }}
                         primary={
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Typography
+                              variant="body1"
+                              fontWeight={500}
+                              sx={{
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                maxWidth: "70%",
+                              }}
+                            >
                               {bill.nome}
                             </Typography>
-                            <Typography variant="body1" fontWeight={600} color="text.primary">
-                              {formatCurrency(bill.valorPrevisto)}
-                            </Typography>
+
+                            <Box display="flex" gap={0.5}>
+                              <Tooltip title="Baixa rápida" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleQuickPay(bill)}
+                                  color="success"
+                                  sx={{ padding: "4px" }}
+                                >
+                                  <IconCheck size={18} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Preencher detalhes" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openDrawer(bill)}
+                                  color="primary"
+                                  sx={{ padding: "4px" }}
+                                >
+                                  <IconEditCircle size={18} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
                           </Box>
                         }
                         secondary={
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
-                            <Tooltip title="Pagar com valor agendado" arrow placement="top">
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="flex-end"
+                            // mt={0.5}
+                          >
+                            <Box display="flex" alignItems="center" gap={1}>
                               <Chip
                                 label={getStatusLabel(dueDateString)}
                                 size="small"
                                 icon={<IconClock size={14} />}
-                                onClick={() => handleQuickPay(bill)}
                                 sx={{
                                   backgroundColor: `${getStatusColor(status)}20`,
                                   color: getStatusColor(status),
                                   fontSize: "0.75rem",
                                   height: 20,
-                                  cursor: "pointer",
                                   "& .MuiChip-icon": {
                                     color: "inherit",
                                   },
-                                  "&:hover": {
-                                    backgroundColor: `${getStatusColor(status)}40`,
-                                  }
                                 }}
                               />
-                            </Tooltip>
-                            
-                            <Box 
-                              display="flex" 
-                              alignItems="center" 
-                              gap={1}
-                              sx={{ flexDirection: "row-reverse" }}
-                            >
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {formatDueDate(dueDateString)}
                               </Typography>
-
-                              <Box 
-                                className="action-buttons" 
-                                sx={{ 
-                                  opacity: 0, 
-                                  transition: 'opacity 0.2s',
-                                  display: 'none',
-                                  gap: 0.5 
-                                }}
-                              >
-                                <Tooltip title="Baixa rápida">
-                                  <IconButton size="small" onClick={() => handleQuickPay(bill)} color="success" sx={{ p: 0.5 }}>
-                                    <IconCheck size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Abrir com detalhes preenchidos">
-                                  <IconButton size="small" onClick={() => openDrawer(bill)} color="primary" sx={{ p: 0.5 }}>
-                                    <IconEditCircle size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Box>
                             </Box>
 
+                            <Typography
+                              variant="body1"
+                              fontWeight={600}
+                              color="text.primary"
+                            >
+                              {formatCurrency(bill.valorPrevisto)}
+                            </Typography>
                           </Box>
                         }
                       />

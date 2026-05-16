@@ -71,12 +71,9 @@ const baseQueryInterceptor: BaseQueryFn<
       }
     }
 
-    // Mostrar notificação para o usuário (import dinâmico para evitar dependência circular)
-    import("@/utils/swalert").then(({ SwalToast }) => {
-      SwalToast.fire({
-        title: message,
-        icon,
-      });
+    // Mostrar notificação para o usuário
+    import("react-hot-toast").then(({ toast }) => {
+      toast.error(message);
     });
 
     // Log detalhado para desenvolvimento

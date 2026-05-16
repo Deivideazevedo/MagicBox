@@ -15,6 +15,7 @@ import {
   Divider,
   Stack,
   Chip,
+  Skeleton,
 } from "@mui/material";
 
 import {
@@ -151,8 +152,12 @@ const TransactionHeatmap = () => {
   if (isLoading) {
     return (
       <Card elevation={3} sx={{ borderRadius: 3 }}>
-        <CardContent sx={{ p: 3, textAlign: "center" }}>
-          <CircularProgress size={24} />
+        <CardContent sx={{ p: 3 }}>
+          <Box mb={3}>
+            <Skeleton variant="text" width="200px" height={32} />
+            <Skeleton variant="text" width="300px" height={20} />
+          </Box>
+          <Skeleton variant="rounded" width="100%" height={200} sx={{ borderRadius: 2 }} />
         </CardContent>
       </Card>
     );

@@ -6,7 +6,7 @@ import {
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -155,10 +155,10 @@ export function useReceitaForm({
 
         if (formData.id) {
           await updateLancamento({ id: String(formData.id), data: payload }).unwrap();
-          SwalToast.fire({ icon: "success", title: "Receita atualizada com sucesso" });
+          toast.success("Receita atualizada com sucesso");
         } else {
           await createLancamento(payload).unwrap();
-          SwalToast.fire({ icon: "success", title: "Receita lançada com sucesso" });
+          toast.success("Receita lançada com sucesso");
         }
 
         // Reseta mantendo o tipo (Pagamento/Agendamento) e a data correta

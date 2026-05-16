@@ -107,15 +107,6 @@ const baselightTheme = {
       cancelled: '#6B7280',
     },
   },
-  shadows: [
-    'none',
-    '0px 1px 3px rgba(0, 0, 0, 0.12), 0px 1px 2px rgba(0, 0, 0, 0.24)',
-    '0px 3px 6px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.12)',
-    '0px 6px 12px rgba(0, 0, 0, 0.15), 0px 4px 8px rgba(0, 0, 0, 0.12)',
-    '0px 12px 24px rgba(0, 0, 0, 0.15), 0px 8px 16px rgba(0, 0, 0, 0.12)',
-    '0px 16px 32px rgba(0, 0, 0, 0.15), 0px 12px 24px rgba(0, 0, 0, 0.12)',
-    '0px 24px 48px rgba(0, 0, 0, 0.15), 0px 16px 32px rgba(0, 0, 0, 0.12)',
-  ],
 };
 
 const baseDarkTheme = {
@@ -222,15 +213,6 @@ const baseDarkTheme = {
       cancelled: '#9CA3AF',
     },
   },
-  shadows: [
-    'none',
-    '0px 1px 3px rgba(0, 0, 0, 0.24), 0px 1px 2px rgba(0, 0, 0, 0.36)',
-    '0px 3px 6px rgba(0, 0, 0, 0.3), 0px 2px 4px rgba(0, 0, 0, 0.24)',
-    '0px 6px 12px rgba(0, 0, 0, 0.3), 0px 4px 8px rgba(0, 0, 0, 0.24)',
-    '0px 12px 24px rgba(0, 0, 0, 0.3), 0px 8px 16px rgba(0, 0, 0, 0.24)',
-    '0px 16px 32px rgba(0, 0, 0, 0.3), 0px 12px 24px rgba(0, 0, 0, 0.24)',
-    '0px 24px 48px rgba(0, 0, 0, 0.3), 0px 16px 32px rgba(0, 0, 0, 0.24)',
-  ],
 };
 
 export { baseDarkTheme, baselightTheme };

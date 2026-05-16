@@ -8,7 +8,7 @@ import {
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -162,7 +162,7 @@ export function useMetaForm({
 
           ]);
 
-          SwalToast.fire({ icon: "success", title: "Retirada e destino lançados com sucesso" });
+          toast.success("Retirada e destino lançados com sucesso");
         }
 
         // CASO PADRÃO: Investimento ou Edição de Retirada
@@ -183,10 +183,10 @@ export function useMetaForm({
 
           if (formData.id) {
             await updateLancamento({ id: String(formData.id), data: payload }).unwrap();
-            SwalToast.fire({ icon: "success", title: `${isRetirada ? "Retirada" : "Investimento"} atualizado com sucesso` });
+            toast.success(`${isRetirada ? "Retirada" : "Investimento"} atualizado com sucesso`);
           } else {
             await createLancamento(payload).unwrap();
-            SwalToast.fire({ icon: "success", title: `${isRetirada ? "Retirada" : "Investimento"} lançado com sucesso` });
+            toast.success(`${isRetirada ? "Retirada" : "Investimento"} lançado com sucesso`);
           }
         }
 

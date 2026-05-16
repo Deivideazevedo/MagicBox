@@ -11,9 +11,8 @@ import { useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import Swal from "sweetalert2";
+import { toast } from "react-hot-toast";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
 import { useTheme } from "@mui/material";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
@@ -132,10 +131,7 @@ export function useMetas() {
           }).unwrap();
 
 
-          SwalToast.fire({
-            icon: "success",
-            title: "Aporte realizado com sucesso!",
-          });
+          toast.success("Aporte realizado com sucesso!");
           setIsAporte(false);
           setTargetMeta(null);
         } else {
@@ -223,10 +219,7 @@ export function useMetas() {
         await updateMeta({ id: metaParaAcao.id, data: { status: novoStatus } }).unwrap();
       }
 
-      SwalToast.fire({
-        icon: "success",
-        title: tipoConfirmacao === 'delete' ? "Meta removida!" : "Status atualizado!",
-      });
+      toast.success(tipoConfirmacao === 'delete' ? "Meta removida!" : "Status atualizado!");
     } catch {
       // Erro tratado globalmente
     } finally {

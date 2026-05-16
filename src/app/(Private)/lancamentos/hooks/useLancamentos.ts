@@ -13,7 +13,7 @@ import {
   LancamentoPayload,
 } from "@/core/lancamentos/types";
 import { useSession } from "next-auth/react";
-import { Swalert } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 
 import { FiltrosLancamentos, getDefaultDates } from "../utils";
 
@@ -108,23 +108,11 @@ export function useLancamentos({
             data: lancamentoData,
           }).unwrap();
 
-          Swalert({
-            title: "Lançamento Atualizado!",
-            text: "O lançamento foi atualizado com sucesso.",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 2000,
-          });
+          toast.success("O lançamento foi atualizado com sucesso.");
         } else {
           await createLancamento(lancamentoData).unwrap();
 
-          Swalert({
-            title: "Lançamento Criado!",
-            text: `${data.tipo === "pagamento" ? "Pagamento registrado" : "Agendamento criado"} com sucesso.`,
-            icon: "success",
-            showConfirmButton: false,
-            timer: 2000,
-          });
+          toast.success(`${data.tipo === "pagamento" ? "Pagamento registrado" : "Agendamento criado"} com sucesso.`);
         }
 
         reset({
@@ -142,11 +130,7 @@ export function useLancamentos({
         return true; // Sucesso
       } catch (error) {
         console.error("Erro ao salvar lançamento:", error);
-        Swalert({
-          title: "Erro!",
-          text: "Ocorreu um erro ao salvar o lançamento. Tente novamente.",
-          icon: "error",
-        });
+        toast.error("Ocorreu um erro ao salvar o lançamento. Tente novamente.");
         return false; // Falha
       }
     },
@@ -181,20 +165,10 @@ export function useLancamentos({
     async (id: string) => {
       try {
         await deleteLancamento(id).unwrap();
-        Swalert({
-          title: "Excluído!",
-          text: "Lançamento excluído com sucesso.",
-          icon: "success",
-          showConfirmButton: false,
-          timer: 2000,
-        });
+        toast.success("Lançamento excluído com sucesso.");
       } catch (error) {
         console.error("Erro ao excluir lançamento:", error);
-        Swalert({
-          title: "Erro!",
-          text: "Ocorreu um erro ao excluir o lançamento.",
-          icon: "error",
-        });
+        toast.error("Ocorreu um erro ao excluir o lançamento.");
       }
     },
     [deleteLancamento],

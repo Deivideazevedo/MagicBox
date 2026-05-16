@@ -30,7 +30,7 @@ import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
 import { useSession } from "next-auth/react";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { Meta } from "@/core/metas/types";
 import { format } from "date-fns";
 
@@ -148,10 +148,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
         }).unwrap(),
       ]);
 
-      SwalToast.fire({
-        icon: "success",
-        title: "Retirada realizada!",
-      });
+      toast.success("Retirada realizada!");
 
       onClose();
     } catch (error) {

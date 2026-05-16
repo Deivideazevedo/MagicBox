@@ -20,7 +20,7 @@ import {
 import { IconX, IconSquareRoundedPlus, IconSquareRoundedMinus, IconCheck } from "@tabler/icons-react";
 import { LoadingButton } from "@mui/lab";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
-import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
 interface TransactionModalProps {
   open: boolean;
@@ -67,18 +67,10 @@ export const TransactionModal = ({
       };
 
       await createLancamento(payload as any).unwrap();
-      Swal.fire({
-        icon: "success",
-        title: isMeta ? "Aporte realizado!" : "Pagamento registrado!",
-        showConfirmButton: false,
-        timer: 1500
-      });
+      toast.success(isMeta ? "Aporte realizado!" : "Pagamento registrado!");
       handleClose();
     } catch (error) {
-       Swal.fire({
-        icon: "error",
-        title: "Erro ao registrar transação",
-      });
+      toast.error("Erro ao registrar transação");
     }
   };
 

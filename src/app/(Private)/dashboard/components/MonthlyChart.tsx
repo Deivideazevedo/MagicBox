@@ -7,6 +7,7 @@ import {
   Box, 
   useTheme, 
   LinearProgress, 
+  Skeleton,
   alpha,
   Switch,
   FormControlLabel,
@@ -39,8 +40,16 @@ const MonthlyChart = ({
     return (
       <Card elevation={3} sx={{ borderRadius: 3, height: "100%" }}>
         <CardContent sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center" justifyContent="center" height={350}>
-            <LinearProgress sx={{ width: '50%' }} />
+          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
+            <Box>
+              <Skeleton variant="text" width="150px" height={24} />
+              <Skeleton variant="text" width="200px" height={16} />
+            </Box>
+            <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: 4 }} />
+          </Box>
+          <Skeleton variant="rounded" width="100%" height={300} sx={{ borderRadius: 2 }} />
+          <Box mt={2}>
+            <Skeleton variant="rounded" width="100%" height={80} sx={{ borderRadius: 2 }} />
           </Box>
         </CardContent>
       </Card>

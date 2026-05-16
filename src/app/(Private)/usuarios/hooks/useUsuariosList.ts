@@ -5,7 +5,7 @@ import {
   useBulkDeleteUsuariosMutation,
 } from "@/services/endpoints/usuariosApi";
 import { UpdateUserDTO } from "@/core/users/user.dto";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { defaultUserFilters, FiltrosUsuarios } from "../utils";
 import { User } from "next-auth";
 
@@ -69,16 +69,10 @@ export function useUsuariosList() {
 
       setUserStatus(updated);
 
-      SwalToast.fire({
-        icon: "success",
-        title: `Usuário ${newStatus === "A" ? "ativado" : "inativado"} com sucesso`,
-      });
+      toast.success(`Usuário ${newStatus === "A" ? "ativado" : "inativado"} com sucesso`);
       modalHandlers.status.fechar();
     } catch (error) {
-      SwalToast.fire({
-        icon: "error",
-        title: "Erro ao atualizar status do usuário",
-      });
+      toast.error("Erro ao atualizar status do usuário");
     }
   };
 
@@ -93,10 +87,7 @@ export function useUsuariosList() {
 
       setUserVisualizar(updated);
 
-      SwalToast.fire({
-        icon: "success",
-        title: "Dados atualizados com sucesso",
-      });
+      toast.success("Dados atualizados com sucesso");
     } catch (error: any) {
       throw error;
     }
@@ -107,16 +98,10 @@ export function useUsuariosList() {
 
     try {
       await bulkDelete(idsDeleteBulk).unwrap();
-      SwalToast.fire({
-        icon: "success",
-        title: `${idsDeleteBulk.length} usuário(s) removido(s) permanentemente`,
-      });
+      toast.success(`${idsDeleteBulk.length} usuário(s) removido(s) permanentemente`);
       modalHandlers.deleteBulk.fechar();
     } catch (error: any) {
-      SwalToast.fire({
-        icon: "error",
-        title: "Erro ao remover usuários",
-      });
+      toast.error("Erro ao remover usuários");
     }
   };
 

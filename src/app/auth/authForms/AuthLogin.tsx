@@ -19,7 +19,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
-import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
@@ -42,37 +42,14 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
     if (errorType) {
       if (errorType === "AccessDenied") {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "info",
-          title: "Autenticação cancelada",
-          showConfirmButton: false,
-          timer: 5000,
-        });
+        toast.error("Autenticação cancelada");
       } else if (errorType === "NetworkError") {
-        Swal.fire({
-          toast: true,
-          position: "top-end",
-          icon: "error",
-          title: "Falha na Conexão",
-          text: "Verifique sua internet e tente novamente.",
-          showConfirmButton: false,
-          timer: 5000,
-        });
+        toast.error("Falha na Conexão: Verifique sua internet.");
       }
     }
 
     if (successMessage) {
-      Swal.fire({
-        toast: true,
-        position: "top-end",
-        icon: "success",
-        title: "Sucesso!",
-        text: successMessage,
-        showConfirmButton: false,
-        timer: 6000,
-      });
+      toast.success(successMessage);
     }
   }, [searchParams, router]);
 

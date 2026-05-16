@@ -8,6 +8,8 @@ import {
   LinearProgress,
   Chip,
   Button,
+  Skeleton,
+  Alert,
 } from "@mui/material";
 import {
   IconTarget,
@@ -26,8 +28,36 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
     formatCurrency,
     calculateProgress,
     getTimeRemaining,
-    overallProgress
+    overallProgress,
+    isLoading
   } = useGoalsProgress(baseDate);
+
+  if (isLoading) {
+    return (
+      <Card elevation={3} sx={{ borderRadius: 3, height: "100%" }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <Skeleton variant="circular" width={40} height={40} />
+              <Skeleton variant="text" width="120px" height={24} />
+            </Box>
+            <Skeleton variant="text" width="60px" height={20} />
+          </Box>
+          {[1, 2].map((i) => (
+            <Box key={i} sx={{ mb: 3 }}>
+              <Box display="flex" justifyContent="space-between" mb={1}>
+                <Skeleton variant="text" width="40%" />
+                <Skeleton variant="text" width="20%" />
+              </Box>
+              <Skeleton variant="rounded" width="100%" height={8} />
+              <Skeleton variant="text" width="60%" height={16} sx={{ mt: 1 }} />
+            </Box>
+          ))}
+          <Skeleton variant="rounded" width="100%" height={100} sx={{ mt: 3, borderRadius: 2 }} />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -74,61 +104,67 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
         </Box>
 
         <Box sx={{ space: 3 }}>
-          {goals.map((goal, index) => {
-            const progress = calculateProgress(goal.current, goal.target);
-            const remaining = goal.target > 0 ? Math.max(goal.target - goal.current, 0) : 0;
-            
-            return (
-              <Box key={goal.id} sx={{ mb: index < goals.length - 1 ? 3 : 0 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Typography variant="body1" fontWeight={500}>
-                    {goal.title}
-                  </Typography>
-                  <Chip
-                    label={getTimeRemaining(goal.deadline)}
-                    size="small"
+          {goals.length === 0 ? (
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              Nenhuma meta financeira cadastrada.
+            </Alert>
+          ) : (
+            goals.map((goal, index) => {
+              const progress = calculateProgress(goal.current, goal.target);
+              const remaining = goal.target > 0 ? Math.max(goal.target - goal.current, 0) : 0;
+              
+              return (
+                <Box key={goal.id} sx={{ mb: index < goals.length - 1 ? 3 : 0 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="body1" fontWeight={500}>
+                      {goal.title}
+                    </Typography>
+                    <Chip
+                      label={getTimeRemaining(goal.deadline)}
+                      size="small"
+                      sx={{
+                        backgroundColor: `${goal.color}20`,
+                        color: goal.color,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                      }}
+                    />
+                  </Box>
+                  
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatCurrency(goal.current)} {goal.target > 0 ? `de ${formatCurrency(goal.target)}` : "(Reserva Livre)"}
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} color={goal.color}>
+                      {progress.toFixed(1)}%
+                    </Typography>
+                  </Box>
+                  
+                  <LinearProgress
+                    variant="determinate"
+                    value={progress}
                     sx={{
+                      height: 8,
+                      borderRadius: 4,
                       backgroundColor: `${goal.color}20`,
-                      color: goal.color,
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
+                      "& .MuiLinearProgress-bar": {
+                        backgroundColor: goal.color,
+                        borderRadius: 4,
+                      },
                     }}
                   />
+                  
+                  <Box mt={1}>
+                    <Typography variant="caption" color="text.secondary">
+                      {goal.target > 0 
+                        ? `Faltam ${formatCurrency(remaining)} para atingir a meta` 
+                        : "Guardando para o futuro"}
+                    </Typography>
+                  </Box>
                 </Box>
-                
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatCurrency(goal.current)} {goal.target > 0 ? `de ${formatCurrency(goal.target)}` : "(Reserva Livre)"}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600} color={goal.color}>
-                    {progress.toFixed(1)}%
-                  </Typography>
-                </Box>
-                
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: `${goal.color}20`,
-                    "& .MuiLinearProgress-bar": {
-                      backgroundColor: goal.color,
-                      borderRadius: 4,
-                    },
-                  }}
-                />
-                
-                <Box mt={1}>
-                  <Typography variant="caption" color="text.secondary">
-                    {goal.target > 0 
-                      ? `Faltam ${formatCurrency(remaining)} para atingir a meta` 
-                      : "Guardando para o futuro"}
-                  </Typography>
-                </Box>
-              </Box>
-            );
-          })}
+              );
+            })
+          )}
         </Box>
 
         <Box

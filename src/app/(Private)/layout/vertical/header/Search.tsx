@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';

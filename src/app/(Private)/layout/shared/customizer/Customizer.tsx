@@ -118,7 +118,7 @@ const Customizer: FC = () => {
             justifyContent={"space-between"}
             alignItems="center"
           >
-            <Typography variant="h4">Settings</Typography>
+            <Typography variant="h4">Configurações</Typography>
 
             <IconButton color="inherit" onClick={() => dispatch(toggleCustomizer(false))}>
               <IconX size="1rem" />
@@ -130,7 +130,7 @@ const Customizer: FC = () => {
             {/* ------------ Dark light theme setting ------------- */}
             {/* ------------------------------------------- */}
             <Typography variant="h6" gutterBottom>
-              Theme Option
+              Opção de Tema
             </Typography>
             <Stack direction={"row"} gap={2} my={2}>
               <StyledBox
@@ -143,7 +143,7 @@ const Customizer: FC = () => {
                     customizer.activeMode === "light" ? "primary" : "inherit"
                   }
                 />
-                Light
+                Claro
               </StyledBox>
               <StyledBox
                 onClick={() => dispatch(setDarkMode("dark"))}
@@ -155,46 +155,16 @@ const Customizer: FC = () => {
                     customizer.activeMode === "dark" ? "primary" : "inherit"
                   }
                 />
-                Dark
+                Escuro
               </StyledBox>
             </Stack>
 
-            <Box pt={3} />
-            {/* ------------------------------------------- */}
-            {/* ------------ RTL theme setting -------------*/}
-            {/* ------------------------------------------- */}
-            <Typography variant="h6" gutterBottom>
-              Theme Direction
-            </Typography>
-            <Stack direction={"row"} gap={2} my={2}>
-              <StyledBox
-                onClick={() => dispatch(setDir("ltr"))}
-                display="flex"
-                gap={1}
-              >
-                <SwipeLeftAltTwoToneIcon
-                  color={customizer.activeDir === "ltr" ? "primary" : "inherit"}
-                />{" "}
-                LTR
-              </StyledBox>
-              <StyledBox
-                onClick={() => dispatch(setDir("rtl"))}
-                display="flex"
-                gap={1}
-              >
-                <SwipeRightAltTwoToneIcon
-                  color={customizer.activeDir === "rtl" ? "primary" : "inherit"}
-                />{" "}
-                RTL
-              </StyledBox>
-            </Stack>
 
-            <Box pt={3} />
             {/* ------------------------------------------- */}
             {/* ------------ Theme Color setting ------------- */}
             {/* ------------------------------------------- */}
             <Typography variant="h6" gutterBottom>
-              Theme Colors
+              Cores do Tema
             </Typography>
             <Grid container spacing={2}>
               {thColors.map((thcolor) => (
@@ -226,44 +196,12 @@ const Customizer: FC = () => {
               ))}
             </Grid>
             <Box pt={4} />
-            {/* ------------------------------------------- */}
-            {/* ------------ Layout Horizontal / Vertical ------------- */}
-            {/* ------------------------------------------- */}
-            <Typography variant="h6" gutterBottom>
-              Layout Type
-            </Typography>
-            <Stack direction={"row"} gap={2} my={2}>
-              <StyledBox
-                onClick={() => dispatch(toggleHorizontal(false))}
-                display="flex"
-                gap={1}
-              >
-                <ViewComfyTwoTone
-                  color={
-                    customizer.isHorizontal === false ? "primary" : "inherit"
-                  }
-                />
-                Vertical
-              </StyledBox>
-              <StyledBox
-                onClick={() => dispatch(toggleHorizontal(true))}
-                display="flex"
-                gap={1}
-              >
-                <PaddingTwoTone
-                  color={
-                    customizer.isHorizontal === true ? "primary" : "inherit"
-                  }
-                />
-                Horizontal
-              </StyledBox>
-            </Stack>
-            <Box pt={4} />
+
             {/* ------------------------------------------- */}
             {/* ------------ Layout Boxed / Full ------------- */}
             {/* ------------------------------------------- */}
             <Typography variant="h6" gutterBottom>
-              Container Option
+              Opções do Contêiner
             </Typography>
             <Stack direction={"row"} gap={2} my={2}>
               <StyledBox
@@ -276,7 +214,7 @@ const Customizer: FC = () => {
                     customizer.isLayout === "boxed" ? "primary" : "inherit"
                   }
                 />
-                Boxed
+                Contido
               </StyledBox>
               <StyledBox
                 onClick={() => dispatch(toggleLayout("full"))}
@@ -286,7 +224,7 @@ const Customizer: FC = () => {
                 <AspectRatioTwoToneIcon
                   color={customizer.isLayout === "full" ? "primary" : "inherit"}
                 />
-                Full
+                Total
               </StyledBox>
             </Stack>
             <Box pt={4} />
@@ -297,40 +235,34 @@ const Customizer: FC = () => {
             {/* ------------------------------------------- */}
             {/* ------------ Theme Color setting ------------- */}
             {/* ------------------------------------------- */}
-            {customizer.isHorizontal ? (
-              ""
-            ) : (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  Sidebar Type
-                </Typography>
-                <Stack direction={"row"} gap={2} my={2}>
-                  <StyledBox
-                    onClick={() => dispatch(toggleSidebar())}
-                    display="flex"
-                    gap={1}
-                  >
-                    <WebAssetTwoToneIcon
-                      color={!customizer.isCollapse ? "primary" : "inherit"}
-                    />
-                    Full
-                  </StyledBox>
-                  <StyledBox
-                    onClick={() => dispatch(toggleSidebar())}
-                    display="flex"
-                    gap={1}
-                  >
-                    <ViewSidebarTwoToneIcon
-                      color={customizer.isCollapse ? "primary" : "inherit"}
-                    />
-                    mini
-                  </StyledBox>
-                </Stack>
-              </>
-            )}
+            <Typography variant="h6" gutterBottom>
+              Tipo da Barra Lateral
+            </Typography>
+            <Stack direction={"row"} gap={2} my={2}>
+              <StyledBox
+                onClick={() => dispatch(toggleSidebar())}
+                display="flex"
+                gap={1}
+              >
+                <WebAssetTwoToneIcon
+                  color={!customizer.isCollapse ? "primary" : "inherit"}
+                />
+                Completa
+              </StyledBox>
+              <StyledBox
+                onClick={() => dispatch(toggleSidebar())}
+                display="flex"
+                gap={1}
+              >
+                <ViewSidebarTwoToneIcon
+                  color={customizer.isCollapse ? "primary" : "inherit"}
+                />
+                Mini
+              </StyledBox>
+            </Stack>
             <Box pt={4} />
             <Typography variant="h6" gutterBottom>
-              Card With
+              Estilo do Card
             </Typography>
             <Stack direction={"row"} gap={2} my={2}>
               <StyledBox
@@ -341,7 +273,7 @@ const Customizer: FC = () => {
                 <BorderOuter
                   color={!customizer.isCardShadow ? "primary" : "inherit"}
                 />
-                Border
+                Borda
               </StyledBox>
               <StyledBox
                 onClick={() => dispatch(setCardShadow(true))}
@@ -351,7 +283,7 @@ const Customizer: FC = () => {
                 <CallToActionTwoToneIcon
                   color={customizer.isCardShadow ? "primary" : "inherit"}
                 />
-                Shadow
+                Sombra
               </StyledBox>
             </Stack>
             <Box pt={4} />
@@ -359,7 +291,7 @@ const Customizer: FC = () => {
             {/* ------------ Theme Color setting ------------- */}
             {/* ------------------------------------------- */}
             <Typography variant="h6" gutterBottom>
-              Theme Border Radius
+              Arredondamento das Bordas
             </Typography>
 
             <Slider

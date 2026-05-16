@@ -18,6 +18,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { useEffect } from "react";
 import {
@@ -56,10 +57,14 @@ export default function ReceitaForm({
     selectedItem,
     setFocus,
   } = useReceitaForm({ lancamentoParaEditar, dadosIniciais, onSuccess });
+  const theme = useTheme();
 
   // Focar no campo de item ao montar o formulário
   useEffect(() => {
-    setTimeout(() => lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId"), 300);
+    setTimeout(
+      () => (lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId")),
+      300,
+    );
   }, [setFocus]);
 
   return (
@@ -72,29 +77,36 @@ export default function ReceitaForm({
           p: 3,
           border: "1px solid",
           borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-          backgroundColor: 'background.paper'
+          backgroundColor: "background.paper",
         }}
       >
         {/* Header */}
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Box
-            sx={{
-              borderRadius: 2,
-              p: 1,
-              display: "flex",
-              backgroundColor: selectedItem?.cor || "success.main",
-              color: "white",
-              position: "relative",
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            <DynamicIcon
-              name={selectedItem?.icone}
-              size={24}
-              fallbackIcon="IconWallet"
-              color="white"
-            />
-          </Box>
+          {(() => {
+            const iconColor = selectedItem?.cor || theme.palette.success.main;
+            return (
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: alpha(iconColor, 0.1),
+                  color: iconColor,
+                  transition: "all 0.3s ease",
+                }}
+              >
+                <DynamicIcon
+                  name={selectedItem?.icone}
+                  size={22}
+                  fallbackIcon="IconWallet"
+                  color={iconColor}
+                />
+              </Box>
+            );
+          })()}
           <Box>
             <Typography variant="subtitle2" fontWeight={600}>
               Lançamento de Receita
@@ -108,7 +120,12 @@ export default function ReceitaForm({
         <Grid container spacing={2.5}>
           {/* Tipo de Lançamento */}
           <Grid item xs={12}>
-            <Typography variant="body2" fontWeight={600} mb={1.5} color="text.secondary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              mb={1.5}
+              color="text.secondary"
+            >
               Tipo de Lançamento
             </Typography>
 
@@ -139,11 +156,13 @@ export default function ReceitaForm({
                     boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
                     "&[value='pagamento']": {
                       color: "success.main",
-                      borderColor: (theme) => alpha(theme.palette.success.main, 0.4),
+                      borderColor: (theme) =>
+                        alpha(theme.palette.success.main, 0.4),
                     },
                     "&[value='agendamento']": {
                       color: "warning.main",
-                      borderColor: (theme) => alpha(theme.palette.warning.main, 0.4),
+                      borderColor: (theme) =>
+                        alpha(theme.palette.warning.main, 0.4),
                     },
                   },
                 },
@@ -179,10 +198,7 @@ export default function ReceitaForm({
               textFieldProps={{
                 InputProps: {
                   startAdornment: (
-                    <ItemIconAdornment
-                      item={selectedItem}
-                      isReceita
-                    />
+                    <ItemIconAdornment item={selectedItem} isReceita />
                   ),
                 },
               }}
@@ -211,7 +227,11 @@ export default function ReceitaForm({
           {/* Data */}
           <Grid item xs={12}>
             <HookDatePicker
-              label={tipo === "pagamento" ? "Data do Recebimento" : "Data do Agendamento"}
+              label={
+                tipo === "pagamento"
+                  ? "Data do Recebimento"
+                  : "Data do Agendamento"
+              }
               name="data"
               control={control}
               shrinkLabel={true}
@@ -270,7 +290,8 @@ export default function ReceitaForm({
                       mt={1.5}
                       p={1.5}
                       sx={{
-                        backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                        backgroundColor: (theme) =>
+                          alpha(theme.palette.primary.main, 0.08),
                         borderRadius: 1,
                       }}
                     >

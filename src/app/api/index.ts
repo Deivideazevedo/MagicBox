@@ -2,6 +2,9 @@
 // Aplica customErrorMap em todas as validações da API
 import '@/lib/zod-config';
 
-import mock from './mock';
-
-mock.onAny().passThrough();
+// Mock apenas em desenvolvimento
+if (process.env.NODE_ENV === 'development') {
+  import('./mock').then(({ default: mock }) => {
+    mock.onAny().passThrough();
+  });
+}

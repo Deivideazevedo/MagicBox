@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
@@ -22,10 +24,11 @@ import {
   IconTrendingUp,
   IconRefresh,
   IconLoader2,
+  IconCheck,
 } from "@tabler/icons-react";
 import { api } from "@/services/api";
 import { persistor } from "@/store/store";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import Notifications from "./Notification";
 import Profile from "./Profile";
 import Search from "./Search";
@@ -53,7 +56,6 @@ const Header = () => {
   // drawer
   const customizer = useSelector((state: AppState) => state.customizer);
   const dispatch = useDispatch();
-
 
   const AppBarStyled = styled(AppBar)(({ theme }) => ({
     boxShadow: "none",
@@ -88,10 +90,7 @@ const Header = () => {
       // Pequeno delay para a animação ser visível e o cache atualizar
       setTimeout(() => {
         setIsSyncing(false);
-        SwalToast.fire({
-          icon: "success",
-          title: "Dados sincronizados com sucesso!",
-        });
+        toast.success("Dados sincronizados com sucesso!");
       }, 800);
     } catch (error) {
       setIsSyncing(false);
@@ -136,7 +135,6 @@ const Header = () => {
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
-
           {/* ------------------------------------------- */}
           {/* Botão de Sincronização Manual */}
           {/* ------------------------------------------- */}
@@ -157,6 +155,21 @@ const Header = () => {
             }}
           >
             <IconRefresh size="20" stroke="1.6" />
+          </IconButton>
+
+          {/* TEMP: Botão para testar toast */}
+          <IconButton
+            size="large"
+            color="inherit"
+            aria-label="test-toast"
+            onClick={() => toast.success("Dados sincronizados com sucesso!")}
+            sx={{
+              "&:hover": {
+                backgroundColor: "success.light",
+              },
+            }}
+          >
+            <IconCheck size="20" stroke="1.6" />
           </IconButton>
           {/* )} */}
 

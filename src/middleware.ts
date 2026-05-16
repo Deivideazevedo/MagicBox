@@ -109,6 +109,7 @@ export const config = {
   // - _next/image/ (Imagens otimizadas do Next.js)
   // - images/ (Sua pasta de imagens em /public)
   // - favicon.ico (O ícone do site)
+  // - api/auth/session, api/auth/csrf (rotas públicas do NextAuth)
   // Agora o middleware TAMBÉM intercepta rotas /api/* (exceto /api/auth/*)
-  matcher: ["/((?!_next/static|_next/image|images|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|images|favicon.ico|api/auth/session|api/auth/csrf).*)"],
 };

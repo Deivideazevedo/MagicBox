@@ -11,7 +11,7 @@ import {
   useUpdateReceitaMutation,
 } from "@/services/endpoints/receitasApi";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import { SwalToast } from "@/utils/swalert";
+import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useCallback, useMemo, useState } from "react";
@@ -165,10 +165,7 @@ export const useReceitas = ({
           reset({ ...defaultValues, categoriaId: data.categoriaId });
         }
 
-        SwalToast.fire({
-          icon: "success",
-          title: "Receita salva com sucesso!",
-        });
+        toast.success("Receita salva com sucesso!");
       } catch { }
     },
     [createReceita, updateReceita, reset, defaultValues]
@@ -219,10 +216,7 @@ export const useReceitas = ({
       setDeleteDialog(false);
       setRow(null);
 
-      SwalToast.fire({
-        icon: "success",
-        title: "Receita excluída com sucesso!",
-      });
+      toast.success("Receita excluída com sucesso!");
     } catch { }
   }, [row, deleteReceita]);
 

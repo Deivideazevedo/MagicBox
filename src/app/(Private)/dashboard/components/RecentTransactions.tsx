@@ -13,6 +13,8 @@ import {
   Chip,
   Button,
   CircularProgress,
+  Skeleton,
+  Alert,
 } from "@mui/material";
 import { IconArrowRight } from "@tabler/icons-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -74,13 +76,25 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
         </Box>
 
         {isLoading ? (
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
-          </Box>
+          <List disablePadding>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ListItem key={i} sx={{ px: 0, py: 1.5, borderBottom: i < 5 ? "1px solid #f0f0f0" : "none" }}>
+                <ListItemIcon sx={{ minWidth: 48 }}>
+                  <Skeleton variant="circular" width={40} height={40} />
+                </ListItemIcon>
+                <ListItemText
+                  primaryTypographyProps={{ component: "div" }}
+                  secondaryTypographyProps={{ component: "div" }}
+                  primary={<Box display="flex" justifyContent="space-between"><Skeleton variant="text" width="50%" /><Skeleton variant="text" width="20%" /></Box>}
+                  secondary={<Box display="flex" justifyContent="space-between" mt={0.5}><Skeleton variant="text" width="30%" /><Skeleton variant="text" width="20%" /></Box>}
+                />
+              </ListItem>
+            ))}
+          </List>
         ) : transactions.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" align="center">
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
             Nenhuma transação recente encontrada.
-          </Typography>
+          </Alert>
         ) : (
           <List disablePadding>
             {transactions.map((transaction, index) => {

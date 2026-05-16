@@ -61,7 +61,10 @@ export default function MetaForm({
 
   // Focar no campo de item ao montar o formulário
   useEffect(() => {
-    setTimeout(() => lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId"), 300);
+    setTimeout(
+      () => (lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId")),
+      300,
+    );
   }, [setFocus]);
 
   return (
@@ -74,29 +77,36 @@ export default function MetaForm({
           p: 3,
           border: "1px solid",
           borderColor: (theme) => alpha(theme.palette.primary.main, 0.2),
-          backgroundColor: 'background.paper'
+          backgroundColor: "background.paper",
         }}
       >
         {/* Header */}
         <Box display="flex" alignItems="center" gap={2} mb={3}>
-          <Box
-            sx={{
-              borderRadius: 2,
-              p: 1,
-              display: "flex",
-              backgroundColor: selectedItem?.cor || "primary.main",
-              color: "white",
-              position: "relative",
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            <DynamicIcon
-              name={selectedItem?.icone}
-              size={24}
-              fallbackIcon="IconTarget"
-              color="white"
-            />
-          </Box>
+          {(() => {
+            const iconColor = selectedItem?.cor || theme.palette.primary.main;
+            return (
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: alpha(iconColor, 0.1),
+                  color: iconColor,
+                  transition: "all 0.3s ease",
+                }}
+              >
+                <DynamicIcon
+                  name={selectedItem?.icone}
+                  size={22}
+                  fallbackIcon="IconTarget"
+                  color={iconColor}
+                />
+              </Box>
+            );
+          })()}
           <Box>
             <Typography variant="subtitle2" fontWeight={600}>
               Lançamento de Meta
@@ -110,7 +120,12 @@ export default function MetaForm({
         <Grid container spacing={2.5}>
           {/* Tipo de Lançamento */}
           <Grid item xs={12}>
-            <Typography variant="body2" fontWeight={600} mb={1.5} color="text.secondary">
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              mb={1.5}
+              color="text.secondary"
+            >
               Tipo de Lançamento
             </Typography>
 
@@ -145,11 +160,13 @@ export default function MetaForm({
                     boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
                     "&[value='investimento']": {
                       color: "success.main",
-                      borderColor: (theme) => alpha(theme.palette.success.main, 0.4),
+                      borderColor: (theme) =>
+                        alpha(theme.palette.success.main, 0.4),
                     },
                     "&[value='retirada']": {
                       color: "error.main",
-                      borderColor: (theme) => alpha(theme.palette.error.main, 0.4),
+                      borderColor: (theme) =>
+                        alpha(theme.palette.error.main, 0.4),
                     },
                   },
                 },
@@ -176,7 +193,11 @@ export default function MetaForm({
               name="itemId"
               control={control}
               options={itens}
-              label={tipo === "retirada" ? "Meta de Origem (Onde sai o saldo)" : "Meta Selecionada"}
+              label={
+                tipo === "retirada"
+                  ? "Meta de Origem (Onde sai o saldo)"
+                  : "Meta Selecionada"
+              }
               placeholder="Buscar meta..."
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
@@ -185,10 +206,7 @@ export default function MetaForm({
               textFieldProps={{
                 InputProps: {
                   startAdornment: (
-                    <ItemIconAdornment
-                      item={selectedItem}
-                      isMeta
-                    />
+                    <ItemIconAdornment item={selectedItem} isMeta />
                   ),
                 },
               }}
@@ -197,7 +215,14 @@ export default function MetaForm({
                 "& .MuiOutlinedInput-adornmentStart": { marginRight: "4px" },
               }}
               onChange={(_, value) => {
-                value && setTimeout(() => tipo === "retirada" ? setFocus("destinoId") : setFocus("valor"), 0);
+                value &&
+                  setTimeout(
+                    () =>
+                      tipo === "retirada"
+                        ? setFocus("destinoId")
+                        : setFocus("valor"),
+                    0,
+                  );
               }}
             />
           </Grid>
@@ -209,12 +234,22 @@ export default function MetaForm({
                 sx={{
                   p: 2,
                   borderRadius: 2,
-                  backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                  backgroundColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.05),
                   border: "1px dashed",
-                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                  borderColor: (theme) =>
+                    alpha(theme.palette.primary.main, 0.3),
                 }}
               >
-                <Typography variant="body2" fontWeight={700} color="primary" mb={2} display="flex" alignItems="center" gap={1}>
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                  color="primary"
+                  mb={2}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                >
                   <IconArrowRight size={18} /> Destinar Retirada para:
                 </Typography>
 
@@ -233,14 +268,21 @@ export default function MetaForm({
                       py: 1,
                       "&:hover": {
                         backgroundColor: "background.paper",
-                        borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                        borderColor: (theme) =>
+                          alpha(theme.palette.divider, 0.2),
                       },
                       "&.Mui-selected": {
                         backgroundColor: "background.paper",
                         border: "1px solid",
                         boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
-                        "&[value='despesa']": { color: "error.main", borderColor: alpha(theme.palette.error.main, 0.4) },
-                        "&[value='receita']": { color: "success.main", borderColor: alpha(theme.palette.success.main, 0.4) },
+                        "&[value='despesa']": {
+                          color: "error.main",
+                          borderColor: alpha(theme.palette.error.main, 0.4),
+                        },
+                        "&[value='receita']": {
+                          color: "success.main",
+                          borderColor: alpha(theme.palette.success.main, 0.4),
+                        },
                         "&:hover": {
                           backgroundColor: "background.paper",
                         },
@@ -266,8 +308,16 @@ export default function MetaForm({
                   name="destinoId"
                   control={control}
                   options={itensDestino as any[]}
-                  label={destinoOrigem === "despesa" ? "Despesa de Destino" : "Receita de Destino"}
-                  placeholder={destinoOrigem === "despesa" ? "Pagar qual despesa?" : "Como qual receita?"}
+                  label={
+                    destinoOrigem === "despesa"
+                      ? "Despesa de Destino"
+                      : "Receita de Destino"
+                  }
+                  placeholder={
+                    destinoOrigem === "despesa"
+                      ? "Pagar qual despesa?"
+                      : "Como qual receita?"
+                  }
                   getOptionLabel={(opt) => opt.nome}
                   getOptionValue={(opt) => opt.id}
                   forcePopupIcon={false}
@@ -286,7 +336,7 @@ export default function MetaForm({
                     value && setTimeout(() => setFocus("valor"), 0);
                   }}
                   sx={{
-                    backgroundColor: 'background.paper'
+                    backgroundColor: "background.paper",
                   }}
                 />
               </Box>
@@ -308,7 +358,11 @@ export default function MetaForm({
           {/* Data */}
           <Grid item xs={12}>
             <HookDatePicker
-              label={tipo === "investimento" ? "Data do Investimento (Aporte)" : "Data da Retirada (Resgate)"}
+              label={
+                tipo === "investimento"
+                  ? "Data do Investimento (Aporte)"
+                  : "Data da Retirada (Resgate)"
+              }
               name="data"
               control={control}
               shrinkLabel={true}
