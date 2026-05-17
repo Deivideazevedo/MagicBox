@@ -129,7 +129,7 @@ export function useLancamentosList({
         modalHandlers.excluir.abrirBulk();
       },
     }),
-    [modals.excluir, selectedIds, modalHandlers.excluir, bulkDelete],
+    [modals.excluir, modals.bulkExcluir, selectedIds, modalHandlers.excluir, bulkDelete],
   );
 
   // Handlers de Paginação

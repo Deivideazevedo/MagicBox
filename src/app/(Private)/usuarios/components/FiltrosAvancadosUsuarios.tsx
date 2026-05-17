@@ -32,8 +32,8 @@ import {
 import { useForm } from "react-hook-form";
 
 import { debounce } from "lodash";
-import { useCallback, useEffect, useState } from "react";
-import { FiltrosUsuarios, getDefaultUserDates, getEmptyDates } from "../utils";
+import { useEffect, useMemo, useState } from "react";
+import { FiltrosUsuarios, getEmptyDates } from "../utils";
 
 type FiltroKey = "periodo" | "nome" | "email" | "username" | "status";
 
@@ -101,11 +101,12 @@ export default function FiltrosAvancadosUsuarios({
     if (novosAtivos.length === 0) setExpandido(false);
   };
 
-  const handleSearchDebounced = useCallback(
-    debounce((data: FiltrosUsuarios) => {
-      handleSearch(data);
-    }, 500),
-    [handleSearch, debounce],
+  const handleSearchDebounced = useMemo(
+    () =>
+      debounce((data: FiltrosUsuarios) => {
+        handleSearch(data);
+      }, 500),
+    [handleSearch],
   );
 
   const formValues = watch();

@@ -5,7 +5,7 @@ import {
   DragDropContext,
   Draggable,
   DropResult,
-  Droppable
+  Droppable,
 } from "@hello-pangea/dnd";
 import {
   Alert,
@@ -13,10 +13,13 @@ import {
   CircularProgress,
   Collapse,
   Container,
+  FormControlLabel,
   Grid,
   IconButton,
   LinearProgress,
   Paper,
+  Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -28,25 +31,23 @@ import {
   alpha,
   useTheme,
 } from "@mui/material";
-import { pdf } from "@react-pdf/renderer";
 import {
+  IconBolt,
   IconChartBar,
   IconChevronDown,
   IconChevronUp,
-  IconDownload,
   IconGripVertical,
   IconHistory,
   IconTable,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
-import { RelatorioPDFTemplate } from "./components/pdf/RelatorioPDFTemplate";
 import { useRelatorios } from "./hooks/useRelatorios";
 
 // Redux
 import {
   setSectionsOrder,
   toggleOverview,
-  toggleTable
+  toggleTable,
 } from "@/store/apps/relatorios/RelatoriosSlice";
 import { useDispatch, useSelector } from "@/store/hooks";
 import { RootState } from "@/store/store";
@@ -71,7 +72,9 @@ export default function RelatoriosPage() {
   const dispatch = useDispatch();
 
   // Redux States
-  const { sectionsOrder, showOverview, showTable } = useSelector((state: RootState) => state.relatorioUi);
+  const { sectionsOrder, showOverview, showTable } = useSelector(
+    (state: RootState) => state.relatorioUi,
+  );
 
   // Configurações de densidade da tabela de histórico
   const histPaddingHeader = 1.8;
@@ -100,6 +103,9 @@ export default function RelatoriosPage() {
     toggleTipoFiltro,
     resetFilters,
     tiposExistentes,
+    evolucaoAnual,
+    isLoadingEvolucao,
+    anoReferencia,
   } = useRelatorios();
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
@@ -130,30 +136,37 @@ export default function RelatoriosPage() {
         // Quando projeções desativadas, remover meses que só existem por causa de projeção
         // (sem pagamentos reais E sem agendamentos reais)
         if (!incluirProjecaoTabela) {
-          const temDadosReais = Number(h.totalPago || 0) !== 0 || Number(h.realAgendado || 0) !== 0;
+          const temDadosReais =
+            Number(h.totalPago || 0) !== 0 || Number(h.realAgendado || 0) !== 0;
           return temDadosReais;
         }
         return true;
       })
       .map((h) => ({
         ...h,
-        previsto: incluirProjecaoTabela ? h.totalPrevistoComProjecao : h.totalPrevisto,
-        restante: incluirProjecaoTabela ? h.restanteComProjecao : h.restanteReal,
+        previsto: incluirProjecaoTabela
+          ? h.totalPrevistoComProjecao
+          : h.totalPrevisto,
+        restante: incluirProjecaoTabela
+          ? h.restanteComProjecao
+          : h.restanteReal,
       }))
       .sort((a, b) => fnCompareValues(a.dataRef, b.dataRef));
   }, [historicoItem, incluirProjecaoTabela]);
 
   const handleExportPDF = async () => {
-    if (!data?.resumo || !data?.categorias) return;
     setGerandoPdf(true);
     try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { RelatorioPDFTemplate } = await import("./components/pdf/RelatorioPDFTemplate");
+
       const blob = await pdf(
         <RelatorioPDFTemplate
-          resumo={data.resumo}
-          categorias={data.categorias}
           dataInicio={dataInicio}
           dataFim={dataFim}
-        />
+          resumo={resumoExibido!}
+          categorias={data?.categorias || []}
+        />,
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
@@ -171,16 +184,30 @@ export default function RelatoriosPage() {
 
   if (loading && !data) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "80vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth={"xl"}>
       {/* Header */}
-      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Box>
           <Typography variant="h4" fontWeight={800} gutterBottom>
             Relatório Financeiro 360º
@@ -189,21 +216,50 @@ export default function RelatoriosPage() {
             Análise sistêmica de suas receitas, despesas e metas.
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Tooltip title={selectedIds.size > 0 ? `Exportar PDF (${selectedNames})` : "Exportar PDF Geral"}>
-            <IconButton
-              onClick={handleExportPDF}
-              disabled={gerandoPdf}
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: 'primary.main',
-                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
-              }}
-            >
-              {gerandoPdf ? <CircularProgress size={24} /> : <IconDownload />}
-            </IconButton>
-          </Tooltip>
-        </Box>
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={incluirProjecaoTabela}
+              onChange={(e) => setIncluirProjecaoTabela(e.target.checked)}
+              color="warning"
+            />
+          }
+          label={
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <IconBolt
+                size={20}
+                color={
+                  incluirProjecaoTabela
+                    ? theme.palette.warning.main
+                    : theme.palette.text.secondary
+                }
+              />
+              <Typography
+                variant="caption"
+                fontWeight={700}
+                sx={{
+                  whiteSpace: "nowrap",
+                  color: incluirProjecaoTabela
+                    ? theme.palette.warning.main
+                    : theme.palette.text.secondary,
+                }}
+              >
+                Projeções
+              </Typography>
+            </Stack>
+          }
+          labelPlacement="start"
+          sx={{
+            ml: 0,
+            mr: 0,
+            gap: 1,
+            "& .MuiFormControlLabel-label": {
+              display: "flex",
+              alignItems: "center",
+            },
+          }}
+        />
       </Box>
 
       {error && (
@@ -217,23 +273,31 @@ export default function RelatoriosPage() {
         dataInicio={dataInicio}
         dataFim={dataFim}
         setPeriodo={setPeriodo}
+        onExportPDF={handleExportPDF}
+        isExporting={gerandoPdf}
+        exportTooltip={
+          selectedIds.size > 0
+            ? `Exportar PDF (${selectedNames})`
+            : "Exportar PDF Geral"
+        }
       />
 
       <Box sx={{ mt: 3 }}>
         {!isReady ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
             <CircularProgress />
           </Box>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="relatorios-sections">
               {(provided) => (
-                <Box
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                >
+                <Box {...provided.droppableProps} ref={provided.innerRef}>
                   {sectionsOrder.map((sectionId, index) => (
-                    <Draggable key={sectionId} draggableId={sectionId} index={index}>
+                    <Draggable
+                      key={sectionId}
+                      draggableId={sectionId}
+                      index={index}
+                    >
                       {(provided, snapshot) => (
                         <Box
                           ref={provided.innerRef}
@@ -242,67 +306,107 @@ export default function RelatoriosPage() {
                             mb: 3,
                             ...provided.draggableProps.style,
                             ...(snapshot.isDragging && {
-                              '& > div': {
+                              "& > div": {
                                 boxShadow: theme.shadows[9],
                                 border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
-                                bgcolor: sectionId === 'overview' ? alpha(theme.palette.background.paper, 0.9) : 'transparent',
+                                bgcolor:
+                                  sectionId === "overview"
+                                    ? alpha(theme.palette.background.paper, 0.9)
+                                    : "transparent",
                                 borderRadius: 3,
-                              }
-                            })
+                              },
+                            }),
                           }}
                         >
-                          {sectionId === 'overview' && (
+                          {sectionId === "overview" && (
                             <Paper
                               elevation={0}
                               variant="outlined"
                               sx={{
                                 overflow: "hidden",
                                 borderRadius: 3,
-                                borderColor: alpha(theme.palette.primary.main, 0.15),
-                                bgcolor: 'background.paper',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                                '&:hover': {
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                                  borderColor: alpha(theme.palette.primary.main, 0.25),
-                                }
+                                borderColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.15,
+                                ),
+                                bgcolor: "background.paper",
+                                transition: "all 0.3s ease",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                                "&:hover": {
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                                  borderColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.25,
+                                  ),
+                                },
                               }}
                             >
                               <Box
-                                {...provided.dragHandleProps} onClick={() => dispatch(toggleOverview())}
+                                {...provided.dragHandleProps}
+                                onClick={() => dispatch(toggleOverview())}
                                 sx={{
                                   p: 2,
-                                  bgcolor: alpha(theme.palette.primary.main, 0.02),
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  borderBottom: showOverview ? `1px solid ${alpha(theme.palette.divider, 0.08)}` : 'none',
-                                  transition: 'background-color 0.2s',
-                                  userSelect: 'none',
-                                  cursor: 'grab',
-                                  '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                    '& .section-icon': { color: 'primary.main' },
-                                    '& .section-title': { color: 'primary.main' }
-                                  }
+                                  bgcolor: alpha(
+                                    theme.palette.primary.main,
+                                    0.02,
+                                  ),
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  borderBottom: showOverview
+                                    ? `1px solid ${alpha(theme.palette.divider, 0.08)}`
+                                    : "none",
+                                  transition: "background-color 0.2s",
+                                  userSelect: "none",
+                                  cursor: "grab",
+                                  "&:hover": {
+                                    bgcolor: alpha(
+                                      theme.palette.primary.main,
+                                      0.04,
+                                    ),
+                                    "& .section-icon": {
+                                      color: "primary.main",
+                                    },
+                                    "& .section-title": {
+                                      color: "primary.main",
+                                    },
+                                  },
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                  <Tooltip title="Clique e arraste para reordenar esta seção" arrow>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                  }}
+                                >
+                                  <Tooltip
+                                    title="Clique e arraste para reordenar esta seção"
+                                    arrow
+                                  >
                                     <Box
                                       className="drag-handle"
                                       sx={{
-                                        display: 'flex',
-                                        color: alpha(theme.palette.text.primary, 0.3),
+                                        display: "flex",
+                                        color: alpha(
+                                          theme.palette.text.primary,
+                                          0.3,
+                                        ),
                                         p: 0.5,
                                         borderRadius: 1,
-                                        border: '1px solid transparent',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                          color: 'primary.main',
-                                          bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                          borderColor: alpha(theme.palette.primary.main, 0.2)
-                                        }
+                                        border: "1px solid transparent",
+                                        transition: "all 0.2s",
+                                        "&:hover": {
+                                          color: "primary.main",
+                                          bgcolor: alpha(
+                                            theme.palette.primary.main,
+                                            0.08,
+                                          ),
+                                          borderColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.2,
+                                          ),
+                                        },
                                       }}
                                     >
                                       <IconGripVertical size={20} />
@@ -310,18 +414,18 @@ export default function RelatoriosPage() {
                                   </Tooltip>
                                   <Box
                                     sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
+                                      display: "flex",
+                                      alignItems: "center",
                                       gap: 1.5,
-                                      cursor: 'pointer !important'
+                                      cursor: "pointer !important",
                                     }}
                                   >
                                     <Box
                                       className="section-icon"
                                       sx={{
-                                        display: 'flex',
-                                        color: 'text.secondary',
-                                        transition: 'color 0.2s'
+                                        display: "flex",
+                                        color: "text.secondary",
+                                        transition: "color 0.2s",
                                       }}
                                     >
                                       <IconChartBar size={22} />
@@ -331,10 +435,10 @@ export default function RelatoriosPage() {
                                       fontWeight={800}
                                       className="section-title"
                                       sx={{
-                                        textTransform: 'uppercase',
+                                        textTransform: "uppercase",
                                         letterSpacing: 1.2,
                                         color: theme.palette.text.primary,
-                                        transition: 'color 0.2s'
+                                        transition: "color 0.2s",
                                       }}
                                     >
                                       Resumo e Análise de Indicadores
@@ -344,12 +448,24 @@ export default function RelatoriosPage() {
                                 <IconButton
                                   size="small"
                                   sx={{
-                                    color: 'primary.main',
-                                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                                    color: "primary.main",
+                                    bgcolor: alpha(
+                                      theme.palette.primary.main,
+                                      0.05,
+                                    ),
+                                    "&:hover": {
+                                      bgcolor: alpha(
+                                        theme.palette.primary.main,
+                                        0.1,
+                                      ),
+                                    },
                                   }}
                                 >
-                                  {showOverview ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                  {showOverview ? (
+                                    <IconChevronUp size={20} />
+                                  ) : (
+                                    <IconChevronDown size={20} />
+                                  )}
                                 </IconButton>
                               </Box>
                               <Collapse in={showOverview}>
@@ -361,11 +477,22 @@ export default function RelatoriosPage() {
                                   )}
 
                                   <Grid container spacing={3}>
-                                    <Grid item xs={12} md={6}>
-                                      {data?.categorias && <GraficoDistribuicao categorias={data.categorias} />}
+                                    <Grid item xs={12} md={3.5}>
+                                      {data?.categorias && (
+                                        <GraficoDistribuicao
+                                          categorias={data.categorias}
+                                        />
+                                      )}
                                     </Grid>
-                                    <Grid item xs={12} md={6}>
-                                      {data?.evolucao && <GraficoEvolucao evolucao={data.evolucao} />}
+                                    <Grid item xs={12} md={8.5}>
+                                      <GraficoEvolucao
+                                        evolucao={evolucaoAnual}
+                                        incluirProjecao={incluirProjecaoTabela}
+                                        isLoading={isLoadingEvolucao}
+                                        dataInicio={dataInicio}
+                                        dataFim={dataFim}
+                                        onMesClick={setPeriodo}
+                                      />
                                     </Grid>
                                   </Grid>
                                 </Box>
@@ -373,59 +500,88 @@ export default function RelatoriosPage() {
                             </Paper>
                           )}
 
-                          {sectionId === 'table' && (
+                          {sectionId === "table" && (
                             <Box
                               sx={{
                                 borderRadius: 3,
                                 border: 0,
-                                bgcolor: 'transparent',
-                                boxShadow: 'none',
+                                bgcolor: "transparent",
+                                boxShadow: "none",
                               }}
                             >
                               <Box
-                                {...provided.dragHandleProps} onClick={() => dispatch(toggleTable())}
+                                {...provided.dragHandleProps}
+                                onClick={() => dispatch(toggleTable())}
                                 sx={{
                                   p: 2,
-                                  position: 'relative',
-                                  bgcolor: 'background.paper',
+                                  position: "relative",
+                                  bgcolor: "background.paper",
                                   backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.02)}, ${alpha(theme.palette.primary.main, 0.02)})`,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
                                   border: "1px solid",
-                                  borderColor: alpha(theme.palette.primary.main, 0.15),
+                                  borderColor: alpha(
+                                    theme.palette.primary.main,
+                                    0.15,
+                                  ),
                                   borderTopLeftRadius: 22,
                                   borderTopRightRadius: 22,
                                   borderBottomLeftRadius: showTable ? 4 : 22,
                                   borderBottomRightRadius: showTable ? 4 : 22,
-                                  transition: 'all 0.2s',
-                                  userSelect: 'none',
-                                  cursor: 'grab',
-                                  '&:hover': {
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
-                                    borderColor: alpha(theme.palette.primary.main, 0.25),
+                                  transition: "all 0.2s",
+                                  userSelect: "none",
+                                  cursor: "grab",
+                                  "&:hover": {
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
+                                    borderColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.25,
+                                    ),
                                     backgroundImage: `linear-gradient(${alpha(theme.palette.primary.main, 0.04)}, ${alpha(theme.palette.primary.main, 0.04)})`,
-                                    '& .section-icon': { color: 'primary.main' },
-                                    '& .section-title': { color: 'primary.main' }
-                                  }
+                                    "& .section-icon": {
+                                      color: "primary.main",
+                                    },
+                                    "& .section-title": {
+                                      color: "primary.main",
+                                    },
+                                  },
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                  <Tooltip title="Clique e arraste para reordenar esta seção" arrow>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1.5,
+                                  }}
+                                >
+                                  <Tooltip
+                                    title="Clique e arraste para reordenar esta seção"
+                                    arrow
+                                  >
                                     <Box
                                       className="drag-handle"
                                       sx={{
-                                        display: 'flex',
-                                        color: alpha(theme.palette.text.primary, 0.3),
+                                        display: "flex",
+                                        color: alpha(
+                                          theme.palette.text.primary,
+                                          0.3,
+                                        ),
                                         p: 0.5,
                                         borderRadius: 1,
-                                        border: '1px solid transparent',
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                          color: 'primary.main',
-                                          bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                          borderColor: alpha(theme.palette.primary.main, 0.2)
-                                        }
+                                        border: "1px solid transparent",
+                                        transition: "all 0.2s",
+                                        "&:hover": {
+                                          color: "primary.main",
+                                          bgcolor: alpha(
+                                            theme.palette.primary.main,
+                                            0.08,
+                                          ),
+                                          borderColor: alpha(
+                                            theme.palette.primary.main,
+                                            0.2,
+                                          ),
+                                        },
                                       }}
                                     >
                                       <IconGripVertical size={20} />
@@ -433,18 +589,18 @@ export default function RelatoriosPage() {
                                   </Tooltip>
                                   <Box
                                     sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
+                                      display: "flex",
+                                      alignItems: "center",
                                       gap: 1.5,
-                                      cursor: 'pointer !important'
+                                      cursor: "pointer !important",
                                     }}
                                   >
                                     <Box
                                       className="section-icon"
                                       sx={{
-                                        display: 'flex',
-                                        color: 'text.secondary',
-                                        transition: 'color 0.2s'
+                                        display: "flex",
+                                        color: "text.secondary",
+                                        transition: "color 0.2s",
                                       }}
                                     >
                                       <IconTable size={22} />
@@ -454,10 +610,10 @@ export default function RelatoriosPage() {
                                       fontWeight={800}
                                       className="section-title"
                                       sx={{
-                                        textTransform: 'uppercase',
+                                        textTransform: "uppercase",
                                         letterSpacing: 1.2,
                                         color: theme.palette.text.primary,
-                                        transition: 'color 0.2s'
+                                        transition: "color 0.2s",
                                       }}
                                     >
                                       Detalhamento por Categorias
@@ -467,34 +623,58 @@ export default function RelatoriosPage() {
                                 <IconButton
                                   size="small"
                                   sx={{
-                                    color: 'primary.main',
-                                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                                    color: "primary.main",
+                                    bgcolor: alpha(
+                                      theme.palette.primary.main,
+                                      0.05,
+                                    ),
+                                    "&:hover": {
+                                      bgcolor: alpha(
+                                        theme.palette.primary.main,
+                                        0.1,
+                                      ),
+                                    },
                                   }}
                                 >
-                                  {showTable ? <IconChevronUp size={20} /> : <IconChevronDown size={20} />}
+                                  {showTable ? (
+                                    <IconChevronUp size={20} />
+                                  ) : (
+                                    <IconChevronDown size={20} />
+                                  )}
                                 </IconButton>
                               </Box>
                               <Collapse in={showTable} unmountOnExit>
                                 <Box sx={{ pt: 2 }}>
                                   {/* <Box sx={{ p: 3 }}> */}
                                   <Grid container spacing={3}>
-                                    <Grid item xs={12} sm={selectedIds.size > 0 ? 8 : 12}>
+                                    <Grid
+                                      item
+                                      xs={12}
+                                      sm={selectedIds.size > 0 ? 8 : 12}
+                                    >
                                       {data?.categorias && (
                                         <CustomTable
                                           data={data.categorias}
                                           selectedIds={selectedIds}
                                           onToggle={toggleSelection}
                                           onSelectItem={selectItemForHistory}
-                                          itemSelecionadoParaHistorico={selectedIds.size === 1 ? Array.from(selectedIds)[0] : null}
+                                          itemSelecionadoParaHistorico={
+                                            selectedIds.size === 1
+                                              ? Array.from(selectedIds)[0]
+                                              : null
+                                          }
                                           tiposFiltro={tiposFiltro}
                                           onToggleTipo={toggleTipoFiltro}
                                           onResetFilters={resetFilters}
                                           tiposExistentes={tiposExistentes}
                                           isLoading={loading}
                                           isFetching={isFetching}
-                                          incluirProjecao={incluirProjecaoTabela}
-                                          onToggleProjecao={setIncluirProjecaoTabela}
+                                          incluirProjecao={
+                                            incluirProjecaoTabela
+                                          }
+                                          onToggleProjecao={
+                                            setIncluirProjecaoTabela
+                                          }
                                         />
                                       )}
                                     </Grid>
@@ -507,30 +687,72 @@ export default function RelatoriosPage() {
                                           variant="outlined"
                                           sx={{
                                             borderRadius: 3,
-                                            height: '100%',
-                                            overflow: 'hidden',
-                                            display: 'flex',
-                                            flexDirection: 'column',
+                                            height: "100%",
+                                            overflow: "hidden",
+                                            display: "flex",
+                                            flexDirection: "column",
                                             border: "1px solid",
-                                            borderColor: alpha(theme.palette.primary.main, 0.2),
-                                            bgcolor: 'background.paper',
-                                            transition: 'all 0.3s ease',
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                                            '&:hover': {
-                                              boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-                                              borderColor: alpha(theme.palette.primary.main, 0.25),
-                                            }
+                                            borderColor: alpha(
+                                              theme.palette.primary.main,
+                                              0.2,
+                                            ),
+                                            bgcolor: "background.paper",
+                                            transition: "all 0.3s ease",
+                                            boxShadow:
+                                              "0 2px 8px rgba(0,0,0,0.02)",
+                                            "&:hover": {
+                                              boxShadow:
+                                                "0 4px 12px rgba(0,0,0,0.04)",
+                                              borderColor: alpha(
+                                                theme.palette.primary.main,
+                                                0.25,
+                                              ),
+                                            },
                                           }}
                                         >
-                                          <Box sx={{ p: 2, bgcolor: alpha(theme.palette.primary.main, 0.02), borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Box sx={{ p: 0.5, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 1, display: 'flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+                                          <Box
+                                            sx={{
+                                              p: 2,
+                                              bgcolor: alpha(
+                                                theme.palette.primary.main,
+                                                0.02,
+                                              ),
+                                              borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 1.5,
+                                            }}
+                                          >
+                                            <Box
+                                              sx={{
+                                                p: 0.5,
+                                                bgcolor: alpha(
+                                                  theme.palette.primary.main,
+                                                  0.1,
+                                                ),
+                                                borderRadius: 1,
+                                                display: "flex",
+                                                width: 28,
+                                                height: 28,
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                              }}
+                                            >
                                               {isFetchingHistorico ? (
                                                 <CircularProgress size={16} />
                                               ) : (
-                                                <IconHistory size={18} color={theme.palette.primary.main} />
+                                                <IconHistory
+                                                  size={18}
+                                                  color={
+                                                    theme.palette.primary.main
+                                                  }
+                                                />
                                               )}
                                             </Box>
-                                            <Typography variant="subtitle2" fontWeight={800}>
+                                            <Typography
+                                              variant="subtitle2"
+                                              fontWeight={800}
+                                            >
                                               Histórico: {titleHistorico}
                                             </Typography>
                                           </Box>
@@ -540,62 +762,217 @@ export default function RelatoriosPage() {
                                               sx={{
                                                 height: 2,
                                                 // bgcolor: 'transparent',
-                                                '& .MuiLinearProgress-bar': { borderRadius: 1 }
+                                                "& .MuiLinearProgress-bar": {
+                                                  borderRadius: 1,
+                                                },
                                               }}
                                             />
                                           )}
 
                                           {isLoadingHistorico ? (
-                                            <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
+                                            <Box
+                                              sx={{
+                                                p: 4,
+                                                display: "flex",
+                                                justifyContent: "center",
+                                              }}
+                                            >
                                               <CircularProgress size={32} />
                                             </Box>
                                           ) : (
-                                            <Box sx={{ flex: 1, overflow: 'auto' }}>
+                                            <Box
+                                              sx={{ flex: 1, overflow: "auto" }}
+                                            >
                                               <TableContainer>
                                                 <Table size="small">
                                                   <TableHead>
-                                                    <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
-                                                      <TableCell sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>REFERÊNCIA</Typography></TableCell>
-                                                      <TableCell align="center" sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>PREVISTO / REALIZADO</Typography></TableCell>
-                                                      <TableCell align="right" sx={{ whiteSpace: "nowrap", py: histPaddingHeader }}><Typography variant="caption" fontWeight={800} color="text.secondary" sx={{ whiteSpace: "nowrap" }}>DIFERENÇA</Typography></TableCell>
+                                                    <TableRow
+                                                      sx={{
+                                                        bgcolor: alpha(
+                                                          theme.palette.primary
+                                                            .main,
+                                                          0.02,
+                                                        ),
+                                                      }}
+                                                    >
+                                                      <TableCell
+                                                        sx={{
+                                                          whiteSpace: "nowrap",
+                                                          py: histPaddingHeader,
+                                                        }}
+                                                      >
+                                                        <Typography
+                                                          variant="caption"
+                                                          fontWeight={800}
+                                                          color="text.secondary"
+                                                          sx={{
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          REFERÊNCIA
+                                                        </Typography>
+                                                      </TableCell>
+                                                      <TableCell
+                                                        align="center"
+                                                        sx={{
+                                                          whiteSpace: "nowrap",
+                                                          py: histPaddingHeader,
+                                                        }}
+                                                      >
+                                                        <Typography
+                                                          variant="caption"
+                                                          fontWeight={800}
+                                                          color="text.secondary"
+                                                          sx={{
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          PREVISTO / REALIZADO
+                                                        </Typography>
+                                                      </TableCell>
+                                                      <TableCell
+                                                        align="right"
+                                                        sx={{
+                                                          whiteSpace: "nowrap",
+                                                          py: histPaddingHeader,
+                                                        }}
+                                                      >
+                                                        <Typography
+                                                          variant="caption"
+                                                          fontWeight={800}
+                                                          color="text.secondary"
+                                                          sx={{
+                                                            whiteSpace:
+                                                              "nowrap",
+                                                          }}
+                                                        >
+                                                          DIFERENÇA
+                                                        </Typography>
+                                                      </TableCell>
                                                     </TableRow>
                                                   </TableHead>
                                                   <TableBody>
-                                                    {historicoConsolidado.map((h, i) => (
-                                                      <TableRow
-                                                        key={i}
-                                                        sx={{
-                                                          "&:last-child td, &:last-child th": { border: 0 },
-                                                          "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) }
-                                                        }}
-                                                      >
-                                                        <TableCell sx={{ color: "primary.main", fontWeight: 700, whiteSpace: "nowrap", py: histPaddingRow }}>{h.referencia}</TableCell>
-                                                        <TableCell align="center" sx={{ py: histPaddingRow }}>
-                                                          <Typography variant="caption" sx={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                                                            <Box component="span" sx={{ fontWeight: 500, color: 'text.secondary' }}>{formatCurrency(h.previsto)}</Box>
-                                                            <Box component="span" sx={{ fontWeight: 700, opacity: 0.3 }}>/</Box>
-                                                            <Box component="span" sx={{ fontWeight: 700 }}>{formatCurrency(h.totalPago)}</Box>
-                                                          </Typography>
-                                                        </TableCell>
-                                                        <TableCell
-                                                          align="right"
+                                                    {historicoConsolidado.map(
+                                                      (h, i) => (
+                                                        <TableRow
+                                                          key={i}
                                                           sx={{
-                                                            color: h.restante > 0 ? "success.main" : h.restante < 0 ? "error.main" : "text.secondary",
-                                                            fontWeight: 800,
-                                                            whiteSpace: "nowrap",
-                                                            py: histPaddingRow
+                                                            "&:last-child td, &:last-child th":
+                                                              { border: 0 },
+                                                            "&:hover": {
+                                                              bgcolor: alpha(
+                                                                theme.palette
+                                                                  .primary.main,
+                                                                0.04,
+                                                              ),
+                                                            },
                                                           }}
                                                         >
-                                                          {(() => {
-                                                            const abs = Math.abs(h.restante);
-                                                            const f = formatCurrency(abs);
-                                                            if (h.restante > 0) return `+${f}`;
-                                                            if (h.restante < 0) return `-${f}`;
-                                                            return f;
-                                                          })()}
-                                                        </TableCell>
-                                                      </TableRow>
-                                                    ))}
+                                                          <TableCell
+                                                            sx={{
+                                                              color:
+                                                                "primary.main",
+                                                              fontWeight: 700,
+                                                              whiteSpace:
+                                                                "nowrap",
+                                                              py: histPaddingRow,
+                                                            }}
+                                                          >
+                                                            {h.referencia}
+                                                          </TableCell>
+                                                          <TableCell
+                                                            align="center"
+                                                            sx={{
+                                                              py: histPaddingRow,
+                                                            }}
+                                                          >
+                                                            <Typography
+                                                              variant="caption"
+                                                              sx={{
+                                                                whiteSpace:
+                                                                  "nowrap",
+                                                                display: "flex",
+                                                                alignItems:
+                                                                  "center",
+                                                                justifyContent:
+                                                                  "center",
+                                                                gap: 0.5,
+                                                              }}
+                                                            >
+                                                              <Box
+                                                                component="span"
+                                                                sx={{
+                                                                  fontWeight: 500,
+                                                                  color:
+                                                                    "text.secondary",
+                                                                }}
+                                                              >
+                                                                {formatCurrency(
+                                                                  h.previsto,
+                                                                )}
+                                                              </Box>
+                                                              <Box
+                                                                component="span"
+                                                                sx={{
+                                                                  fontWeight: 700,
+                                                                  opacity: 0.3,
+                                                                }}
+                                                              >
+                                                                /
+                                                              </Box>
+                                                              <Box
+                                                                component="span"
+                                                                sx={{
+                                                                  fontWeight: 700,
+                                                                }}
+                                                              >
+                                                                {formatCurrency(
+                                                                  h.totalPago,
+                                                                )}
+                                                              </Box>
+                                                            </Typography>
+                                                          </TableCell>
+                                                          <TableCell
+                                                            align="right"
+                                                            sx={{
+                                                              color:
+                                                                h.restante > 0
+                                                                  ? "success.main"
+                                                                  : h.restante <
+                                                                      0
+                                                                    ? "error.main"
+                                                                    : "text.secondary",
+                                                              fontWeight: 800,
+                                                              whiteSpace:
+                                                                "nowrap",
+                                                              py: histPaddingRow,
+                                                            }}
+                                                          >
+                                                            {(() => {
+                                                              const abs =
+                                                                Math.abs(
+                                                                  h.restante,
+                                                                );
+                                                              const f =
+                                                                formatCurrency(
+                                                                  abs,
+                                                                );
+                                                              if (
+                                                                h.restante > 0
+                                                              )
+                                                                return `+${f}`;
+                                                              if (
+                                                                h.restante < 0
+                                                              )
+                                                                return `-${f}`;
+                                                              return f;
+                                                            })()}
+                                                          </TableCell>
+                                                        </TableRow>
+                                                      ),
+                                                    )}
                                                   </TableBody>
                                                 </Table>
                                               </TableContainer>

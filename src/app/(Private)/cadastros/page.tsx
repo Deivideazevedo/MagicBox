@@ -16,13 +16,37 @@ import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 
-// Components
-import DespesasTab from "./components/Despesa/DespesasTab";
-import ReceitasTab from "./components/Receita/ReceitasTab";
-import MetasTab from "./components/Meta/MetasTab";
+import dynamic from "next/dynamic";
+
+// Componentes de abas com carregamento dinâmico
+const TabLoading = () => (
+  <Box display="flex" justifyContent="center" alignItems="center" py={5}>
+    <CircularProgress />
+  </Box>
+);
+
+const CategoriasTab = dynamic(() => import("./components/Categoria/CategoriasTab"), {
+  loading: TabLoading,
+  ssr: false,
+});
+const DespesasTab = dynamic(() => import("./components/Despesa/DespesasTab"), {
+  loading: TabLoading,
+  ssr: false,
+});
+const ReceitasTab = dynamic(() => import("./components/Receita/ReceitasTab"), {
+  loading: TabLoading,
+  ssr: false,
+});
+const MetasTab = dynamic(() => import("./components/Meta/MetasTab"), {
+  loading: TabLoading,
+  ssr: false,
+});
+const DividasTab = dynamic(() => import("./components/Divida/DividasTab"), {
+  loading: TabLoading,
+  ssr: false,
+});
+
 import { IconCategory, IconTarget } from "@tabler/icons-react";
-import CategoriasTab from "./components/Categoria/CategoriasTab";
-import DividasTab from "./components/Divida/DividasTab";
 import { DividasTourProvider } from "./components/Divida/DividasTourContext";
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 

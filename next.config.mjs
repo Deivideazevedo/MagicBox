@@ -1,8 +1,6 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  // Força bundling de pacotes ESM que Next.js tenta externalizar por padrão
-  transpilePackages: ["@react-pdf/renderer"],
 
   // Otimizações de performance para dev e build
   experimental: {
@@ -23,15 +21,7 @@ const nextConfig = {
     // Pacotes que devem ser tratados como externos no Server Components
     serverComponentsExternalPackages: ["@prisma/client", "pg", "@prisma/adapter-pg"],
 
-    // Otimizações de bundle
-    turbo: {
-      rules: {
-        "*.svg": {
-          loaders: ["@svgr/webpack"],
-          as: "*.js",
-        },
-      },
-    },
+
   },
 
   // Webpack optimizations

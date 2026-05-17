@@ -39,6 +39,8 @@ import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
+import { UpcomingBillsSkeleton } from "./DashboardSkeletons";
+import Link from "next/link";
 
 const UpcomingBills = ({ date }: { date?: Date }) => {
   const { upcomingBillsRef } = useDashboardTourRefs();
@@ -54,6 +56,10 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
   });
 
   const [createLancamento] = useCreateLancamentoMutation();
+
+  if (isLoading) {
+    return <UpcomingBillsSkeleton />;
+  }
 
   const bills = dashboard?.upcomingBills || [];
 
@@ -197,63 +203,20 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
           </Box>
 
           <Button
+            component={Link}
+            href="/resumo"
             size="small"
             endIcon={<IconArrowRight size={16} />}
             sx={{
               textTransform: "none",
               color: "primary.main",
             }}
-            href="/resumo"
           >
             Ver todas
           </Button>
         </Box>
 
-        {isLoading ? (
-          <Box>
-            <Box mb={3}>
-              <Skeleton variant="text" width="60%" height={20} />
-              <Skeleton variant="text" width="40%" height={40} />
-            </Box>
-            <List disablePadding>
-              {[1, 2, 3].map((i) => (
-                <ListItem
-                  key={i}
-                  sx={{
-                    px: 0,
-                    py: 1.5,
-                    borderBottom: i < 3 ? "1px solid #f0f0f0" : "none",
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 48 }}>
-                    <Skeleton variant="circular" width={40} height={40} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primaryTypographyProps={{ component: "div" }}
-                    secondaryTypographyProps={{ component: "div" }}
-                    primary={
-                      <Box display="flex" justifyContent="space-between">
-                        <Skeleton variant="text" width="50%" />
-                        <Skeleton variant="text" width="20%" />
-                      </Box>
-                    }
-                    secondary={
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        mt={0.5}
-                      >
-                        <Skeleton variant="text" width="30%" />
-                        <Skeleton variant="text" width="20%" />
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        ) : (
-          <>
+        <>
             {overdueBills.length > 0 && (
               <Alert
                 severity="warning"
@@ -423,7 +386,6 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
               </List>
             )}
           </>
-        )}
       </CardContent>
     </Card>
   );

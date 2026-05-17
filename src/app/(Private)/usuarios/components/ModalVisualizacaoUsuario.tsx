@@ -86,10 +86,6 @@ export default function ModalVisualizacaoUsuario({
   });
 
   useEffect(() => {
-    handleEnter();
-  }, [user]);
-
-  const handleEnter = () => {
     if (user) {
       reset({
         name: user.name || "",
@@ -101,7 +97,7 @@ export default function ModalVisualizacaoUsuario({
       });
       setEditMode(true);
     }
-  };
+  }, [user, reset]);
 
   if (!user) return null;
 

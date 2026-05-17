@@ -209,10 +209,11 @@ export default function FiltrosAvancados({
     [],
   );
 
-  const handleSearchDebounced = useCallback(
-    debounce((data: FiltrosLancamentos) => {
-      handleSearch(onConvert(data));
-    }, 500),
+  const handleSearchDebounced = useMemo(
+    () =>
+      debounce((data: FiltrosLancamentos) => {
+        handleSearch(onConvert(data));
+      }, 500),
     [handleSearch, onConvert],
   );
 

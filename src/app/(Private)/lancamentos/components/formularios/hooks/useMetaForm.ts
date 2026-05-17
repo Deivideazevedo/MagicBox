@@ -205,7 +205,7 @@ export function useMetaForm({
         // Erro tratado pelo interceptor
       }
     },
-    [session, createLancamento, updateLancamento, reset, defaultValues, onSuccess, selectedItem, selectedDestino],
+    [session, createLancamento, updateLancamento, reset, defaultValues, onSuccess, selectedItem, selectedDestino, setFocus],
   );
 
   const handleTipoChange = useCallback(

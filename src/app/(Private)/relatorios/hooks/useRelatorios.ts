@@ -1,13 +1,16 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   RelatorioResponse,
   DetalheRelatorio,
   HistoricoMensal,
-  CategoriaRelatorio
+  CategoriaRelatorio,
+  ResumoRelatorio,
+  EvolucaoAnualResponse,
 } from "@/core/relatorios/relatorio.dto";
 import {
   useGetRelatorioQuery,
-  useGetHistoricoAgrupadoQuery
+  useGetHistoricoAgrupadoQuery,
+  useGetEvolucaoAnualQuery,
 } from "@/services/endpoints/relatoriosApi";
 
 export function useRelatorios() {
@@ -27,7 +30,7 @@ export function useRelatorios() {
     dataFim: datas.dataFim,
   });
 
-  // Switch de projeções — filtro client-side
+  // Switch de projeções — GLOBAL (afeta tabela, cards, gráficos)
   const [incluirProjecaoTabela, setIncluirProjecaoTabela] = useState(true);
 
   // Filtro por tipo (DESPESA, RECEITA, META) — global
@@ -38,6 +41,18 @@ export function useRelatorios() {
       prev.includes(tipo) ? prev.filter(t => t !== tipo) : [...prev, tipo]
     );
   }, []);
+
+  // ==================== ANO DE REFERÊNCIA ====================
+  const anoReferencia = useMemo(() => {
+    return new Date(datas.dataInicio).getUTCFullYear();
+  }, [datas.dataInicio]);
+
+  // ==================== EVOLUÇÃO ANUAL ====================
+  const {
+    data: evolucaoAnual,
+    isLoading: isLoadingEvolucao,
+    isFetching: isFetchingEvolucao,
+  } = useGetEvolucaoAnualQuery({ ano: anoReferencia });
 
   // ==================== SELEÇÃO ====================
   const toggleSelection = useCallback((idOrIds: string | string[], forceState?: boolean) => {
@@ -92,10 +107,6 @@ export function useRelatorios() {
   }, [selectedItemsDetails]);
 
   // ==================== HISTÓRICO ====================
-  const anoReferencia = useMemo(() => {
-    return new Date(datas.dataInicio).getUTCFullYear();
-  }, [datas.dataInicio]);
-
   const paramsHistorico = useMemo(() => {
     if (selectedItemsDetails.length === 0) return null;
 
@@ -113,6 +124,34 @@ export function useRelatorios() {
     paramsHistorico!,
     { skip: !paramsHistorico }
   );
+
+  // ==================== RESUMO COM/SEM PROJEÇÃO ====================
+  const resumoExibido = useMemo((): ResumoRelatorio | undefined => {
+    if (!data?.resumo || !data?.categorias) return data?.resumo;
+
+    // Com projeção: retorna o resumo original (já inclui projeções)
+    if (incluirProjecaoTabela) return data.resumo;
+
+    // Sem projeção: recalcular usando valorAgendado em vez de valorPlanejado
+    const categorias = data.categorias;
+    const totalReceitasAgendadas = categorias.reduce((acc, c) =>
+      acc + c.detalhes
+        .filter(i => i.tipo === 'RECEITA' && !i.isProjecao)
+        .reduce((sum, i) => sum + Math.abs(i.valorAgendado), 0),
+    0);
+    const totalDespesasAgendadas = categorias.reduce((acc, c) =>
+      acc + c.detalhes
+        .filter(i => i.tipo === 'DESPESA' && !i.isProjecao)
+        .reduce((sum, i) => sum + Math.abs(i.valorAgendado), 0),
+    0);
+
+    return {
+      ...data.resumo,
+      totalReceitas: totalReceitasAgendadas,
+      totalDespesas: -totalDespesasAgendadas,
+      saldoProjetado: totalReceitasAgendadas - totalDespesasAgendadas,
+    };
+  }, [data, incluirProjecaoTabela]);
 
   const resetFilters = useCallback(() => {
     setIncluirProjecaoTabela(true);
@@ -152,6 +191,12 @@ export function useRelatorios() {
     }, [data]),
     selectedNames,
     titleHistorico,
-    resumoExibido: data?.resumo
+    resumoExibido,
+    // Nova API de Evolução
+    evolucaoAnual: evolucaoAnual || [],
+    isLoadingEvolucao,
+    isFetchingEvolucao,
+    anoReferencia,
   };
 }
+

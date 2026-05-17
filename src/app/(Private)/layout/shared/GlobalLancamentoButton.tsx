@@ -1,10 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Fab, Tooltip } from "@mui/material";
-import { IconPlus } from "@tabler/icons-react";
-import { useSession } from "next-auth/react";
 import LancamentoDrawer from "@/app/(Private)/lancamentos/components/LancamentoDrawer";
+import { useSession } from "next-auth/react";
 
 export default function GlobalLancamentoButton() {
   const { data: session } = useSession();

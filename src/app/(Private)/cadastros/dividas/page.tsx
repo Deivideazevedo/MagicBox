@@ -23,15 +23,40 @@ import {
   IconHelp,
 } from "@tabler/icons-react";
 import { useState, useMemo } from "react";
-import { Formulario } from "../components/Divida/Formulario";
-import { Listagem } from "../components/Divida/Listagem";
-import { DividasDashboard } from "../components/Divida/DividasDashboard";
+import dynamic from "next/dynamic";
+import { CircularProgress } from "@mui/material";
+
+// Importa o Formulário dinamicamente sob demanda
+const Formulario = dynamic(() => import("../components/Divida/Formulario").then((m) => m.Formulario), {
+  loading: () => (
+    <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+      <CircularProgress />
+    </Box>
+  ),
+  ssr: false,
+});
+
+// Importações dinâmicas de componentes pesados para reduzir bundle size
+const Listagem = dynamic(() => import("../components/Divida/Listagem").then((m) => m.Listagem), {
+  loading: () => (
+    <Box display="flex" justifyContent="center" p={4}>
+      <CircularProgress />
+    </Box>
+  ),
+  ssr: false,
+});
+
+const DividasDashboard = dynamic(() => import("../components/Divida/DividasDashboard").then((m) => m.DividasDashboard), {
+  ssr: false,
+});
+
+const ProductTour = dynamic(() => import("@/app/components/shared/ProductTour").then((m) => m.ProductTour), {
+  ssr: false,
+});
+
 import { useDividas } from "../hooks/useDividas";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
-import {
-  ProductTour,
-  useTour,
-} from "@/app/components/shared/ProductTour";
+import { useTour } from "@/app/components/shared/ProductTour";
 import {
   DividasTourProvider,
   useDividasTourRefs,

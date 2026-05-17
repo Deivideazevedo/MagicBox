@@ -19,6 +19,7 @@ import {
 import { useGoalsProgress } from "../hooks/useGoalsProgress";
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
+import { GoalsProgressSkeleton } from "./DashboardSkeletons";
 
 const GoalsProgress = ({ date }: { date?: Date }) => {
   const { goalsRef } = useDashboardTourRefs();
@@ -33,30 +34,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
   } = useGoalsProgress(baseDate);
 
   if (isLoading) {
-    return (
-      <Card elevation={3} sx={{ borderRadius: 3, height: "100%" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Box display="flex" alignItems="center" gap={1}>
-              <Skeleton variant="circular" width={40} height={40} />
-              <Skeleton variant="text" width="120px" height={24} />
-            </Box>
-            <Skeleton variant="text" width="60px" height={20} />
-          </Box>
-          {[1, 2].map((i) => (
-            <Box key={i} sx={{ mb: 3 }}>
-              <Box display="flex" justifyContent="space-between" mb={1}>
-                <Skeleton variant="text" width="40%" />
-                <Skeleton variant="text" width="20%" />
-              </Box>
-              <Skeleton variant="rounded" width="100%" height={8} />
-              <Skeleton variant="text" width="60%" height={16} sx={{ mt: 1 }} />
-            </Box>
-          ))}
-          <Skeleton variant="rounded" width="100%" height={100} sx={{ mt: 3, borderRadius: 2 }} />
-        </CardContent>
-      </Card>
-    );
+    return <GoalsProgressSkeleton />;
   }
 
   return (

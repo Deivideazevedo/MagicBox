@@ -65,7 +65,7 @@ export default function MetaForm({
       () => (lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId")),
       300,
     );
-  }, [setFocus]);
+  }, [setFocus, lancamentoParaEditar?.id]);
 
   return (
     <Box py={2} px={3} component="form" onSubmit={handleSubmit}>

@@ -176,7 +176,7 @@ export function useDespesaForm({
         // Erro tratado pelo interceptor
       }
     },
-    [session, createLancamento, updateLancamento, reset, defaultValues, onSuccess],
+    [session, createLancamento, updateLancamento, reset, defaultValues, onSuccess, setFocus],
   );
 
   const handleTipoChange = useCallback(

@@ -2,10 +2,14 @@
 
 import PageContainer from "@/app/components/container/PageContainer";
 import {
-  ProductTour,
   ProductTourButton,
   useTour,
 } from "@/app/components/shared/ProductTour";
+
+const ProductTour = dynamic(
+  () => import("@/app/components/shared/ProductTour").then((m) => m.ProductTour),
+  { ssr: false }
+);
 import {
   Box,
   Button,
@@ -28,12 +32,46 @@ import {
 } from "./components/DashboardTourContext";
 import { criarDashboardTourSteps } from "./components/dashboardTourSteps";
 
-import FinancialSummaryCards from "./components/FinancialSummaryCards";
-import GoalsProgress from "./components/GoalsProgress";
-import MonthlyChart from "./components/MonthlyChart";
-import RecentTransactions from "./components/RecentTransactions";
-import TransactionHeatmap from "./components/TransactionHeatmap";
-import UpcomingBills from "./components/UpcomingBills";
+import dynamic from "next/dynamic";
+import {
+  FinancialSummaryCardsSkeleton,
+  TransactionHeatmapSkeleton,
+  MonthlyChartSkeleton,
+  GoalsProgressSkeleton,
+  RecentTransactionsSkeleton,
+  UpcomingBillsSkeleton,
+} from "./components/DashboardSkeletons";
+
+// Importações dinâmicas dos widgets do Dashboard para performance máxima de First Load JS
+const FinancialSummaryCards = dynamic(() => import("./components/FinancialSummaryCards"), {
+  loading: () => <FinancialSummaryCardsSkeleton />,
+  ssr: false,
+});
+
+const TransactionHeatmap = dynamic(() => import("./components/TransactionHeatmap"), {
+  loading: () => <TransactionHeatmapSkeleton />,
+  ssr: false,
+});
+
+const MonthlyChart = dynamic(() => import("./components/MonthlyChart"), {
+  loading: () => <MonthlyChartSkeleton />,
+  ssr: false,
+});
+
+const GoalsProgress = dynamic(() => import("./components/GoalsProgress"), {
+  loading: () => <GoalsProgressSkeleton />,
+  ssr: false,
+});
+
+const RecentTransactions = dynamic(() => import("./components/RecentTransactions"), {
+  loading: () => <RecentTransactionsSkeleton />,
+  ssr: false,
+});
+
+const UpcomingBills = dynamic(() => import("./components/UpcomingBills"), {
+  loading: () => <UpcomingBillsSkeleton />,
+  ssr: false,
+});
 
 const DashboardContent = () => {
   const { data: session } = useSession();

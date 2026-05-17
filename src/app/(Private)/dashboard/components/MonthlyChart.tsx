@@ -14,6 +14,7 @@ import {
   useMediaQuery
 } from "@mui/material";
 import { useMonthlyChart } from "../hooks/useMonthlyChart";
+import { MonthlyChartSkeleton } from "./DashboardSkeletons";
 
 // Importação dinâmica do ApexCharts para evitar erro de SSR
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
@@ -37,23 +38,7 @@ const MonthlyChart = ({
   } = useMonthlyChart();
 
   if (loading) {
-    return (
-      <Card elevation={3} sx={{ borderRadius: 3, height: "100%" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
-            <Box>
-              <Skeleton variant="text" width="150px" height={24} />
-              <Skeleton variant="text" width="200px" height={16} />
-            </Box>
-            <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: 4 }} />
-          </Box>
-          <Skeleton variant="rounded" width="100%" height={300} sx={{ borderRadius: 2 }} />
-          <Box mt={2}>
-            <Skeleton variant="rounded" width="100%" height={80} sx={{ borderRadius: 2 }} />
-          </Box>
-        </CardContent>
-      </Card>
-    );
+    return <MonthlyChartSkeleton />;
   }
 
   // Cores do gráfico

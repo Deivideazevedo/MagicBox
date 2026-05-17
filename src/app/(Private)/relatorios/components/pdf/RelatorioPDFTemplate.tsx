@@ -156,7 +156,7 @@ interface RelatorioPDFProps {
 }
 
 const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 };
 
 export const RelatorioPDFTemplate = ({ dataInicio, dataFim, resumo, categorias }: RelatorioPDFProps) => {
@@ -234,7 +234,7 @@ export const RelatorioPDFTemplate = ({ dataInicio, dataFim, resumo, categorias }
               </View>
 
               {/* Itens da Categoria */}
-              {cat.detalhes.map((item) => (
+              {(cat.detalhes || []).map((item) => (
                 <View style={styles.tableRow} key={item.id} wrap={false}>
                   <View style={[styles.tableColDesc, { paddingLeft: 10 }]}>
                     <Text style={styles.cellText}>• {item.nome}</Text>

@@ -1,9 +1,10 @@
 import { relatoriosRepository } from "@/core/relatorios/repository";
 import {
   RelatorioResponse, CategoriaRelatorio, DetalheRelatorio, HistoricoMensal,
-  RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso
+  RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso,
+  EvolucaoMensalItem, EvolucaoAnualResponse
 } from "@/core/relatorios/relatorio.dto";
-import { format, subMonths, differenceInCalendarMonths, parseISO } from "date-fns";
+import { format, differenceInCalendarMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
@@ -166,22 +167,11 @@ export const relatoriosService = {
       dividaPendente
     };
 
-    const evolucao = Array.from({ length: 6 }).map((_, i) => {
-      const d = subMonths(dataInicio, 5 - i);
-      return {
-        mes: format(d, "MMM", { locale: ptBR }),
-        receitas: resumo.totalReceitas * (0.8 + Math.random() * 0.4),
-        despesas: resumo.totalDespesas * (0.8 + Math.random() * 0.4),
-        investimentos: resumo.totalMetas * (0.8 + Math.random() * 0.4)
-      };
-    });
-
     return {
       periodo: { dataInicio: dataInicio.toISOString().split('T')[0], dataFim: dataFim.toISOString().split('T')[0] },
       resumo,
       categorias,
       totalCategorias: categorias.length,
-      evolucao
     };
   },
 
@@ -201,5 +191,22 @@ export const relatoriosService = {
       restanteComProjecao: h.restanteComProjecao,
       dataRef: format(h.mes, 'yyyy-MM-dd')
     }));
+  },
+
+  async obterEvolucaoAnual(userId: number, ano: number): Promise<EvolucaoAnualResponse> {
+    const dados = await relatoriosRepository.obterEvolucaoAnual(userId, ano);
+
+    return dados.map((item) => {
+      const date = parseISO(item.dataReferencia);
+      return {
+        ...item,
+        mes: format(date, "MMM", { locale: ptBR }),
+        receitas: Math.abs(item.receitas),
+        despesas: Math.abs(item.despesas),
+        metas: Math.abs(item.metas),
+        receitasPrevistas: Math.abs(item.receitasPrevistas),
+        despesasPrevistas: Math.abs(item.despesasPrevistas),
+      };
+    });
   },
 };

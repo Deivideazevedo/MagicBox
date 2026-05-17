@@ -22,6 +22,7 @@ import { startOfMonth, endOfMonth, format } from "date-fns";
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
 import { alpha } from "@mui/material/styles";
+import { FinancialSummaryCardsSkeleton } from "./DashboardSkeletons";
 
 const FinancialSummaryCards = ({ date }: { date?: Date }) => {
   const { summaryCardsRef } = useDashboardTourRefs();
@@ -79,49 +80,7 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
   };
 
   if (isLoading) {
-    return (
-      <Grid container spacing={3}>
-        {[1, 2, 3, 4].map((i) => (
-          <Grid item xs={12} sm={6} md={3} key={i}>
-            <Card
-              sx={{
-                borderRadius: 3,
-                p: 2.5,
-                height: "100%",
-                position: "relative",
-              }}
-            >
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: 4,
-                  bgcolor: "action.hover",
-                }}
-              />
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="flex-start"
-                mb={1.5}
-              >
-                <Skeleton variant="text" width="60%" height={20} />
-                <Skeleton variant="rounded" width={32} height={32} />
-              </Box>
-              <Skeleton
-                variant="text"
-                width="80%"
-                height={40}
-                sx={{ mb: 0.5 }}
-              />
-              <Skeleton variant="text" width="40%" height={20} />
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-    );
+    return <FinancialSummaryCardsSkeleton />;
   }
 
   return (

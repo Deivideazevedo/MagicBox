@@ -415,127 +415,114 @@ export function CustomTable({
             spacing={isMobile ? 0.5 : 1}
             alignItems="center"
           >
-            {!isMobile && projecaoSwitch}
-            {!isMobile && (
-              <Box
-                sx={{
-                  width: "1px",
-                  height: "24px",
-                  bgcolor: "divider",
-                  mx: 0.5,
-                }}
-              />
-            )}
-
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <Tooltip title="Filtrar por tipo" arrow>
-                <IconButton
-                  size="small"
-                  color={tiposFiltro.length > 0 ? "warning" : "primary"}
-                  onClick={() =>
-                    isMobile
-                      ? setDrawerOpen(true)
-                      : setFiltrosVisiveis(!filtrosVisiveis)
-                  }
-                  sx={{
-                    ...(tiposFiltro.length > 0 && {
-                      bgcolor: alpha(theme.palette.warning.main, 0.12),
-                    }),
-                  }}
-                >
-                  <Badge
-                    badgeContent={badgeCount}
-                    color="warning"
-                    invisible={badgeCount === 0}
+            {isMobile ? (
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Tooltip title="Filtrar por tipo" arrow>
+                  <IconButton
+                    size="small"
+                    color={tiposFiltro.length > 0 ? "warning" : "primary"}
+                    onClick={() => setDrawerOpen(true)}
                     sx={{
-                      "& .MuiBadge-badge": {
-                        fontSize: "0.6rem",
-                        height: 16,
-                        minWidth: 16,
-                        width: 16,
-                        borderRadius: "50%",
-                        top: -4,
-                        right: -4,
-                        padding: 0,
-                        fontWeight: 800,
-                        border: `1px solid ${theme.palette.background.paper}`,
-                      },
+                      ...(tiposFiltro.length > 0 && {
+                        bgcolor: alpha(theme.palette.warning.main, 0.12),
+                      }),
                     }}
                   >
-                    {isMobile ? (
+                    <Badge
+                      badgeContent={badgeCount}
+                      color="warning"
+                      invisible={badgeCount === 0}
+                      sx={{
+                        "& .MuiBadge-badge": {
+                          fontSize: "0.6rem",
+                          height: 16,
+                          minWidth: 16,
+                          width: 16,
+                          borderRadius: "50%",
+                          top: -4,
+                          right: -4,
+                          padding: 0,
+                          fontWeight: 800,
+                          border: `1px solid ${theme.palette.background.paper}`,
+                        },
+                      }}
+                    >
                       <IconAdjustmentsHorizontal size={20} />
-                    ) : (
-                      <IconFilter size={20} />
-                    )}
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-
-              {!isMobile && (
-                <Collapse orientation="horizontal" in={filtrosVisiveis}>
-                  <Stack direction="row" spacing={0.5} sx={{ ml: 1 }}>
-                    {tiposExistentes.has("DESPESA") && (
-                      <Chip
-                        size="small"
-                        icon={<IconArrowDown size={14} />}
-                        label="Despesas"
-                        color="error"
-                        variant={
-                          tiposFiltro.includes("DESPESA")
-                            ? "filled"
-                            : "outlined"
-                        }
-                        onClick={() => onToggleTipo("DESPESA")}
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                          height: 24,
-                          cursor: "pointer",
-                        }}
-                      />
-                    )}
-                    {tiposExistentes.has("RECEITA") && (
-                      <Chip
-                        size="small"
-                        icon={<IconArrowUp size={14} />}
-                        label="Receitas"
-                        color="success"
-                        variant={
-                          tiposFiltro.includes("RECEITA")
-                            ? "filled"
-                            : "outlined"
-                        }
-                        onClick={() => onToggleTipo("RECEITA")}
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                          height: 24,
-                          cursor: "pointer",
-                        }}
-                      />
-                    )}
-                    {tiposExistentes.has("META") && (
-                      <Chip
-                        size="small"
-                        icon={<IconTarget size={14} />}
-                        label="Metas"
-                        color="info"
-                        variant={
-                          tiposFiltro.includes("META") ? "filled" : "outlined"
-                        }
-                        onClick={() => onToggleTipo("META")}
-                        sx={{
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                          height: 24,
-                          cursor: "pointer",
-                        }}
-                      />
-                    )}
-                  </Stack>
-                </Collapse>
-              )}
-            </Stack>
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            ) : (
+              <Stack direction="row" spacing={0.75} alignItems="center">
+                {tiposExistentes.has("DESPESA") && (
+                  <Chip
+                    size="small"
+                    icon={<IconArrowDown size={14} />}
+                    label="Despesas"
+                    color="error"
+                    variant={
+                      tiposFiltro.includes("DESPESA")
+                        ? "filled"
+                        : "outlined"
+                    }
+                    onClick={() => onToggleTipo("DESPESA")}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      cursor: "pointer",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                      },
+                    }}
+                  />
+                )}
+                {tiposExistentes.has("RECEITA") && (
+                  <Chip
+                    size="small"
+                    icon={<IconArrowUp size={14} />}
+                    label="Receitas"
+                    color="success"
+                    variant={
+                      tiposFiltro.includes("RECEITA")
+                        ? "filled"
+                        : "outlined"
+                    }
+                    onClick={() => onToggleTipo("RECEITA")}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      cursor: "pointer",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                      },
+                    }}
+                  />
+                )}
+                {tiposExistentes.has("META") && (
+                  <Chip
+                    size="small"
+                    icon={<IconTarget size={14} />}
+                    label="Metas"
+                    color="info"
+                    variant={
+                      tiposFiltro.includes("META") ? "filled" : "outlined"
+                    }
+                    onClick={() => onToggleTipo("META")}
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.7rem",
+                      height: 24,
+                      cursor: "pointer",
+                      "& .MuiChip-icon": {
+                        color: "inherit",
+                      },
+                    }}
+                  />
+                )}
+              </Stack>
+            )}
           </Stack>
         }
       />

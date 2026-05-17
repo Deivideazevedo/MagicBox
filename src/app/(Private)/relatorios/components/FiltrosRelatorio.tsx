@@ -9,10 +9,15 @@ import {
   Divider,
   useTheme,
   Grid,
+  IconButton,
+  CircularProgress,
+  Tooltip,
+  Button,
 } from "@mui/material";
 import {
   IconFilter,
   IconChevronDown,
+  IconDownload,
 } from "@tabler/icons-react";
 import { SeletorPeriodo, TipoPeriodo } from "@/app/components/forms/SeletorPeriodo";
 import { CustomDateRangePicker } from "../../resumo/components/CustomDateRangePicker";
@@ -21,9 +26,12 @@ interface FiltrosRelatorioProps {
   dataInicio: string;
   dataFim: string;
   setPeriodo: (dataInicio: string, dataFim: string) => void;
+  onExportPDF: () => void;
+  isExporting: boolean;
+  exportTooltip: string;
 }
 
-export default function FiltrosRelatorio({ dataInicio, dataFim, setPeriodo }: FiltrosRelatorioProps) {
+export default function FiltrosRelatorio({ dataInicio, dataFim, setPeriodo, onExportPDF, isExporting, exportTooltip }: FiltrosRelatorioProps) {
   const theme = useTheme();
   const [expandido, setExpandido] = useState(false);
   const [tipoPeriodo, setTipoPeriodo] = useState<TipoPeriodo>("mes");
@@ -104,17 +112,73 @@ export default function FiltrosRelatorio({ dataInicio, dataFim, setPeriodo }: Fi
         </Box>
 
         {!expandido && (
-          <Box sx={{ width: { xs: '100%', sm: 'fit-content' } }}>
-            <SeletorPeriodo
-              onClick={(e) => e.stopPropagation()}
-              dataInicio={dataInicio}
-              dataFim={dataFim}
-              tipo={tipoPeriodo}
-              onTipoChange={setTipoPeriodo}
-              onChange={(periodo) => {
-                setPeriodo(periodo.dataInicio, periodo.dataFim);
-              }}
-            />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "stretch", sm: "center" },
+              gap: 1.5,
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
+            <Box sx={{ flex: 1, width: { xs: "100%", sm: "auto" } }}>
+              <SeletorPeriodo
+                onClick={(e) => e.stopPropagation()}
+                dataInicio={dataInicio}
+                dataFim={dataFim}
+                tipo={tipoPeriodo}
+                onTipoChange={setTipoPeriodo}
+                onChange={(periodo) => {
+                  setPeriodo(periodo.dataInicio, periodo.dataFim);
+                }}
+              />
+            </Box>
+
+            {/* Botão de Download para Mobile (FullWidth com texto) */}
+            <Tooltip title={exportTooltip}>
+              <Button
+                variant="text"
+                fullWidth
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExportPDF();
+                }}
+                disabled={isExporting}
+                startIcon={isExporting ? <CircularProgress size={20} color="inherit" /> : <IconDownload size={20} />}
+                sx={{
+                  display: { xs: "inline-flex", sm: "none" },
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  borderRadius: 2,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+                }}
+              >
+                Download
+              </Button>
+            </Tooltip>
+
+            {/* Botão de Download para Desktop (Ícone clássico redondo) */}
+            <Tooltip title={exportTooltip}>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onExportPDF();
+                }}
+                disabled={isExporting}
+                size="small"
+                sx={{
+                  display: { xs: "none", sm: "inline-flex" },
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+                }}
+              >
+                {isExporting ? <CircularProgress size={20} /> : <IconDownload size={20} />}
+              </IconButton>
+            </Tooltip>
           </Box>
         )}
       </AccordionSummary>
@@ -143,3 +207,4 @@ export default function FiltrosRelatorio({ dataInicio, dataFim, setPeriodo }: Fi
     </Accordion>
   );
 }
+

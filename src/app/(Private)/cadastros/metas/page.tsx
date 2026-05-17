@@ -27,15 +27,40 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { useState, useRef, useEffect } from "react";
-import TransactionModal from "../components/Common/TransactionModal";
-import { Formulario } from "../components/Meta/Formulario";
-import { Listagem } from "../components/Meta/Listagem";
-import { MetasDashboard } from "../components/Meta/MetasDashboard";
+import dynamic from "next/dynamic";
+import { CircularProgress } from "@mui/material";
+
+// Importa os modais e formulários dinamicamente sob demanda
+const Formulario = dynamic(() => import("../components/Meta/Formulario").then((m) => m.Formulario), {
+  loading: () => (
+    <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+      <CircularProgress />
+    </Box>
+  ),
+  ssr: false,
+});
+
+const RetiradaMetaModal = dynamic(() => import("../components/Meta/RetiradaMetaModal"), {
+  ssr: false,
+});
+
+// Importações dinâmicas dos painéis de metas para máxima performance
+const Listagem = dynamic(() => import("../components/Meta/Listagem").then((m) => m.Listagem), {
+  loading: () => (
+    <Box display="flex" justifyContent="center" p={4}>
+      <CircularProgress />
+    </Box>
+  ),
+  ssr: false,
+});
+
+const MetasDashboard = dynamic(() => import("../components/Meta/MetasDashboard").then((m) => m.MetasDashboard), {
+  ssr: false,
+});
 import { useMetas } from "../hooks/useMetas";
 import Slide from "@mui/material/Slide";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
-import RetiradaMetaModal from "../components/Meta/RetiradaMetaModal";
 
 export default function MetasPage() {
   const theme = useTheme();

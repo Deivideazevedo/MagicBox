@@ -51,13 +51,19 @@ export interface RelatorioResponse {
   resumo: ResumoRelatorio;
   categorias: CategoriaRelatorio[];
   totalCategorias: number;
-  evolucao: Array<{
-    mes: string;
-    receitas: number;
-    despesas: number;
-    investimentos: number;
-  }>;
 }
+
+export interface EvolucaoMensalItem {
+  mes: string;
+  dataReferencia: string;
+  receitas: number;
+  despesas: number;
+  metas: number;
+  receitasPrevistas: number;
+  despesasPrevistas: number;
+}
+
+export type EvolucaoAnualResponse = EvolucaoMensalItem[];
 
 export interface HistoricoMensal {
   mes: string;
@@ -157,6 +163,10 @@ export const historicoFiltroSchema = z.object({
       })
     )
   ),
+  ano: z.coerce.number().int().positive()
+});
+
+export const evolucaoFiltroSchema = z.object({
   ano: z.coerce.number().int().positive()
 });
 
