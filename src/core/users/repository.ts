@@ -150,7 +150,6 @@ export const authRepository = {
     country: string | null;
     provider: string;
   }): Promise<void> {
-    console.log('Dados do log de acesso:', dados);
     await prisma.accessLog.create({
       data: dados,
     });
