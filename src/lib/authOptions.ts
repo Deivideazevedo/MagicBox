@@ -8,6 +8,7 @@ import { authService } from "@/core/users/service";
 import { AuthPayload } from "@/core/users/types";
 import { parseError } from "@/lib/error-handler";
 import { consoleErrorLogger } from "@/utils/formatterLogs/consoleErrorLogger";
+import { headers } from "next/headers";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -29,9 +30,13 @@ export const authOptions: AuthOptions = {
         username: { label: "Username", type: "text" },
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
+        recaptchaToken: { label: "Recaptcha Token", type: "text" },
       },
       authorize: async (credentials) => {
         try {
+          // 🛡️ Validação de Segurança do reCAPTCHA v3 (Custo Zero via Service)
+          await authService.validarRecaptcha(credentials?.recaptchaToken);
+
           // return credentials as User;
           const user = await authService.authenticate(credentials as AuthPayload);
 
@@ -81,6 +86,8 @@ export const authOptions: AuthOptions = {
 
       // 🔹 Primeira vez que o usuário faz login
       if (user && account) {
+        let dbUserToLog: User | null = null;
+
         if (account.provider !== "credentials") {
           // OAuth login - Busca ou cria usuário no banco
           if (user.email) {
@@ -100,6 +107,8 @@ export const authOptions: AuthOptions = {
                 updatedAt: new Date(dbUser.updatedAt).toISOString(),
               } as User;
 
+              dbUserToLog = dbUser;
+
               // Sinaliza que é um novo usuário para redirecionamento
               if (isNew) {
                 token.isNewUser = true;
@@ -118,11 +127,44 @@ export const authOptions: AuthOptions = {
           // Credentials login (user já formatado no authorize)
           // user aqui já é User (não AdapterUser) pois vem do authorize
           token.user = user as User;
+          dbUserToLog = user as User;
         }
 
         // 🔹 Para providers OAuth, armazenar o access_token do provider
         if (account?.access_token) {
           token.oauthAccessToken = account.access_token;
+        }
+
+        // 📝 Registrar o log de acesso no Neon DB de forma assíncrona (Fire and Forget)
+        if (dbUserToLog) {
+          try {
+            const headersList = headers();
+
+            // Obter IP do cliente
+            const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
+
+            // Obter geolocalização gratuita fornecida pelos cabeçalhos de borda da Vercel
+            const latitude = headersList.get("x-vercel-ip-latitude") || null;
+            const longitude = headersList.get("x-vercel-ip-longitude") || null;
+            const city = headersList.get("x-vercel-ip-city") || null;
+            const country = headersList.get("x-vercel-ip-country") || null;
+
+            // 🚀 Executa em segundo plano para performance máxima no login e trata erros assincronamente
+            authService.registrarLogAcesso({
+              userId: Number(dbUserToLog.id),
+              email: dbUserToLog.email || user.email || "",
+              ip,
+              latitude,
+              longitude,
+              city,
+              country,
+              provider: account.provider,
+            }).catch((err) => {
+              console.error("[BACKGROUND_LOG_ERROR] Erro assíncrono ao persistir log de acesso:", err);
+            });
+          } catch (error) {
+            console.error("Falha silenciosa ao capturar headers para o log no JWT callback:", error);
+          }
         }
       }
 

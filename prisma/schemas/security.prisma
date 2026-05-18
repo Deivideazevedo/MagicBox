@@ -1,0 +1,26 @@
+model AccessLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  ip        String
+  latitude  String?
+  longitude String?
+  city      String?
+  country   String?
+  provider  String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("access_log")
+}
+
+model AiUsageLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_log")
+}

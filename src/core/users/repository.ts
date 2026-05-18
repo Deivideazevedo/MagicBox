@@ -139,4 +139,20 @@ export const authRepository = {
       }
     });
   },
+
+  async registrarLogAcesso(dados: {
+    userId: number;
+    email: string;
+    ip: string;
+    latitude: string | null;
+    longitude: string | null;
+    city: string | null;
+    country: string | null;
+    provider: string;
+  }): Promise<void> {
+    console.log('Dados do log de acesso:', dados);
+    await prisma.accessLog.create({
+      data: dados,
+    });
+  },
 };

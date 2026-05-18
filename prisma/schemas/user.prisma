@@ -16,6 +16,8 @@ model User {
   lancamentos Lancamento[]
   metas       Meta[]
   receitas    Receita[]
+  accessLogs  AccessLog[]
+  aiUsageLogs AiUsageLog[]
 
   @@index([username])
   @@index([email])

@@ -5,6 +5,15 @@ import { PaginatedResult } from "../types/global";
 import bcrypt from "bcryptjs";
 import { User } from "next-auth";
 
+interface RecaptchaResult {
+  success: boolean;
+  score?: number;
+  action?: string;
+  challenge_ts?: string;
+  hostname?: string;
+  'error-codes'?: string[];
+}
+
 export const authService = {
   async listarTodos(filtros: ListUsersDTO): Promise<PaginatedResult<User & { hasPassword: boolean }>> {
     const resultado = await repositorio.listarTodos(filtros);
@@ -85,6 +94,55 @@ export const authService = {
     }
 
     return await repositorio.atualizar(userId, dataToUpdate);
+  },
+
+
+
+  /**
+   * Valida o token do Google reCAPTCHA v3 (Padrão Ouro de Resiliência)
+   */
+  async validarRecaptcha(token?: string): Promise<void> {
+    if (!token) {
+      throw new ValidationError("Verificação de segurança (reCAPTCHA) ausente.");
+    }
+
+    const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+
+    try {
+      const response = await fetch(verifyUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          secret: process.env.RECAPTCHA_SECRET_KEY || "",
+          response: token,
+        }),
+      });
+
+      // Garante que a resposta HTTP do Google foi bem-sucedida (status 200-299)
+      if (!response.ok) throw new Error(`Erro HTTP na API do Google: ${response.status}`);
+
+      const recaptchaData = (await response.json()) as RecaptchaResult;
+
+      // Validação estrita do sucesso e do score (garantindo que score exista)
+      const scoreObtido = recaptchaData.score ?? 0;
+
+      if (!recaptchaData.success || scoreObtido < 0.5) {
+        console.warn(`[SECURITY_ALERT] Login recusado pelo reCAPTCHA. Score: ${scoreObtido}. Erros: ${recaptchaData["error-codes"]?.join(", ") || "Nenhum"}`);
+        throw new ValidationError("Comportamento suspeito detectado pelo sistema de segurança.");
+      }
+    } catch (error: unknown) {
+      // Se for o nosso próprio erro de validação (bot detectado), propaga o erro
+      if (error instanceof ValidationError) throw error;
+
+      // Erros de infraestrutura (timeout, queda do Google, erro 500 deles)
+      console.error("[RECAPTCHA_CRITICAL_ERROR] Falha de comunicação com o Google:", error);
+
+      // ABORDAGEM RECOMENDADA (Fail-Open): Não bloqueie o usuário se o erro for do Google.
+      // Deixamos passar e confiamos na validação de senha/rate-limit padrão do sistema.
+      return;
+    }
   },
 
   /**
@@ -170,5 +228,67 @@ export const authService = {
 
   async bulkExcluir(ids: number[]): Promise<void> {
     return await repositorio.bulkExcluir(ids);
+  },
+
+  async registrarLogAcesso(dados: {
+    userId: number;
+    email: string;
+    ip: string;
+    latitude: string | null;
+    longitude: string | null;
+    city: string | null;
+    country: string | null;
+    provider: string;
+  }): Promise<void> {
+    let { ip, latitude, longitude, city, country } = dados;
+
+    // 🌐 Se os dados geográficos estiverem nulos (rodando localmente ou fora da Vercel)
+    if (!latitude || !longitude || ip === "::1" || ip === "127.0.0.1") {
+      try {
+        let ipPublico = ip;
+
+        // Se for IP de loopback local, descobre o IP público real da máquina do desenvolvedor
+        if (ip === "::1" || ip === "127.0.0.1") {
+          const ipifyRes = await fetch("https://api.ipify.org?format=json");
+          if (ipifyRes.ok) {
+            const ipifyData = (await ipifyRes.json()) as { ip: string };
+            ipPublico = ipifyData.ip;
+          }
+        }
+
+        // Bate na API de Geo-IP gratuita (ip-api.com) para obter a localização real
+        if (ipPublico && ipPublico !== "::1" && ipPublico !== "127.0.0.1") {
+          const geoRes = await fetch(`http://ip-api.com/json/${ipPublico}`);
+          if (geoRes.ok) {
+            const geoData = (await geoRes.json()) as {
+              status: string;
+              lat?: number;
+              lon?: number;
+              city?: string;
+              country?: string;
+            };
+
+            if (geoData.status === "success") {
+              latitude = geoData.lat ? String(geoData.lat) : latitude;
+              longitude = geoData.lon ? String(geoData.lon) : longitude;
+              city = geoData.city || city;
+              country = geoData.country || country;
+              ip = ipPublico; // Grava o IP público para auditoria real
+            }
+          }
+        }
+      } catch (error) {
+        console.error("[GEO_IP_FALLBACK_ERROR] Falha ao obter geolocalização do IP local:", error);
+      }
+    }
+
+    await repositorio.registrarLogAcesso({
+      ...dados,
+      ip,
+      latitude,
+      longitude,
+      city,
+      country,
+    });
   },
 };

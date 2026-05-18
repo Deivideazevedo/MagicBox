@@ -17,9 +17,10 @@ const createPrismaClient = () => {
     connectionTimeoutMillis: 5000, 
     // Em desenvolvimento, evitamos fechar o pool agressivamente
     allowExitOnIdle: isProduction, 
-    // Satisfaz o aviso de segurança do pg e garante o modo correto
-    ssl: connectionString?.includes("sslmode=") 
-      ? { rejectUnauthorized: false } 
+    ssl: connectionString?.includes("sslmode=verify-full")
+      ? true // Deixa o driver usar a validação rígida nativa
+      : connectionString?.includes("sslmode=")
+      ? { rejectUnauthorized: false } // Fallback para outros modos se necessário
       : false,
   });
 

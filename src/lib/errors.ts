@@ -53,3 +53,9 @@ export class InternalServerError extends HttpError {
     super(500, message, details);
   }
 }
+
+export class TooManyRequestsError extends HttpError {
+  constructor(message = "Muitas requisições. Por favor, tente novamente mais tarde", details?: any) {
+    super(429, message, details);
+  }
+}

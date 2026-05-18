@@ -21,6 +21,7 @@ import * as yup from "yup";
 import AuthSocialButtons from "./AuthSocialButtons";
 import toast from "react-hot-toast";
 import LoadingButton from "@mui/lab/LoadingButton";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 
 const validationSchema = yup.object({
@@ -65,18 +66,32 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     },
   });
 
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
   // --- 3. Lógica de login com credenciais ---
   const onSubmit = async (data: { username: string; password: string }) => {
-    const result = await signIn("credentials", {
-      redirect: false,
-      username: data.username,
-      password: data.password,
-    });
+    if (!executeRecaptcha) {
+      toast.error("O sistema de segurança reCAPTCHA está carregando. Aguarde um instante.");
+      return;
+    }
 
-    if (result?.error) {
-      setError(result.error);
-    } else {
-      router.replace(callbackUrl);
+    try {
+      const recaptchaToken = await executeRecaptcha("login");
+
+      const result = await signIn("credentials", {
+        redirect: false,
+        username: data.username,
+        password: data.password,
+        recaptchaToken,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.replace(callbackUrl);
+      }
+    } catch (err: unknown) {
+      toast.error("Erro na verificação do reCAPTCHA. Tente novamente.");
     }
   };
 
