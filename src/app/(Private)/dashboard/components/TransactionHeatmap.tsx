@@ -42,7 +42,6 @@ import {
   IconNote,
 } from "@tabler/icons-react";
 
-
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { TransactionHeatmapSkeleton } from "./DashboardSkeletons";
 
@@ -557,8 +556,13 @@ const TransactionHeatmap = () => {
             sx={{
               flexGrow: 1,
               overflowY: "auto",
+              overflowX: "hidden",
               p: 2,
-              bgcolor: theme.palette.background.default,
+              pr: 2.2, // Espaço extra para respiração da sombra e barra de rolagem
+              bgcolor:
+                theme.palette.mode === "dark"
+                  ? theme.palette.background.default
+                  : theme.palette.grey[100], // Mesma cor de fundo do Dashboard no modo claro (#F2F6FA)
             }}
           >
             {selectedData?.items && selectedData.items.length > 0 ? (
@@ -578,27 +582,22 @@ const TransactionHeatmap = () => {
                   return (
                     <Card
                       key={idx}
-                      variant="outlined"
+                      elevation={3} // Remove variant="outlined" e copia a elevação do heatmap card
                       sx={{
                         borderRadius: 3,
-                        border: "none",
                         borderLeft: `4px solid ${isProjected ? theme.palette.warning.main : isExpense ? theme.palette.error.main : theme.palette.success.main}`,
-                        bgcolor:
-                          theme.palette.mode === "dark"
-                            ? alpha(theme.palette.background.paper, 0.8)
-                            : theme.palette.background.paper,
-                        transition: "all 0.2s",
-                        boxShadow: theme.shadows[1],
+                        bgcolor: theme.palette.background.paper,
+                        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                        boxShadow: theme.shadows[3], // Cópia perfeita da sombra/borda do heatmap card
+                        mr: 0.5,
                         "&:hover": {
-                          transform: "translateY(-2px)",
-                          boxShadow: theme.shadows[2],
-                          bgcolor: alpha(theme.palette.background.paper, 0.9),
+                          transform: "translateY(-3px)",
+                          boxShadow: theme.shadows[6], // Efeito de flutuação no hover
+                          bgcolor: alpha(theme.palette.background.paper, 0.95),
                         },
                       }}
                     >
-                      <CardContent
-                        sx={{ p: 1.5, pb: "0px !important" }}
-                      >
+                      <CardContent sx={{ p: 1.5, pb: "0px !important" }}>
                         <Box
                           display="flex"
                           justifyContent="space-between"
@@ -650,15 +649,10 @@ const TransactionHeatmap = () => {
                                 </Box>
                                 {item.categoria && (
                                   <>
-                                    <Box
-                                      component="span"
-                                      sx={{ opacity: 0.5 }}
-                                    >
+                                    <Box component="span" sx={{ opacity: 0.5 }}>
                                       •
                                     </Box>
-                                    <Box component="span">
-                                      {item.categoria}
-                                    </Box>
+                                    <Box component="span">{item.categoria}</Box>
                                   </>
                                 )}
                               </Typography>
@@ -674,9 +668,7 @@ const TransactionHeatmap = () => {
                             <Typography
                               variant="subtitle1"
                               fontWeight={800}
-                              color={
-                                isExpense ? "error.main" : "success.main"
-                              }
+                              color={isExpense ? "error.main" : "success.main"}
                               sx={{ lineHeight: 1, mb: 0.5 }}
                             >
                               {isExpense ? "-" : "+"}{" "}

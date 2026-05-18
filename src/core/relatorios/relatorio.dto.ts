@@ -41,6 +41,11 @@ export interface ResumoRelatorio {
   saldoProjetado: number;
   saldoBloqueado: number;
   dividaPendente: number;
+  totalAcumuladoMetas?: number;
+  totalPlanejadoMetas?: number;
+  totalAcumuladoMetasComAlvo?: number;
+  totalAcumuladoMetasSemAlvo?: number;
+  qtdMetasAtivas?: number;
 }
 
 export interface RelatorioResponse {

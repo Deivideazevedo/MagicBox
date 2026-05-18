@@ -30,12 +30,12 @@ const ThemeToaster = () => {
         style: {
           background: theme.palette.background.paper,
           color: theme.palette.text.primary,
-
-          border: "1px solid",
+          border: `1px solid ${theme.palette.divider}`,
           borderRadius: "12px",
           fontSize: "14px",
           fontWeight: 500,
           padding: "12px 40px 12px 16px",
+          boxShadow: "0 0 1px 0 rgba(0,0,0,0.31), 0 0 6px 1px rgba(0,0,0,0.06)", // Glow neutro bem retido e colado na borda
         },
         loading: {
           iconTheme: {
@@ -51,7 +51,7 @@ const ThemeToaster = () => {
           style: {
             borderColor: alpha(theme.palette.success.main, 0.25),
             borderLeft: `6px solid ${theme.palette.success.main}`,
-            boxShadow: `0 4px 18px ${alpha(theme.palette.success.main, 0.25)}`,
+            boxShadow: `0 0 1px 0 ${alpha(theme.palette.success.main, 0.35)}, 0 0 6px 0.5px ${alpha(theme.palette.success.main, 0.22)}`, // Glow verde retido e denso rente à borda
           },
         },
         error: {
@@ -62,7 +62,7 @@ const ThemeToaster = () => {
           style: {
             borderColor: alpha(theme.palette.error.main, 0.25),
             borderLeft: `6px solid ${theme.palette.error.main}`,
-            boxShadow: `0 4px 18px ${alpha(theme.palette.error.main, 0.25)}`,
+            boxShadow: `0 0 1px 0 ${alpha(theme.palette.error.main, 0.35)}, 0 0 6px 0.5px ${alpha(theme.palette.error.main, 0.22)}`, // Glow vermelho retido e denso rente à borda
           },
         },
       }}

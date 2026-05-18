@@ -146,12 +146,17 @@ export const relatoriosService = {
 
     let somaRealizadoMetas = 0;
     let somaPlanejadoMetas = 0;
+    let somaRealizadoTotalMetas = 0;
+
     metasDetalhes.forEach(m => {
+      somaRealizadoTotalMetas += Math.abs(m.valorRealizado);
       if (Math.abs(m.valorPlanejado) > 0) {
         somaRealizadoMetas += Math.abs(m.valorRealizado);
         somaPlanejadoMetas += Math.abs(m.valorPlanejado);
       }
     });
+
+    const somaRealizadoMetasSemAlvo = somaRealizadoTotalMetas - somaRealizadoMetas;
     const metasPorcentagem = somaPlanejadoMetas > 0 ? (somaRealizadoMetas / somaPlanejadoMetas) * 100 : 0;
 
     const resumo = {
@@ -164,7 +169,12 @@ export const relatoriosService = {
       saldoLivre: totalReceitasPagas + totalDespesasPagas - totalMetasPagas,
       saldoProjetado: totalReceitasPlanejadas + totalDespesasPlanejadas,
       saldoBloqueado: somaRealizadoMetas,
-      dividaPendente
+      dividaPendente,
+      totalAcumuladoMetas: somaRealizadoTotalMetas,
+      totalPlanejadoMetas: somaPlanejadoMetas,
+      totalAcumuladoMetasComAlvo: somaRealizadoMetas,
+      totalAcumuladoMetasSemAlvo: somaRealizadoMetasSemAlvo,
+      qtdMetasAtivas: metasDetalhes.length,
     };
 
     return {

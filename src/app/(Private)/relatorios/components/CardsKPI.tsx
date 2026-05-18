@@ -16,7 +16,7 @@ import {
   IconTarget,
   IconScale,
   IconAlertTriangle,
-  IconInfoCircle
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { ResumoRelatorio } from "@/core/relatorios/relatorio.dto";
 
@@ -27,27 +27,53 @@ function formatCurrency(valor?: number | null): string {
   }).format(valor ?? 0);
 }
 
-export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null }) {
+export default function CardsKPI({
+  resumo,
+}: {
+  resumo: ResumoRelatorio | null;
+}) {
   const theme = useTheme();
   const [detalhesExpandidos, setDetalhesExpandidos] = useState(false);
 
   if (!resumo) return null;
 
+  const receitasPagas = resumo.receitasPagas ?? 0;
+  const totalReceitas = resumo.totalReceitas ?? 0;
+  const diffReceitas = receitasPagas - totalReceitas;
+
+  const despesasPagas = resumo.despesasPagas ?? 0;
+  const totalDespesas = resumo.totalDespesas ?? 0;
+  const diffDespesas = despesasPagas - totalDespesas;
+
+  function formatDiferenca(valor: number): string {
+    const abs = Math.abs(valor);
+    const formatted = formatCurrency(abs);
+    if (valor > 0) return `+${formatted}`;
+    if (valor < 0) return `-${formatted}`;
+    return formatted;
+  }
+
   const kpis = [
     {
       icon: IconTrendingUp,
       label: "Receitas",
-      value: formatCurrency(resumo.totalReceitas), // Prevista
+      value: formatCurrency(receitasPagas), // Realizado (o que entrou)
       iconColor: theme.palette.success.main,
       subItems: [
         {
-          label: "Recebidas (Pagas)",
-          value: formatCurrency(resumo.receitasPagas),
+          label: "Previsto",
+          value: formatCurrency(totalReceitas),
           dotColor: theme.palette.success.main,
         },
         {
-          label: "Restante",
-          value: formatCurrency(resumo.totalReceitas - resumo.receitasPagas),
+          label: "Diferença",
+          value: formatDiferenca(diffReceitas),
+          color:
+            diffReceitas < 0
+              ? "error.main"
+              : diffReceitas > 0
+                ? "success.main"
+                : "text.secondary",
           dotColor: theme.palette.warning.main,
         },
       ],
@@ -55,17 +81,23 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
     {
       icon: IconTrendingDown,
       label: "Despesas",
-      value: formatCurrency(resumo.totalDespesas), // Prevista
+      value: formatCurrency(despesasPagas), // Realizado (o que saiu)
       iconColor: theme.palette.error.main,
       subItems: [
         {
-          label: "Pagas",
-          value: formatCurrency(resumo.despesasPagas),
+          label: "Previsto",
+          value: formatCurrency(totalDespesas),
           dotColor: theme.palette.error.main,
         },
         {
-          label: "Restante",
-          value: formatCurrency(resumo.totalDespesas - resumo.despesasPagas),
+          label: "Diferença",
+          value: formatDiferenca(diffDespesas),
+          color:
+            diffDespesas < 0
+              ? "error.main"
+              : diffDespesas > 0
+                ? "success.main"
+                : "text.secondary",
           dotColor: theme.palette.warning.main,
         },
       ],
@@ -75,11 +107,40 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
       label: "Metas",
       value: formatCurrency(resumo.totalMetas), // Valor guardado no periodo (ou total pago)
       iconColor: theme.palette.info.main,
+      tooltip: "Total guardado em metas no período selecionado.",
       subItems: [
         {
-          label: "Conclusão",
-          value: `${resumo.metasPorcentagem.toFixed(1)}%`,
+          label: "Metas Ativas",
+          value: `${resumo.qtdMetasAtivas ?? 0} Metas`,
           dotColor: theme.palette.info.main,
+        },
+        {
+          label: "Total Acumulado",
+          value: formatCurrency(resumo.totalAcumuladoMetas),
+          dotColor: theme.palette.success.main,
+          tooltip:
+            "Total guardado ao longo do tempo para todas as metas ativas, incluindo poupanças livres.",
+        },
+        {
+          label: "Com Objetivo",
+          value: `${formatCurrency(resumo.totalAcumuladoMetasComAlvo)} de ${formatCurrency(resumo.totalPlanejadoMetas)}`,
+          dotColor: theme.palette.primary.main,
+          tooltip:
+            "Total acumulado versus total previsto para as metas que possuem valor objetivo (alvo) planejado.",
+        },
+        {
+          label: "Poupança Livre",
+          value: formatCurrency(resumo.totalAcumuladoMetasSemAlvo),
+          dotColor: theme.palette.warning.main,
+          tooltip:
+            "Total acumulado para metas livres (sem valor planejado ou data de término).",
+        },
+        {
+          label: "Conclusão (Alvos)",
+          value: `${(resumo.metasPorcentagem ?? 0).toFixed(1)}%`,
+          dotColor: theme.palette.info.main,
+          tooltip:
+            "Percentual de conclusão baseado apenas nas metas que possuem valor planejado definido.",
         },
       ],
     },
@@ -106,8 +167,12 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
       icon: IconAlertTriangle,
       label: "Déficit Pendente",
       value: `${resumo.dividaPendente} Contas`, // Qtd
-      iconColor: resumo.dividaPendente > 0 ? theme.palette.error.main : theme.palette.success.main,
-      tooltip: "Quantidade de despesas agendadas no período que ainda não foram pagas (dívida pendente).",
+      iconColor:
+        resumo.dividaPendente > 0
+          ? theme.palette.error.main
+          : theme.palette.success.main,
+      tooltip:
+        "Quantidade de despesas agendadas no período que ainda não foram pagas (dívida pendente).",
       subItems: [],
     },
   ];
@@ -117,10 +182,11 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
       {kpis.map((card, index) => {
         const Icon = card.icon;
         return (
-          <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
             <Card
               onClick={() => {
-                if (card.subItems.length > 0) setDetalhesExpandidos((prev) => !prev);
+                if (card.subItems.length > 0)
+                  setDetalhesExpandidos((prev) => !prev);
               }}
               sx={{
                 borderRadius: 3,
@@ -180,7 +246,14 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
                     </Typography>
                     {card.tooltip && (
                       <Tooltip title={card.tooltip} arrow placement="top">
-                        <Box component="span" sx={{ display: "flex", color: "text.secondary", opacity: 0.7 }}>
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "flex",
+                            color: "text.secondary",
+                            opacity: 0.7,
+                          }}
+                        >
                           <IconInfoCircle size={14} />
                         </Box>
                       </Tooltip>
@@ -199,7 +272,9 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
                   </Box>
                 </Box>
 
-                <Box mb={detalhesExpandidos && card.subItems.length > 0 ? 1 : 0}>
+                <Box
+                  mb={detalhesExpandidos && card.subItems.length > 0 ? 1 : 0}
+                >
                   <Typography
                     variant="h5"
                     fontWeight={700}
@@ -238,15 +313,39 @@ export default function CardsKPI({ resumo }: { resumo: ResumoRelatorio | null })
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ fontSize: "0.75rem" }}
+                              sx={{
+                                fontSize: "0.75rem",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
                             >
                               {item.label}
+                              {(item as any).tooltip && (
+                                <Tooltip
+                                  title={(item as any).tooltip}
+                                  arrow
+                                  placement="top"
+                                >
+                                  <Box
+                                    component="span"
+                                    sx={{
+                                      display: "flex",
+                                      color: "text.secondary",
+                                      opacity: 0.7,
+                                      cursor: "help",
+                                    }}
+                                  >
+                                    <IconInfoCircle size={12} />
+                                  </Box>
+                                </Tooltip>
+                              )}
                             </Typography>
                           </Box>
 
                           <Typography
                             variant="caption"
-                            color="text.primary"
+                            color={(item as any).color || "text.primary"}
                             fontWeight={600}
                             sx={{ fontSize: "0.75rem" }}
                           >
