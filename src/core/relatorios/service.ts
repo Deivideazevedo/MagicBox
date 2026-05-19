@@ -110,7 +110,7 @@ export const relatoriosService = {
         restante,
         mediaMensal: -Math.abs(m.mediaMensal),
         isProjecao: false,
-        status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : "PENDENTE",
+        status: m.status || 'A',
       };
     });
 
@@ -159,6 +159,10 @@ export const relatoriosService = {
     const somaRealizadoMetasSemAlvo = somaRealizadoTotalMetas - somaRealizadoMetas;
     const metasPorcentagem = somaPlanejadoMetas > 0 ? (somaRealizadoMetas / somaPlanejadoMetas) * 100 : 0;
 
+    const qtdMetasTotal = metasDetalhes.length;
+    const qtdMetasConcluidas = metasDetalhes.filter(m => m.status === 'I').length;
+    const qtdMetasEmAndamento = metasDetalhes.filter(m => m.status === 'A').length;
+
     const resumo = {
       totalReceitas: totalReceitasPlanejadas,
       receitasPagas: totalReceitasPagas,
@@ -174,7 +178,10 @@ export const relatoriosService = {
       totalPlanejadoMetas: somaPlanejadoMetas,
       totalAcumuladoMetasComAlvo: somaRealizadoMetas,
       totalAcumuladoMetasSemAlvo: somaRealizadoMetasSemAlvo,
-      qtdMetasAtivas: metasDetalhes.length,
+      qtdMetasAtivas: qtdMetasEmAndamento, // Metas Ativas referem-se àquelas em andamento
+      qtdMetasTotal,
+      qtdMetasConcluidas,
+      qtdMetasEmAndamento,
     };
 
     return {

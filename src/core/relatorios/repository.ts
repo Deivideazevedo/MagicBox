@@ -81,11 +81,11 @@ export const relatoriosRepository = {
           COALESCE(SUM(l.valor), 0)::float as "valorAlcancadoMeta"
         FROM meta m
         LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento' AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
+        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL
       ),
       metas_detalhe AS (
         SELECT 
-          m.id, m.nome, m.icone, m.cor,
+          m.id, m.nome, m.icone, m.cor, m.status::text as status,
           m."valorMeta"::float as planejado,
           COALESCE((
             SELECT SUM(l.valor) FROM lancamento l WHERE l."metaId" = m.id AND l.tipo = 'pagamento'
@@ -99,7 +99,7 @@ export const relatoriosRepository = {
             ) s
           ), 0)::float as "mediaMensal"
         FROM meta m
-        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL AND m.status = 'A'
+        WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL
         ORDER BY m.nome
       )
       SELECT 

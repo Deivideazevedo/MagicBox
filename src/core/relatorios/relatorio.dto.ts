@@ -46,6 +46,9 @@ export interface ResumoRelatorio {
   totalAcumuladoMetasComAlvo?: number;
   totalAcumuladoMetasSemAlvo?: number;
   qtdMetasAtivas?: number;
+  qtdMetasTotal?: number;
+  qtdMetasConcluidas?: number;
+  qtdMetasEmAndamento?: number;
 }
 
 export interface RelatorioResponse {
@@ -122,6 +125,7 @@ export interface RawMetasProgresso {
   planejado: number;
   realizado: number;
   mediaMensal: number;
+  status?: string;
 }
 
 export interface RawRelatorioMetas {

@@ -158,7 +158,7 @@ const Header = () => {
           </IconButton>
 
           {/* TEMP: Botão para testar toast */}
-          <IconButton
+          {/* <IconButton
             size="large"
             color="inherit"
             aria-label="test-toast"
@@ -170,7 +170,7 @@ const Header = () => {
             }}
           >
             <IconCheck size="20" stroke="1.6" />
-          </IconButton>
+          </IconButton> */}
           {/* )} */}
 
           {/* ------------------------------------------- */}
