@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Container, Typography, Grid, Stack } from "@mui/material";
+import { Box, Container, Typography, Grid } from "@mui/material";
 import { useState } from "react";
 
 // Desabilitar prerendering estático para páginas dinâmicas protegidas
@@ -10,20 +10,15 @@ export const dynamic = "force-dynamic";
 import FiltrosAvancadosUsuarios from "./components/FiltrosAvancadosUsuarios";
 import { CustomTableUsuarios } from "./components/customTable";
 import ModalVisualizacaoUsuario from "./components/ModalVisualizacaoUsuario";
-import StatusToggleDialog from "./components/StatusToggleDialog";
 
 // Hooks
 import { useUsuariosList } from "./hooks/useUsuariosList";
-
-import { IconTrash, IconAlertTriangle } from "@tabler/icons-react";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
 export default function UsuariosPage() {
   const {
     usuarios,
     isLoading,
     isFetching,
-    isUpdating,
     page,
     pageSize,
     totalRows,
@@ -63,10 +58,14 @@ export default function UsuariosPage() {
           <Grid item xs={12}>
             <CustomTableUsuarios
               data={usuarios}
-              onStatusClick={modalHandlers.status.abrir}
+              onStatusClick={handleToggleStatus}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
-              onBulkDelete={() => modalHandlers.deleteBulk.abrir(selectedIds)}
+              onBulkDelete={() =>
+                handleBulkDelete(selectedIds).then((success) => {
+                  if (success) setSelectedIds([]);
+                })
+              }
               onReset={handleReset}
               actions={[
                 {
@@ -99,37 +98,6 @@ export default function UsuariosPage() {
         onClose={modalHandlers.visualizar.fechar}
         onUpdateUser={handleUpdateUser}
       />
-
-      {/* Dialog de Confirmação de Status */}
-      <StatusToggleDialog
-        user={modais.status}
-        onClose={modalHandlers.status.fechar}
-        onConfirm={handleToggleStatus}
-        loading={isUpdating}
-      />
-
-      {/* Dialog de Deleção Permanente em Lote */}
-      <DeleteConfirmationDialog
-        open={modais.deleteBulk}
-        onClose={modalHandlers.deleteBulk.fechar}
-        onConfirm={handleBulkDelete}
-        title="Excluir Permanentemente"
-        icon={IconTrash}
-        loading={isUpdating}
-        confirmButtonText="Excluir Agora"
-      >
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Typography variant="body1">
-            Você está prestes a excluir <strong>{modais.deleteBulk?.length}</strong> usuário(s) permanentemente.
-          </Typography>
-          <Box sx={{ p: 2, bgcolor: "error.light", color: "error.main", borderRadius: 2, border: "1px solid", borderColor: "error.main", display: "flex", gap: 2 }}>
-            <IconAlertTriangle size={48} />
-            <Typography variant="caption" fontWeight={600}>
-              ESTA AÇÃO É IRREVERSÍVEL. Todos os lançamentos, categorias e dados vinculados a estes usuários serão apagados do servidor.
-            </Typography>
-          </Box>
-        </Stack>
-      </DeleteConfirmationDialog>
     </>
   );
 }

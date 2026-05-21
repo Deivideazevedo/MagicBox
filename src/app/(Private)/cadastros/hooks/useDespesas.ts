@@ -15,6 +15,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 
 const despesaSchemaZod = z.object({
   id: z.union([z.string(), z.number()]).optional(),
@@ -59,6 +60,7 @@ interface UseDespesasProps {
 
 export function useDespesas(params?: UseDespesasProps) {
   const theme = useTheme();
+  const confirm = useConfirm();
   const { despesas: despesasProps, categorias: categoriasProps } = params || {};
 
   const { data: session } = useSession();
@@ -75,7 +77,6 @@ export function useDespesas(params?: UseDespesasProps) {
   const despesasList = despesasProps ?? despesasQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Despesa | null>(null);
 
   const [createDespesa, { isLoading: isCreating }] = useCreateDespesaMutation();
@@ -167,25 +168,18 @@ export function useDespesas(params?: UseDespesasProps) {
     [reset, setFocus]
   );
 
-  const handleOpenDialog = useCallback((despesa: Despesa) => {
-    setRow(despesa);
-    setDeleteDialog(true);
-  }, []);
-
-  const handleCloseDialog = useCallback(() => {
-    setRow(null);
-    setDeleteDialog(false);
-  }, []);
-
-  const handleDelete = useCallback(async () => {
-    if (!row) return;
+  const handleDelete = useCallback(async (despesa: Despesa) => {
+    const confirmed = await confirm.delete({
+      title: "Excluir Despesa?",
+      description: `Você está prestes a remover a despesa "${despesa.nome}". Essa ação não poderá ser desfeita.`,
+      confirmText: "Excluir Despesa",
+    });
+    if (!confirmed) return;
     try {
-      await deleteDespesa(row.id).unwrap();
-      setRow(null);
-      setDeleteDialog(false);
+      await deleteDespesa(despesa.id).unwrap();
       toast.success("Excluído!");
     } catch { }
-  }, [deleteDespesa, row]);
+  }, [deleteDespesa, confirm]);
 
   const handleSubmit = handleSubmitForm(onSubmit);
   const isEditing = Boolean(watch("id"));
@@ -193,7 +187,6 @@ export function useDespesas(params?: UseDespesasProps) {
   return {
     isDeleting,
     handleEdit,
-    handleOpenDialog,
     handleDelete,
     row,
     formProps: {
@@ -210,15 +203,8 @@ export function useDespesas(params?: UseDespesasProps) {
     },
     listProps: {
       despesas: despesasList,
-      handleOpenDialog,
+      handleOpenDialog: handleDelete,
       handleEdit,
-    },
-    deleteProps: {
-      open: openDelete,
-      name: row?.nome,
-      onConfirm: handleDelete,
-      onClose: handleCloseDialog,
-      isLoading: isDeleting,
     },
   };
 }

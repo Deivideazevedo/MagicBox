@@ -17,6 +17,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 
 const receitaSchemaZod = z.object({
   id: z.number().optional(),
@@ -83,6 +84,7 @@ export const useReceitas = ({
   categorias: categoriasProps,
 }: UseReceitasProps = {}) => {
   const { data: session } = useSession();
+  const confirm = useConfirm();
 
   // Se props existirem (não são undefined), skip as queries RTK
   const { data: receitasQuery = [] } = useGetReceitasQuery(undefined, {
@@ -97,7 +99,6 @@ export const useReceitas = ({
   const receitas = receitasProps ?? receitasQuery;
   const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Receita | null>(null);
 
   const defaultValues = useMemo<ReceitaFormData>(
@@ -199,26 +200,18 @@ export const useReceitas = ({
     reset(defaultValues);
   }, [reset, defaultValues]);
 
-  const handleDeleteClick = useCallback((receita: Receita) => {
-    setRow(receita);
-    setDeleteDialog(true);
-  }, []);
-
-  const handleDeleteCancel = useCallback(() => {
-    setDeleteDialog(false);
-    setRow(null);
-  }, []);
-
-  const handleDelete = useCallback(async () => {
-    if (!row) return;
+  const handleDelete = useCallback(async (receita: Receita) => {
+    const confirmed = await confirm.delete({
+      title: "Excluir Receita?",
+      description: `Você está prestes a remover a receita "${receita.nome}". Essa ação não poderá ser desfeita.`,
+      confirmText: "Excluir Receita",
+    });
+    if (!confirmed) return;
     try {
-      await deleteReceita(String(row.id)).unwrap();
-      setDeleteDialog(false);
-      setRow(null);
-
+      await deleteReceita(String(receita.id)).unwrap();
       toast.success("Receita excluída com sucesso!");
     } catch { }
-  }, [row, deleteReceita]);
+  }, [deleteReceita, confirm]);
 
   const handleSubmit = handleSubmitForm(onSubmit);
 
@@ -240,22 +233,13 @@ export const useReceitas = ({
 
   const listProps = {
     receitas,
-    handleOpenDialog: handleDeleteClick,
+    handleOpenDialog: handleDelete,
     handleEdit,
-  };
-
-  const deleteProps = {
-    open: openDelete,
-    name: row?.nome,
-    onConfirm: handleDelete,
-    onClose: handleDeleteCancel,
-    isLoading: isDeleting,
   };
 
   return {
     handleEdit,
     formProps,
     listProps,
-    deleteProps,
   };
 };

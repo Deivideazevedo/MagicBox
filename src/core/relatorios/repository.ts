@@ -346,4 +346,90 @@ export const relatoriosRepository = {
       ORDER BY m.mes_ref ASC;
     `;
   },
+
+  async obterContagensETotaisHistoricos(userId: number) {
+    const result = await prisma.$queryRaw<Array<{
+      receitasAtivas: number;
+      receitasInativas: number;
+      despesasAtivas: number;
+      despesasInativas: number;
+      receitasPagas: number;
+      receitasPrevistas: number;
+      despesasPagas: number;
+      despesasPrevistas: number;
+      metasPagas: number;
+    }>>`
+      WITH contagens_receitas AS (
+        SELECT 
+          COUNT(CASE WHEN r.status = 'A' THEN 1 END) as "receitasAtivas",
+          COUNT(CASE WHEN r.status = 'I' THEN 1 END) as "receitasInativas"
+        FROM "receita" r
+        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL
+      ),
+      contagens_despesas AS (
+        SELECT 
+          COUNT(CASE WHEN d.status = 'A' THEN 1 END) as "despesasAtivas",
+          COUNT(CASE WHEN d.status = 'I' THEN 1 END) as "despesasInativas"
+        FROM "despesa" d
+        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL
+      ),
+      totais_base AS (
+        SELECT 
+          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as rec_paga,
+          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as rec_prev,
+          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
+          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
+          SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
+        FROM lancamento l
+        LEFT JOIN despesa d ON l."despesaId" = d.id
+        LEFT JOIN receita r ON l."receitaId" = r.id
+        LEFT JOIN meta m ON l."metaId" = m.id
+        WHERE l."userId" = ${userId}
+          AND (
+            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
+            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
+            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+          )
+      )
+      SELECT 
+        COALESCE(c1."receitasAtivas", 0)::int as "receitasAtivas",
+        COALESCE(c1."receitasInativas", 0)::int as "receitasInativas",
+        COALESCE(c2."despesasAtivas", 0)::int as "despesasAtivas",
+        COALESCE(c2."despesasInativas", 0)::int as "despesasInativas",
+        COALESCE(t.rec_paga, 0)::float as "receitasPagas",
+        COALESCE(t.rec_prev, 0)::float as "receitasPrevistas",
+        COALESCE(t.desp_paga, 0)::float as "despesasPagas",
+        COALESCE(t.desp_prev, 0)::float as "despesasPrevistas",
+        COALESCE(t.meta_paga, 0)::float as "metasPagas"
+      FROM contagens_receitas c1, contagens_despesas c2, totais_base t;
+    `;
+
+    const row = result[0] || {
+      receitasAtivas: 0,
+      receitasInativas: 0,
+      despesasAtivas: 0,
+      despesasInativas: 0,
+      receitasPagas: 0,
+      receitasPrevistas: 0,
+      despesasPagas: 0,
+      despesasPrevistas: 0,
+      metasPagas: 0
+    };
+
+    return {
+      receitasAtivas: Number(row.receitasAtivas),
+      receitasInativas: Number(row.receitasInativas),
+      receitasTotal: Number(row.receitasAtivas) + Number(row.receitasInativas),
+      despesasAtivas: Number(row.despesasAtivas),
+      despesasInativas: Number(row.despesasInativas),
+      despesasTotal: Number(row.despesasAtivas) + Number(row.despesasInativas),
+      totaisHistoricos: {
+        receitasPagas: Number(row.receitasPagas),
+        receitasPrevistas: Number(row.receitasPrevistas),
+        despesasPagas: Number(row.despesasPagas),
+        despesasPrevistas: Number(row.despesasPrevistas),
+        metas: Number(row.metasPagas)
+      }
+    };
+  }
 };

@@ -24,7 +24,8 @@ import {
   IconSettings,
   IconUser,
   IconTarget,
-  IconCreditCard
+  IconCreditCard,
+  IconAlertTriangle
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -77,6 +78,12 @@ const Menuitems: MenuitemsType[] = [
     icon: IconReportAnalytics,
     href: "/relatorios",
   },
+  {
+    id: uniqueId(),
+    title: "Divergências",
+    icon: IconAlertTriangle,
+    href: "/divergencias",
+  },
 
   {
     navlabel: true,
@@ -98,3 +105,4 @@ const Menuitems: MenuitemsType[] = [
 ];
 
 export default Menuitems;
+

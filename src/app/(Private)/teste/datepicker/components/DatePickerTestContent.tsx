@@ -11,13 +11,11 @@ import {
   Typography,
   Alert,
 } from "@mui/material";
-import {
-  HookDatePicker,
-  HookDateTimePicker,
-  HookTimePicker,
-  HookMonthPicker,
-  HookYearPicker,
-} from "@/app/components/forms/hooksForm";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookDateTimePicker } from "@/app/components/forms/hooksForm/HookDateTimePicker";
+import { HookTimePicker } from "@/app/components/forms/hooksForm/HookTimePicker";
+import { HookMonthPicker } from "@/app/components/forms/hooksForm/HookMonthPicker";
+import { HookYearPicker } from "@/app/components/forms/hooksForm/HookYearPicker";
 import { useState } from "react";
 
 type FormData = {

@@ -1,11 +1,8 @@
-import {
-  HookCurrencyField,
-  HookDatePicker,
-  HookTextField,
-  IconColorMenuPicker,
-  HookAutocomplete,
-  HookDecimalField,
-} from "@/app/components/forms/hooksForm";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
+import { HookCurrencyField, HookDecimalField } from "@/app/components/forms/hooksForm/masks";
 import { DividaFormData } from "../../hooks/useDividas";
 import { Divida } from "@/core/dividas/types";
 import { LoadingButton } from "@mui/lab";

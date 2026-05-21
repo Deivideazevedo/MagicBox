@@ -1,11 +1,8 @@
 import CustomToggle from "@/app/components/forms/CustomToggle";
-import {
-  HookCurrencyField,
-  HookDecimalField,
-  HookSelect,
-  HookTextField,
-  IconColorMenuPicker,
-} from "@/app/components/forms/hooksForm";
+import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
+import { HookCurrencyField, HookDecimalField } from "@/app/components/forms/hooksForm/masks";
 import { Categoria } from "@/core/categorias/types";
 import { Receita } from "@/core/receitas/types";
 import { ReceitaFormData } from "../../hooks/useReceitas";

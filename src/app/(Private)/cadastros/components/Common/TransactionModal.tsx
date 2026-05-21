@@ -12,11 +12,9 @@ import {
   IconButton,
 } from "@mui/material";
 import { useForm } from "react-hook-form";
-import {
-  HookCurrencyField,
-  HookTextField,
-  HookDatePicker,
-} from "@/app/components/forms/hooksForm";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { HookCurrencyField } from "@/app/components/forms/hooksForm/masks";
 import { IconX, IconSquareRoundedPlus, IconSquareRoundedMinus, IconCheck } from "@tabler/icons-react";
 import { LoadingButton } from "@mui/lab";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";

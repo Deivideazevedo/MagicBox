@@ -1,9 +1,7 @@
-import {
-  HookCurrencyField,
-  HookDatePicker,
-  HookTextField,
-  IconColorMenuPicker,
-} from "@/app/components/forms/hooksForm";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
+import { HookCurrencyField } from "@/app/components/forms/hooksForm/masks";
 import { MetaFormData } from "../../hooks/useMetas";
 import { Meta } from "@/core/metas/types";
 import { LoadingButton } from "@mui/lab";

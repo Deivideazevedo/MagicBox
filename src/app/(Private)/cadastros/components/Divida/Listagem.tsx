@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -37,6 +37,7 @@ import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import DetalhesDividaModal from "./DetalhesDividaModal";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { useDividasTourRefs } from "./DividasTourContext";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 interface ListagemProps {
   dividas: Divida[];
@@ -57,13 +58,20 @@ export const Listagem = ({
 }: ListagemProps) => {
   const theme = useTheme();
   const tourRefs = useDividasTourRefs();
+  const modalDetalhes = useModalUrl("dividaDetalhes");
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDivida, setSelectedDivida] = useState<Divida | null>(null);
-  const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
   const [dividaDetalhesId, setDividaDetalhesId] = useState<
     string | number | null
   >(null);
+
+  // Sincronizar o fechamento da URL limpando o estado local
+  useEffect(() => {
+    if (!modalDetalhes.isOpen) {
+      setDividaDetalhesId(null);
+    }
+  }, [modalDetalhes.isOpen]);
 
   const handleOpenMenu = (
     event: React.MouseEvent<HTMLElement>,
@@ -79,7 +87,7 @@ export const Listagem = ({
 
   const handleOpenDetalhes = (id: string | number) => {
     setDividaDetalhesId(id);
-    setModalDetalhesOpen(true);
+    modalDetalhes.openModal();
     handleCloseMenu();
   };
 
@@ -671,8 +679,8 @@ export const Listagem = ({
       {dividaDetalhesId && (
         <DetalhesDividaModal
           key={dividaDetalhesId}
-          open={modalDetalhesOpen}
-          onClose={() => setModalDetalhesOpen(false)}
+          open={modalDetalhes.isOpen}
+          onClose={modalDetalhes.closeModal}
           dividaId={dividaDetalhesId}
         />
       )}

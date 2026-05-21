@@ -18,9 +18,10 @@ const contarMesesNoPeriodo = (inicio: Date, fim: Date) => {
 
 export const relatoriosService = {
   async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
-    const [dadosBrutos, dadosMetasCompletos] = await Promise.all([
+    const [dadosBrutos, dadosMetasCompletos, contagensETotais] = await Promise.all([
       relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim) as Promise<RawDadosBrutosCategoria[]>,
-      relatoriosRepository.obterDadosCompletosMetas(userId, dataInicio, dataFim)
+      relatoriosRepository.obterDadosCompletosMetas(userId, dataInicio, dataFim),
+      relatoriosRepository.obterContagensETotaisHistoricos(userId)
     ]);
 
     const categoriasMap = new Map<number, CategoriaRelatorio>();
@@ -163,6 +164,22 @@ export const relatoriosService = {
     const qtdMetasConcluidas = metasDetalhes.filter(m => m.status === 'I').length;
     const qtdMetasEmAndamento = metasDetalhes.filter(m => m.status === 'A').length;
 
+    const totaisGerais = contagensETotais.totaisHistoricos;
+    const recPagasGeral = totaisGerais.receitasPagas;
+    const despPagasGeral = totaisGerais.despesasPagas;
+    const metasPagasGeral = totaisGerais.metas;
+
+    const saldoLivreGeral = recPagasGeral - despPagasGeral - metasPagasGeral;
+    const saldoBrutoLiquido = saldoLivreGeral + metasPagasGeral;
+
+    const receitasPagasPeriodo = totalReceitasPagas;
+    const metasPagasPeriodo = totalMetasPagas;
+    const saldoLivrePeriodo = totalReceitasPagas + totalDespesasPagas - totalMetasPagas;
+
+    const taxaEconomiaPeriodo = receitasPagasPeriodo > 0
+      ? Math.max(0, ((saldoLivrePeriodo + metasPagasPeriodo) / receitasPagasPeriodo) * 100)
+      : 0;
+
     const resumo = {
       totalReceitas: totalReceitasPlanejadas,
       receitasPagas: totalReceitasPagas,
@@ -174,6 +191,9 @@ export const relatoriosService = {
       saldoProjetado: totalReceitasPlanejadas + totalDespesasPlanejadas,
       saldoBloqueado: somaRealizadoMetas,
       dividaPendente,
+      saldoLivreGeral,
+      saldoBrutoLiquido,
+      taxaEconomiaPeriodo,
       totalAcumuladoMetas: somaRealizadoTotalMetas,
       totalPlanejadoMetas: somaPlanejadoMetas,
       totalAcumuladoMetasComAlvo: somaRealizadoMetas,
@@ -182,6 +202,12 @@ export const relatoriosService = {
       qtdMetasTotal,
       qtdMetasConcluidas,
       qtdMetasEmAndamento,
+      qtdReceitasAtivas: contagensETotais.receitasAtivas,
+      qtdReceitasInativas: contagensETotais.receitasInativas,
+      qtdReceitasTotal: contagensETotais.receitasTotal,
+      qtdDespesasAtivas: contagensETotais.despesasAtivas,
+      qtdDespesasInativas: contagensETotais.despesasInativas,
+      qtdDespesasTotal: contagensETotais.despesasTotal,
     };
 
     return {

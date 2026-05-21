@@ -47,10 +47,10 @@ import { LoadingButton } from "@mui/lab";
 import { User } from "next-auth";
 import { useForm } from "react-hook-form";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 
 interface ModalVisualizacaoUsuarioProps {
   user: User | null;
@@ -66,8 +66,8 @@ export default function ModalVisualizacaoUsuario({
   isUpdating = false,
 }: ModalVisualizacaoUsuarioProps) {
   const [editMode, setEditMode] = useState(false);
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
   const theme = useTheme();
+  const confirm = useConfirm();
 
   const {
     control,
@@ -125,7 +125,6 @@ export default function ModalVisualizacaoUsuario({
   const handleRemovePassword = async () => {
     try {
       await onUpdateUser({ password: null });
-      setShowDeletePassword(false);
     } catch (err: any) {
       console.error(err);
     }
@@ -368,7 +367,17 @@ export default function ModalVisualizacaoUsuario({
                                     <IconButton
                                       size="small"
                                       color="error"
-                                      onClick={() => setShowDeletePassword(true)}
+                                      onClick={async () => {
+                                        const confirmed = await confirm.delete({
+                                          title: "Remover Senha de Acesso?",
+                                          description: `Você está prestes a remover a senha de "${user.name}". Este usuário perderá o acesso via e-mail/senha. O login só será possível através de contas sociais já vinculadas!`,
+                                          confirmText: "Remover Senha",
+                                          cancelText: "Cancelar",
+                                        });
+                                        if (confirmed) {
+                                          await handleRemovePassword();
+                                        }
+                                      }}
                                       sx={{
                                         p: 0,
                                         transition: 'all 0.2s',
@@ -385,105 +394,72 @@ export default function ModalVisualizacaoUsuario({
                             </Box>
                           </Divider>
                         </Grid>
-
-                        <Grid item xs={12}>
-                          <HookPasswordField
-                            name="password"
-                            fullWidth
-                            label="Nova Senha de Acesso"
-                            control={control}
-                            size="small"
-                            placeholder="Deixe vazio para não alterar"
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <IconLock size={18} />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Collapse>
-                  </Box>
-
-                  <Box>
-                    <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-                      <IconHistory size={20} color={alpha("#000", 0.6)} />
-                      <Typography variant="subtitle2" fontWeight={700} color="textSecondary">Últimos Acessos</Typography>
-                      <Tooltip title="Em breve: Lista de sessões ativas com geolocalização e revogação de acesso">
-                        <Box sx={{ cursor: "help", display: "flex" }}>
-                          <IconExternalLink size={14} color={alpha("#000", 0.4)} />
-                        </Box>
-                      </Tooltip>
-                    </Stack>
-
-                    <Stack spacing={1.5}>
-                      {[1, 2].map((_, i) => (
-                        <Box key={i} sx={{
-                          p: 1.5,
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: alpha("#000", 0.05),
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          opacity: 0.6
-                        }}>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <IconDeviceDesktop size={20} />
-                            <Box>
-                              <Typography variant="caption" fontWeight={700} display="block">Chrome no Windows</Typography>
-                              <Typography variant="caption" color="textSecondary">São Paulo, Brasil • 192.168.1.{i}</Typography>
-                            </Box>
-                          </Stack>
-                          <Typography variant="caption">Há {i + 1}h</Typography>
-                        </Box>
-                      ))}
-                      <Button variant="text" fullWidth sx={{ mt: 1, fontSize: "0.7rem", color: "text.secondary" }}>
-                        Ver todos os acessos
-                      </Button>
-                    </Stack>
-                  </Box>
-                </Stack>
-              </Grid>
-            </Grid>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <DeleteConfirmationDialog
-        open={showDeletePassword}
-        onClose={() => setShowDeletePassword(false)}
-        onConfirm={handleRemovePassword}
-        title="Remover Senha de Acesso"
-        confirmButtonText="Remover Agora"
-        icon={IconTrash}
-        loading={isUpdating}
-      >
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Typography variant="body1">
-            Você está prestes a remover a senha de: <br /><strong>{user.name}</strong>.
-          </Typography>
-
-          <Box sx={{
-            p: 2,
-            bgcolor: (theme) => alpha(theme.palette.error.main, 0.05),
-            color: "error.main",
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "error.light",
-            display: "flex",
-            gap: 2,
-            alignItems: "center"
-          }}>
-            <IconAlertTriangle size={32} />
-            <Typography variant="caption" fontWeight={700} sx={{ lineHeight: 1.4 }}>
-              ATENÇÃO: Este usuário perderá o acesso via e-mail/senha. O login só será possível através de contas sociais já vinculadas.
-            </Typography>
-          </Box>
-        </Stack>
-      </DeleteConfirmationDialog >
-    </>
-  );
-}
+ 
+                         <Grid item xs={12}>
+                           <HookPasswordField
+                             name="password"
+                             fullWidth
+                             label="Nova Senha de Acesso"
+                             control={control}
+                             size="small"
+                             placeholder="Deixe vazio para não alterar"
+                             InputProps={{
+                               startAdornment: (
+                                 <InputAdornment position="start">
+                                   <IconLock size={18} />
+                                 </InputAdornment>
+                               ),
+                             }}
+                           />
+                         </Grid>
+                       </Grid>
+                     </Collapse>
+                   </Box>
+ 
+                   <Box>
+                     <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                       <IconHistory size={20} color={alpha("#000", 0.6)} />
+                       <Typography variant="subtitle2" fontWeight={700} color="textSecondary">Últimos Acessos</Typography>
+                       <Tooltip title="Em breve: Lista de sessões ativas com geolocalização e revogação de acesso">
+                         <Box sx={{ cursor: "help", display: "flex" }}>
+                           <IconExternalLink size={14} color={alpha("#000", 0.4)} />
+                         </Box>
+                       </Tooltip>
+                     </Stack>
+ 
+                     <Stack spacing={1.5}>
+                       {[1, 2].map((_, i) => (
+                         <Box key={i} sx={{
+                           p: 1.5,
+                           borderRadius: 2,
+                           border: "1px solid",
+                           borderColor: alpha("#000", 0.05),
+                           display: "flex",
+                           justifyContent: "space-between",
+                           alignItems: "center",
+                           opacity: 0.6
+                         }}>
+                           <Stack direction="row" spacing={1.5} alignItems="center">
+                             <IconDeviceDesktop size={20} />
+                             <Box>
+                               <Typography variant="caption" fontWeight={700} display="block">Chrome no Windows</Typography>
+                               <Typography variant="caption" color="textSecondary">São Paulo, Brasil • 192.168.1.{i}</Typography>
+                             </Box>
+                           </Stack>
+                           <Typography variant="caption">Há {i + 1}h</Typography>
+                         </Box>
+                       ))}
+                       <Button variant="text" fullWidth sx={{ mt: 1, fontSize: "0.7rem", color: "text.secondary" }}>
+                         Ver todos os acessos
+                       </Button>
+                     </Stack>
+                   </Box>
+                 </Stack>
+               </Grid>
+             </Grid>
+           </form>
+         </DialogContent>
+       </Dialog>
+     </>
+   );
+ }

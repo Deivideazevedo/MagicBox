@@ -5,21 +5,13 @@ import { Divida, DividaUnica } from "@/core/dividas/types";
 import {
   Box,
   Grid,
-  Typography,
   useTheme,
   Slide,
   Dialog,
   DialogContent,
   useMediaQuery,
-  Tooltip,
-  IconButton,
-  alpha,
-  Stack,
 } from "@mui/material";
 import {
-  IconTrash,
-  IconCheck,
-  IconRefresh,
   IconHelp,
 } from "@tabler/icons-react";
 import { useState, useMemo } from "react";
@@ -55,7 +47,6 @@ const ProductTour = dynamic(() => import("@/app/components/shared/ProductTour").
 });
 
 import { useDividas } from "../hooks/useDividas";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 import { useTour } from "@/app/components/shared/ProductTour";
 import {
   DividasTourProvider,
@@ -76,10 +67,6 @@ function DividasPageContent() {
     isEditing,
     isAporte,
     targetDivida,
-    tipoConfirmacao,
-    dividaParaAcao,
-    setTipoConfirmacao,
-    executarAcaoConfirmada,
     control,
     handleSubmit,
     handleEdit,
@@ -247,50 +234,6 @@ function DividasPageContent() {
           </Grid>
         </DividasDashboard>
       </Box>
-
-      {/* Confirmação */}
-      <DeleteConfirmationDialog
-        open={!!tipoConfirmacao}
-        onClose={() => setTipoConfirmacao(null)}
-        title={
-          tipoConfirmacao === "delete"
-            ? "Excluir dívida permanentemente?"
-            : tipoConfirmacao === "concluir"
-              ? "Marcar como concluída?"
-              : "Reativar dívida?"
-        }
-        confirmButtonText={
-          tipoConfirmacao === "delete"
-            ? "Sim, excluir"
-            : tipoConfirmacao === "concluir"
-              ? "Sim, concluir"
-              : "Sim, reativar"
-        }
-        onConfirm={executarAcaoConfirmada}
-        loading={isDeleting || isUpdating}
-        color={
-          tipoConfirmacao === "delete"
-            ? "error"
-            : tipoConfirmacao === "concluir"
-              ? "success"
-              : "info"
-        }
-        icon={
-          tipoConfirmacao === "delete"
-            ? IconTrash
-            : tipoConfirmacao === "concluir"
-              ? IconCheck
-              : IconRefresh
-        }
-      >
-        <Typography variant="body1" color="text.secondary">
-          {tipoConfirmacao === "delete"
-            ? "Esta ação removerá a despesa e seus agendamentos vinculados."
-            : tipoConfirmacao === "concluir"
-              ? "A dívida será arquivada como concluída."
-              : "A dívida voltará a ficar disponível para novos pagamentos."}
-        </Typography>
-      </DeleteConfirmationDialog>
 
       {/* Tour Guiado */}
       <ProductTour

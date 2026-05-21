@@ -2,13 +2,10 @@
 
 import { Categoria } from "@/core/categorias/types";
 import { Despesa } from "@/core/despesas/types";
-import { Box, Grid, Typography } from "@mui/material";
-import { useRef } from "react";
+import { Box, Grid } from "@mui/material";
 import { useDespesas } from "../../hooks/useDespesas";
 import { Formulario } from "./Formulario";
 import { Listagem } from "./Listagem";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
-import { IconTrash } from "@tabler/icons-react";
 
 interface DespesasTabProps {
   despesas: Despesa[];
@@ -19,7 +16,7 @@ export default function DespesasTab({
   despesas,
   categorias,
 }: DespesasTabProps) {
-  const { handleEdit, formProps, listProps, deleteProps } = useDespesas({
+  const { formProps, listProps } = useDespesas({
     despesas,
     categorias,
   });
@@ -37,27 +34,6 @@ export default function DespesasTab({
           <Listagem {...listProps} />
         </Grid>
       </Grid>
-
-      {/* Dialog de Confirmação de Exclusão */}
-      <DeleteConfirmationDialog
-        {...deleteProps}
-        title="Excluir Despesa?"
-        icon={IconTrash}
-        color="error"
-      >
-        <Typography variant="body1" color="text.secondary">
-          Você está prestes a remover{" "}
-          <Box
-            component="span"
-            fontWeight="bold"
-            fontSize={15}
-            color="text.primary"
-          >
-            "{deleteProps.name}"
-          </Box>
-          .<br /> Essa ação não poderá ser desfeita.
-        </Typography>
-      </DeleteConfirmationDialog>
     </Box>
   );
 }

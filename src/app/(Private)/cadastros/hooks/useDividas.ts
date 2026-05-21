@@ -14,6 +14,8 @@ import { z } from "zod";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 import { toast } from "react-hot-toast";
 import { useTheme } from "@mui/material";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { IconCheck, IconRefresh } from "@tabler/icons-react";
 
 const getHojeLocal = () => new Date().toLocaleDateString('sv-SE');
 
@@ -74,13 +76,12 @@ export type DividaFormData = z.input<typeof dividaSchema>;
 
 export function useDividas() {
   const theme = useTheme();
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const userId = Number(session?.user?.id);
 
   const [isAporte, setIsAporte] = useState(false);
   const [targetDivida, setTargetDivida] = useState<Divida | null>(null);
-  const [tipoConfirmacao, setTipoConfirmacao] = useState<'delete' | 'concluir' | 'reativar' | null>(null);
-  const [dividaParaAcao, setDividaParaAcao] = useState<Divida | null>(null);
 
   const { data: response = {
     resumo: {
@@ -188,37 +189,46 @@ export function useDividas() {
     setTimeout(() => setFocus("valorAporte"), 100);
   };
 
-  const handleDelete = (divida: Divida) => {
-    setDividaParaAcao(divida);
-    setTipoConfirmacao('delete');
-  };
+  const handleDelete = useCallback(async (divida: Divida) => {
+    const confirmed = await confirm.delete({
+      title: "Excluir dívida permanentemente?",
+      description: "Esta ação removerá a despesa e seus agendamentos vinculados.",
+      confirmText: "Sim, excluir",
+    });
+    if (!confirmed) return;
+    try {
+      if (divida.tipo === "UNICA") {
+        await deleteDivida(Number(divida.id)).unwrap();
+      }
+      toast.success("Dívida removida!");
+    } catch { }
+  }, [deleteDivida, confirm]);
 
-  const handleToggleStatus = (divida: Divida) => {
+  const handleToggleStatus = useCallback(async (divida: Divida) => {
     const isAtivo = divida.status === "A";
-    setTipoConfirmacao(isAtivo ? "concluir" : "reativar");
-    setDividaParaAcao(divida);
-  };
+    const title = isAtivo ? "Marcar como concluída?" : "Reativar dívida?";
+    const confirmText = isAtivo ? "Sim, concluir" : "Sim, reativar";
+    const description = isAtivo
+      ? "A dívida será arquivada como concluída."
+      : "A dívida voltará a ficar disponível para novos pagamentos.";
+    const color = isAtivo ? "success" : "info";
+    const icon = isAtivo ? IconCheck : IconRefresh;
 
-  const executarAcaoConfirmada = async () => {
-    if (!dividaParaAcao || !tipoConfirmacao) return;
+    const confirmed = await confirm.show({
+      title,
+      description,
+      confirmText,
+      color,
+      icon,
+    });
+    if (!confirmed) return;
 
     try {
-      if (tipoConfirmacao === 'delete') {
-        if (dividaParaAcao.tipo === "UNICA") {
-          await deleteDivida(Number(dividaParaAcao.id)).unwrap();
-        }
-      } else {
-        const novoStatus = tipoConfirmacao === 'concluir' ? 'I' : 'A';
-        await updateDivida({ id: Number(dividaParaAcao.id), data: { status: novoStatus } as any }).unwrap();
-      }
-
-      toast.success(tipoConfirmacao === 'delete' ? "Dívida removida!" : "Status atualizado!");
-    } catch {
-    } finally {
-      setTipoConfirmacao(null);
-      setDividaParaAcao(null);
-    }
-  };
+      const novoStatus = isAtivo ? 'I' : 'A';
+      await updateDivida({ id: Number(divida.id), data: { status: novoStatus } as any }).unwrap();
+      toast.success("Status atualizado!");
+    } catch { }
+  }, [updateDivida, confirm]);
 
   const isEditing = Boolean(watch("id"));
   const handleSubmit = handleSubmitForm(onSubmit);
@@ -234,10 +244,6 @@ export function useDividas() {
     isEditing,
     isAporte,
     targetDivida,
-    tipoConfirmacao,
-    dividaParaAcao,
-    setTipoConfirmacao,
-    executarAcaoConfirmada,
     control,
     handleSubmit,
     handleEdit,

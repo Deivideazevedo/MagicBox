@@ -60,7 +60,7 @@ const MetasDashboard = dynamic(() => import("../components/Meta/MetasDashboard")
 import { useMetas } from "../hooks/useMetas";
 import Slide from "@mui/material/Slide";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 export default function MetasPage() {
   const theme = useTheme();
@@ -83,16 +83,11 @@ export default function MetasPage() {
     handleDelete,
     handleToggleStatus,
     handleCancelEdit,
-    tipoConfirmacao,
-    metaParaAcao,
-    setTipoConfirmacao,
-    executarAcaoConfirmada,
-    isDeleting,
   } = useMetas();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isMobileForm = useMediaQuery(theme.breakpoints.down("sm"));
-  const [exibirFormulario, setExibirFormulario] = useState(false);
+  const modalForm = useModalUrl("metaForm");
   const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
   const [aporteState, setAporteState] = useState<{
     open: boolean;
@@ -109,22 +104,22 @@ export default function MetasPage() {
 
   const handleOpenAporte = (meta: Meta) => {
     handleAporte(meta);
-    setExibirFormulario(true);
+    modalForm.openModal();
   };
 
   const handleNovaMeta = () => {
     handleCancelEdit();
-    setExibirFormulario(true);
+    modalForm.openModal();
   };
 
   const handleEditarMeta = (meta: Meta) => {
     handleEdit(meta);
-    setExibirFormulario(true);
+    modalForm.openModal();
   };
 
   const handleFecharFormulario = () => {
     handleCancelEdit();
-    setExibirFormulario(false);
+    modalForm.closeModal();
   };
 
   const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
@@ -152,7 +147,7 @@ export default function MetasPage() {
           >
             {/* Formulário: Lateral no Desktop / Modal no Mobile */}
             {!isMobileForm ? (
-              <Slide direction="right" in={exibirFormulario} mountOnEnter unmountOnExit>
+              <Slide direction="right" in={modalForm.isOpen} mountOnEnter unmountOnExit>
                 <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
                   <Formulario
                     isEditing={isEditing}
@@ -170,7 +165,7 @@ export default function MetasPage() {
               </Slide>
             ) : (
               <Dialog
-                open={exibirFormulario}
+                open={modalForm.isOpen}
                 onClose={handleFecharFormulario}
                 fullWidth
                 maxWidth="xs"
@@ -206,8 +201,8 @@ export default function MetasPage() {
                 width: '100%',
                 // Estilização dinâmica para crescimento suave
                 ...(!isMobileForm && {
-                  flexBasis: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
-                  maxWidth: (exibirFormulario && !isMobileForm) ? '66.66% !important' : '100% !important',
+                  flexBasis: (modalForm.isOpen && !isMobileForm) ? '66.66% !important' : '100% !important',
+                  maxWidth: (modalForm.isOpen && !isMobileForm) ? '66.66% !important' : '100% !important',
                 }),
                 ...(isMobileForm && {
                   width: '100% !important',
@@ -227,51 +222,6 @@ export default function MetasPage() {
           </Grid>
         </MetasDashboard>
       </Box>
-
-      {/* Diálogo de Confirmação Unificado */}
-      <DeleteConfirmationDialog
-        open={tipoConfirmacao}
-        onClose={() => setTipoConfirmacao(null)}
-        title={
-          tipoConfirmacao === 'delete' 
-            ? "Excluir meta permanentemente?" 
-            : tipoConfirmacao === 'concluir'
-            ? "Concluir esta meta?"
-            : "Reativar meta?"
-        }
-        confirmButtonText={
-          tipoConfirmacao === 'delete' 
-            ? "Sim, excluir" 
-            : tipoConfirmacao === 'concluir'
-            ? "Sim, concluir"
-            : "Sim, reativar"
-        }
-        onConfirm={executarAcaoConfirmada}
-        loading={isDeleting || isUpdating}
-        color={
-          tipoConfirmacao === 'delete' 
-            ? "error" 
-            : tipoConfirmacao === 'concluir'
-            ? "success"
-            : "info"
-        }
-        icon={
-          tipoConfirmacao === 'delete' 
-            ? IconTrash 
-            : tipoConfirmacao === 'concluir'
-            ? IconCheck 
-            : IconRefresh
-        }
-      >
-        <Typography variant="body1" color="text.secondary">
-          {tipoConfirmacao === 'delete' 
-            ? "Esta ação não pode ser desfeita e a meta será removida da sua listagem."
-            : tipoConfirmacao === 'concluir'
-            ? "Parabéns por atingir seu objetivo! A meta será arquivada como concluída."
-            : "A meta voltará a ficar disponível para novos aportes."
-          }
-        </Typography>
-      </DeleteConfirmationDialog>
 
       <RetiradaMetaModal
         open={isRetiradaModalOpen}

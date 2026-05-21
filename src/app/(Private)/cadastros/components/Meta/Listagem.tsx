@@ -36,10 +36,11 @@ import {
   IconHistory,
   IconEye,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DetalhesMetaModal from "./DetalhesMetaModal";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 interface ListagemProps {
   metas: Meta[];
@@ -62,11 +63,17 @@ export const Listagem = ({
 }: ListagemProps) => {
   const theme = useTheme();
   const customizer = useSelector((state: AppState) => state.customizer);
+  const modalDetalhes = useModalUrl("metaDetalhes");
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
   const [metaDetalhes, setMetaDetalhes] = useState<Meta | null>(null);
-  const [detalhesOpen, setDetalhesOpen] = useState(false);
+
+  useEffect(() => {
+    if (!modalDetalhes.isOpen) {
+      setMetaDetalhes(null);
+    }
+  }, [modalDetalhes.isOpen]);
   const openMenu = Boolean(anchorEl);
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, meta: Meta) => {
@@ -483,7 +490,7 @@ export const Listagem = ({
           onClick={() => {
             if (selectedMeta) {
               setMetaDetalhes(selectedMeta);
-              setDetalhesOpen(true);
+              modalDetalhes.openModal();
             }
             handleCloseMenu();
           }}
@@ -543,11 +550,8 @@ export const Listagem = ({
       {/* Modal de Detalhes */}
       {metaDetalhes && (
         <DetalhesMetaModal
-          open={detalhesOpen}
-          onClose={() => {
-            setDetalhesOpen(false);
-            setMetaDetalhes(null);
-          }}
+          open={modalDetalhes.isOpen}
+          onClose={modalDetalhes.closeModal}
           metaId={metaDetalhes.id}
         />
       )}

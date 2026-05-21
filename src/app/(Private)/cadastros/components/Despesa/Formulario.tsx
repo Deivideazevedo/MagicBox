@@ -1,11 +1,8 @@
 import CustomToggle from "@/app/components/forms/CustomToggle";
-import {
-  HookCurrencyField,
-  HookDecimalField,
-  HookSelect,
-  HookTextField,
-  IconColorMenuPicker,
-} from "@/app/components/forms/hooksForm";
+import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
+import { HookCurrencyField, HookDecimalField } from "@/app/components/forms/hooksForm/masks";
 import { Despesa } from "@/core/despesas/types";
 import { DespesaFormData } from "../../hooks/useDespesas";
 import { LoadingButton } from "@mui/lab";

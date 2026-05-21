@@ -11,10 +11,10 @@ import {
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 import { toast } from "react-hot-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
 
 // Schema de validação
 const categoriaSchema = z.object({
@@ -32,6 +32,8 @@ interface UseCategoriasProps {
 export const useCategorias = ({
   categorias: categoriasProps,
 }: UseCategoriasProps = {}) => {
+  const confirm = useConfirm();
+
   // Se categoriasProps existir (não é undefined), skip a query RTK
   const { data: categoriasQuery = [] } = useGetCategoriasQuery(undefined, {
     skip: categoriasProps !== undefined,
@@ -40,7 +42,6 @@ export const useCategorias = ({
   // Usa props se fornecido, senão usa resultado da query
   const categoriasList = categoriasProps ?? categoriasQuery;
 
-  const [openDelete, setDeleteDialog] = useState(false);
   const [row, setRow] = useState<Categoria | null>(null);
 
   // RTK Query mutations
@@ -122,27 +123,19 @@ export const useCategorias = ({
     setTimeout(() => setFocus("nome"), 100);
   }, [reset, defaultValues, setFocus]);
 
-  const handleOpenDialog = useCallback((categoria: Categoria) => {
-    setRow(categoria);
-    setDeleteDialog(true);
-  }, []);
-
-  const handleCloseDialog = useCallback(() => {
-    setRow(null);
-    setDeleteDialog(false);
-  }, []);
-
-  const handleDelete = useCallback(async () => {
-    if (!row) return;
+  const handleDelete = useCallback(async (categoria: Categoria) => {
+    const confirmed = await confirm.delete({
+      title: "Excluir Categoria?",
+      description: `Você está prestes a remover a categoria "${categoria.nome}". Essa ação não poderá ser desfeita.`,
+      confirmText: "Excluir Categoria",
+    });
+    if (!confirmed) return;
     try {
-      await deleteCategoria(String(row.id)).unwrap();
+      await deleteCategoria(String(categoria.id)).unwrap();
       setValue("id", undefined);
-      setRow(null);
-      setDeleteDialog(false);
-
       toast.success("Categoria excluída com sucesso!");
     } catch { }
-  }, [deleteCategoria, row, setValue]);
+  }, [deleteCategoria, setValue, confirm]);
 
   // submit é o handler que o <form> espera
   const handleSubmit = handleSubmitForm(onSubmit);
@@ -160,26 +153,16 @@ export const useCategorias = ({
 
   const listProps = {
     categorias: categoriasList,
-    handleOpenDialog,
+    handleOpenDialog: handleDelete,
     handleEdit,
-  };
-
-  const deleteProps = {
-    open: openDelete,
-    name: row?.nome,
-    onConfirm: handleDelete,
-    onClose: handleCloseDialog,
-    isLoading: isDeleting,
   };
 
   return {
     isDeleting,
     handleEdit,
-    handleOpenDialog,
     handleDelete,
     row,
     formProps,
     listProps,
-    deleteProps,
   };
 };

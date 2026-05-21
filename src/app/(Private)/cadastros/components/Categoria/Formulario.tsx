@@ -1,4 +1,5 @@
-import { HookTextField, IconColorMenuPicker } from "@/app/components/forms/hooksForm";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
 import { Categoria, CategoriaPayload } from "@/core/categorias/types";
 import { LoadingButton } from "@mui/lab";
 import {

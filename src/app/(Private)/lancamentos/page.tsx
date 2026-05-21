@@ -22,7 +22,6 @@ import LancamentoDrawer from "./components/LancamentoDrawer";
 import FiltrosAvancados from "./components/FiltrosAvancados";
 import { CustomTable } from "./components/customTable";
 import ModalVisualizacao from "./components/ModalVisualizacao";
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 
 // Hooks
 import { useLancamentosList } from "./hooks/useLancamentosList";
@@ -30,10 +29,14 @@ import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useDispatch } from "@/store/hooks";
 import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
 import { LancamentoResposta } from "@/core/lancamentos/types";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { useModalUrl } from "@/hooks/useModalUrl";
+import { useBulkDeleteLancamentosMutation } from "@/services/endpoints/lancamentosApi";
+import { toast } from "react-hot-toast";
 
 // Tour
 import {
@@ -50,6 +53,21 @@ import { criarLancamentosTourSteps } from "./components/lancamentosTourSteps";
 function LancamentosPageContent() {
   const dispatch = useDispatch();
   const tourRefs = useLancamentosTourRefs();
+  const confirm = useConfirm();
+  const modalVisualizar = useModalUrl("visualizar");
+  const [selectedVisualizar, setSelectedVisualizar] = useState<LancamentoResposta | null>(null);
+  const [bulkDelete] = useBulkDeleteLancamentosMutation();
+
+  useEffect(() => {
+    if (!modalVisualizar.isOpen) {
+      setSelectedVisualizar(null);
+    }
+  }, [modalVisualizar.isOpen]);
+
+  const handleVisualizar = (lancamento: LancamentoResposta) => {
+    setSelectedVisualizar(lancamento);
+    modalVisualizar.openModal();
+  };
 
   const { data: despesas = [] } = useGetDespesasQuery();
   const { data: receitas = [] } = useGetReceitasQuery();
@@ -65,11 +83,6 @@ function LancamentosPageContent() {
     paginacao,
     filtros,
     handleSearch,
-    modais,
-    modalHandlers,
-    isDeleting,
-    excluirHandlers,
-    lancamentoParaExcluirNome,
     selectedIds,
     onSelectionChange,
   } = useLancamentosList();
@@ -89,6 +102,64 @@ function LancamentosPageContent() {
     },
     [dispatch],
   );
+
+  const handleExcluirLancamento = useCallback((lancamento: LancamentoResposta) => {
+    confirm.delete({
+      title: "Excluir Lançamento?",
+      description: (
+        <Typography variant="body1" color="text.secondary">
+          Você está prestes a remover{" "}
+          <Box component="span" fontWeight="bold" fontSize={15} color="text.primary">
+            "{lancamento.observacao || `Lançamento #${lancamento.id}`}"
+          </Box>
+          <br />
+          <Typography variant="body2" color="textSecondary" mt={1}>
+            Valor: R$ {Number(lancamento.valor || 0).toFixed(2)}
+          </Typography>
+          <br />
+          Essa ação não poderá ser desfeita.
+        </Typography>
+      ),
+      onConfirm: async () => {
+        try {
+          await bulkDelete({ ids: [lancamento.id] }).unwrap();
+          toast.success("Lançamento excluído com sucesso");
+        } catch (error) {
+          toast.error("Erro ao excluir lançamento");
+        }
+      }
+    });
+  }, [confirm, bulkDelete]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedIds.length === 0) return;
+    confirm.delete({
+      title: "Excluir Lançamentos Selecionados?",
+      description: (
+        <Typography variant="body1" color="text.secondary">
+          Você está prestes a remover{" "}
+          <Box component="span" fontWeight="bold" fontSize={15} color="text.primary">
+            {selectedIds.length} lançamentos selecionados
+          </Box>
+          <br />
+          <Typography variant="body2" color="textSecondary" mt={1}>
+            Esta ação removerá todos os itens marcados na tabela.
+          </Typography>
+          <br />
+          Essa ação não poderá ser desfeita.
+        </Typography>
+      ),
+      onConfirm: async () => {
+        try {
+          await bulkDelete({ ids: selectedIds }).unwrap();
+          toast.success(`${selectedIds.length} lançamento(s) excluído(s) com sucesso`);
+          onSelectionChange([]);
+        } catch (error) {
+          toast.error("Erro ao excluir lançamento(s)");
+        }
+      }
+    });
+  }, [confirm, bulkDelete, selectedIds, onSelectionChange]);
 
   const fullLancamentos = useMemo(() => {
     return lancamentos.map((lancamento) => {
@@ -183,7 +254,7 @@ function LancamentosPageContent() {
                   actions={[
                     {
                       title: "Visualizar",
-                      callback: modalHandlers.visualizar.abrir,
+                      callback: handleVisualizar,
                       color: "info",
                     },
                     {
@@ -193,7 +264,7 @@ function LancamentosPageContent() {
                     },
                     {
                       title: "Excluir",
-                      callback: modalHandlers.excluir.abrir,
+                      callback: handleExcluirLancamento,
                       color: "error",
                     },
                   ]}
@@ -210,7 +281,7 @@ function LancamentosPageContent() {
                   isFetching={isFetching}
                   emptyMessage="Nenhum lançamento foi encontrado"
                   onSelectionChange={onSelectionChange}
-                  onBulkDelete={excluirHandlers.bulk}
+                  onBulkDelete={handleBulkDelete}
                   refs={tourRefs}
                 />
               </Box>
@@ -223,57 +294,12 @@ function LancamentosPageContent() {
 
       {/* Modal de Visualização */}
       <ModalVisualizacao
-        open={Boolean(modais.visualizar)}
-        lancamento={modais.visualizar}
+        open={modalVisualizar.isOpen && !!selectedVisualizar}
+        lancamento={selectedVisualizar}
         despesas={despesas}
         receitas={receitas}
-        onClose={modalHandlers.visualizar.fechar}
+        onClose={modalVisualizar.closeModal}
       />
-
-      {/* Dialog de Exclusão */}
-      <DeleteConfirmationDialog
-        open={Boolean(modais.excluir) || modais.bulkExcluir}
-        onClose={modalHandlers.excluir.fechar}
-        onConfirm={excluirHandlers.confirmar}
-        loading={isDeleting}
-        title={
-          modais.bulkExcluir
-            ? "Excluir Lançamentos Selecionados?"
-            : "Excluir Lançamento?"
-        }
-        icon={IconTrash}
-        color="error"
-      >
-        <Typography variant="body1" color="text.secondary">
-          Você está prestes a remover{" "}
-          <Box
-            component="span"
-            fontWeight="bold"
-            fontSize={15}
-            color="text.primary"
-          >
-            {modais.bulkExcluir
-              ? `${selectedIds.length} lançamentos selecionados`
-              : `"${lancamentoParaExcluirNome}"`}
-          </Box>
-          <br />
-          {!modais.bulkExcluir && modais.excluir && (
-            <>
-              <Typography variant="body2" color="textSecondary" mt={1}>
-                Valor: R$ {Number(modais.excluir.valor || 0).toFixed(2)}
-              </Typography>
-              <br />
-            </>
-          )}
-          {modais.bulkExcluir && (
-            <Typography variant="body2" color="textSecondary" mt={1}>
-              Esta ação removerá todos os itens marcados na tabela.
-            </Typography>
-          )}
-          <br />
-          Essa ação não poderá ser desfeita.
-        </Typography>
-      </DeleteConfirmationDialog>
 
       {/* Tour */}
       <ProductTour

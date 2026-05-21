@@ -19,12 +19,10 @@ import { IconArrowLeft, IconCreditCard, IconWallet, IconX } from "@tabler/icons-
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  HookAutocomplete,
-  HookCurrencyField,
-  HookDatePicker,
-  HookTextField,
-} from "@/app/components/forms/hooksForm";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { HookCurrencyField } from "@/app/components/forms/hooksForm/masks";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";

@@ -1,11 +1,9 @@
 "use client";
 
-import {
-  HookAutocomplete,
-  HookCurrencyField,
-  HookDatePicker,
-  HookTextField,
-} from "@/app/components/forms/hooksForm";
+import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
+import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
+import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
+import { HookCurrencyField } from "@/app/components/forms/hooksForm/masks";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   useGetUsuariosQuery,
   useUpdateUsuarioMutation,
@@ -8,9 +8,13 @@ import { UpdateUserDTO } from "@/core/users/user.dto";
 import { toast } from "react-hot-toast";
 import { defaultUserFilters, FiltrosUsuarios } from "../utils";
 import { User } from "next-auth";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 export function useUsuariosList() {
   const [filtros, setFiltros] = useState<FiltrosUsuarios>(defaultUserFilters);
+  const confirm = useConfirm();
+  const modalVisualizar = useModalUrl("usuario");
 
   const {
     data: responseData,
@@ -26,8 +30,13 @@ export function useUsuariosList() {
   const meta = useMemo(() => responseData?.meta || { total: 0, page: 0, lastPage: 0, limit: 10 }, [responseData]);
 
   const [userVisualizar, setUserVisualizar] = useState<User | null>(null);
-  const [userStatus, setUserStatus] = useState<User | null>(null);
-  const [idsDeleteBulk, setIdsDeleteBulk] = useState<number[] | null>(null);
+
+  // Sincronizar o fechamento da URL limpando o estado local
+  useEffect(() => {
+    if (!modalVisualizar.isOpen) {
+      setUserVisualizar(null);
+    }
+  }, [modalVisualizar.isOpen]);
 
   const handleSearch = useCallback(
     (novosFiltros: Partial<FiltrosUsuarios>, replace = false) => {
@@ -42,35 +51,40 @@ export function useUsuariosList() {
   const modalHandlers = useMemo(
     () => ({
       visualizar: {
-        abrir: (user: User) => setUserVisualizar(user),
-        fechar: () => setUserVisualizar(null),
-      },
-      status: {
-        abrir: (user: User) => setUserStatus(user),
-        fechar: () => setUserStatus(null),
-      },
-      deleteBulk: {
-        abrir: (ids: number[]) => setIdsDeleteBulk(ids),
-        fechar: () => setIdsDeleteBulk(null),
+        abrir: (user: User) => {
+          setUserVisualizar(user);
+          modalVisualizar.openModal();
+        },
+        fechar: () => modalVisualizar.closeModal(),
       },
     }),
-    []
+    [modalVisualizar]
   );
 
-  const handleToggleStatus = async () => {
-    if (!userStatus) return;
+  const handleToggleStatus = async (user: User) => {
+    const isActivating = user.status !== "A";
+    const confirmed = await confirm.show({
+      title: isActivating ? "Ativar Usuário?" : "Inativar Usuário?",
+      description: `Deseja realmente ${isActivating ? "ativar" : "inativar"} o acesso de ${user.name}?`,
+      confirmText: isActivating ? "Ativar" : "Inativar",
+      cancelText: "Cancelar",
+      color: isActivating ? "success" : "warning",
+    });
+
+    if (!confirmed) return;
 
     try {
-      const newStatus = userStatus.status === "A" ? "I" : "A";
+      const newStatus = isActivating ? "A" : "I";
       const updated = await updateUsuario({
-        id: userStatus.id,
+        id: user.id,
         data: { status: newStatus },
       }).unwrap();
 
-      setUserStatus(updated);
+      if (userVisualizar?.id === user.id) {
+        setUserVisualizar(updated);
+      }
 
-      toast.success(`Usuário ${newStatus === "A" ? "ativado" : "inativado"} com sucesso`);
-      modalHandlers.status.fechar();
+      toast.success(`Usuário ${isActivating ? "ativado" : "inativado"} com sucesso`);
     } catch (error) {
       toast.error("Erro ao atualizar status do usuário");
     }
@@ -93,15 +107,25 @@ export function useUsuariosList() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (!idsDeleteBulk || idsDeleteBulk.length === 0) return;
+  const handleBulkDelete = async (ids: number[]) => {
+    if (!ids || ids.length === 0) return;
+
+    const confirmed = await confirm.delete({
+      title: "Excluir Permanentemente?",
+      description: `Você está prestes a excluir ${ids.length} usuário(s) permanentemente. Esta ação é irreversível. Todos os lançamentos, categorias e dados vinculados a estes usuários serão apagados do servidor de forma definitiva!`,
+      confirmText: "Excluir Agora",
+      cancelText: "Cancelar",
+    });
+
+    if (!confirmed) return false;
 
     try {
-      await bulkDelete(idsDeleteBulk).unwrap();
-      toast.success(`${idsDeleteBulk.length} usuário(s) removido(s) permanentemente`);
-      modalHandlers.deleteBulk.fechar();
+      await bulkDelete(ids).unwrap();
+      toast.success(`${ids.length} usuário(s) removido(s) permanentemente`);
+      return true;
     } catch (error: any) {
       toast.error("Erro ao remover usuários");
+      return false;
     }
   };
 
@@ -135,8 +159,6 @@ export function useUsuariosList() {
     handleSearch,
     modais: {
       visualizar: userVisualizar,
-      status: userStatus,
-      deleteBulk: idsDeleteBulk,
     },
     modalHandlers,
     handleToggleStatus,

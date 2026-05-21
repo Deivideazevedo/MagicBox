@@ -1,13 +1,8 @@
-import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDialog";
 import { Categoria } from "@/core/categorias/types";
 import {
-  Box,
-  Grid,
-  Typography
-} from "@mui/material";
-import {
-  IconTrash
-} from "@tabler/icons-react";
+   Box,
+   Grid
+ } from "@mui/material";
 import { useRef } from "react";
 import { useCategorias } from "../../hooks/useCategorias";
 import { Formulario } from "./Formulario";
@@ -20,7 +15,7 @@ interface CategoriasTabProps {
 export default function CategoriasTab({ categorias }: CategoriasTabProps) {
   const formRef = useRef<HTMLDivElement>(null);
 
-  const { formProps, listProps, deleteProps } =
+  const { formProps, listProps } =
     useCategorias({ categorias });
 
 
@@ -37,27 +32,6 @@ export default function CategoriasTab({ categorias }: CategoriasTabProps) {
           <Listagem {...listProps} />
         </Grid>
       </Grid>
-
-      {/* Dialog de Confirmação de Exclusão */}
-      <DeleteConfirmationDialog
-        {...deleteProps}
-        title="Excluir Categoria?"
-        icon={IconTrash}
-        color="error"
-      >
-        <Typography variant="body1" color="text.secondary">
-          Você está prestes a remover{" "}
-          <Box
-            component="span"
-            fontWeight="bold"
-            fontSize={15}
-            color="text.primary"
-          >
-            "{deleteProps?.name}"
-          </Box>
-          .<br /> Essa ação não poderá ser desfeita.
-        </Typography>
-      </DeleteConfirmationDialog>
     </Box>
   );
 }

@@ -9,16 +9,8 @@ import {
   useTheme,
   Collapse,
   Tooltip,
-  Popover,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   IconButton,
-  Slide,
 } from "@mui/material";
-import { TransitionProps } from "@mui/material/transitions";
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -26,9 +18,13 @@ import {
   IconScale,
   IconAlertTriangle,
   IconInfoCircle,
-  IconX,
 } from "@tabler/icons-react";
 import { ResumoRelatorio } from "@/core/relatorios/relatorio.dto";
+import { useModalUrl } from "@/hooks/useModalUrl";
+import ReceitasDetailDialog from "./ReceitasDetailDialog";
+import DespesasDetailDialog from "./DespesasDetailDialog";
+import MetasDetailDialog from "./MetasDetailDialog";
+import SaldoLivreDetailDialog from "./SaldoLivreDetailDialog";
 
 function formatCurrency(valor?: number | null): string {
   return new Intl.NumberFormat("pt-BR", {
@@ -36,15 +32,6 @@ function formatCurrency(valor?: number | null): string {
     currency: "BRL",
   }).format(valor ?? 0);
 }
-
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement<any, any>;
-  },
-  ref: React.Ref<unknown>,
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
 
 export default function CardsKPI({
   resumo,
@@ -54,39 +41,35 @@ export default function CardsKPI({
   const theme = useTheme();
   const [detalhesExpandidos, setDetalhesExpandidos] = useState(false);
 
-  // Dialog State
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  const handleDialogOpen = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setDialogOpen(true);
-  };
-
-  const handleDialogClose = (event?: React.MouseEvent) => {
-    if (event) event.stopPropagation();
-    setDialogOpen(false);
-  };
+  // Modais Url Acessíveis com histórico do navegador
+  const modalReceitas = useModalUrl("modal-receitas");
+  const modalDespesas = useModalUrl("modal-despesas");
+  const modalMetas = useModalUrl("modal-metas");
+  const modalSaldoLivre = useModalUrl("modal-saldo-livre");
 
   if (!resumo) return null;
 
   const receitasPagas = resumo.receitasPagas ?? 0;
   const totalReceitas = resumo.totalReceitas ?? 0;
   const diffReceitas = receitasPagas - totalReceitas;
+  const receitasPorcentagem = totalReceitas > 0 ? (receitasPagas / totalReceitas) * 100 : 0;
+  const qtdReceitasAtivas = resumo.qtdReceitasAtivas ?? 0;
 
   const despesasPagas = resumo.despesasPagas ?? 0;
   const totalDespesas = resumo.totalDespesas ?? 0;
   const diffDespesas = despesasPagas - totalDespesas;
+  const despesasPorcentagem = totalDespesas < 0 ? (despesasPagas / totalDespesas) * 100 : 0;
+  const qtdDespesasAtivas = resumo.qtdDespesasAtivas ?? 0;
 
-  // Variáveis globais de Metas para o Card e para o Dialog
   const totalAcumuladoComAlvo = resumo.totalAcumuladoMetasComAlvo ?? 0;
   const totalPlanejado = resumo.totalPlanejadoMetas ?? 0;
   const metasPorcentagem = resumo.metasPorcentagem ?? 0;
   const acumuloLivre = resumo.totalAcumuladoMetasSemAlvo ?? 0;
   const metasAtivas = resumo.qtdMetasAtivas ?? 0;
-  const totalAcumulado = resumo.totalAcumuladoMetas ?? 0;
-  const qtdMetasTotal = resumo.qtdMetasTotal ?? 0;
-  const qtdMetasConcluidas = resumo.qtdMetasConcluidas ?? 0;
-  const qtdMetasEmAndamento = resumo.qtdMetasEmAndamento ?? 0;
+
+  const saldoLivreGeral = resumo.saldoLivreGeral ?? 0;
+  const saldoLivrePeriodo = resumo.saldoLivre ?? 0;
+  const saldoPorcentagem = saldoLivreGeral !== 0 ? (saldoLivrePeriodo / saldoLivreGeral) * 100 : 0;
 
   function formatDiferenca(valor: number): string {
     const abs = Math.abs(valor);
@@ -100,89 +83,140 @@ export default function CardsKPI({
     {
       icon: IconTrendingUp,
       label: "Receitas",
-      value: formatCurrency(receitasPagas), // Realizado (o que entrou)
+      value: formatCurrency(receitasPagas),
       iconColor: theme.palette.success.main,
-      subItems: [
-        {
-          label: "Previsto",
-          value: formatCurrency(totalReceitas),
-          dotColor: theme.palette.success.main,
-        },
-        {
-          label: "Diferença",
-          value: formatDiferenca(diffReceitas),
-          color:
-            diffReceitas < 0
-              ? "error.main"
-              : diffReceitas > 0
-                ? "success.main"
-                : "text.secondary",
-          dotColor: theme.palette.warning.main,
-        },
-      ],
+      isCustomProgressCard: true,
+      labelProgress: "Progresso Receitas",
+      percentage: receitasPorcentagem,
+      percentageText: `${receitasPorcentagem.toFixed(1)}%`,
+      percentageColor: "success.main",
+      showExceededIcon: receitasPorcentagem > 100 ? " 🚀" : "",
+      barBackground: receitasPorcentagem > 100
+        ? `linear-gradient(90deg, ${theme.palette.success.main} 0%, #ffd700 100%)`
+        : theme.palette.success.main,
+      barAnimation: receitasPorcentagem > 100 ? "shimmer 2s infinite linear" : "none",
+      realizadoText: formatCurrency(receitasPagas),
+      previstoText: formatCurrency(totalReceitas),
+      labelLeftFooter: "Diferença",
+      valueLeftFooter: formatDiferenca(diffReceitas),
+      valueLeftFooterColor: diffReceitas < 0
+        ? "error.main"
+        : diffReceitas > 0
+          ? "success.main"
+          : "text.secondary",
+      labelRightFooter: "Ativas",
+      valueRightFooter: qtdReceitasAtivas,
+      onClickDialog: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        modalReceitas.openModal();
+      },
+      tooltip: "Clique para ver detalhes completos de Receitas",
+      subItems: [] as { label: string; value: string; dotColor: string }[]
     },
     {
       icon: IconTrendingDown,
       label: "Despesas",
-      value: formatCurrency(despesasPagas), // Realizado (o que saiu)
+      value: formatCurrency(despesasPagas),
       iconColor: theme.palette.error.main,
-      subItems: [
-        {
-          label: "Previsto",
-          value: formatCurrency(totalDespesas),
-          dotColor: theme.palette.error.main,
-        },
-        {
-          label: "Diferença",
-          value: formatDiferenca(diffDespesas),
-          color:
-            diffDespesas < 0
-              ? "error.main"
-              : diffDespesas > 0
-                ? "success.main"
-                : "text.secondary",
-          dotColor: theme.palette.warning.main,
-        },
-      ],
+      isCustomProgressCard: true,
+      labelProgress: "Progresso Despesas",
+      percentage: despesasPorcentagem,
+      percentageText: `${despesasPorcentagem.toFixed(1)}%`,
+      percentageColor: despesasPorcentagem > 100 ? "error.main" : "success.main",
+      showExceededIcon: despesasPorcentagem > 100 ? " ⚠️" : "",
+      barBackground: despesasPorcentagem > 100
+        ? `linear-gradient(90deg, ${theme.palette.error.main} 0%, #ff5722 100%)`
+        : theme.palette.success.main, // Se estiver dentro do limite, a cor de progresso é verde "Seguro"
+      barAnimation: despesasPorcentagem > 100 ? "pulse 1.5s infinite ease-in-out" : "none",
+      realizadoText: formatCurrency(Math.abs(despesasPagas)),
+      previstoText: formatCurrency(Math.abs(totalDespesas)),
+      labelLeftFooter: "Diferença",
+      valueLeftFooter: formatDiferenca(diffDespesas),
+      valueLeftFooterColor: diffDespesas < 0
+        ? "error.main"
+        : diffDespesas > 0
+          ? "success.main"
+          : "text.secondary",
+      labelRightFooter: "Ativas",
+      valueRightFooter: qtdDespesasAtivas,
+      onClickDialog: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        modalDespesas.openModal();
+      },
+      tooltip: "Clique para ver detalhes completos de Despesas",
+      subItems: []
     },
     {
       icon: IconTarget,
       label: "Metas",
-      value: formatCurrency(resumo.totalAcumuladoMetas), // Total Guardado
+      value: formatCurrency(resumo.totalAcumuladoMetas),
       iconColor: theme.palette.info.main,
-      tooltip: "Saldo total guardado em todas as metas ativas.",
-      isMetas: true,
-      subItems: [],
+      isCustomProgressCard: true,
+      labelProgress: "Progresso Metas Planejadas",
+      percentage: metasPorcentagem,
+      percentageText: `${metasPorcentagem.toFixed(1)}%`,
+      percentageColor: "info.main",
+      showExceededIcon: metasPorcentagem >= 100 ? " 🏆" : "",
+      barBackground: metasPorcentagem >= 100
+        ? `linear-gradient(90deg, ${theme.palette.info.main} 0%, #00bcd4 100%)`
+        : theme.palette.info.main,
+      barAnimation: "none",
+      realizadoText: formatCurrency(totalAcumuladoComAlvo),
+      previstoText: formatCurrency(totalPlanejado),
+      labelLeftFooter: "Acúmulo Livre",
+      valueLeftFooter: formatCurrency(acumuloLivre),
+      valueLeftFooterColor: "text.primary",
+      labelRightFooter: "Metas Ativas",
+      valueRightFooter: metasAtivas,
+      onClickDialog: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        modalMetas.openModal();
+      },
+      tooltip: "Clique para ver detalhes completos de Metas",
+      subItems: []
     },
     {
       icon: IconScale,
-      label: "Saldos",
-      value: formatCurrency(resumo.saldoLivre), // Principal: Livre
+      label: "Saldo Livre",
+      value: formatCurrency(resumo.saldoLivreGeral),
       iconColor: theme.palette.primary.main,
-      tooltip: "Saldo Livre = Receitas Pagas - (Despesas Pagas + Metas Pagas)",
-      subItems: [
-        {
-          label: "Projetado",
-          value: formatCurrency(resumo.saldoProjetado),
-          dotColor: alpha(theme.palette.primary.main, 0.5),
-        },
-        {
-          label: "Bloqueado (Metas)",
-          value: formatCurrency(resumo.saldoBloqueado),
-          dotColor: theme.palette.warning.main,
-        },
-      ],
+      tooltip: "Clique para ver detalhes do seu Saldo Livre",
+      isCustomProgressCard: true,
+      labelProgress: "Proporção do Período",
+      percentage: saldoPorcentagem,
+      percentageText: `${saldoPorcentagem.toFixed(1)}%`,
+      percentageColor: "primary.main",
+      showExceededIcon: "",
+      barBackground: theme.palette.primary.main,
+      barAnimation: "none",
+      realizadoText: formatCurrency(resumo.saldoLivre),
+      previstoText: formatCurrency(resumo.saldoLivreGeral),
+      labelLeftFooter: "Saldo no Período",
+      valueLeftFooter: formatCurrency(resumo.saldoLivre),
+      valueLeftFooterColor: (resumo.saldoLivre ?? 0) < 0
+        ? "error.main"
+        : (resumo.saldoLivre ?? 0) > 0
+          ? "success.main"
+          : "text.secondary",
+      labelRightFooter: "Livre + Metas",
+      valueRightFooter: formatCurrency(resumo.saldoBrutoLiquido),
+      onClickDialog: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        modalSaldoLivre.openModal();
+      },
+      subItems: [],
     },
     {
       icon: IconAlertTriangle,
       label: "Déficit Pendente",
-      value: `${resumo.dividaPendente} Contas`, // Qtd
+      value: `${resumo.dividaPendente} Contas`,
       iconColor:
         resumo.dividaPendente > 0
           ? theme.palette.error.main
           : theme.palette.success.main,
       tooltip:
         "Quantidade de despesas agendadas no período que ainda não foram pagas (dívida pendente).",
+      isCustomProgressCard: false,
       subItems: [],
     },
   ];
@@ -191,9 +225,8 @@ export default function CardsKPI({
     <Grid container spacing={2} sx={{ mb: 4 }}>
       {kpis.map((card, index) => {
         const Icon = card.icon;
-        const isMetas = (card as any).isMetas;
 
-        if (isMetas) {
+        if (card.isCustomProgressCard) {
           return (
             <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
               <Card
@@ -265,9 +298,9 @@ export default function CardsKPI({
                           {card.label}
                         </Typography>
                       </Box>
-                      <Tooltip title="Clique para detalhes completos (Dialog)" arrow placement="top">
+                      <Tooltip title={card.tooltip} arrow placement="top">
                         <IconButton
-                          onClick={handleDialogOpen}
+                          onClick={card.onClickDialog}
                           sx={{
                             p: 0.7,
                             borderRadius: 1.7,
@@ -306,15 +339,16 @@ export default function CardsKPI({
                             fontWeight={600}
                             sx={{ fontSize: "0.7rem" }}
                           >
-                            Progresso Metas Planejadas
+                            {card.labelProgress}
                           </Typography>
                           <Typography
                             variant="caption"
-                            color="info.main"
+                            color={card.percentageColor}
                             fontWeight={700}
-                            sx={{ fontSize: "0.75rem" }}
+                            sx={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: 0.3 }}
                           >
-                            {metasPorcentagem.toFixed(1)}%
+                            {card.percentageText}
+                            {card.showExceededIcon}
                           </Typography>
                         </Box>
 
@@ -330,11 +364,27 @@ export default function CardsKPI({
                         >
                           <Box
                             sx={{
-                              width: `${Math.min(metasPorcentagem, 100)}%`,
+                              width: `${Math.min(card.percentage || 0, 100)}%`,
                               height: "100%",
-                              bgcolor: card.iconColor,
                               borderRadius: 3,
                               transition: "width 0.4s ease-in-out",
+                              background: card.barBackground,
+                              "@keyframes pulse": {
+                                "0%": { opacity: 0.7 },
+                                "50%": { opacity: 1 },
+                                "100%": { opacity: 0.7 }
+                              },
+                              "@keyframes shimmer": {
+                                "0%": { backgroundPosition: "0% 50%" },
+                                "50%": { backgroundPosition: "100% 50%" },
+                                "100%": { backgroundPosition: "0% 50%" }
+                              },
+                              backgroundSize: "200% 200%",
+                              animation: card.barAnimation === "shimmer 2s infinite linear"
+                                ? "shimmer 3s infinite ease-in-out"
+                                : card.barAnimation === "pulse 1.5s infinite ease-in-out"
+                                  ? "pulse 1.5s infinite ease-in-out"
+                                  : "none",
                             }}
                           />
                         </Box>
@@ -344,7 +394,7 @@ export default function CardsKPI({
                           color="text.secondary"
                           sx={{ fontSize: "0.7rem", display: "block" }}
                         >
-                          {formatCurrency(totalAcumuladoComAlvo)} / {formatCurrency(totalPlanejado)}
+                          {card.realizadoText} / {card.previstoText}
                         </Typography>
                       </Box>
 
@@ -360,15 +410,15 @@ export default function CardsKPI({
                             color="text.secondary"
                             sx={{ fontSize: "0.65rem", display: "block" }}
                           >
-                            Acúmulo Livre
+                            {card.labelLeftFooter}
                           </Typography>
                           <Typography
                             variant="caption"
-                            color="text.primary"
+                            color={card.valueLeftFooterColor || "text.primary"}
                             fontWeight={600}
                             sx={{ fontSize: "0.75rem" }}
                           >
-                            {formatCurrency(acumuloLivre)}
+                            {card.valueLeftFooter}
                           </Typography>
                         </Box>
 
@@ -378,7 +428,7 @@ export default function CardsKPI({
                             color="text.secondary"
                             sx={{ fontSize: "0.65rem", display: "block" }}
                           >
-                            Metas Ativas
+                            {card.labelRightFooter}
                           </Typography>
                           <Typography
                             variant="caption"
@@ -386,7 +436,7 @@ export default function CardsKPI({
                             fontWeight={600}
                             sx={{ fontSize: "0.75rem" }}
                           >
-                            {metasAtivas}
+                            {card.valueRightFooter}
                           </Typography>
                         </Box>
                       </Box>
@@ -402,7 +452,7 @@ export default function CardsKPI({
           <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
             <Card
               onClick={() => {
-                if (card.subItems.length > 0)
+                if (card.subItems && card.subItems.length > 0)
                   setDetalhesExpandidos((prev) => !prev);
               }}
               sx={{
@@ -414,7 +464,7 @@ export default function CardsKPI({
                 position: "relative",
                 overflow: "hidden",
                 transition: "all 0.2s ease-in-out",
-                cursor: card.subItems.length > 0 ? "pointer" : "auto",
+                cursor: card.subItems && card.subItems.length > 0 ? "pointer" : "auto",
                 pt: 2,
                 pb: 1.5,
                 height: "100%",
@@ -498,7 +548,7 @@ export default function CardsKPI({
                   </Box>
 
                   <Box
-                    mb={detalhesExpandidos && card.subItems.length > 0 ? 1 : 0}
+                    mb={detalhesExpandidos && card.subItems && card.subItems.length > 0 ? 1 : 0}
                   >
                     <Typography
                       variant="h5"
@@ -510,7 +560,7 @@ export default function CardsKPI({
                   </Box>
                 </Box>
 
-                {card.subItems.length > 0 && (
+                {card.subItems && card.subItems.length > 0 && (
                   <Collapse in={detalhesExpandidos} timeout={220} sx={{ mt: 1 }}>
                     <Box
                       sx={{
@@ -541,8 +591,8 @@ export default function CardsKPI({
                               sx={{
                                 fontSize: "0.75rem",
                                 display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
+                                  alignItems: "center",
+                                  gap: 0.5,
                               }}
                             >
                               {item.label}
@@ -586,215 +636,28 @@ export default function CardsKPI({
           </Grid>
         );
       })}
-      {/* Dialog de Detalhes de Metas */}
-      <Dialog
-        open={dialogOpen}
-        onClose={() => handleDialogClose()}
-        onClick={(e) => e.stopPropagation()}
-        aria-labelledby="metas-dialog-title"
-        TransitionComponent={Transition}
-        keepMounted
-        sx={{
-          "& .MuiDialog-container": {
-            alignItems: { xs: "flex-end", sm: "center" },
-          },
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: { xs: "24px 24px 0 0", sm: 4 },
-            p: 1.5,
-            width: "100%",
-            maxWidth: { xs: "100%", sm: 450 },
-            m: { xs: 0, sm: 2 },
-            maxHeight: { xs: "85vh", sm: "90vh" },
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.1),
-            boxShadow: `0 20px 50px ${alpha(theme.palette.common.black, 0.25)}`,
-          },
-        }}
-      >
-        <DialogTitle id="metas-dialog-title" sx={{ p: 2, pb: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box
-              sx={{
-                p: 0.7,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.12),
-                color: theme.palette.primary.main,
-                display: "flex",
-              }}
-            >
-              <IconTarget size={20} stroke={2} />
-            </Box>
-            <Typography variant="h6" fontWeight={700}>
-              Estruturação das Metas
-            </Typography>
-          </Box>
-          <IconButton onClick={() => handleDialogClose()} size="small" sx={{ color: "text.secondary" }}>
-            <IconX size={18} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 2, pt: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", mb: 0.5 }}>
-            Entenda detalhadamente como os montantes de metas são exibidos no seu painel da MagicBox:
-          </Typography>
 
-          <Box display="flex" flexDirection="column" gap={2}>
-            {/* Bloco 1: Valor no Período */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.info.main, 0.03),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.info.main, 0.1),
-              }}
-            >
-              <Typography variant="caption" color="info.main" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 0.5 }}>
-                Valor do Período
-              </Typography>
-              <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ mb: 1, letterSpacing: -0.5 }}>
-                {formatCurrency(resumo.totalMetas)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}>
-                Este valor indica quanto foi guardado especificamente dentro do período filtrado. É o número principal em destaque no topo do card.
-              </Typography>
-            </Box>
-
-            {/* Bloco 2: Metas Planejadas */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.success.main, 0.03),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.success.main, 0.1),
-              }}
-            >
-              <Typography variant="caption" color="success.main" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 1.5 }}>
-                Metas Planejadas
-              </Typography>
-              
-              <Grid container spacing={2} sx={{ mb: 1.5 }}>
-                <Grid item xs={6}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.2, fontSize: "0.65rem", textTransform: "uppercase" }}>
-                    Total Guardado
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} color="success.main" sx={{ letterSpacing: -0.5 }}>
-                    {formatCurrency(totalAcumuladoComAlvo)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sx={{ borderLeft: "1px solid", borderColor: alpha(theme.palette.divider, 0.1), pl: 2 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.2, fontSize: "0.65rem", textTransform: "uppercase" }}>
-                    Alvo Previsto
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} color="text.primary" sx={{ letterSpacing: -0.5 }}>
-                    {formatCurrency(totalPlanejado)}
-                  </Typography>
-                </Grid>
-              </Grid>
-
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}>
-                Objetivos financeiros estruturados (ex: comprar um carro, viagem de férias). Possuem data limite definida e valor de alvo final.
-              </Typography>
-            </Box>
-
-            {/* Bloco 3: Acúmulo Livre */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.warning.main, 0.03),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.warning.main, 0.1),
-              }}
-            >
-              <Typography variant="caption" color="warning.main" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 0.5 }}>
-                Acúmulo Livre
-              </Typography>
-              <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ mb: 1, letterSpacing: -0.5 }}>
-                {formatCurrency(acumuloLivre)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}>
-                Poupança livre e descompromissada, ideal para criar reservas financeiras gerais sem a necessidade de estipular prazos ou limites finais.
-              </Typography>
-            </Box>
-
-            {/* Bloco 4: Total Consolidado */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.secondary.main, 0.03),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.secondary.main, 0.1),
-              }}
-            >
-              <Typography variant="caption" color="secondary.main" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 0.5 }}>
-                Total Geral (Saldo Consolidado)
-              </Typography>
-              <Typography variant="h5" fontWeight={800} color="text.primary" sx={{ mb: 1, letterSpacing: -0.5 }}>
-                {formatCurrency(totalAcumulado)}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}>
-                Soma de todos os valores planejados e livres adicionados até hoje. Representa o patrimônio total guardado no módulo de metas.
-              </Typography>
-            </Box>
-
-            {/* Bloco 5: Quantidade de Metas */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: alpha(theme.palette.primary.main, 0.03),
-                border: "1px solid",
-                borderColor: alpha(theme.palette.primary.main, 0.1),
-              }}
-            >
-              <Typography variant="caption" color="primary.main" fontWeight={700} sx={{ textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 1.5 }}>
-                Status das Metas
-              </Typography>
-              
-              <Grid container spacing={1} sx={{ mb: 1.5 }}>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.2, fontSize: "0.62rem", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    Em Andamento
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} color="primary.main" sx={{ letterSpacing: -0.5 }}>
-                    {qtdMetasEmAndamento}
-                  </Typography>
-                </Grid>
-                <Grid item xs={4} sx={{ borderLeft: "1px solid", borderColor: alpha(theme.palette.divider, 0.1), pl: 1.5 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.2, fontSize: "0.62rem", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    Concluídas
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} color="success.main" sx={{ letterSpacing: -0.5 }}>
-                    {qtdMetasConcluidas}
-                  </Typography>
-                </Grid>
-                <Grid item xs={4} sx={{ borderLeft: "1px solid", borderColor: alpha(theme.palette.divider, 0.1), pl: 1.5 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.2, fontSize: "0.62rem", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                    Total Geral
-                  </Typography>
-                  <Typography variant="subtitle1" fontWeight={800} color="text.primary" sx={{ letterSpacing: -0.5 }}>
-                    {qtdMetasTotal}
-                  </Typography>
-                </Grid>
-              </Grid>
-
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}>
-                Visão quantitativa de todos os seus objetivos cadastrados e monitorados ativamente no sistema.
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 1 }}>
-          <Button onClick={() => handleDialogClose()} variant="contained" color="primary" fullWidth sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}>
-            Entendido
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Diálogos Explicativos Modulares */}
+      <ReceitasDetailDialog
+        open={modalReceitas.isOpen}
+        onClose={modalReceitas.closeModal}
+        resumo={resumo}
+      />
+      <DespesasDetailDialog
+        open={modalDespesas.isOpen}
+        onClose={modalDespesas.closeModal}
+        resumo={resumo}
+      />
+      <MetasDetailDialog
+        open={modalMetas.isOpen}
+        onClose={modalMetas.closeModal}
+        resumo={resumo}
+      />
+      <SaldoLivreDetailDialog
+        open={modalSaldoLivre.isOpen}
+        onClose={modalSaldoLivre.closeModal}
+        resumo={resumo}
+      />
     </Grid>
   );
 }

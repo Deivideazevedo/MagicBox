@@ -25,7 +25,7 @@ import {
   HookCurrencyMaskField,
   HookPercentageMaskField,
   HookDecimalMaskField,
-} from "@/app/components/forms/hooksForm";
+} from "@/app/components/forms/hooksForm/masks";
 
 const testFormSchema = z.object({
   valorString: z.string().transform((val) => val.replace(/\D/g, "")),

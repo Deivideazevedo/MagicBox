@@ -41,6 +41,9 @@ export interface ResumoRelatorio {
   saldoProjetado: number;
   saldoBloqueado: number;
   dividaPendente: number;
+  saldoLivreGeral: number;
+  saldoBrutoLiquido: number;
+  taxaEconomiaPeriodo: number;
   totalAcumuladoMetas?: number;
   totalPlanejadoMetas?: number;
   totalAcumuladoMetasComAlvo?: number;
@@ -49,6 +52,12 @@ export interface ResumoRelatorio {
   qtdMetasTotal?: number;
   qtdMetasConcluidas?: number;
   qtdMetasEmAndamento?: number;
+  qtdReceitasAtivas?: number;
+  qtdReceitasInativas?: number;
+  qtdReceitasTotal?: number;
+  qtdDespesasAtivas?: number;
+  qtdDespesasInativas?: number;
+  qtdDespesasTotal?: number;
 }
 
 export interface RelatorioResponse {

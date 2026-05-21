@@ -8,13 +8,16 @@ import {
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { useModalUrl } from "@/hooks/useModalUrl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
 import { fnCleanObject } from "@/utils/functions/fnCleanObject";
 import { useTheme } from "@mui/material";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { IconCheck, IconTarget } from "@tabler/icons-react";
 
 const getHojeLocal = () => new Date().toLocaleDateString('sv-SE');
 
@@ -75,16 +78,19 @@ export type MetaFormData = z.input<typeof metaSchema>;
 
 export function useMetas() {
   const theme = useTheme();
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const userId = Number(session?.user?.id);
 
   const [isAporte, setIsAporte] = useState(false);
-  const [isRetiradaModalOpen, setIsRetiradaModalOpen] = useState(false);
+  const modalRetirada = useModalUrl("metaRetirada");
   const [targetMeta, setTargetMeta] = useState<Meta | null>(null);
 
-  // Estados para Controle do DeleteConfirmationDialog
-  const [tipoConfirmacao, setTipoConfirmacao] = useState<'delete' | 'concluir' | 'reativar' | null>(null);
-  const [metaParaAcao, setMetaParaAcao] = useState<Meta | null>(null);
+  useEffect(() => {
+    if (!modalRetirada.isOpen && !isAporte) {
+      setTargetMeta(null);
+    }
+  }, [modalRetirada.isOpen, isAporte]);
 
   const { data: metas = [], isLoading } = useGetMetasQuery();
   const [createMeta, { isLoading: isCreating }] = useCreateMetaMutation();
@@ -189,44 +195,56 @@ export function useMetas() {
 
   const handleRetirada = (meta: Meta) => {
     setTargetMeta(meta);
-    setIsRetiradaModalOpen(true);
+    modalRetirada.openModal();
   };
 
-  const handleToggleStatus = (meta: Meta) => {
+  const handleToggleStatus = useCallback(async (meta: Meta) => {
     const isAtivo = meta.status === "A";
-    setTipoConfirmacao(isAtivo ? "concluir" : "reativar");
-    setMetaParaAcao(meta);
-  };
+    const title = isAtivo ? "Concluir Meta?" : "Reativar Meta?";
+    const confirmText = isAtivo ? "Sim, concluir" : "Sim, reativar";
+    const description = isAtivo
+      ? "A meta será arquivada como concluída."
+      : "A meta voltará a ficar disponível para novos aportes.";
+    const color = isAtivo ? "success" : "info";
+    const icon = isAtivo ? IconCheck : IconTarget;
 
-  const handleDelete = (meta: Meta | number | string) => {
-    if (typeof meta === 'object') {
-      setMetaParaAcao(meta);
-    } else {
-      const found = metas.find(m => m.id === Number(meta));
-      if (found) setMetaParaAcao(found);
-    }
-    setTipoConfirmacao('delete');
-  };
-
-  const executarAcaoConfirmada = async () => {
-    if (!metaParaAcao || !tipoConfirmacao) return;
+    const confirmed = await confirm.show({
+      title,
+      description,
+      confirmText,
+      color,
+      icon,
+    });
+    if (!confirmed) return;
 
     try {
-      if (tipoConfirmacao === 'delete') {
-        await deleteMeta(Number(metaParaAcao.id)).unwrap();
-      } else {
-        const novoStatus = tipoConfirmacao === 'concluir' ? 'I' : 'A';
-        await updateMeta({ id: metaParaAcao.id, data: { status: novoStatus } }).unwrap();
-      }
+      const novoStatus = isAtivo ? 'I' : 'A';
+      await updateMeta({ id: meta.id, data: { status: novoStatus } }).unwrap();
+      toast.success("Status atualizado!");
+    } catch {}
+  }, [updateMeta, confirm]);
 
-      toast.success(tipoConfirmacao === 'delete' ? "Meta removida!" : "Status atualizado!");
-    } catch {
-      // Erro tratado globalmente
-    } finally {
-      setTipoConfirmacao(null);
-      setMetaParaAcao(null);
+  const handleDelete = useCallback(async (meta: Meta | number | string) => {
+    let target: Meta | undefined;
+    if (typeof meta === 'object') {
+      target = meta;
+    } else {
+      target = metas.find(m => m.id === Number(meta));
     }
-  };
+    if (!target) return;
+
+    const confirmed = await confirm.delete({
+      title: "Excluir Meta?",
+      description: `Você está prestes a remover a meta "${target.nome}". Essa ação não poderá ser desfeita.`,
+      confirmText: "Sim, excluir",
+    });
+    if (!confirmed) return;
+
+    try {
+      await deleteMeta(Number(target.id)).unwrap();
+      toast.success("Meta removida!");
+    } catch {}
+  }, [deleteMeta, metas, confirm]);
 
   const isEditing = Boolean(watch("id"));
   const handleSubmit = handleSubmitForm(onSubmit);
@@ -240,13 +258,9 @@ export function useMetas() {
     isAportando,
     isEditing,
     isAporte,
-    isRetiradaModalOpen,
-    setIsRetiradaModalOpen,
+    isRetiradaModalOpen: modalRetirada.isOpen,
+    setIsRetiradaModalOpen: (open: boolean) => open ? modalRetirada.openModal() : modalRetirada.closeModal(),
     targetMeta,
-    tipoConfirmacao,
-    metaParaAcao,
-    setTipoConfirmacao,
-    executarAcaoConfirmada,
     control,
     handleSubmit,
     handleEdit,

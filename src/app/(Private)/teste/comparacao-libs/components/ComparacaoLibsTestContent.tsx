@@ -21,7 +21,7 @@ import {
   HookCurrencyMaskField,
   HookPercentageMaskField,
   HookDecimalMaskField,
-} from "@/app/components/forms/hooksForm";
+} from "@/app/components/forms/hooksForm/masks";
 
 interface ComparisonFormData {
   // @react-input/number-format
