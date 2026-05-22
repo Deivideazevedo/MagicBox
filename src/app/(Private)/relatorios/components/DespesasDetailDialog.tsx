@@ -161,6 +161,37 @@ export default function DespesasDetailDialog({
       "Você pagou exatamente o valor previsto de agendamentos e projeções.";
   }
 
+  const getVencimentoLabel = (diaVencimento?: number | null) => {
+    if (diaVencimento === null || diaVencimento === undefined || diaVencimento <= 0) return null;
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth();
+    
+    // Data de vencimento no mês atual
+    const dataVencimento = new Date(ano, mes, diaVencimento);
+    
+    const diffTime = dataVencimento.getTime() - hoje.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return { label: "Vence hoje", color: "warning.main" };
+    } else if (diffDays > 0) {
+      return { 
+        label: `Vence em ${diffDays} dia${diffDays > 1 ? "s" : ""}`, 
+        color: "info.main"
+      };
+    } else {
+      const diasAtraso = Math.abs(diffDays);
+      return { 
+        label: `Atrasada há ${diasAtraso} dia${diasAtraso > 1 ? "s" : ""}`, 
+        color: "error.main"
+      };
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -611,9 +642,40 @@ export default function DespesasDetailDialog({
                           >
                             {item.nome}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {item.categoriaNome}
-                          </Typography>
+                          {(() => {
+                            const statusVencimento = getVencimentoLabel(item.diaVencimento);
+                            return (
+                              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mt={0.25}>
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.categoriaNome}
+                                </Typography>
+                                {statusVencimento && (
+                                  <Box
+                                    sx={{
+                                      px: 0.6,
+                                      py: 0.05,
+                                      borderRadius: 1,
+                                      bgcolor: alpha(
+                                        statusVencimento.color === "warning.main"
+                                          ? theme.palette.warning.main
+                                          : statusVencimento.color === "info.main"
+                                            ? theme.palette.info.main
+                                            : theme.palette.error.main,
+                                        0.08
+                                      ),
+                                      color: statusVencimento.color,
+                                      fontSize: "0.62rem",
+                                      fontWeight: 700,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    {statusVencimento.label}
+                                  </Box>
+                                )}
+                              </Box>
+                            );
+                          })()}
                         </Box>
                         <Box sx={{ textAlign: "right" }}>
                           <Typography
@@ -752,9 +814,40 @@ export default function DespesasDetailDialog({
                           >
                             {item.nome}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {item.categoriaNome}
-                          </Typography>
+                          {(() => {
+                            const statusVencimento = getVencimentoLabel(item.diaVencimento);
+                            return (
+                              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" mt={0.25}>
+                                <Typography variant="caption" color="text.secondary">
+                                  {item.categoriaNome}
+                                </Typography>
+                                {statusVencimento && (
+                                  <Box
+                                    sx={{
+                                      px: 0.6,
+                                      py: 0.05,
+                                      borderRadius: 1,
+                                      bgcolor: alpha(
+                                        statusVencimento.color === "warning.main"
+                                          ? theme.palette.warning.main
+                                          : statusVencimento.color === "info.main"
+                                            ? theme.palette.info.main
+                                            : theme.palette.error.main,
+                                        0.08
+                                      ),
+                                      color: statusVencimento.color,
+                                      fontSize: "0.62rem",
+                                      fontWeight: 700,
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    {statusVencimento.label}
+                                  </Box>
+                                )}
+                              </Box>
+                            );
+                          })()}
                         </Box>
                         <Box sx={{ textAlign: "right" }}>
                           <Typography

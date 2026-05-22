@@ -122,6 +122,7 @@ export const relatoriosService = {
             : Math.abs(realizado) > 0
               ? "PARCIAL"
               : "PENDENTE",
+        diaVencimento: db.diaVencimento,
       };
 
       categoria.detalhes.push(detalhe);
