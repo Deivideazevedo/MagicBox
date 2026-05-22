@@ -109,126 +109,124 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
-      {open && (
-        <Dialog
-          open={open}
-          onClose={handleClose}
-          maxWidth="xs"
-          fullWidth
-          disableRestoreFocus
-          disableEscapeKeyDown={loading}
-          PaperProps={{
-            elevation: 0,
-            sx: {
-              borderRadius: 4,
-              p: 2,
-            },
-          }}
-        >
-          <DialogContent sx={{ textAlign: "center", pb: 2, pt: 4 }}>
-            <Box
-              sx={{
-                width: 84,
-                height: 84,
-                borderRadius: "50%",
-                bgcolor: alpha(theme.palette[color].main, 0.1),
-                color: `${color}.main`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mx: "auto",
-                mb: 3,
-              }}
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="xs"
+        fullWidth
+        disableRestoreFocus
+        disableEscapeKeyDown={loading}
+        PaperProps={{
+          elevation: 0,
+          sx: {
+            borderRadius: 4,
+            p: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ textAlign: "center", pb: 2, pt: 4 }}>
+          <Box
+            sx={{
+              width: 84,
+              height: 84,
+              borderRadius: "50%",
+              bgcolor: alpha(theme.palette[color].main, 0.1),
+              color: `${color}.main`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 3,
+            }}
+          >
+            <IconComponent size={38} stroke={1.5} />
+          </Box>
+
+          <Typography variant="h5" fontWeight={700} gutterBottom sx={{ mb: 1 }}>
+            {options?.title}
+          </Typography>
+
+          {options?.description && (
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: options.children ? 2 : 0, lineHeight: 1.6 }}
             >
-              <IconComponent size={38} stroke={1.5} />
-            </Box>
-
-            <Typography variant="h5" fontWeight={700} gutterBottom sx={{ mb: 1 }}>
-              {options?.title}
+              {options.description}
             </Typography>
+          )}
 
-            {options?.description && (
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                sx={{ mb: options.children ? 2 : 0, lineHeight: 1.6 }}
-              >
-                {options.description}
-              </Typography>
-            )}
+          {options?.children}
+        </DialogContent>
 
-            {options?.children}
-          </DialogContent>
-
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Grid container spacing={1.5}>
-              {visible && (
-                <Grid item xs={12} sm={6}>
-                  <Button
-                    onClick={handleCancel}
-                    variant="outlined"
-                    fullWidth
-                    size="large"
-                    autoFocus
-                    disableFocusRipple
-                    sx={{
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      px: 2,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      "&:focus": {
-                        outline: `2px solid ${theme.palette.primary.main}`,
-                        outlineOffset: "2px",
-                        boxShadow: "none",
-                      },
-                    }}
-                  >
-                    {options?.cancelText || "Cancelar"}
-                  </Button>
-                </Grid>
-              )}
-              <Grid item xs={12} sm={visible ? 6 : 12}>
-                <LoadingButton
-                  onClick={handleConfirm}
-                  color={color}
-                  variant="text"
-                  loading={!visible || loading}
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Grid container spacing={1.5}>
+            {visible && (
+              <Grid item xs={12} sm={6}>
+                <Button
+                  onClick={handleCancel}
+                  variant="outlined"
                   fullWidth
                   size="large"
-                  startIcon={visible ? <IconComponent size={18} /> : undefined}
+                  autoFocus
                   disableFocusRipple
                   sx={{
                     fontWeight: 600,
                     borderRadius: 2,
                     px: 2,
-                    py: 1,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    boxShadow: "none",
-                    bgcolor: alpha(theme.palette[color].main, 0.1),
-                    color: `${color}.main`,
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette[color].main, 0.95),
-                      boxShadow: "none",
-                      color: theme.palette.common.white,
-                    },
                     "&:focus": {
-                      outline: `2px solid ${theme.palette[color].main}`,
+                      outline: `2px solid ${theme.palette.primary.main}`,
                       outlineOffset: "2px",
                       boxShadow: "none",
                     },
                   }}
                 >
-                  {options?.confirmText || "Confirmar"}
-                </LoadingButton>
+                  {options?.cancelText || "Cancelar"}
+                </Button>
               </Grid>
+            )}
+            <Grid item xs={12} sm={visible ? 6 : 12}>
+              <LoadingButton
+                onClick={handleConfirm}
+                color={color}
+                variant="text"
+                loading={!visible || loading}
+                fullWidth
+                size="large"
+                startIcon={visible ? <IconComponent size={18} /> : undefined}
+                disableFocusRipple
+                sx={{
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  boxShadow: "none",
+                  bgcolor: alpha(theme.palette[color].main, 0.1),
+                  color: `${color}.main`,
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette[color].main, 0.95),
+                    boxShadow: "none",
+                    color: theme.palette.common.white,
+                  },
+                  "&:focus": {
+                    outline: `2px solid ${theme.palette[color].main}`,
+                    outlineOffset: "2px",
+                    boxShadow: "none",
+                  },
+                }}
+              >
+                {options?.confirmText || "Confirmar"}
+              </LoadingButton>
             </Grid>
-          </DialogActions>
-        </Dialog>
-      )}
+          </Grid>
+        </DialogActions>
+      </Dialog>
     </ConfirmContext.Provider>
   );
 }
