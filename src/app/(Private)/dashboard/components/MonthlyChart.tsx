@@ -1,5 +1,5 @@
 import dynamic from "next/dynamic";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Card, 
   CardContent, 
@@ -37,25 +37,24 @@ const MonthlyChart = ({
     percentualSaldo 
   } = useMonthlyChart();
 
-  if (loading) {
-    return <MonthlyChartSkeleton />;
-  }
 
-  // Cores do gráfico
-  const colors = [
+  // Cores do gráfico memorizadas para evitar re-calculo e re-renders
+  const colors = useMemo(() => [
     theme.palette.success.main, 
     alpha(theme.palette.success.main, 0.4),
     theme.palette.error.main,
     alpha(theme.palette.error.main, 0.4),
     theme.palette.warning.main
-  ];
+  ], [theme.palette.success.main, theme.palette.error.main, theme.palette.warning.main]);
 
-  const activeColors = showProjections ? colors : [colors[0], colors[2], colors[4]];
+  const activeColors = useMemo(() => {
+    return showProjections ? colors : [colors[0], colors[2], colors[4]];
+  }, [showProjections, colors]);
 
-  // Configurações do ApexCharts
-  const options: any = {
+  // Configurações do ApexCharts memorizadas (impede recriação e re-render do SVG/Canvas do gráfico)
+  const options: any = useMemo(() => ({
     chart: {
-      type: 'bar',
+      type: 'bar' as const,
       height: 350,
       fontFamily: 'inherit',
       toolbar: { show: false },
@@ -78,7 +77,7 @@ const MonthlyChart = ({
         horizontal: false,
         columnWidth: showProjections ? (isMobile ? '90%' : '85%') : '75%',
         borderRadius: 0,
-        borderRadiusApplication: 'end',
+        borderRadiusApplication: 'end' as const,
       },
     },
     dataLabels: { enabled: false },
@@ -126,8 +125,8 @@ const MonthlyChart = ({
       }
     },
     legend: {
-      position: 'bottom',
-      horizontalAlign: 'center',
+      position: 'bottom' as const,
+      horizontalAlign: 'center' as const,
       offsetY: 8,
       itemMargin: {
         horizontal: 20,
@@ -147,9 +146,9 @@ const MonthlyChart = ({
       strokeDashArray: 4,
       xaxis: { lines: { show: false } }
     },
-  };
+  }), [theme.palette.divider, theme.palette.mode, theme.palette.text.secondary, isMobile, monthlyData, onMonthClick, showProjections, activeColors]);
 
-  const series = showProjections ? [
+  const series = useMemo(() => showProjections ? [
     {
       name: 'Rec. Realizada',
       data: monthlyData.map(m => m.receitasRealizadas)
@@ -183,7 +182,11 @@ const MonthlyChart = ({
       name: 'Metas',
       data: monthlyData.map(m => m.metas)
     }
-  ];
+  ], [showProjections, monthlyData]);
+
+  if (loading) {
+    return <MonthlyChartSkeleton />;
+  }
 
   return (
     <Card
