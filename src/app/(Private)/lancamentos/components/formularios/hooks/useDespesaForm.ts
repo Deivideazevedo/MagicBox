@@ -30,9 +30,11 @@ const despesaSchema = z.object({
 
 export type DespesaFormData = z.infer<typeof despesaSchema>;
 
+import { LancamentoPagamentoDados } from "@/store/apps/lancamentos/LancamentoSlice";
+
 interface UseDespesaFormProps {
   lancamentoParaEditar?: LancamentoResposta | null;
-  dadosIniciais?: any | null;
+  dadosIniciais?: LancamentoPagamentoDados | null;
   onSuccess?: () => void;
 }
 

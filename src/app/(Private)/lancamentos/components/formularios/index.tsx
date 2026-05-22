@@ -17,13 +17,14 @@ import DespesaForm from "./DespesaForm";
 import ReceitaForm from "./ReceitaForm";
 import MetaForm from "./MetaForm";
 import { LancamentoResposta } from "@/core/lancamentos/types";
+import { LancamentoPagamentoDados } from "@/store/apps/lancamentos/LancamentoSlice";
 
 interface FormulariosIndexProps {
   lancamentoParaEditar?: LancamentoResposta | null;
   onSuccess?: () => void;
   // Permite que o Drawer configure a origem inicial (ex: modo "pagar")
   initialOrigem?: "despesa" | "receita" | "meta";
-  dadosIniciais?: any | null;
+  dadosIniciais?: LancamentoPagamentoDados | null;
 }
 
 export default function FormulariosIndex({

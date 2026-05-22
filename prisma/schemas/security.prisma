@@ -16,10 +16,16 @@ model AccessLog {
 }
 
 model AiUsageLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  // Novas colunas opcionais para indicadores e rate limit justo
+  status       String?  // "SUCCESS" | "FAILED"
+  modelo       String?  // ex: "llama-3.1-8b-instant"
+  latencia     Int?     // Tempo total em ms
+  erro         String?  // Detalhes do erro em caso de falha
 
   @@index([userId, createdAt])
   @@map("ai_usage_log")

@@ -28,10 +28,11 @@ import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { ItemIconAdornment } from "./Shared/SharedComponents";
 import { useDespesaForm } from "./hooks/useDespesaForm";
 import { LancamentoResposta } from "@/core/lancamentos/types";
+import { LancamentoPagamentoDados } from "@/store/apps/lancamentos/LancamentoSlice";
 
 interface DespesaFormProps {
   lancamentoParaEditar?: LancamentoResposta | null;
-  dadosIniciais?: any | null;
+  dadosIniciais?: LancamentoPagamentoDados | null;
   onSuccess?: () => void;
 }
 

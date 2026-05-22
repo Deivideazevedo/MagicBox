@@ -129,8 +129,20 @@ export function useRelatorios() {
   const resumoExibido = useMemo((): ResumoRelatorio | undefined => {
     if (!data?.resumo || !data?.categorias) return data?.resumo;
 
-    // Com projeção: retorna o resumo original (já inclui projeções)
-    if (incluirProjecaoTabela) return data.resumo;
+    const baseResumo = data.resumo;
+    const incluirProjecao = incluirProjecaoTabela;
+
+    // Se incluirProjecao estiver marcado, soma as despesas projetadas ativas às agendadas. Caso contrário, exibe apenas as agendadas.
+    const finalPendentes = (baseResumo.qtdDespesasPendentes ?? 0) + (incluirProjecao ? (baseResumo.qtdDespesasProjetadasPendentes ?? 0) : 0);
+    const finalTotal = (baseResumo.qtdDespesasTotalPeriodo ?? 0) + (incluirProjecao ? (baseResumo.qtdDespesasProjetadasTotalPeriodo ?? 0) : 0);
+
+    if (incluirProjecao) {
+      return {
+        ...baseResumo,
+        qtdDespesasPendentes: finalPendentes,
+        qtdDespesasTotalPeriodo: finalTotal,
+      };
+    }
 
     // Sem projeção: recalcular usando valorAgendado em vez de valorPlanejado
     const categorias = data.categorias;
@@ -146,10 +158,12 @@ export function useRelatorios() {
     0);
 
     return {
-      ...data.resumo,
+      ...baseResumo,
       totalReceitas: totalReceitasAgendadas,
       totalDespesas: -totalDespesasAgendadas,
       saldoProjetado: totalReceitasAgendadas - totalDespesasAgendadas,
+      qtdDespesasPendentes: finalPendentes,
+      qtdDespesasTotalPeriodo: finalTotal,
     };
   }, [data, incluirProjecaoTabela]);
 

@@ -10,6 +10,7 @@ import {
   Collapse,
   Tooltip,
   IconButton,
+  keyframes,
 } from "@mui/material";
 import {
   IconTrendingUp,
@@ -19,8 +20,9 @@ import {
   IconAlertTriangle,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { ResumoRelatorio } from "@/core/relatorios/relatorio.dto";
+import { ResumoRelatorio, CategoriaRelatorio } from "@/core/relatorios/relatorio.dto";
 import { useModalUrl } from "@/hooks/useModalUrl";
+import PulsingIconButton from "@/components/shared/PulsingIconButton";
 import ReceitasDetailDialog from "./ReceitasDetailDialog";
 import DespesasDetailDialog from "./DespesasDetailDialog";
 import MetasDetailDialog from "./MetasDetailDialog";
@@ -35,8 +37,12 @@ function formatCurrency(valor?: number | null): string {
 
 export default function CardsKPI({
   resumo,
+  categorias = [],
+  exibirProjecoes = false,
 }: {
   resumo: ResumoRelatorio | null;
+  categorias?: CategoriaRelatorio[];
+  exibirProjecoes?: boolean;
 }) {
   const theme = useTheme();
   const [detalhesExpandidos, setDetalhesExpandidos] = useState(false);
@@ -62,6 +68,8 @@ export default function CardsKPI({
   const despesasPorcentagem =
     totalDespesas < 0 ? (despesasPagas / totalDespesas) * 100 : 0;
   const qtdDespesasAtivas = resumo.qtdDespesasAtivas ?? 0;
+  const qtdDespesasPendentes = resumo.qtdDespesasPendentes ?? 0;
+  const qtdDespesasTotalPeriodo = resumo.qtdDespesasTotalPeriodo ?? 0;
 
   const totalAcumuladoComAlvo = resumo.totalAcumuladoMetasComAlvo ?? 0;
   const totalPlanejado = resumo.totalPlanejadoMetas ?? 0;
@@ -88,6 +96,7 @@ export default function CardsKPI({
     {
       icon: IconTrendingUp,
       label: "Receitas",
+      colorName: "success" as const,
       value: formatCurrency(receitasPagas),
       iconColor: theme.palette.success.main,
       isCustomProgressCard: true,
@@ -124,6 +133,7 @@ export default function CardsKPI({
     {
       icon: IconTrendingDown,
       label: "Despesas",
+      colorName: "error" as const,
       value: formatCurrency(despesasPagas),
       iconColor: theme.palette.error.main,
       isCustomProgressCard: true,
@@ -149,8 +159,8 @@ export default function CardsKPI({
           : diffDespesas > 0
             ? "success.main"
             : "text.secondary",
-      labelRightFooter: "Ativas",
-      valueRightFooter: qtdDespesasAtivas,
+      labelRightFooter: "A Pagar",
+      valueRightFooter: `${qtdDespesasPendentes} / ${qtdDespesasTotalPeriodo}`,
       onClickDialog: (e: React.MouseEvent) => {
         e.stopPropagation();
         modalDespesas.openModal();
@@ -161,6 +171,7 @@ export default function CardsKPI({
     {
       icon: IconTarget,
       label: "Metas",
+      colorName: "info" as const,
       value: formatCurrency(resumo.totalAcumuladoMetas),
       iconColor: theme.palette.info.main,
       isCustomProgressCard: true,
@@ -191,6 +202,7 @@ export default function CardsKPI({
     {
       icon: IconScale,
       label: "Saldo Livre",
+      colorName: "primary" as const,
       value: formatCurrency(resumo.saldoLivreGeral),
       iconColor: theme.palette.primary.main,
       tooltip: "Clique para ver detalhes do seu Saldo Livre",
@@ -222,20 +234,6 @@ export default function CardsKPI({
         e.stopPropagation();
         modalSaldoLivre.openModal();
       },
-      subItems: [],
-    },
-    {
-      icon: IconAlertTriangle,
-      label: "Déficit Pendente",
-      value: `${resumo.dividaPendente} Contas`,
-      iconColor:
-        resumo.dividaPendente > 0
-          ? theme.palette.error.main
-          : theme.palette.success.main,
-      tooltip:
-        "Quantidade de despesas agendadas no período que ainda não foram pagas (dívida pendente).",
-      isCustomProgressCard: false,
-      subItems: [],
     },
   ];
 
@@ -321,23 +319,15 @@ export default function CardsKPI({
                           {card.label}
                         </Typography>
                       </Box>
-                      <Tooltip title={card.tooltip} arrow placement="top">
-                        <IconButton
-                          onClick={card.onClickDialog}
-                          sx={{
-                            p: 0.7,
-                            borderRadius: 1.7,
-                            bgcolor: alpha(card.iconColor, 0.12),
-                            color: card.iconColor,
-                            display: "flex",
-                            "&:hover": {
-                              bgcolor: alpha(card.iconColor, 0.22),
-                            },
-                          }}
-                        >
-                          <Icon size={18} stroke={2} />
-                        </IconButton>
-                      </Tooltip>
+                      <PulsingIconButton
+                        onClick={card.onClickDialog}
+                        color={card.colorName}
+                        size="small"
+                        tooltipTitle={card.tooltip}
+                        sx={{ borderRadius: "10px" }}
+                      >
+                        <Icon size={18} stroke={2} />
+                      </PulsingIconButton>
                     </Box>
 
                     <Box mb={detalhesExpandidos ? 1 : 0}>
@@ -706,6 +696,8 @@ export default function CardsKPI({
         open={modalDespesas.isOpen}
         onClose={modalDespesas.closeModal}
         resumo={resumo}
+        categorias={categorias}
+        exibirProjecoes={exibirProjecoes}
       />
       <MetasDetailDialog
         open={modalMetas.isOpen}

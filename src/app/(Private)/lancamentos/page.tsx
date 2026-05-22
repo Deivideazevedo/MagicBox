@@ -30,8 +30,7 @@ import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 import { useCallback, useMemo, useState, useEffect } from "react";
-import { useDispatch } from "@/store/hooks";
-import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { useModalUrl } from "@/hooks/useModalUrl";
@@ -51,7 +50,7 @@ import {
 import { criarLancamentosTourSteps } from "./components/lancamentosTourSteps";
 
 function LancamentosPageContent() {
-  const dispatch = useDispatch();
+  const { abrirDrawer: openLancamentoDrawer } = useLancamentoDrawer();
   const tourRefs = useLancamentosTourRefs();
   const confirm = useConfirm();
   const modalVisualizar = useModalUrl("visualizar");
@@ -98,9 +97,9 @@ function LancamentosPageContent() {
   // Handler de "Editar" — agora abre o Drawer Único Global
   const handleEditarLancamento = useCallback(
     (lancamento: LancamentoResposta) => {
-      dispatch(abrirDrawer({ modo: "editar", dados: lancamento }));
+      openLancamentoDrawer("editar", lancamento);
     },
-    [dispatch],
+    [openLancamentoDrawer],
   );
 
   const handleExcluirLancamento = useCallback((lancamento: LancamentoResposta) => {

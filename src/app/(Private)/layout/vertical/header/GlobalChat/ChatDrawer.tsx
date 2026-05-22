@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { useRouter } from "next/navigation";
 import type { UIMessage } from "ai";
+import toast from "react-hot-toast";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import Typography from "@mui/material/Typography";
@@ -262,14 +263,37 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
     messages: initialMessages.current,
     onError: (err) => {
       console.error("Chat Error:", err);
-      // Adiciona uma mensagem de erro amigável no chat
+
+      let msgTexto =
+        "Puxa, parece que tivemos um probleminha técnico na conexão com a IA agora... 🤖💨\n\nPor favor, tente enviar sua mensagem novamente ou atualize a página. Se o erro persistir, pode ser instabilidade temporária nos servidores!";
+
+      if (err instanceof Error && err.message) {
+        const cleanedMessage = err.message
+          .replace(/^Response error:\s*/i, "")
+          .trim();
+
+        // Se a mensagem for um aviso de rate limit ou cota excedida vinda do backend
+        if (
+          cleanedMessage.includes("demanda global") ||
+          cleanedMessage.includes("Limite de uso atingido") ||
+          cleanedMessage.includes("bloqueado temporariamente") ||
+          cleanedMessage.includes("suspenso temporariamente")
+        ) {
+          msgTexto = `⚠️ **Aviso do Chat:**\n\n${cleanedMessage}`;
+          toast.error(cleanedMessage, {
+            id: "chat-limit-toast",
+            duration: 6000,
+          });
+        }
+      }
+
       const errorMsg: UIMessage = {
         id: `error-${Date.now()}`,
         role: "assistant",
         parts: [
           {
             type: "text",
-            text: "Puxa, parece que tivemos um probleminha técnico na conexão com a IA agora... 🤖💨\n\nPor favor, tente enviar sua mensagem novamente ou atualize a página. Se o erro persistir, pode ser instabilidade temporária nos servidores!",
+            text: msgTexto,
           },
         ],
       };
@@ -428,7 +452,9 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
         {/* Histórico */}
         <MessageList>
           {visibleMessages.length === 0 && !isLoading ? (
-            <ChatSuggestions onSelectQuestion={(q) => sendMessage({ text: q })} />
+            <ChatSuggestions
+              onSelectQuestion={(q) => sendMessage({ text: q })}
+            />
           ) : (
             visibleMessages.map((msg: UIMessage, index: number) => {
               const texto = extrairTexto(msg);

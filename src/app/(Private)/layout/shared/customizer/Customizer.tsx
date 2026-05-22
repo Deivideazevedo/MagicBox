@@ -1,17 +1,22 @@
 import { FC } from "react";
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import Fab from '@mui/material/Fab';
-import Grid from '@mui/material/Grid';
-import IconButton from '@mui/material/IconButton';
-import Slider from '@mui/material/Slider';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import { styled } from '@mui/material/styles';
+import Divider from "@mui/material/Divider";
+import Drawer from "@mui/material/Drawer";
+import Fab from "@mui/material/Fab";
+import Grid from "@mui/material/Grid";
+import IconButton from "@mui/material/IconButton";
+import Slider from "@mui/material/Slider";
+import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import { styled, alpha } from "@mui/material/styles";
 import { useSelector, useDispatch } from "@/store/hooks";
 import Box, { BoxProps } from "@mui/material/Box";
-import { IconX, IconSettings, IconCheck } from "@tabler/icons-react";
+import {
+  IconX,
+  IconSettings,
+  IconCheck,
+  IconSparkles,
+} from "@tabler/icons-react";
 import {
   setTheme,
   setDir,
@@ -22,6 +27,7 @@ import {
   setBorderRadius,
   setCardShadow,
   toggleCustomizer,
+  togglePulseEffect,
 } from "@/store/customizer/CustomizerSlice";
 import { AppState } from "@/store/store";
 import Scrollbar from "@/app/components/custom-scroll/Scrollbar";
@@ -33,6 +39,7 @@ import AspectRatioTwoToneIcon from "@mui/icons-material/AspectRatioTwoTone";
 import CallToActionTwoToneIcon from "@mui/icons-material/CallToActionTwoTone";
 import ViewSidebarTwoToneIcon from "@mui/icons-material/ViewSidebarTwoTone";
 import WebAssetTwoToneIcon from "@mui/icons-material/WebAssetTwoTone";
+import { combinedHighlight } from "@/components/shared/PulsingIconButton";
 import {
   ViewComfyTwoTone,
   PaddingTwoTone,
@@ -97,20 +104,17 @@ const Customizer: FC = () => {
   ];
 
   return (
-    <div>
-      <Drawer
-        anchor="right"
-        open={customizer.isCustomizerOpen}
-        onClose={() => dispatch(toggleCustomizer(false))}
-        PaperProps={{
-          sx: {
-            width: SidebarWidth,
-          },
-        }}
-      >
-        {/* ------------------------------------------- */}
-        {/* ------------ Customizer Sidebar ------------- */}
-        {/* ------------------------------------------- */}
+    <Drawer
+      anchor="right"
+      open={customizer.isCustomizerOpen}
+      onClose={() => dispatch(toggleCustomizer(false))}
+      PaperProps={{
+        sx: {
+          width: SidebarWidth,
+        },
+      }}
+    >
+      {customizer.isCustomizerOpen && (
         <Scrollbar sx={{ height: "calc(100vh - 5px)" }}>
           <Box
             p={2}
@@ -120,7 +124,10 @@ const Customizer: FC = () => {
           >
             <Typography variant="h4">Configurações</Typography>
 
-            <IconButton color="inherit" onClick={() => dispatch(toggleCustomizer(false))}>
+            <IconButton
+              color="inherit"
+              onClick={() => dispatch(toggleCustomizer(false))}
+            >
               <IconX size="1rem" />
             </IconButton>
           </Box>
@@ -158,7 +165,6 @@ const Customizer: FC = () => {
                 Escuro
               </StyledBox>
             </Stack>
-
 
             {/* ------------------------------------------- */}
             {/* ------------ Theme Color setting ------------- */}
@@ -305,10 +311,67 @@ const Customizer: FC = () => {
               }
               valueLabelDisplay="auto"
             />
+            <Box pt={4} />
+            <Typography variant="h6" gutterBottom>
+              Efeitos de Movimento
+            </Typography>
+            <Stack direction={"row"} gap={2} my={2}>
+              <StyledBox
+                onClick={() => dispatch(togglePulseEffect(false))}
+                display="flex"
+                gap={1}
+                sx={{
+                  borderColor: !customizer.isPulseEnabled
+                    ? (theme) => theme.palette.primary.main
+                    : "rgba(145, 158, 171, 0.12)",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    color: !customizer.isPulseEnabled
+                      ? "primary.main"
+                      : "text.secondary",
+                  }}
+                >
+                  <IconSparkles size={20} stroke={1.5} />
+                </Box>
+                Estático
+              </StyledBox>
+              <StyledBox
+                onClick={() => dispatch(togglePulseEffect(true))}
+                display="flex"
+                gap={1}
+                sx={{
+                  borderColor: customizer.isPulseEnabled
+                    ? (theme) => theme.palette.primary.main
+                    : "rgba(145, 158, 171, 0.12)",
+                  "--pulse-color": (theme) =>
+                    alpha(theme.palette.primary.main, 0.4),
+                  animation: customizer.isPulseEnabled
+                    ? `${combinedHighlight} 6s ease-in-out infinite`
+                    : "none",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    color: customizer.isPulseEnabled
+                      ? "primary.main"
+                      : "text.secondary",
+                  }}
+                >
+                  <IconSparkles size={20} stroke={1.5} />
+                </Box>
+                Pulsante
+              </StyledBox>
+            </Stack>
           </Box>
         </Scrollbar>
-      </Drawer>
-    </div>
+      )}
+    </Drawer>
   );
 };
 

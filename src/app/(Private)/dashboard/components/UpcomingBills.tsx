@@ -32,8 +32,7 @@ import { ptBR } from "date-fns/locale";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { useGetDashboardQuery } from "@/services/endpoints/dashboardApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
-import { useDispatch } from "@/store/hooks";
-import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 import { toast } from "react-hot-toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
@@ -44,7 +43,7 @@ import Link from "next/link";
 
 const UpcomingBills = ({ date }: { date?: Date }) => {
   const { upcomingBillsRef } = useDashboardTourRefs();
-  const dispatch = useDispatch();
+  const { abrirDrawer: openLancamentoDrawer } = useLancamentoDrawer();
   const confirm = useConfirm();
   const baseDate = date || new Date();
   const dataInicio = format(startOfMonth(baseDate), "yyyy-MM-dd");
@@ -148,16 +147,11 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
   };
 
   const openDrawer = (bill: any) => {
-    dispatch(
-      abrirDrawer({
-        modo: "pagar",
-        dados: {
-          ...bill,
-          origemId: bill.despesaId || bill.id,
-          origem: "despesa", // No dashboard de UpcomingBills são sempre despesas
-        },
-      }),
-    );
+    openLancamentoDrawer("pagar", {
+      ...bill,
+      origemId: bill.despesaId || bill.id,
+      origem: "despesa", // No dashboard de UpcomingBills são sempre despesas
+    });
   };
 
   const totalAmount = bills.reduce((sum, bill) => sum + bill.valorPrevisto, 0);

@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
 async function executarTeste(userId: number, filtros?: { dataInicio: string; dataFim: string }) {
-  const { chatDiagnosisService } = await import("../diagnosis.service");
+  const { chatDiagnosisService } = await import("../dados-ferramentas/diagnosis.service");
 
   console.log(`\n🔎 Testando [${filtros ? "TEMPORAL" : "ATEMPORAL"}]...`);
   console.log(`📅 Período: ${filtros ? `${filtros.dataInicio} até ${filtros.dataFim}` : "Sem filtro (Histórico Total)"}`);

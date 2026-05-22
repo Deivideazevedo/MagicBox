@@ -15,6 +15,7 @@ interface StateType {
   isCardShadow?: boolean;
   borderRadius?: number | any;
   isCustomizerOpen?: boolean;
+  isPulseEnabled?: boolean;
 }
 
 const initialState: StateType = {
@@ -32,6 +33,7 @@ const initialState: StateType = {
   isCardShadow: true,
   borderRadius: 7,
   isCustomizerOpen: false,
+  isPulseEnabled: true,
 };
 
 export const CustomizerSlice = createSlice({
@@ -76,6 +78,9 @@ export const CustomizerSlice = createSlice({
         state.isCustomizerOpen = !state.isCustomizerOpen;
       }
     },
+    togglePulseEffect: (state: StateType, action) => {
+      state.isPulseEnabled = action.payload;
+    },
   },
 });
 
@@ -91,6 +96,7 @@ export const {
   toggleHorizontal,
   setCardShadow,
   toggleCustomizer,
+  togglePulseEffect,
 } = CustomizerSlice.actions;
 
 export default CustomizerSlice.reducer;

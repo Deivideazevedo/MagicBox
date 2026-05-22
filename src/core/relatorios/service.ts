@@ -1,8 +1,15 @@
 import { relatoriosRepository } from "@/core/relatorios/repository";
 import {
-  RelatorioResponse, CategoriaRelatorio, DetalheRelatorio, HistoricoMensal,
-  RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawMetasProgresso,
-  EvolucaoMensalItem, EvolucaoAnualResponse
+  RelatorioResponse,
+  CategoriaRelatorio,
+  DetalheRelatorio,
+  HistoricoMensal,
+  RawDadosBrutosCategoria,
+  RawTotaisMetas,
+  RawHistoricoAgrupado,
+  RawMetasProgresso,
+  EvolucaoMensalItem,
+  EvolucaoAnualResponse,
 } from "@/core/relatorios/relatorio.dto";
 import { format, differenceInCalendarMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,12 +24,25 @@ const contarMesesNoPeriodo = (inicio: Date, fim: Date) => {
 };
 
 export const relatoriosService = {
-  async gerarRelatorio(userId: number, dataInicio: Date, dataFim: Date): Promise<RelatorioResponse> {
-    const [dadosBrutos, dadosMetasCompletos, contagensETotais] = await Promise.all([
-      relatoriosRepository.obterDadosBrutosPorCategoria(userId, dataInicio, dataFim) as Promise<RawDadosBrutosCategoria[]>,
-      relatoriosRepository.obterDadosCompletosMetas(userId, dataInicio, dataFim),
-      relatoriosRepository.obterContagensETotaisHistoricos(userId)
-    ]);
+  async gerarRelatorio(
+    userId: number,
+    dataInicio: Date,
+    dataFim: Date,
+  ): Promise<RelatorioResponse> {
+    const [dadosBrutos, dadosMetasCompletos, contagensETotais] =
+      await Promise.all([
+        relatoriosRepository.obterDadosBrutosPorCategoria(
+          userId,
+          dataInicio,
+          dataFim,
+        ) as Promise<RawDadosBrutosCategoria[]>,
+        relatoriosRepository.obterDadosCompletosMetas(
+          userId,
+          dataInicio,
+          dataFim,
+        ),
+        relatoriosRepository.obterContagensETotaisHistoricos(userId),
+      ]);
 
     const categoriasMap = new Map<number, CategoriaRelatorio>();
 
@@ -36,24 +56,28 @@ export const relatoriosService = {
           valorPlanejado: 0,
           valorRealizado: 0,
           restante: 0,
-          detalhes: []
+          detalhes: [],
         });
       }
 
       const categoria = categoriasMap.get(db.categoriaId)!;
 
       // Cálculo de meses ativos dentro do período (desde a criação do item até o fim do período)
-      const dataInicioEfetiva = db.itemCreatedAt > dataInicio ? db.itemCreatedAt : dataInicio;
+      const dataInicioEfetiva =
+        db.itemCreatedAt > dataInicio ? db.itemCreatedAt : dataInicio;
       const mesesAtivos = contarMesesNoPeriodo(dataInicioEfetiva, dataFim);
 
       // Se for FIXA, o planejado é o valor mensal acumulado pelos meses ativos no período
       // Caso contrário, usa o valor agendado (ou o valor planejado unitário se for agendamento)
-      let planejado = db.origemTipo === 'FIXA'
-        ? (db.valorPlanejado * mesesAtivos)
-        : (db.valorAgendado > 0 ? db.valorAgendado : 0);
+      let planejado =
+        db.origemTipo === "FIXA"
+          ? db.valorPlanejado * mesesAtivos
+          : db.valorAgendado > 0
+            ? db.valorAgendado
+            : 0;
 
       // Se houver agendamentos manuais que superam a projeção fixa, priorizamos o agendamento
-      if (db.origemTipo === 'FIXA' && db.valorAgendado > Math.abs(planejado)) {
+      if (db.origemTipo === "FIXA" && db.valorAgendado > Math.abs(planejado)) {
         planejado = db.valorAgendado;
       }
 
@@ -61,7 +85,7 @@ export const relatoriosService = {
       let mediaMensal = db.mediaMensal;
 
       // Se for despesa, tanto o previsto quanto o realizado devem ser negativos (débitos)
-      if (db.itemTipo === 'DESPESA') {
+      if (db.itemTipo === "DESPESA") {
         planejado = -Math.abs(planejado);
         realizado = -Math.abs(realizado);
         mediaMensal = -Math.abs(mediaMensal);
@@ -73,7 +97,10 @@ export const relatoriosService = {
 
       // Diferença = Realizado - Planejado (impacto no saldo)
       const restante = realizado - planejado;
-      const agendadoSinalizado = db.itemTipo === 'DESPESA' ? -Math.abs(db.valorAgendado) : Math.abs(db.valorAgendado);
+      const agendadoSinalizado =
+        db.itemTipo === "DESPESA"
+          ? -Math.abs(db.valorAgendado)
+          : Math.abs(db.valorAgendado);
 
       const detalhe: DetalheRelatorio = {
         id: db.itemId,
@@ -84,8 +111,17 @@ export const relatoriosService = {
         valorAgendado: agendadoSinalizado,
         restante,
         mediaMensal,
-        isProjecao: db.origemTipo === 'FIXA' && db.valorAgendado === 0 && db.valorRealizado === 0 && db.valorPlanejado > 0,
-        status: Math.abs(realizado) >= Math.abs(planejado) && Math.abs(planejado) > 0 ? "OK" : (Math.abs(realizado) > 0 ? "PARCIAL" : "PENDENTE"),
+        isProjecao:
+          db.origemTipo === "FIXA" &&
+          db.valorAgendado === 0 &&
+          db.valorRealizado === 0 &&
+          db.valorPlanejado > 0,
+        status:
+          Math.abs(realizado) >= Math.abs(planejado)
+            ? "OK"
+            : Math.abs(realizado) > 0
+              ? "PARCIAL"
+              : "PENDENTE",
       };
 
       categoria.detalhes.push(detalhe);
@@ -95,25 +131,27 @@ export const relatoriosService = {
     });
 
     // Metas
-    const metasDetalhes: DetalheRelatorio[] = dadosMetasCompletos.detalhes.map((m: RawMetasProgresso) => {
-      const planejado = -Math.abs(m.planejado);
-      const realizado = -Math.abs(m.realizado);
-      // Para metas (tratadas como dívida), se planejado -100 e realizado -20, restante = -80 (Red)
-      const restante = planejado - realizado;
+    const metasDetalhes: DetalheRelatorio[] = dadosMetasCompletos.detalhes.map(
+      (m: RawMetasProgresso) => {
+        const planejado = -Math.abs(m.planejado);
+        const realizado = -Math.abs(m.realizado);
+        // Para metas (tratadas como dívida), se planejado -100 e realizado -20, restante = -80 (Red)
+        const restante = planejado - realizado;
 
-      return {
-        id: m.id,
-        nome: m.nome,
-        tipo: 'META' as const,
-        valorPlanejado: planejado,
-        valorRealizado: realizado,
-        valorAgendado: realizado, // Metas usam o realizado como base para visão não projetada
-        restante,
-        mediaMensal: -Math.abs(m.mediaMensal),
-        isProjecao: false,
-        status: m.status || 'A',
-      };
-    });
+        return {
+          id: m.id,
+          nome: m.nome,
+          tipo: "META" as const,
+          valorPlanejado: planejado,
+          valorRealizado: realizado,
+          valorAgendado: realizado, // Metas usam o realizado como base para visão não projetada
+          restante,
+          mediaMensal: -Math.abs(m.mediaMensal),
+          isProjecao: false,
+          status: m.status || "A",
+        };
+      },
+    );
 
     if (metasDetalhes.length > 0) {
       categoriasMap.set(-1, {
@@ -121,26 +159,64 @@ export const relatoriosService = {
         nome: "Metas e Investimentos",
         icone: "Target",
         cor: "#1976d2",
-        valorPlanejado: metasDetalhes.reduce((acc, i) => acc + i.valorPlanejado, 0),
-        valorRealizado: metasDetalhes.reduce((acc, i) => acc + i.valorRealizado, 0),
+        valorPlanejado: metasDetalhes.reduce(
+          (acc, i) => acc + i.valorPlanejado,
+          0,
+        ),
+        valorRealizado: metasDetalhes.reduce(
+          (acc, i) => acc + i.valorRealizado,
+          0,
+        ),
         restante: metasDetalhes.reduce((acc, i) => acc + i.restante, 0),
-        detalhes: metasDetalhes
+        detalhes: metasDetalhes,
       });
     }
 
     const categorias = Array.from(categoriasMap.values());
 
     // Resumo
-    const totalReceitasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
-    const totalDespesasPagas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorRealizado, 0), 0);
+    const totalReceitasPagas = categorias.reduce(
+      (acc, c) =>
+        acc +
+        c.detalhes
+          .filter((i) => i.tipo === "RECEITA")
+          .reduce((sum, i) => sum + i.valorRealizado, 0),
+      0,
+    );
+    const totalDespesasPagas = categorias.reduce(
+      (acc, c) =>
+        acc +
+        c.detalhes
+          .filter((i) => i.tipo === "DESPESA")
+          .reduce((sum, i) => sum + i.valorRealizado, 0),
+      0,
+    );
     const totalMetasPagas = dadosMetasCompletos.totais?.valorAlcancadoMeta || 0;
 
-    const totalReceitasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'RECEITA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
-    const totalDespesasPlanejadas = categorias.reduce((acc, c) => acc + c.detalhes.filter(i => i.tipo === 'DESPESA').reduce((sum, i) => sum + i.valorPlanejado, 0), 0);
+    const totalReceitasPlanejadas = categorias.reduce(
+      (acc, c) =>
+        acc +
+        c.detalhes
+          .filter((i) => i.tipo === "RECEITA")
+          .reduce((sum, i) => sum + i.valorPlanejado, 0),
+      0,
+    );
+    const totalDespesasPlanejadas = categorias.reduce(
+      (acc, c) =>
+        acc +
+        c.detalhes
+          .filter((i) => i.tipo === "DESPESA")
+          .reduce((sum, i) => sum + i.valorPlanejado, 0),
+      0,
+    );
 
     let dividaPendente = 0;
-    dadosBrutos.forEach(db => {
-      if (db.itemTipo === 'DESPESA' && db.valorAgendado > 0 && db.valorRealizado === 0) {
+    dadosBrutos.forEach((db) => {
+      if (
+        db.itemTipo === "DESPESA" &&
+        db.valorAgendado > 0 &&
+        db.valorRealizado === 0
+      ) {
         dividaPendente++;
       }
     });
@@ -149,7 +225,7 @@ export const relatoriosService = {
     let somaPlanejadoMetas = 0;
     let somaRealizadoTotalMetas = 0;
 
-    metasDetalhes.forEach(m => {
+    metasDetalhes.forEach((m) => {
       somaRealizadoTotalMetas += Math.abs(m.valorRealizado);
       if (Math.abs(m.valorPlanejado) > 0) {
         somaRealizadoMetas += Math.abs(m.valorRealizado);
@@ -157,12 +233,20 @@ export const relatoriosService = {
       }
     });
 
-    const somaRealizadoMetasSemAlvo = somaRealizadoTotalMetas - somaRealizadoMetas;
-    const metasPorcentagem = somaPlanejadoMetas > 0 ? (somaRealizadoMetas / somaPlanejadoMetas) * 100 : 0;
+    const somaRealizadoMetasSemAlvo =
+      somaRealizadoTotalMetas - somaRealizadoMetas;
+    const metasPorcentagem =
+      somaPlanejadoMetas > 0
+        ? (somaRealizadoMetas / somaPlanejadoMetas) * 100
+        : 0;
 
     const qtdMetasTotal = metasDetalhes.length;
-    const qtdMetasConcluidas = metasDetalhes.filter(m => m.status === 'I').length;
-    const qtdMetasEmAndamento = metasDetalhes.filter(m => m.status === 'A').length;
+    const qtdMetasConcluidas = metasDetalhes.filter(
+      (m) => m.status === "I",
+    ).length;
+    const qtdMetasEmAndamento = metasDetalhes.filter(
+      (m) => m.status === "A",
+    ).length;
 
     const totaisGerais = contagensETotais.totaisHistoricos;
     const recPagasGeral = totaisGerais.receitasPagas;
@@ -174,11 +258,43 @@ export const relatoriosService = {
 
     const receitasPagasPeriodo = totalReceitasPagas;
     const metasPagasPeriodo = totalMetasPagas;
-    const saldoLivrePeriodo = totalReceitasPagas + totalDespesasPagas - totalMetasPagas;
+    const saldoLivrePeriodo =
+      totalReceitasPagas + totalDespesasPagas - totalMetasPagas;
 
-    const taxaEconomiaPeriodo = receitasPagasPeriodo > 0
-      ? Math.max(0, ((saldoLivrePeriodo + metasPagasPeriodo) / receitasPagasPeriodo) * 100)
-      : 0;
+    const taxaEconomiaPeriodo =
+      receitasPagasPeriodo > 0
+        ? Math.max(
+            0,
+            ((saldoLivrePeriodo + metasPagasPeriodo) / receitasPagasPeriodo) *
+              100,
+          )
+        : 0;
+
+    let qtdDespesasPendentes = 0;
+    let qtdDespesasTotalPeriodo = 0;
+    let qtdDespesasProjetadasPendentes = 0;
+    let qtdDespesasProjetadasTotalPeriodo = 0;
+
+    categorias.forEach((c) => {
+      c.detalhes.forEach((d) => {
+        if (d.tipo === "DESPESA") {
+          if (Math.abs(d.valorPlanejado) === 0 && Math.abs(d.valorRealizado) === 0) {
+            return;
+          }
+          if (d.isProjecao) {
+            qtdDespesasProjetadasTotalPeriodo++;
+            if (d.status === "PENDENTE" || d.status === "PARCIAL") {
+              qtdDespesasProjetadasPendentes++;
+            }
+          } else {
+            qtdDespesasTotalPeriodo++;
+            if (d.status === "PENDENTE" || d.status === "PARCIAL") {
+              qtdDespesasPendentes++;
+            }
+          }
+        }
+      });
+    });
 
     const resumo = {
       totalReceitas: totalReceitasPlanejadas,
@@ -208,18 +324,33 @@ export const relatoriosService = {
       qtdDespesasAtivas: contagensETotais.despesasAtivas,
       qtdDespesasInativas: contagensETotais.despesasInativas,
       qtdDespesasTotal: contagensETotais.despesasTotal,
+      qtdDespesasPendentes,
+      qtdDespesasTotalPeriodo,
+      qtdDespesasProjetadasPendentes,
+      qtdDespesasProjetadasTotalPeriodo,
     };
 
     return {
-      periodo: { dataInicio: dataInicio.toISOString().split('T')[0], dataFim: dataFim.toISOString().split('T')[0] },
+      periodo: {
+        dataInicio: dataInicio.toISOString().split("T")[0],
+        dataFim: dataFim.toISOString().split("T")[0],
+      },
       resumo,
       categorias,
       totalCategorias: categorias.length,
     };
   },
 
-  async obterHistoricoAgrupado(userId: number, itens: { id: number; tipo: string }[], ano: number): Promise<HistoricoMensal[]> {
-    const historicoRaw = await relatoriosRepository.obterHistoricoAgrupado(userId, itens, ano) as RawHistoricoAgrupado[];
+  async obterHistoricoAgrupado(
+    userId: number,
+    itens: { id: number; tipo: string }[],
+    ano: number,
+  ): Promise<HistoricoMensal[]> {
+    const historicoRaw = (await relatoriosRepository.obterHistoricoAgrupado(
+      userId,
+      itens,
+      ano,
+    )) as RawHistoricoAgrupado[];
 
     return historicoRaw.map((h) => ({
       mes: fnFormatNaiveDate(h.mes, "MMM").toUpperCase(),
@@ -232,11 +363,14 @@ export const relatoriosService = {
       totalPrevistoComProjecao: h.totalPrevistoComProjecao,
       restanteReal: h.restanteReal,
       restanteComProjecao: h.restanteComProjecao,
-      dataRef: format(h.mes, 'yyyy-MM-dd')
+      dataRef: format(h.mes, "yyyy-MM-dd"),
     }));
   },
 
-  async obterEvolucaoAnual(userId: number, ano: number): Promise<EvolucaoAnualResponse> {
+  async obterEvolucaoAnual(
+    userId: number,
+    ano: number,
+  ): Promise<EvolucaoAnualResponse> {
     const dados = await relatoriosRepository.obterEvolucaoAnual(userId, ano);
 
     return dados.map((item) => {

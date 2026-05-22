@@ -11,21 +11,32 @@ export function useModalUrl(paramName: string = 'modal') {
   // O modal está aberto se o parâmetro existir na URL
   const isOpen = searchParams ? searchParams.has(paramName) : false;
 
-  const openModal = useCallback(() => {
+  // Retorna o valor atual do parâmetro na URL (útil para ler IDs, modos, etc.)
+  const value = searchParams ? searchParams.get(paramName) : null;
+
+  const openModal = useCallback((val: string = 'abrir') => {
     if (!searchParams) return;
     const params = new URLSearchParams(searchParams.toString());
-    params.set(paramName, 'true');
-    
+    params.set(paramName, val);
+
     // O router.push adiciona um novo item no histórico do navegador
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams, paramName]);
 
   const closeModal = useCallback(() => {
-    // Se fechar manualmente, apenas voltamos no histórico (router.back)
     if (isOpen) {
-      router.back();
+      // Se houver histórico de navegação (evita mandar o usuário para fora do app se veio de link direto)
+      if (typeof window !== "undefined" && window.history.length > 2) {
+        router.back();
+      } else {
+        // Se foi acesso direto, removemos o parâmetro da URL sem criar nova entrada no histórico
+        const params = new URLSearchParams(searchParams?.toString() || "");
+        params.delete(paramName);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
     }
-  }, [router, isOpen]);
+  }, [router, isOpen, searchParams, paramName, pathname]);
 
-  return { isOpen, openModal, closeModal };
+  return { isOpen, value, openModal, closeModal };
 }
+

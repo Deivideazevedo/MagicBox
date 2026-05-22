@@ -58,6 +58,10 @@ export interface ResumoRelatorio {
   qtdDespesasAtivas?: number;
   qtdDespesasInativas?: number;
   qtdDespesasTotal?: number;
+  qtdDespesasPendentes?: number;
+  qtdDespesasTotalPeriodo?: number;
+  qtdDespesasProjetadasPendentes?: number;
+  qtdDespesasProjetadasTotalPeriodo?: number;
 }
 
 export interface RelatorioResponse {

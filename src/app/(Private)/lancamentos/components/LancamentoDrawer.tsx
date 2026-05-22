@@ -1,26 +1,22 @@
 "use client";
 
-import Formulario from "./formularios";
 import CustomScrollbar from "@/app/components/custom-scroll/Scrollbar";
-import { useDispatch, useSelector } from "@/store/hooks";
-import { AppState } from "@/store/store";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
+import { fecharDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { useDispatch } from "@/store/hooks";
 import {
-  fecharDrawer,
-  abrirDrawer,
-} from "@/store/apps/lancamentos/LancamentoSlice";
-import {
+  alpha,
   Box,
+  Button,
   Divider,
   Drawer,
-  Button,
   IconButton,
-  Tooltip,
   Typography,
   useTheme,
-  alpha,
 } from "@mui/material";
-import { IconPlus, IconX, IconSquarePlus } from "@tabler/icons-react";
+import { IconSquarePlus, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect } from "react";
+import Formulario from "./formularios";
 
 const DrawerWidth = "420px";
 
@@ -28,15 +24,26 @@ export default function LancamentoDrawer() {
   const theme = useTheme();
   const dispatch = useDispatch();
 
-  // Estado Global do Drawer
-  const { estaAberto, modo, dadosIniciais } = useSelector(
-    (state: AppState) => state.lancamentoUi,
-  );
+  // Consome a URL e os dados através do nosso novo hook customizado
+  const {
+    isOpen: isLancamentoOpen,
+    modo,
+    dadosIniciais,
+    abrirDrawer,
+    fecharDrawer: fecharModalUrl,
+  } = useLancamentoDrawer();
 
-  // Função para fechar e resetar
+  // Quando a URL for fechada (ex: botão voltar ou gesto), nós limpamos os dados do Redux
+  useEffect(() => {
+    if (!isLancamentoOpen) {
+      dispatch(fecharDrawer());
+    }
+  }, [isLancamentoOpen, dispatch]);
+
+  // Função para fechar e resetar (apenas fecha na URL; o useEffect acima limpa o Redux)
   const handleCloseDrawer = useCallback(() => {
-    dispatch(fecharDrawer());
-  }, [dispatch]);
+    fecharModalUrl();
+  }, [fecharModalUrl]);
 
   const lancamentoParaEditar = modo === "editar" ? dadosIniciais : null;
   const initialOrigem = modo === "pagar" ? dadosIniciais?.origem : "despesa";
@@ -54,7 +61,7 @@ export default function LancamentoDrawer() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => dispatch(abrirDrawer({ modo: "novo" }))}
+          onClick={() => abrirDrawer("novo")}
           sx={{
             borderRadius: "24px 0 0 24px",
             minWidth: "48px",
@@ -98,8 +105,11 @@ export default function LancamentoDrawer() {
       {/* Drawer Lateral */}
       <Drawer
         anchor="right"
-        open={estaAberto}
-        onClose={handleCloseDrawer}
+        open={isLancamentoOpen}
+        onClose={(_, reason) => {
+          // if (reason === "backdropClick") return; // Evita fechar acidentalmente ao clicar fora do formulário
+          handleCloseDrawer();
+        }}
         sx={{
           zIndex: (theme) => theme.zIndex.drawer,
         }}
@@ -144,7 +154,7 @@ export default function LancamentoDrawer() {
 
           {/* Key garante que o formulário resete ao fechar/abrir */}
           <Formulario
-            key={estaAberto ? "aberto" : "fechado"}
+            key={isLancamentoOpen ? "aberto" : "fechado"}
             lancamentoParaEditar={lancamentoParaEditar}
             onSuccess={() => {
               if (modo !== "novo") handleCloseDrawer();

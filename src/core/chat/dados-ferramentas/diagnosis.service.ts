@@ -7,7 +7,7 @@ import { differenceInDays, isSameMonth, startOfDay, addMonths, setDate, endOfMon
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { chatDiagnosisRepository, DespesaComLancamentos } from "./diagnosis.repository";
-import { DiagnosticoFinanceiro, ItemPilarDespesa, ResultadoPilarDespesas, ItemDetalheMensal } from "./types";
+import { DiagnosticoFinanceiro, ItemPilarDespesa, ResultadoPilarDespesas, ItemDetalheMensal } from "../types";
 
 export const chatDiagnosisService = {
   /**

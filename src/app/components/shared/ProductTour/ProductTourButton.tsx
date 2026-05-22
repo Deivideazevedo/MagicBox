@@ -1,30 +1,11 @@
 "use client";
 
 import React from "react";
-import {
-  IconButton,
-  Tooltip,
-  alpha,
-  keyframes,
-  Box,
-  Typography,
-  Stack,
-  Button,
-} from "@mui/material";
+import { Tooltip, alpha, Box, Button } from "@mui/material";
 import { IconSparkles } from "@tabler/icons-react";
-
-// Animação combinada: Balanço (15%) + Pulso (35%) + Pausa (50%)
-// Total de 6 segundos: 3s de animação ativa e 3s de repouso
-const combinedHighlight = keyframes`
-  0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 0 0 rgba(93, 135, 255, 0); }
-  5% { transform: rotate(10deg) scale(1.1); }
-  10% { transform: rotate(-10deg) scale(1.1); }
-  15% { transform: rotate(0deg) scale(1); }
-  /* Início do Pulso (ocorre logo após o balanço) */
-  16% { box-shadow: 0 0 0 0 rgba(93, 135, 255, 0.5); }
-  45% { box-shadow: 0 0 0 8px rgba(93, 135, 255, 0); }
-  50%, 100% { box-shadow: 0 0 0 0 rgba(93, 135, 255, 0); transform: rotate(0deg) scale(1); }
-`;
+import { useSelector } from "@/store/hooks";
+import { AppState } from "@/store/store";
+import PulsingIconButton, { combinedHighlight } from "@/components/shared/PulsingIconButton";
 
 interface ProductTourButtonProps {
   /** Função disparada ao clicar para iniciar o tour */
@@ -57,6 +38,8 @@ export const ProductTourButton: React.FC<ProductTourButtonProps> = ({
   buttonRef,
 }) => {
   const iconSize = size === "small" ? 18 : size === "large" ? 28 : 22;
+  const isPulseEnabled = useSelector((state: AppState) => state.customizer.isPulseEnabled ?? true);
+  const shouldPulse = pulse && isPulseEnabled;
 
   if (variant === "text") {
     return (
@@ -67,11 +50,7 @@ export const ProductTourButton: React.FC<ProductTourButtonProps> = ({
           onClick={onClick}
           color={color}
           startIcon={
-            <Box
-              sx={{
-                display: "flex",
-              }}
-            >
+            <Box sx={{ display: "flex" }}>
               <IconSparkles size={iconSize} />
             </Box>
           }
@@ -81,7 +60,7 @@ export const ProductTourButton: React.FC<ProductTourButtonProps> = ({
             fontWeight: 600,
             px: 2,
             py: 1,
-            animation: pulse
+            animation: shouldPulse
               ? `${combinedHighlight} 6s ease-in-out infinite`
               : "none",
             "&:hover": {
@@ -99,35 +78,18 @@ export const ProductTourButton: React.FC<ProductTourButtonProps> = ({
   }
 
   return (
-    <Tooltip title={title} arrow>
-      <IconButton
-        ref={buttonRef}
-        onClick={onClick}
-        sx={{
-          width: size === "small" ? 32 : size === "large" ? 48 : 40,
-          height: size === "small" ? 32 : size === "large" ? 48 : 40,
-          color: `${color}.main`,
-          bgcolor: (theme) => alpha(theme.palette[color].main, 0.1),
-          animation: pulse
-            ? `${combinedHighlight} 6s ease-in-out infinite`
-            : "none",
-          "&:hover": {
-            bgcolor: (theme) => theme.palette[color].main,
-            color: "#fff",
-            transform: "scale(1.1) rotate(15deg)",
-          },
-          transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-          }}
-        >
-          <IconSparkles size={iconSize} stroke={1.5} />
-        </Box>
-      </IconButton>
-    </Tooltip>
+    <PulsingIconButton
+      ref={buttonRef}
+      onClick={onClick}
+      color={color}
+      size={size}
+      pulse={pulse}
+      tooltipTitle={title}
+    >
+      <Box sx={{ display: "flex" }}>
+        <IconSparkles size={iconSize} stroke={1.5} />
+      </Box>
+    </PulsingIconButton>
   );
 };
 

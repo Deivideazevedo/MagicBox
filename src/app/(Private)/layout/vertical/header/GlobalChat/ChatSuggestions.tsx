@@ -8,7 +8,7 @@ import {
   PILARES_CHAT,
   agruparPorCategoria,
   formatarCategoria,
-} from "@/core/chat/suggested-questions";
+} from "@/core/chat/orientacoes/suggested-questions";
 
 const PilarCard = styled(Box, {
   shouldForwardProp: (prop) => prop !== "isExpanded" && prop !== "cor",

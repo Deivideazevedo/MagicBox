@@ -16,12 +16,11 @@ import DeleteConfirmationDialog from "@/components/shared/DeleteConfirmationDial
 // Hooks
 import { useResumo } from "./hooks/useResumo";
 import { useMemo } from "react";
-import { useDispatch } from "@/store/hooks";
-import { abrirDrawer } from "@/store/apps/lancamentos/LancamentoSlice";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 import { IconChecks } from "@tabler/icons-react";
 
 export default function ResumoPage() {
-  const dispatch = useDispatch();
+  const { abrirDrawer: openLancamentoDrawer } = useLancamentoDrawer();
   const {
     resumo,
     isLoading,
@@ -76,7 +75,7 @@ export default function ResumoPage() {
           {
             title: "Pagar",
             icon: <IconChecks size={18} />,
-            callback: (row) => dispatch(abrirDrawer({ modo: "pagar", dados: row })),
+            callback: (row) => openLancamentoDrawer("pagar", row),
             color: "success",
             show: (row) => row.status !== "Pago",
           },

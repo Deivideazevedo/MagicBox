@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Button from "@mui/material/Button";
 import { IconRobot } from "@tabler/icons-react";
 import { styled } from "@mui/material/styles";
 import { alpha } from "@mui/material";
 import ChatDrawer from "./ChatDrawer";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 const ExtensibleFab = styled(Button)(({ theme }) => ({
   position: "fixed",
@@ -52,16 +53,16 @@ const ExtensibleFab = styled(Button)(({ theme }) => ({
 }));
 
 const GlobalChatFab = () => {
-  const [open, setOpen] = useState(false);
+  const { isOpen, openModal, closeModal } = useModalUrl("assistente");
 
   return (
     <>
-      <ExtensibleFab onClick={() => setOpen(true)}>
+      <ExtensibleFab onClick={() => openModal()}>
         <IconRobot size={24} stroke={2} />
         <span className="label">Assistente MagicBox (IA)</span>
       </ExtensibleFab>
 
-      <ChatDrawer open={open} onClose={() => setOpen(false)} />
+      <ChatDrawer open={isOpen} onClose={closeModal} />
     </>
   );
 };

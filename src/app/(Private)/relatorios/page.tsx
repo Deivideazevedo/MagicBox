@@ -472,7 +472,11 @@ export default function RelatoriosPage() {
                                 <Box sx={{ p: 3 }}>
                                   {resumoExibido && (
                                     <Box sx={{ mb: 4 }}>
-                                      <CardsKPI resumo={resumoExibido} />
+                                      <CardsKPI
+                                        resumo={resumoExibido}
+                                        categorias={data?.categorias || []}
+                                        exibirProjecoes={incluirProjecaoTabela}
+                                      />
                                     </Box>
                                   )}
 

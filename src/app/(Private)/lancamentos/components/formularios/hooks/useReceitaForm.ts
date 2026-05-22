@@ -30,9 +30,11 @@ const receitaSchema = z.object({
 
 export type ReceitaFormData = z.infer<typeof receitaSchema>;
 
+import { LancamentoPagamentoDados } from "@/store/apps/lancamentos/LancamentoSlice";
+
 interface UseReceitaFormProps {
   lancamentoParaEditar?: LancamentoResposta | null;
-  dadosIniciais?: any | null;
+  dadosIniciais?: LancamentoPagamentoDados | null;
   onSuccess?: () => void;
 }
 
