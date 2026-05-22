@@ -52,13 +52,15 @@ export default function CardsKPI({
   const receitasPagas = resumo.receitasPagas ?? 0;
   const totalReceitas = resumo.totalReceitas ?? 0;
   const diffReceitas = receitasPagas - totalReceitas;
-  const receitasPorcentagem = totalReceitas > 0 ? (receitasPagas / totalReceitas) * 100 : 0;
+  const receitasPorcentagem =
+    totalReceitas > 0 ? (receitasPagas / totalReceitas) * 100 : 0;
   const qtdReceitasAtivas = resumo.qtdReceitasAtivas ?? 0;
 
   const despesasPagas = resumo.despesasPagas ?? 0;
   const totalDespesas = resumo.totalDespesas ?? 0;
   const diffDespesas = despesasPagas - totalDespesas;
-  const despesasPorcentagem = totalDespesas < 0 ? (despesasPagas / totalDespesas) * 100 : 0;
+  const despesasPorcentagem =
+    totalDespesas < 0 ? (despesasPagas / totalDespesas) * 100 : 0;
   const qtdDespesasAtivas = resumo.qtdDespesasAtivas ?? 0;
 
   const totalAcumuladoComAlvo = resumo.totalAcumuladoMetasComAlvo ?? 0;
@@ -69,7 +71,10 @@ export default function CardsKPI({
 
   const saldoLivreGeral = resumo.saldoLivreGeral ?? 0;
   const saldoLivrePeriodo = resumo.saldoLivre ?? 0;
-  const saldoPorcentagem = saldoLivreGeral !== 0 ? (saldoLivrePeriodo / saldoLivreGeral) * 100 : 0;
+  const saldoPorcentagem =
+    saldoLivreGeral !== 0 ? (saldoLivrePeriodo / saldoLivreGeral) * 100 : 0;
+  const economiaPorcentagem =
+    receitasPagas > 0 ? (saldoLivrePeriodo / receitasPagas) * 100 : 0;
 
   function formatDiferenca(valor: number): string {
     const abs = Math.abs(valor);
@@ -91,19 +96,22 @@ export default function CardsKPI({
       percentageText: `${receitasPorcentagem.toFixed(1)}%`,
       percentageColor: "success.main",
       showExceededIcon: receitasPorcentagem > 100 ? " 🚀" : "",
-      barBackground: receitasPorcentagem > 100
-        ? `linear-gradient(90deg, ${theme.palette.success.main} 0%, #ffd700 100%)`
-        : theme.palette.success.main,
-      barAnimation: receitasPorcentagem > 100 ? "shimmer 2s infinite linear" : "none",
+      barBackground:
+        receitasPorcentagem > 100
+          ? `linear-gradient(90deg, ${theme.palette.success.main} 0%, #ffd700 100%)`
+          : theme.palette.success.main,
+      barAnimation:
+        receitasPorcentagem > 100 ? "shimmer 2s infinite linear" : "none",
       realizadoText: formatCurrency(receitasPagas),
       previstoText: formatCurrency(totalReceitas),
       labelLeftFooter: "Diferença",
       valueLeftFooter: formatDiferenca(diffReceitas),
-      valueLeftFooterColor: diffReceitas < 0
-        ? "error.main"
-        : diffReceitas > 0
-          ? "success.main"
-          : "text.secondary",
+      valueLeftFooterColor:
+        diffReceitas < 0
+          ? "error.main"
+          : diffReceitas > 0
+            ? "success.main"
+            : "text.secondary",
       labelRightFooter: "Ativas",
       valueRightFooter: qtdReceitasAtivas,
       onClickDialog: (e: React.MouseEvent) => {
@@ -111,7 +119,7 @@ export default function CardsKPI({
         modalReceitas.openModal();
       },
       tooltip: "Clique para ver detalhes completos de Receitas",
-      subItems: [] as { label: string; value: string; dotColor: string }[]
+      subItems: [] as { label: string; value: string; dotColor: string }[],
     },
     {
       icon: IconTrendingDown,
@@ -122,21 +130,25 @@ export default function CardsKPI({
       labelProgress: "Progresso Despesas",
       percentage: despesasPorcentagem,
       percentageText: `${despesasPorcentagem.toFixed(1)}%`,
-      percentageColor: despesasPorcentagem > 100 ? "error.main" : "success.main",
+      percentageColor:
+        despesasPorcentagem > 100 ? "error.main" : "success.main",
       showExceededIcon: despesasPorcentagem > 100 ? " ⚠️" : "",
-      barBackground: despesasPorcentagem > 100
-        ? `linear-gradient(90deg, ${theme.palette.error.main} 0%, #ff5722 100%)`
-        : theme.palette.success.main, // Se estiver dentro do limite, a cor de progresso é verde "Seguro"
-      barAnimation: despesasPorcentagem > 100 ? "pulse 1.5s infinite ease-in-out" : "none",
+      barBackground:
+        despesasPorcentagem > 100
+          ? `linear-gradient(90deg, ${theme.palette.error.main} 0%, #ff5722 100%)`
+          : theme.palette.success.main, // Se estiver dentro do limite, a cor de progresso é verde "Seguro"
+      barAnimation:
+        despesasPorcentagem > 100 ? "pulse 1.5s infinite ease-in-out" : "none",
       realizadoText: formatCurrency(Math.abs(despesasPagas)),
       previstoText: formatCurrency(Math.abs(totalDespesas)),
       labelLeftFooter: "Diferença",
       valueLeftFooter: formatDiferenca(diffDespesas),
-      valueLeftFooterColor: diffDespesas < 0
-        ? "error.main"
-        : diffDespesas > 0
-          ? "success.main"
-          : "text.secondary",
+      valueLeftFooterColor:
+        diffDespesas < 0
+          ? "error.main"
+          : diffDespesas > 0
+            ? "success.main"
+            : "text.secondary",
       labelRightFooter: "Ativas",
       valueRightFooter: qtdDespesasAtivas,
       onClickDialog: (e: React.MouseEvent) => {
@@ -144,7 +156,7 @@ export default function CardsKPI({
         modalDespesas.openModal();
       },
       tooltip: "Clique para ver detalhes completos de Despesas",
-      subItems: []
+      subItems: [],
     },
     {
       icon: IconTarget,
@@ -157,9 +169,10 @@ export default function CardsKPI({
       percentageText: `${metasPorcentagem.toFixed(1)}%`,
       percentageColor: "info.main",
       showExceededIcon: metasPorcentagem >= 100 ? " 🏆" : "",
-      barBackground: metasPorcentagem >= 100
-        ? `linear-gradient(90deg, ${theme.palette.info.main} 0%, #00bcd4 100%)`
-        : theme.palette.info.main,
+      barBackground:
+        metasPorcentagem >= 100
+          ? `linear-gradient(90deg, ${theme.palette.info.main} 0%, #00bcd4 100%)`
+          : theme.palette.info.main,
       barAnimation: "none",
       realizadoText: formatCurrency(totalAcumuladoComAlvo),
       previstoText: formatCurrency(totalPlanejado),
@@ -173,7 +186,7 @@ export default function CardsKPI({
         modalMetas.openModal();
       },
       tooltip: "Clique para ver detalhes completos de Metas",
-      subItems: []
+      subItems: [],
     },
     {
       icon: IconScale,
@@ -182,24 +195,29 @@ export default function CardsKPI({
       iconColor: theme.palette.primary.main,
       tooltip: "Clique para ver detalhes do seu Saldo Livre",
       isCustomProgressCard: true,
-      labelProgress: "Proporção do Período",
-      percentage: saldoPorcentagem,
-      percentageText: `${saldoPorcentagem.toFixed(1)}%`,
-      percentageColor: "primary.main",
-      showExceededIcon: "",
-      barBackground: theme.palette.primary.main,
-      barAnimation: "none",
-      realizadoText: formatCurrency(resumo.saldoLivre),
-      previstoText: formatCurrency(resumo.saldoLivreGeral),
+      labelProgress: "Sobra no Período",
+      percentage: economiaPorcentagem,
+      percentageText: `${economiaPorcentagem.toFixed(1)}%`,
+      percentageColor: saldoLivrePeriodo < 0 ? "error.main" : "success.main",
+      showExceededIcon: saldoLivrePeriodo < 0 ? " ⚠️" : "",
+      barBackground:
+        saldoLivrePeriodo < 0
+          ? theme.palette.error.main
+          : `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.success.main} 100%)`,
+      barAnimation:
+        saldoLivrePeriodo < 0 ? "pulse 1.5s infinite ease-in-out" : "none",
+      realizadoText: formatCurrency(saldoLivrePeriodo),
+      previstoText: formatCurrency(receitasPagas),
       labelLeftFooter: "Saldo no Período",
       valueLeftFooter: formatCurrency(resumo.saldoLivre),
-      valueLeftFooterColor: (resumo.saldoLivre ?? 0) < 0
-        ? "error.main"
-        : (resumo.saldoLivre ?? 0) > 0
-          ? "success.main"
-          : "text.secondary",
-      labelRightFooter: "Livre + Metas",
-      valueRightFooter: formatCurrency(resumo.saldoBrutoLiquido),
+      valueLeftFooterColor:
+        (resumo.saldoLivre ?? 0) < 0
+          ? "error.main"
+          : (resumo.saldoLivre ?? 0) > 0
+            ? "success.main"
+            : "text.secondary",
+      labelRightFooter: "Economia no Período",
+      valueRightFooter: `${(resumo.taxaEconomiaPeriodo ?? 0).toFixed(1)}%`,
       onClickDialog: (e: React.MouseEvent) => {
         e.stopPropagation();
         modalSaldoLivre.openModal();
@@ -284,7 +302,12 @@ export default function CardsKPI({
                       justifyContent="space-between"
                       alignItems="flex-start"
                     >
-                      <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={0.5}
+                        mt={0.5}
+                      >
                         <Typography
                           variant="subtitle2"
                           color="text.secondary"
@@ -328,11 +351,26 @@ export default function CardsKPI({
                     </Box>
                   </Box>
 
-                  <Collapse in={detalhesExpandidos} timeout={220} sx={{ mt: 1 }}>
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  <Collapse
+                    in={detalhesExpandidos}
+                    timeout={220}
+                    sx={{ mt: 1 }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1.5,
+                      }}
+                    >
                       {/* Barra de Progresso e Percentual */}
                       <Box>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mb={0.5}
+                        >
                           <Typography
                             variant="caption"
                             color="text.secondary"
@@ -345,7 +383,12 @@ export default function CardsKPI({
                             variant="caption"
                             color={card.percentageColor}
                             fontWeight={700}
-                            sx={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: 0.3 }}
+                            sx={{
+                              fontSize: "0.75rem",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.3,
+                            }}
                           >
                             {card.percentageText}
                             {card.showExceededIcon}
@@ -372,19 +415,22 @@ export default function CardsKPI({
                               "@keyframes pulse": {
                                 "0%": { opacity: 0.7 },
                                 "50%": { opacity: 1 },
-                                "100%": { opacity: 0.7 }
+                                "100%": { opacity: 0.7 },
                               },
                               "@keyframes shimmer": {
                                 "0%": { backgroundPosition: "0% 50%" },
                                 "50%": { backgroundPosition: "100% 50%" },
-                                "100%": { backgroundPosition: "0% 50%" }
+                                "100%": { backgroundPosition: "0% 50%" },
                               },
                               backgroundSize: "200% 200%",
-                              animation: card.barAnimation === "shimmer 2s infinite linear"
-                                ? "shimmer 3s infinite ease-in-out"
-                                : card.barAnimation === "pulse 1.5s infinite ease-in-out"
-                                  ? "pulse 1.5s infinite ease-in-out"
-                                  : "none",
+                              animation:
+                                card.barAnimation ===
+                                "shimmer 2s infinite linear"
+                                  ? "shimmer 3s infinite ease-in-out"
+                                  : card.barAnimation ===
+                                      "pulse 1.5s infinite ease-in-out"
+                                    ? "pulse 1.5s infinite ease-in-out"
+                                    : "none",
                             }}
                           />
                         </Box>
@@ -464,7 +510,10 @@ export default function CardsKPI({
                 position: "relative",
                 overflow: "hidden",
                 transition: "all 0.2s ease-in-out",
-                cursor: card.subItems && card.subItems.length > 0 ? "pointer" : "auto",
+                cursor:
+                  card.subItems && card.subItems.length > 0
+                    ? "pointer"
+                    : "auto",
                 pt: 2,
                 pb: 1.5,
                 height: "100%",
@@ -548,7 +597,13 @@ export default function CardsKPI({
                   </Box>
 
                   <Box
-                    mb={detalhesExpandidos && card.subItems && card.subItems.length > 0 ? 1 : 0}
+                    mb={
+                      detalhesExpandidos &&
+                      card.subItems &&
+                      card.subItems.length > 0
+                        ? 1
+                        : 0
+                    }
                   >
                     <Typography
                       variant="h5"
@@ -561,7 +616,11 @@ export default function CardsKPI({
                 </Box>
 
                 {card.subItems && card.subItems.length > 0 && (
-                  <Collapse in={detalhesExpandidos} timeout={220} sx={{ mt: 1 }}>
+                  <Collapse
+                    in={detalhesExpandidos}
+                    timeout={220}
+                    sx={{ mt: 1 }}
+                  >
                     <Box
                       sx={{
                         display: "flex",
@@ -591,8 +650,8 @@ export default function CardsKPI({
                               sx={{
                                 fontSize: "0.75rem",
                                 display: "flex",
-                                  alignItems: "center",
-                                  gap: 0.5,
+                                alignItems: "center",
+                                gap: 0.5,
                               }}
                             >
                               {item.label}

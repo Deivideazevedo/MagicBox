@@ -53,7 +53,10 @@ export default function SaldoLivreDetailDialog({
   const saldoBrutoLiquido = resumo.saldoBrutoLiquido ?? 0;
   const taxaEconomia = resumo.taxaEconomiaPeriodo ?? 0;
 
-  const proporcaoPeriodo = saldoLivreGeral > 0 ? (saldoLivrePeriodo / saldoLivreGeral) * 100 : 0;
+  const proporcaoPeriodo =
+    saldoLivreGeral > 0 ? (saldoLivrePeriodo / saldoLivreGeral) * 100 : 0;
+  const diferencaFuros = saldoLivrePeriodo - saldoLivreGeral;
+  const totalEconomizadoPeriodo = saldoLivrePeriodo + (resumo.totalMetas ?? 0);
 
   return (
     <Dialog
@@ -109,7 +112,11 @@ export default function SaldoLivreDetailDialog({
             Composição do Saldo Livre
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: "text.secondary" }}>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ color: "text.secondary" }}
+        >
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
@@ -128,11 +135,12 @@ export default function SaldoLivreDetailDialog({
           color="text.secondary"
           sx={{ fontSize: "0.85rem", mb: 0.5 }}
         >
-          Entenda detalhadamente a composição e as relações do seu saldo livre, poupança e liquidez geral na MagicBox:
+          Entenda detalhadamente a composição e as relações do seu saldo livre,
+          poupança e liquidez geral na MagicBox:
         </Typography>
 
         <Box display="flex" flexDirection="column" gap={2}>
-          {/* Bloco 1: Saldo Livre Geral (Disponível Hoje) */}
+          {/* Bloco 1: Saldo Livre (Disponível Hoje) */}
           <Box
             sx={{
               p: 2,
@@ -153,7 +161,7 @@ export default function SaldoLivreDetailDialog({
                 mb: 0.5,
               }}
             >
-              Saldo Livre Geral (Disponível Hoje)
+              Saldo Livre (Disponível Hoje)
             </Typography>
             <Typography
               variant="h5"
@@ -168,7 +176,9 @@ export default function SaldoLivreDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              É o seu dinheiro líquido real disponível hoje para gastar. Soma todas as suas receitas históricas pagas e subtrai despesas e metas quitadas, independente do período filtrado.
+              É a quantia disponível hoje para gastar. Fruto da soma de todas as
+              suas receitas pagas - despesas e metas guardadas, independente do
+              período filtrado.
             </Typography>
           </Box>
 
@@ -193,7 +203,7 @@ export default function SaldoLivreDetailDialog({
                 mb: 0.5,
               }}
             >
-              Saldo Livre no Período
+              Saldo no Período
             </Typography>
             <Typography
               variant="h5"
@@ -208,51 +218,12 @@ export default function SaldoLivreDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Representa o saldo gerado no intervalo de datas selecionado (Receitas - Metas - Despesas pagas no período). É o valor que alimenta o progresso.
+              É quanto sobrou no intervalo de datas selecionado, obtido através
+              de (Receitas - Metas e Despesas pagas no período).
             </Typography>
           </Box>
 
-          {/* Bloco 3: Proporção do Período */}
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.info.main, 0.03),
-              border: "1px solid",
-              borderColor: alpha(theme.palette.info.main, 0.1),
-            }}
-          >
-            <Typography
-              variant="caption"
-              color="info.main"
-              fontWeight={700}
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-                display: "block",
-                mb: 0.5,
-              }}
-            >
-              Proporção do Período
-            </Typography>
-            <Typography
-              variant="h5"
-              fontWeight={800}
-              color="text.primary"
-              sx={{ mb: 1, letterSpacing: -0.5 }}
-            >
-              {proporcaoPeriodo.toFixed(1)}%
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
-            >
-              Mede a contribuição do período atual em relação ao seu Saldo Livre Geral acumulado. O percentual pode exceder 100% caso haja saldos negativos em períodos passados.
-            </Typography>
-          </Box>
-
-          {/* Bloco 4: Livre + Metas (Saldo Bruto Líquido) */}
+          {/* Bloco 3: Total Acumulado (Saldo Livre + Metas) */}
           <Box
             sx={{
               p: 2,
@@ -273,7 +244,7 @@ export default function SaldoLivreDetailDialog({
                 mb: 0.5,
               }}
             >
-              Livre + Metas (Saldo Bruto Líquido)
+              Total Acumulado (Saldo Livre + Metas)
             </Typography>
             <Typography
               variant="h5"
@@ -288,11 +259,15 @@ export default function SaldoLivreDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Corresponde ao seu patrimônio líquido total acumulado (todas as receitas pagas históricas - despesas pagas históricas). Une sua liquidez livre atual mais o montante protegido nas metas.
+              É a soma de todo o seu saldo livre disponível hoje mais o dinheiro
+              guardado em metas. Composto por:{" "}
+              <strong>{formatCurrency(saldoLivreGeral)}</strong> (Saldo Livre) +{" "}
+              <strong>{formatCurrency(resumo.totalAcumuladoMetas ?? 0)}</strong>{" "}
+              (guardados em Metas).
             </Typography>
           </Box>
 
-          {/* Bloco 5: Taxa de Economia */}
+          {/* Bloco 4: Economia no Período */}
           <Box
             sx={{
               p: 2,
@@ -313,13 +288,19 @@ export default function SaldoLivreDetailDialog({
                 mb: 0.5,
               }}
             >
-              Taxa de Economia
+              Economia no Período
             </Typography>
             <Typography
               variant="h5"
               fontWeight={800}
               color="text.primary"
-              sx={{ mb: 1, letterSpacing: -0.5 }}
+              sx={{
+                mb: 1,
+                letterSpacing: -0.5,
+                display: "flex",
+                alignItems: "baseline",
+                gap: 1,
+              }}
             >
               {taxaEconomia.toFixed(1)}%
             </Typography>
@@ -328,7 +309,125 @@ export default function SaldoLivreDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              O percentual da renda recebida neste período que você conseguiu salvar (permanecendo livre na conta ou investido em objetivos de metas).
+              Representa o percentual total da sua renda recebida neste período
+              que você conseguiu salvar. É composto pela soma da sua Sobra no
+              Período (<strong>{formatCurrency(saldoLivrePeriodo)}</strong>)
+              mais o valor guardado em Metas neste período (
+              <strong>{formatCurrency(resumo.totalMetas ?? 0)}</strong>),
+              totalizando{" "}
+              <strong>{formatCurrency(totalEconomizadoPeriodo)}</strong>{" "}
+              economizados.
+            </Typography>
+          </Box>
+
+          {/* Bloco 5: Furos de Meses Anteriores */}
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 3,
+              bgcolor: alpha(
+                proporcaoPeriodo > 100
+                  ? theme.palette.error.main
+                  : theme.palette.success.main,
+                0.03,
+              ),
+              border: "1px solid",
+              borderColor: alpha(
+                proporcaoPeriodo > 100
+                  ? theme.palette.error.main
+                  : theme.palette.success.main,
+                0.15,
+              ),
+            }}
+          >
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={0.5}
+            >
+              <Typography
+                variant="caption"
+                color={proporcaoPeriodo > 100 ? "error.main" : "success.main"}
+                fontWeight={700}
+                sx={{
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Furos de Meses Anteriores
+              </Typography>
+              <Box
+                sx={{
+                  px: 1,
+                  py: 0.2,
+                  borderRadius: 1,
+                  bgcolor: alpha(
+                    proporcaoPeriodo > 100
+                      ? theme.palette.error.main
+                      : theme.palette.success.main,
+                    0.1,
+                  ),
+                  color: proporcaoPeriodo > 100 ? "error.main" : "success.main",
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                }}
+              >
+                {proporcaoPeriodo > 100
+                  ? "⚠️ Furo Detectado"
+                  : "✅ Caixa Saudável"}
+              </Box>
+            </Box>
+            <Typography
+              variant="h5"
+              fontWeight={800}
+              color={proporcaoPeriodo > 100 ? "error.main" : "success.main"}
+              sx={{
+                mb: 1,
+                letterSpacing: -0.5,
+                display: "flex",
+                alignItems: "baseline",
+                gap: 1,
+              }}
+            >
+              {proporcaoPeriodo > 100
+                ? `-${formatCurrency(diferencaFuros)}`
+                : "R$ 0,00"}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
+            >
+              Compara o seu saldo neste período com o seu saldo total livre
+              disponível hoje.
+              {proporcaoPeriodo > 100 ? (
+                <>
+                  {" "}
+                  Você economizou{" "}
+                  <strong>{formatCurrency(saldoLivrePeriodo)}</strong> no
+                  período selecionado, mas o seu saldo acumulado hoje é de
+                  apenas <strong>{formatCurrency(saldoLivreGeral)}</strong>.
+                  Isso significa que uma diferença de{" "}
+                  <strong>{formatCurrency(diferencaFuros)}</strong> foi
+                  consumida para cobrir{" "}
+                  <strong>
+                    furos, despesas não pagas ou saldos negativos de meses
+                    passados
+                  </strong>
+                  , reduzindo seu caixa disponível.
+                </>
+              ) : (
+                <>
+                  {" "}
+                  Como a sua economia no período (
+                  <strong>{formatCurrency(saldoLivrePeriodo)}</strong>) é menor
+                  do que seu saldo total acumulado (
+                  <strong>{formatCurrency(saldoLivreGeral)}</strong>), seu caixa
+                  está equilibrado e em pleno crescimento, sem furos ou rombos
+                  de meses passados consumindo sua sobra financeira.
+                </>
+              )}
             </Typography>
           </Box>
         </Box>
