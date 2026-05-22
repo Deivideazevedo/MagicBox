@@ -253,7 +253,7 @@ interface ChatDrawerProps {
   onClose: () => void;
 }
 
-const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
+const ChatDrawerContent = ({ open, onClose }: ChatDrawerProps) => {
   const router = useRouter();
   const theme = useTheme();
   const initialMessages = useRef(carregarHistorico());
@@ -415,14 +415,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
   };
 
   return (
-    <Drawer
-      anchor="right"
-      open={open}
-      onClose={onClose}
-      elevation={16}
-      PaperProps={{ sx: { borderRadius: "10px 0 0 10px" } }}
-    >
-      <DrawerContainer>
+    <DrawerContainer>
         {/* Header */}
         <HeaderBox>
           <Stack direction="row" spacing={1} alignItems="center">
@@ -685,6 +678,25 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
           </Stack>
         </InputContainer>
       </DrawerContainer>
+  );
+};
+
+const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
+  return (
+    <Drawer
+      anchor="right"
+      open={open}
+      onClose={onClose}
+      sx={{
+        "& .MuiDrawer-paper": {
+          width: 400,
+          maxWidth: "100vw",
+          border: "none",
+          boxShadow: "-10px 0 30px rgba(0,0,0,0.15)",
+        },
+      }}
+    >
+      {open && <ChatDrawerContent open={open} onClose={onClose} />}
     </Drawer>
   );
 };
