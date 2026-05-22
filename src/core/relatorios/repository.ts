@@ -39,8 +39,7 @@ export const relatoriosRepository = {
               LIMIT 12
             ) s
           ), 0)::float as media_mensal,
-          r."createdAt",
-          NULL::integer as "diaVencimento"
+          r."createdAt"
         FROM receita r
         LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL AND r.status = 'A'
@@ -66,12 +65,11 @@ export const relatoriosRepository = {
               LIMIT 12
             ) s
           ), 0)::float as media_mensal,
-          d."createdAt",
-          d."diaVencimento"
+          d."createdAt"
         FROM despesa d
         LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL AND d.status = 'A'
-        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt", d."diaVencimento"
+        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt"
       )
       SELECT 
         c.id as "categoriaId", 
@@ -86,8 +84,7 @@ export const relatoriosRepository = {
         d.estimado as "valorPlanejado",
         d."origemTipo",
         d.media_mensal as "mediaMensal",
-        d."createdAt" as "itemCreatedAt",
-        d."diaVencimento" as "diaVencimento"
+        d."createdAt" as "itemCreatedAt"
       FROM categorias_base c
       INNER JOIN detalhes d ON d."categoriaId" = c.id
       ORDER BY c.nome, d.nome;

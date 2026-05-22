@@ -17,7 +17,6 @@ export interface DetalheRelatorio {
   mediaMensal: number;
   isProjecao: boolean;
   status: string;
-  diaVencimento?: number | null;
 }
 
 export interface CategoriaRelatorio {
@@ -117,7 +116,6 @@ export interface RawDadosBrutosCategoria {
   origemTipo: string;
   mediaMensal: number;
   itemCreatedAt: Date;
-  diaVencimento?: number | null;
 }
 
 export interface RawTotaisMetas {
