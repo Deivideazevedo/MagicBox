@@ -1,9 +1,22 @@
 import { prisma } from "@/lib/prisma";
-import { RelatorioFiltros, RawMetasProgresso, RawCardResumo, RawDadosBrutosCategoria, RawTotaisMetas, RawHistoricoAgrupado, RawRelatorioMetas, EvolucaoMensalItem } from "./relatorio.dto";
+import {
+  RelatorioFiltros,
+  RawMetasProgresso,
+  RawCardResumo,
+  RawDadosBrutosCategoria,
+  RawTotaisMetas,
+  RawHistoricoAgrupado,
+  RawRelatorioMetas,
+  EvolucaoMensalItem,
+} from "./relatorio.dto";
 
 export const relatoriosRepository = {
-  async obterDadosBrutosPorCategoria(userId: number, dataInicio: Date, dataFim: Date) {
-    return await prisma.$queryRaw`
+  async obterDadosBrutosPorCategoria(
+    userId: number,
+    dataInicio: Date,
+    dataFim: Date,
+  ): Promise<RawDadosBrutosCategoria[]> {
+    return await prisma.$queryRaw<RawDadosBrutosCategoria[]>`
       WITH categorias_base AS (
         SELECT id, nome, icone, cor FROM "categorias" WHERE "userId" = ${userId} AND "deletedAt" IS NULL
       ),
@@ -61,8 +74,13 @@ export const relatoriosRepository = {
         GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt", d."diaVencimento"
       )
       SELECT 
-        c.id as "categoriaId", c.nome as "categoriaNome", c.icone as "categoriaIcone", c.cor as "categoriaCor", d.tipo as "categoriaTipo",
-        d.id as "itemId", d.nome as "itemName", d.tipo as "itemTipo", 
+        c.id as "categoriaId", 
+        c.nome as "categoriaNome", 
+        c.icone as "categoriaIcone", 
+        c.cor as "categoriaCor", 
+        d.tipo as "categoriaTipo",
+        d.id as "itemId", 
+        d.nome as "itemName", d.tipo as "itemTipo", 
         d.realizado as "valorRealizado", 
         d.planejado as "valorAgendado",
         d.estimado as "valorPlanejado",
@@ -76,7 +94,11 @@ export const relatoriosRepository = {
     `;
   },
 
-  async obterDadosCompletosMetas(userId: number, dataInicio: Date, dataFim: Date): Promise<RawRelatorioMetas> {
+  async obterDadosCompletosMetas(
+    userId: number,
+    dataInicio: Date,
+    dataFim: Date,
+  ): Promise<RawRelatorioMetas> {
     const result = await prisma.$queryRaw<any[]>`
       WITH metas_totais AS (
         SELECT 
@@ -159,9 +181,17 @@ export const relatoriosRepository = {
     `;
   },
 
-  async obterHistoricoAgrupado(userId: number, itens: { id: number; tipo: string }[], ano: number): Promise<RawHistoricoAgrupado[]> {
-    const despesaIds = itens.filter((i) => i.tipo === "DESPESA").map((i) => i.id);
-    const receitaIds = itens.filter((i) => i.tipo === "RECEITA").map((i) => i.id);
+  async obterHistoricoAgrupado(
+    userId: number,
+    itens: { id: number; tipo: string }[],
+    ano: number,
+  ): Promise<RawHistoricoAgrupado[]> {
+    const despesaIds = itens
+      .filter((i) => i.tipo === "DESPESA")
+      .map((i) => i.id);
+    const receitaIds = itens
+      .filter((i) => i.tipo === "RECEITA")
+      .map((i) => i.id);
     const metaIds = itens.filter((i) => i.tipo === "META").map((i) => i.id);
 
     const dIds = despesaIds.length > 0 ? despesaIds : [-1];
@@ -275,7 +305,10 @@ export const relatoriosRepository = {
     `;
   },
 
-  async obterEvolucaoAnual(userId: number, ano: number): Promise<EvolucaoMensalItem[]> {
+  async obterEvolucaoAnual(
+    userId: number,
+    ano: number,
+  ): Promise<EvolucaoMensalItem[]> {
     const dataInicio = `${ano}-01-01`;
     const dataFim = `${ano}-12-31`;
 
@@ -351,17 +384,19 @@ export const relatoriosRepository = {
   },
 
   async obterContagensETotaisHistoricos(userId: number) {
-    const result = await prisma.$queryRaw<Array<{
-      receitasAtivas: number;
-      receitasInativas: number;
-      despesasAtivas: number;
-      despesasInativas: number;
-      receitasPagas: number;
-      receitasPrevistas: number;
-      despesasPagas: number;
-      despesasPrevistas: number;
-      metasPagas: number;
-    }>>`
+    const result = await prisma.$queryRaw<
+      Array<{
+        receitasAtivas: number;
+        receitasInativas: number;
+        despesasAtivas: number;
+        despesasInativas: number;
+        receitasPagas: number;
+        receitasPrevistas: number;
+        despesasPagas: number;
+        despesasPrevistas: number;
+        metasPagas: number;
+      }>
+    >`
       WITH contagens_receitas AS (
         SELECT 
           COUNT(CASE WHEN r.status = 'A' THEN 1 END) as "receitasAtivas",
@@ -416,7 +451,7 @@ export const relatoriosRepository = {
       receitasPrevistas: 0,
       despesasPagas: 0,
       despesasPrevistas: 0,
-      metasPagas: 0
+      metasPagas: 0,
     };
 
     return {
@@ -431,8 +466,8 @@ export const relatoriosRepository = {
         receitasPrevistas: Number(row.receitasPrevistas),
         despesasPagas: Number(row.despesasPagas),
         despesasPrevistas: Number(row.despesasPrevistas),
-        metas: Number(row.metasPagas)
-      }
+        metas: Number(row.metasPagas),
+      },
     };
-  }
+  },
 };

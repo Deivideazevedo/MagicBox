@@ -126,8 +126,6 @@ export default function LancamentoDrawer() {
         }}
       >
         <CustomScrollbar sx={{ minHeight: "calc(100vh - 170px)" }}>
-          {isLancamentoOpen && (
-            <>
               <Box
                 p={2.3}
                 px={3}
@@ -162,8 +160,6 @@ export default function LancamentoDrawer() {
                 initialOrigem={initialOrigem}
                 dadosIniciais={modo === "pagar" ? dadosIniciais : null}
               />
-            </>
-          )}
         </CustomScrollbar>
       </Drawer>
     </>
