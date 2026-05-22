@@ -541,197 +541,201 @@ export function CustomTable({
           },
         }}
       >
-        <Box
-          sx={{
-            p: 3,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Box>
-            <Typography variant="h6" fontWeight={800}>
-              Filtros e Opções
-            </Typography>
-            <Typography variant="caption" color="textSecondary">
-              Ajuste a visualização dos dados.
-            </Typography>
-          </Box>
-          <IconButton
-            onClick={() => setDrawerOpen(false)}
-            size="small"
-            sx={{
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.2) },
-              borderRadius: "50%",
-            }}
-          >
-            <IconX size={20} color={theme.palette.primary.main} />
-          </IconButton>
-        </Box>
-
-        <Divider />
-
-        <List sx={{ p: 2 }}>
-          <ListItem disablePadding sx={{ mb: 4, display: "block" }}>
-            <Typography
-              variant="subtitle2"
-              fontWeight={700}
-              color="primary"
-              gutterBottom
-              sx={{
-                textTransform: "uppercase",
-                fontSize: "0.75rem",
-                letterSpacing: 1,
-              }}
-            >
-              Exibir
-            </Typography>
+        {drawerOpen && (
+          <>
             <Box
-              onClick={() => onToggleProjecao(!incluirProjecao)}
               sx={{
-                mt: 1.5,
+                p: 3,
                 display: "flex",
                 alignItems: "center",
-                gap: 1.5,
-                cursor: "pointer",
-                p: 1,
-                mx: -1,
-                borderRadius: 2,
-                "&:hover": {
-                  bgcolor: incluirProjecao
-                    ? alpha(theme.palette.warning.main, 0.05)
-                    : alpha(theme.palette.text.secondary, 0.05),
-                },
-                border: `1px solid ${incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary}`,
+                justifyContent: "space-between",
               }}
             >
-              <IconBolt
-                size={20}
-                color={
-                  incluirProjecao
-                    ? theme.palette.warning.main
-                    : theme.palette.text.secondary
-                }
-              />
-              <Typography
-                variant="body2"
-                fontWeight={600}
+              <Box>
+                <Typography variant="h6" fontWeight={800}>
+                  Filtros e Opções
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Ajuste a visualização dos dados.
+                </Typography>
+              </Box>
+              <IconButton
+                onClick={() => setDrawerOpen(false)}
+                size="small"
                 sx={{
-                  flexGrow: 1,
-                  color: incluirProjecao
-                    ? theme.palette.warning.main
-                    : theme.palette.text.secondary,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+                  borderRadius: "50%",
                 }}
               >
-                Projeções
-              </Typography>
-              <Switch
-                size="small"
-                checked={incluirProjecao}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onToggleProjecao(e.target.checked);
-                }}
-                color="warning"
-              />
+                <IconX size={20} color={theme.palette.primary.main} />
+              </IconButton>
             </Box>
-          </ListItem>
 
-          <ListItem disablePadding sx={{ display: "block" }}>
-            <Typography
-              variant="subtitle2"
-              fontWeight={700}
-              color="primary"
-              gutterBottom
+            <Divider />
+
+            <List sx={{ p: 2 }}>
+              <ListItem disablePadding sx={{ mb: 4, display: "block" }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={700}
+                  color="primary"
+                  gutterBottom
+                  sx={{
+                    textTransform: "uppercase",
+                    fontSize: "0.75rem",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Exibir
+                </Typography>
+                <Box
+                  onClick={() => onToggleProjecao(!incluirProjecao)}
+                  sx={{
+                    mt: 1.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    cursor: "pointer",
+                    p: 1,
+                    mx: -1,
+                    borderRadius: 2,
+                    "&:hover": {
+                      bgcolor: incluirProjecao
+                        ? alpha(theme.palette.warning.main, 0.05)
+                        : alpha(theme.palette.text.secondary, 0.05),
+                    },
+                    border: `1px solid ${incluirProjecao ? theme.palette.warning.main : theme.palette.text.secondary}`,
+                  }}
+                >
+                  <IconBolt
+                    size={20}
+                    color={
+                      incluirProjecao
+                        ? theme.palette.warning.main
+                        : theme.palette.text.secondary
+                    }
+                  />
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{
+                      flexGrow: 1,
+                      color: incluirProjecao
+                        ? theme.palette.warning.main
+                        : theme.palette.text.secondary,
+                    }}
+                  >
+                    Projeções
+                  </Typography>
+                  <Switch
+                    size="small"
+                    checked={incluirProjecao}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onToggleProjecao(e.target.checked);
+                    }}
+                    color="warning"
+                  />
+                </Box>
+              </ListItem>
+
+              <ListItem disablePadding sx={{ display: "block" }}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={700}
+                  color="primary"
+                  gutterBottom
+                  sx={{
+                    textTransform: "uppercase",
+                    fontSize: "0.75rem",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Filtrar:
+                </Typography>
+                <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+                  {tiposExistentes.has("DESPESA") && (
+                    <Chip
+                      icon={<IconArrowDown size={14} />}
+                      label="Despesas"
+                      color="error"
+                      variant={
+                        tiposFiltro.includes("DESPESA") ? "filled" : "outlined"
+                      }
+                      onClick={() => onToggleTipo("DESPESA")}
+                      sx={{
+                        fontWeight: 600,
+                        justifyContent: "flex-start",
+                        px: 1,
+                        height: 36,
+                      }}
+                    />
+                  )}
+                  {tiposExistentes.has("RECEITA") && (
+                    <Chip
+                      icon={<IconArrowUp size={14} />}
+                      label="Receitas"
+                      color="success"
+                      variant={
+                        tiposFiltro.includes("RECEITA") ? "filled" : "outlined"
+                      }
+                      onClick={() => onToggleTipo("RECEITA")}
+                      sx={{
+                        fontWeight: 600,
+                        justifyContent: "flex-start",
+                        px: 1,
+                        height: 36,
+                      }}
+                    />
+                  )}
+                  {tiposExistentes.has("META") && (
+                    <Chip
+                      icon={<IconTarget size={14} />}
+                      label="Metas"
+                      color="info"
+                      variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
+                      onClick={() => onToggleTipo("META")}
+                      sx={{
+                        fontWeight: 600,
+                        justifyContent: "flex-start",
+                        px: 1,
+                        height: 36,
+                      }}
+                    />
+                  )}
+                </Stack>
+              </ListItem>
+            </List>
+
+            <Box
               sx={{
-                textTransform: "uppercase",
-                fontSize: "0.75rem",
-                letterSpacing: 1,
+                mt: "auto",
+                p: 2,
+                borderTop: "1px solid",
+                borderColor: "divider",
               }}
             >
-              Filtrar:
-            </Typography>
-            <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-              {tiposExistentes.has("DESPESA") && (
-                <Chip
-                  icon={<IconArrowDown size={14} />}
-                  label="Despesas"
-                  color="error"
-                  variant={
-                    tiposFiltro.includes("DESPESA") ? "filled" : "outlined"
-                  }
-                  onClick={() => onToggleTipo("DESPESA")}
-                  sx={{
-                    fontWeight: 600,
-                    justifyContent: "flex-start",
-                    px: 1,
-                    height: 36,
-                  }}
-                />
-              )}
-              {tiposExistentes.has("RECEITA") && (
-                <Chip
-                  icon={<IconArrowUp size={14} />}
-                  label="Receitas"
-                  color="success"
-                  variant={
-                    tiposFiltro.includes("RECEITA") ? "filled" : "outlined"
-                  }
-                  onClick={() => onToggleTipo("RECEITA")}
-                  sx={{
-                    fontWeight: 600,
-                    justifyContent: "flex-start",
-                    px: 1,
-                    height: 36,
-                  }}
-                />
-              )}
-              {tiposExistentes.has("META") && (
-                <Chip
-                  icon={<IconTarget size={14} />}
-                  label="Metas"
-                  color="info"
-                  variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
-                  onClick={() => onToggleTipo("META")}
-                  sx={{
-                    fontWeight: 600,
-                    justifyContent: "flex-start",
-                    px: 1,
-                    height: 36,
-                  }}
-                />
-              )}
-            </Stack>
-          </ListItem>
-        </List>
-
-        <Box
-          sx={{
-            mt: "auto",
-            p: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Chip
-            label="Resetar"
-            variant="outlined"
-            onClick={handleReset}
-            sx={{
-              width: "100%",
-              py: 2.5,
-              fontWeight: 800,
-              borderRadius: 2,
-              borderColor: theme.palette.primary.main,
-              color: theme.palette.primary.main,
-              "&:hover": {
-                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                borderColor: theme.palette.primary.main,
-              },
-            }}
-          />
-        </Box>
+              <Chip
+                label="Resetar"
+                variant="outlined"
+                onClick={handleReset}
+                sx={{
+                  width: "100%",
+                  py: 2.5,
+                  fontWeight: 800,
+                  borderRadius: 2,
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    borderColor: theme.palette.primary.main,
+                  },
+                }}
+              />
+            </Box>
+          </>
+        )}
       </Drawer>
 
       <TableContainer>

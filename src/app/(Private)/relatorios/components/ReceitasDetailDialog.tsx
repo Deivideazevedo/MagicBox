@@ -87,7 +87,6 @@ export default function ReceitasDetailDialog({
       onClick={(e) => e.stopPropagation()}
       aria-labelledby="receitas-dialog-title"
       TransitionComponent={Transition}
-      keepMounted
       sx={{
         "& .MuiDialog-container": {
           alignItems: { xs: "flex-end", sm: "center" },

@@ -63,7 +63,6 @@ export default function MetasDetailDialog({
       onClick={(e) => e.stopPropagation()}
       aria-labelledby="metas-dialog-title"
       TransitionComponent={Transition}
-      keepMounted
       sx={{
         "& .MuiDialog-container": {
           alignItems: { xs: "flex-end", sm: "center" },

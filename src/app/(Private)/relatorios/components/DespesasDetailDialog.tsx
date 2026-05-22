@@ -168,7 +168,6 @@ export default function DespesasDetailDialog({
       onClick={(e) => e.stopPropagation()}
       aria-labelledby="despesas-dialog-title"
       TransitionComponent={Transition}
-      keepMounted
       sx={{
         "& .MuiDialog-container": {
           alignItems: { xs: "flex-end", sm: "center" },

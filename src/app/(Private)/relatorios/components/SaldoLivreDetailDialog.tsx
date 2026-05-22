@@ -65,7 +65,6 @@ export default function SaldoLivreDetailDialog({
       onClick={(e) => e.stopPropagation()}
       aria-labelledby="saldo-livre-dialog-title"
       TransitionComponent={Transition}
-      keepMounted
       sx={{
         "& .MuiDialog-container": {
           alignItems: { xs: "flex-end", sm: "center" },
