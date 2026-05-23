@@ -8,22 +8,22 @@ import Sidebar from "./layout/vertical/sidebar/Sidebar";
 import Customizer from "./layout/shared/customizer/Customizer";
 import GlobalLancamentoButton from "./layout/shared/GlobalLancamentoButton";
 
-import GlobalChatFab from "./layout/vertical/header/GlobalChat/GlobalChatFab";
+import GlobalChatFab from "./layout/shared/GlobalChat/GlobalChatFab";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 
-const MainWrapper = styled('div')(() => ({
-  display: 'flex',
-  minHeight: '100vh',
-  width: '100%',
+const MainWrapper = styled("div")(() => ({
+  display: "flex",
+  minHeight: "100vh",
+  width: "100%",
 }));
 
-const PageWrapper = styled('div')(({ theme }) => ({
-  display: 'flex',
+const PageWrapper = styled("div")(({ theme }) => ({
+  display: "flex",
   flexGrow: 1,
-  flexDirection: 'column',
+  flexDirection: "column",
   zIndex: 1,
-  width: '100%',
+  width: "100%",
   // backgroundColor: 'transparent',
   background: theme.palette.grey[100],
 }));
@@ -73,14 +73,21 @@ export default function RootLayout({
           {/* PageContent */}
           <Container
             sx={{
-              maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
+              maxWidth:
+                customizer.isLayout === "boxed" ? "lg" : "100%!important",
             }}
           >
             {/* ------------------------------------------- */}
             {/* PageContent */}
             {/* ------------------------------------------- */}
 
-            <Box sx={{ minHeight: "calc(100vh - 170px)", paddingTop: 4, paddingBottom: 4 }}>
+            <Box
+              sx={{
+                minHeight: "calc(100vh - 170px)",
+                paddingTop: 4,
+                paddingBottom: 4,
+              }}
+            >
               {/* <Outlet /> */}
               {children}
               {/* <Index /> */}

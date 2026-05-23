@@ -171,7 +171,7 @@ export function useDespesas(params?: UseDespesasProps) {
   const handleDelete = useCallback(async (despesa: Despesa) => {
     const confirmed = await confirm.delete({
       title: "Excluir Despesa?",
-      description: `Você está prestes a remover a despesa "${despesa.nome}". Essa ação não poderá ser desfeita.`,
+      description: `Você está prestes a remover a despesa "${despesa.nome}".`,
       confirmText: "Excluir Despesa",
     });
     if (!confirmed) return;

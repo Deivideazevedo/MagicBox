@@ -148,6 +148,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
 
           {options?.description && (
             <Typography
+              component="div"
               variant="body1"
               color="text.secondary"
               sx={{ mb: options.children ? 2 : 0, lineHeight: 1.6 }}

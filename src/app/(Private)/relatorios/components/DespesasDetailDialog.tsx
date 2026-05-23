@@ -161,8 +161,6 @@ export default function DespesasDetailDialog({
       "Você pagou exatamente o valor previsto de agendamentos e projeções.";
   }
 
-
-
   return (
     <Dialog
       open={open}

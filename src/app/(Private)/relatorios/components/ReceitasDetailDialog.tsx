@@ -59,7 +59,7 @@ export default function ReceitasDetailDialog({
   const receitasPagas = resumo.receitasPagas ?? 0;
   const totalReceitas = resumo.totalReceitas ?? 0;
   const diffReceitas = receitasPagas - totalReceitas;
-  
+
   const qtdReceitasAtivas = resumo.qtdReceitasAtivas ?? 0;
   const qtdReceitasInativas = resumo.qtdReceitasInativas ?? 0;
   const qtdReceitasTotal = resumo.qtdReceitasTotal ?? 0;
@@ -68,8 +68,8 @@ export default function ReceitasDetailDialog({
     diffReceitas < 0
       ? theme.palette.error.main
       : diffReceitas > 0
-      ? theme.palette.success.main
-      : theme.palette.text.secondary;
+        ? theme.palette.success.main
+        : theme.palette.text.secondary;
 
   let diffDescription = "";
   if (diffReceitas > 0) {
@@ -77,7 +77,8 @@ export default function ReceitasDetailDialog({
   } else if (diffReceitas < 0) {
     diffDescription = `Faltou receber ${formatCurrency(Math.abs(diffReceitas))} em agendamentos ou projeções para atingir o valor previsto para este período.`;
   } else {
-    diffDescription = "Você recebeu exatamente o valor previsto de agendamentos e projeções.";
+    diffDescription =
+      "Você recebeu exatamente o valor previsto de agendamentos e projeções.";
   }
 
   return (
@@ -133,7 +134,11 @@ export default function ReceitasDetailDialog({
             Estruturação das Receitas
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: "text.secondary" }}>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ color: "text.secondary" }}
+        >
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
@@ -152,7 +157,8 @@ export default function ReceitasDetailDialog({
           color="text.secondary"
           sx={{ fontSize: "0.85rem", mb: 0.5 }}
         >
-          Entenda detalhadamente como os recebimentos são exibidos no seu painel da MagicBox:
+          Entenda detalhadamente como os recebimentos são exibidos no seu painel
+          da MagicBox:
         </Typography>
 
         <Box display="flex" flexDirection="column" gap={2}>
@@ -192,7 +198,9 @@ export default function ReceitasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Este valor indica o total de recebimentos (pagamentos confirmados) realizados dentro do período filtrado. É o número principal em destaque no topo do card.
+              Este valor indica o total de recebimentos (pagamentos confirmados)
+              realizados dentro do período filtrado. É o número principal em
+              destaque no topo do card.
             </Typography>
           </Box>
 
@@ -232,7 +240,10 @@ export default function ReceitasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Representa a soma de todos os agendamentos ou projeções estimadas para o período. Caso o botão de "Exibir Projeções" esteja desativado, as projeções recorrentes são desconsideradas deste cálculo.
+              Representa a soma de todos os agendamentos ou projeções estimadas
+              para o período. Caso o botão de "Exibir Projeções" esteja
+              desativado, as projeções recorrentes são desconsideradas deste
+              cálculo.
             </Typography>
           </Box>
 
@@ -393,7 +404,8 @@ export default function ReceitasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Visão quantitativa de todas as fontes de receita cadastradas e monitoradas na sua conta.
+              Visão quantitativa de todas as fontes de receita cadastradas e
+              monitoradas na sua conta.
             </Typography>
           </Box>
         </Box>

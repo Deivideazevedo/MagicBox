@@ -94,7 +94,7 @@ function LancamentosPageContent() {
       confirm.delete({
         title: "Excluir Lançamento?",
         description: (
-          <Typography variant="body1" color="text.secondary">
+          <Box color="text.secondary">
             Você está prestes a remover{" "}
             <Box
               component="span"
@@ -104,13 +104,10 @@ function LancamentosPageContent() {
             >
               "{lancamento.observacao || `Lançamento #${lancamento.id}`}"
             </Box>
-            <br />
             <Typography variant="body2" color="textSecondary" mt={1}>
               Valor: R$ {Number(lancamento.valor || 0).toFixed(2)}
             </Typography>
-            <br />
-            Essa ação não poderá ser desfeita.
-          </Typography>
+          </Box>
         ),
         onConfirm: async () => {
           try {
@@ -130,7 +127,7 @@ function LancamentosPageContent() {
     confirm.delete({
       title: "Excluir Lançamentos Selecionados?",
       description: (
-        <Typography variant="body1" color="text.secondary">
+        <Box color="text.secondary">
           Você está prestes a remover{" "}
           <Box
             component="span"
@@ -140,13 +137,7 @@ function LancamentosPageContent() {
           >
             {selectedIds.length} lançamentos selecionados
           </Box>
-          <br />
-          <Typography variant="body2" color="textSecondary" mt={1}>
-            Esta ação removerá todos os itens marcados na tabela.
-          </Typography>
-          <br />
-          Essa ação não poderá ser desfeita.
-        </Typography>
+        </Box>
       ),
       onConfirm: async () => {
         try {
@@ -252,6 +243,7 @@ function LancamentosPageContent() {
               <Box ref={tourRefs.tabelaRef}>
                 <CustomTable
                   data={fullLancamentos}
+                  selectedIds={selectedIds}
                   actions={[
                     {
                       title: "Visualizar",

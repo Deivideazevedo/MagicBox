@@ -37,6 +37,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { ptBR as ptBRDate } from "date-fns/locale";
+import { isEqual } from "lodash";
 
 // Types
 import { Lancamento } from "@/core/lancamentos/types";
@@ -266,6 +267,9 @@ interface CustomTableProps {
 
   /** Refs opcionais do Product Tour */
   refs?: any;
+
+  /** IDs selecionados de fora (opcional, para tornar a seleção controlada) */
+  selectedIds?: number[];
 }
 
 /**
@@ -284,23 +288,8 @@ export function CustomTable({
   onSelectionChange,
   onBulkDelete,
   refs,
+  selectedIds = [],
 }: CustomTableProps) {
-  // Estado de seleção
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  // Armazena callback latest para evitar stale closure vazando
-  const onSelectionChangeRef = useRef(onSelectionChange);
-  useEffect(() => {
-    onSelectionChangeRef.current = onSelectionChange;
-  }, [onSelectionChange]);
-
-  // Limpar seleção ao mudar de página
-  useEffect(() => {
-    setSelectedIds([]);
-    if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page]);
-
   // 🔍 Hook de filtro (interno)
   const { filteredData, filterText, setFilterText } = useTableFilter({
     data,
@@ -317,38 +306,33 @@ export function CustomTable({
   const handleReset = () => {
     setFilterText("");
     resetSort();
-    setSelectedIds([]);
-    if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
+    if (onSelectionChange) onSelectionChange([]);
     pagination.onRowsPerPageChange({
       target: { value: String(10) },
     } as React.ChangeEvent<HTMLInputElement>);
     pagination.onPageChange(null, 0);
   };
 
-  // Handlers de seleção resolvidos via callback sem depender da closure da row memorizada
+  // Handlers de seleção 100% controlados pelo componente pai
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.checked) {
-      const allIds = sortedData.map((row) => row.id);
-      setSelectedIds(allIds);
-      if (onSelectionChangeRef.current) onSelectionChangeRef.current(allIds);
-    } else {
-      setSelectedIds([]);
-      if (onSelectionChangeRef.current) onSelectionChangeRef.current([]);
+    if (onSelectionChange) {
+      if (event.target.checked) {
+        const allIds = sortedData.map((row) => row.id);
+        onSelectionChange(allIds);
+      } else {
+        onSelectionChange([]);
+      }
     }
   };
 
   const handleSelectOne = useCallback((id: number) => {
-    setSelectedIds((prev) => {
-      const newSelectedIds = prev.includes(id)
-        ? prev.filter((selectedId) => selectedId !== id)
-        : [...prev, id];
-        
-      if (onSelectionChangeRef.current) {
-        onSelectionChangeRef.current(newSelectedIds);
-      }
-      return newSelectedIds;
-    });
-  }, []);
+    if (onSelectionChange) {
+      const newSelectedIds = selectedIds.includes(id)
+        ? selectedIds.filter((selectedId) => selectedId !== id)
+        : [...selectedIds, id];
+      onSelectionChange(newSelectedIds);
+    }
+  }, [selectedIds, onSelectionChange]);
 
   // 📏 Calcular total de colunas para colSpan (8 colunas + 1 checkbox + 1 ações)
   const totalColumns = TABLE_COLUMNS.length + 2;

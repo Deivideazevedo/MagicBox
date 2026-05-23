@@ -10,6 +10,7 @@ import {
 import {
   Alert,
   Box,
+  Checkbox,
   CircularProgress,
   Collapse,
   Container,
@@ -106,6 +107,9 @@ export default function RelatoriosPage() {
     evolucaoAnual,
     isLoadingEvolucao,
     anoReferencia,
+    isTodoDespesa,
+    isTodoReceita,
+    isTodoMeta,
   } = useRelatorios();
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
@@ -154,11 +158,121 @@ export default function RelatoriosPage() {
       .sort((a, b) => fnCompareValues(a.dataRef, b.dataRef));
   }, [historicoItem, incluirProjecaoTabela]);
 
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [lastSelectedMonth, setLastSelectedMonth] = useState<string | null>(
+    null,
+  );
+
+  const handleSelectAllMonths = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (event.target.checked) {
+      setSelectedMonths(historicoConsolidado.map((h) => h.dataRef));
+    } else {
+      setSelectedMonths([]);
+    }
+    setLastSelectedMonth(null);
+  };
+
+  const handleSelectMonth = (dataRef: string, event?: React.MouseEvent) => {
+    setSelectedMonths((prev) => {
+      const targetExists = prev.includes(dataRef);
+      const isSelecting = !targetExists;
+
+      if (event?.shiftKey && lastSelectedMonth) {
+        const listRefs = historicoConsolidado.map((h) => h.dataRef);
+        const lastIdx = listRefs.indexOf(lastSelectedMonth);
+        const currentIdx = listRefs.indexOf(dataRef);
+
+        if (lastIdx !== -1 && currentIdx !== -1) {
+          const start = Math.min(lastIdx, currentIdx);
+          const end = Math.max(lastIdx, currentIdx);
+          const intervalRefs = listRefs.slice(start, end + 1);
+
+          let newSelection = [...prev];
+          if (isSelecting) {
+            intervalRefs.forEach((ref) => {
+              if (!newSelection.includes(ref)) {
+                newSelection.push(ref);
+              }
+            });
+          } else {
+            newSelection = newSelection.filter(
+              (ref) => !intervalRefs.includes(ref),
+            );
+          }
+          setLastSelectedMonth(dataRef);
+          return newSelection;
+        }
+      }
+
+      setLastSelectedMonth(dataRef);
+      return targetExists
+        ? prev.filter((ref) => ref !== dataRef)
+        : [...prev, dataRef];
+    });
+  };
+
+  const totalizadoresHistorico = useMemo(() => {
+    const mesesSelecionados = historicoConsolidado.filter((h) =>
+      selectedMonths.includes(h.dataRef),
+    );
+
+    const sumPrevisto = mesesSelecionados.reduce(
+      (acc, h) => acc + h.previsto,
+      0,
+    );
+    const sumRealizado = mesesSelecionados.reduce(
+      (acc, h) => acc + h.totalPago,
+      0,
+    );
+    const sumDiferenca = mesesSelecionados.reduce(
+      (acc, h) => acc + h.restante,
+      0,
+    );
+
+    let labelPrevisto = "Previsto";
+    let labelRealizado = "Realizado";
+    let labelDiferenca = "Líquido";
+
+    let colorDiferenca = "text.secondary";
+    if (sumDiferenca > 0) colorDiferenca = "success.main";
+    else if (sumDiferenca < 0) colorDiferenca = "error.main";
+
+    if (isTodoDespesa) {
+      labelPrevisto = "Previsto";
+      labelRealizado = "Pago";
+      labelDiferenca = sumDiferenca >= 0 ? "Economia" : "Diferença";
+    } else if (isTodoReceita) {
+      labelPrevisto = "A Receber";
+      labelRealizado = "Recebido";
+      labelDiferenca = sumDiferenca >= 0 ? "Excesso" : "Restante";
+    } else {
+      // Misto
+      if (sumDiferenca > 0) {
+        labelDiferenca = "Superávit";
+      } else if (sumDiferenca < 0) {
+        labelDiferenca = "Déficit";
+      }
+    }
+
+    return {
+      sumPrevisto,
+      sumRealizado,
+      sumDiferenca,
+      labelPrevisto,
+      labelRealizado,
+      labelDiferenca,
+      colorDiferenca,
+    };
+  }, [historicoConsolidado, selectedMonths, isTodoDespesa, isTodoReceita]);
+
   const handleExportPDF = async () => {
     setGerandoPdf(true);
     try {
       const { pdf } = await import("@react-pdf/renderer");
-      const { RelatorioPDFTemplate } = await import("./components/pdf/RelatorioPDFTemplate");
+      const { RelatorioPDFTemplate } =
+        await import("./components/pdf/RelatorioPDFTemplate");
 
       const blob = await pdf(
         <RelatorioPDFTemplate
@@ -787,7 +901,11 @@ export default function RelatoriosPage() {
                                             <Box
                                               sx={{ flex: 1, overflow: "auto" }}
                                             >
-                                              <TableContainer>
+                                              <TableContainer
+                                                sx={{
+                                                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+                                                }}
+                                              >
                                                 <Table size="small">
                                                   <TableHead>
                                                     <TableRow
@@ -805,17 +923,45 @@ export default function RelatoriosPage() {
                                                           py: histPaddingHeader,
                                                         }}
                                                       >
-                                                        <Typography
-                                                          variant="caption"
-                                                          fontWeight={800}
-                                                          color="text.secondary"
+                                                        <Box
                                                           sx={{
-                                                            whiteSpace:
-                                                              "nowrap",
+                                                            display: "flex",
+                                                            alignItems:
+                                                              "center",
+                                                            gap: 1,
                                                           }}
                                                         >
-                                                          REFERÊNCIA
-                                                        </Typography>
+                                                          <Checkbox
+                                                            size="small"
+                                                            checked={
+                                                              selectedMonths.length ===
+                                                                historicoConsolidado.length &&
+                                                              historicoConsolidado.length >
+                                                                0
+                                                            }
+                                                            indeterminate={
+                                                              selectedMonths.length >
+                                                                0 &&
+                                                              selectedMonths.length <
+                                                                historicoConsolidado.length
+                                                            }
+                                                            onChange={
+                                                              handleSelectAllMonths
+                                                            }
+                                                            sx={{ p: 0 }}
+                                                          />
+                                                          <Typography
+                                                            variant="caption"
+                                                            fontWeight={800}
+                                                            color="text.secondary"
+                                                            sx={{
+                                                              whiteSpace:
+                                                                "nowrap",
+                                                            }}
+                                                          >
+                                                            REFERÊNCIA
+                                                          </Typography>
+                                                        </Box>
                                                       </TableCell>
                                                       <TableCell
                                                         align="center"
@@ -862,9 +1008,14 @@ export default function RelatoriosPage() {
                                                       (h, i) => (
                                                         <TableRow
                                                           key={i}
+                                                          onClick={(e) =>
+                                                            handleSelectMonth(
+                                                              h.dataRef,
+                                                              e,
+                                                            )
+                                                          }
                                                           sx={{
-                                                            "&:last-child td, &:last-child th":
-                                                              { border: 0 },
+                                                            cursor: "pointer",
                                                             "&:hover": {
                                                               bgcolor: alpha(
                                                                 theme.palette
@@ -884,7 +1035,42 @@ export default function RelatoriosPage() {
                                                               py: histPaddingRow,
                                                             }}
                                                           >
-                                                            {h.referencia}
+                                                            <Box
+                                                              sx={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                  "center",
+                                                                gap: 1,
+                                                              }}
+                                                            >
+                                                              <Checkbox
+                                                                size="small"
+                                                                checked={selectedMonths.includes(
+                                                                  h.dataRef,
+                                                                )}
+                                                                onClick={(
+                                                                  e,
+                                                                ) => {
+                                                                  e.stopPropagation();
+                                                                  handleSelectMonth(
+                                                                    h.dataRef,
+                                                                    e,
+                                                                  );
+                                                                }}
+                                                                onChange={() => {}}
+                                                                sx={{ p: 0 }}
+                                                              />
+                                                              <Typography
+                                                                variant="body2"
+                                                                fontWeight={700}
+                                                                sx={{
+                                                                  color:
+                                                                    "primary.main",
+                                                                }}
+                                                              >
+                                                                {h.referencia}
+                                                              </Typography>
+                                                            </Box>
                                                           </TableCell>
                                                           <TableCell
                                                             align="center"
@@ -920,8 +1106,9 @@ export default function RelatoriosPage() {
                                                               <Box
                                                                 component="span"
                                                                 sx={{
-                                                                  fontWeight: 700,
-                                                                  opacity: 0.3,
+                                                                  fontWeight: 500,
+                                                                  color:
+                                                                    "text.secondary",
                                                                 }}
                                                               >
                                                                 /
@@ -980,6 +1167,171 @@ export default function RelatoriosPage() {
                                                   </TableBody>
                                                 </Table>
                                               </TableContainer>
+
+                                              {/* Bloco de Totalizadores Premium no Rodapé */}
+                                              <Grid
+                                                container
+                                                spacing={{ xs: 1, sm: 1.5 }}
+                                                sx={{
+                                                  p: { xs: 1, sm: 2 },
+                                                }}
+                                              >
+                                                {[
+                                                  {
+                                                    label:
+                                                      totalizadoresHistorico.labelPrevisto,
+                                                    value:
+                                                      totalizadoresHistorico.sumPrevisto,
+                                                    color: "text.primary",
+                                                    formatValue: (
+                                                      val: number,
+                                                    ) => formatCurrency(val),
+                                                  },
+                                                  {
+                                                    label:
+                                                      totalizadoresHistorico.labelRealizado,
+                                                    value:
+                                                      totalizadoresHistorico.sumRealizado,
+                                                    color: "text.primary",
+                                                    formatValue: (
+                                                      val: number,
+                                                    ) => formatCurrency(val),
+                                                  },
+                                                  {
+                                                    label:
+                                                      totalizadoresHistorico.labelDiferenca,
+                                                    value:
+                                                      totalizadoresHistorico.sumDiferenca,
+                                                    color:
+                                                      totalizadoresHistorico.colorDiferenca,
+                                                    formatValue: (
+                                                      val: number,
+                                                    ) => {
+                                                      const abs = Math.abs(val);
+                                                      const f =
+                                                        formatCurrency(abs);
+                                                      if (val > 0)
+                                                        return `+${f}`;
+                                                      if (val < 0)
+                                                        return `-${f}`;
+                                                      return f;
+                                                    },
+                                                  },
+                                                ].map((card, idx) => (
+                                                  <Grid
+                                                    item
+                                                    xs={12}
+                                                    sm={12}
+                                                    md={12}
+                                                    lg={4}
+                                                    key={idx}
+                                                  >
+                                                    <Paper
+                                                      variant="outlined"
+                                                      sx={{
+                                                        p: {
+                                                          xs: 1.2,
+                                                          lg: 1,
+                                                        },
+                                                        borderRadius: 2,
+                                                        // bgcolor: alpha(
+                                                        //   theme.palette.primary
+                                                        //     .main,
+                                                        //   0.015,
+                                                        // ),
+                                                        borderColor: alpha(
+                                                          theme.palette.primary
+                                                            .main,
+                                                          0.2,
+                                                        ),
+                                                        display: "flex",
+                                                        flexDirection: {
+                                                          xs: "row",
+                                                          lg: "column",
+                                                        },
+                                                        alignItems: "center",
+                                                        justifyContent: {
+                                                          xs: "space-between",
+                                                          lg: "center",
+                                                        },
+                                                        gap: 0.5,
+                                                        transition:
+                                                          "all 0.2s ease-in-out",
+                                                        "&:hover": {
+                                                          transform:
+                                                            "translateY(-1px)",
+                                                          boxShadow: `0 3px 10px ${alpha(theme.palette.primary.main, 0.05)}`,
+                                                          borderColor: alpha(
+                                                            theme.palette
+                                                              .primary.main,
+                                                            0.4,
+                                                          ),
+                                                        },
+                                                      }}
+                                                    >
+                                                      <Typography
+                                                        variant="caption"
+                                                        fontWeight={800}
+                                                        color="info.main"
+                                                        sx={{
+                                                          textTransform:
+                                                            "uppercase",
+                                                          letterSpacing: {
+                                                            xs: 0.2,
+                                                            sm: 0.5,
+                                                            lg: 0.75,
+                                                          },
+                                                          fontSize: {
+                                                            xs: "0.72rem",
+                                                            sm: "0.65rem",
+                                                            lg: "0.68rem",
+                                                            xl: "0.75rem",
+                                                          },
+                                                          whiteSpace: "nowrap",
+                                                          overflow: "hidden",
+                                                          textOverflow:
+                                                            "ellipsis",
+                                                          width: {
+                                                            xs: "auto",
+                                                            lg: "100%",
+                                                          },
+                                                          textAlign: {
+                                                            xs: "left",
+                                                            lg: "center",
+                                                          },
+                                                        }}
+                                                      >
+                                                        {card.label}
+                                                      </Typography>
+                                                      <Typography
+                                                        variant="subtitle1"
+                                                        fontWeight={800}
+                                                        color={card.color}
+                                                        sx={{
+                                                          fontSize: {
+                                                            xs: "0.9rem",
+                                                            sm: "0.85rem",
+                                                            lg: "0.74rem",
+                                                            xl: "0.85rem",
+                                                          },
+                                                          whiteSpace: "nowrap",
+                                                          overflow: "hidden",
+                                                          textOverflow:
+                                                            "ellipsis",
+                                                          textAlign: {
+                                                            xs: "right",
+                                                            lg: "center",
+                                                          },
+                                                        }}
+                                                      >
+                                                        {card.formatValue(
+                                                          card.value,
+                                                        )}
+                                                      </Typography>
+                                                    </Paper>
+                                                  </Grid>
+                                                ))}
+                                              </Grid>
                                             </Box>
                                           )}
                                         </Paper>

@@ -109,7 +109,11 @@ export default function MetasDetailDialog({
             Estruturação das Metas
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" sx={{ color: "text.secondary" }}>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ color: "text.secondary" }}
+        >
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
@@ -128,7 +132,8 @@ export default function MetasDetailDialog({
           color="text.secondary"
           sx={{ fontSize: "0.85rem", mb: 0.5 }}
         >
-          Entenda detalhadamente como os montantes de metas são exibidos no seu painel da MagicBox:
+          Entenda detalhadamente como os montantes de metas são exibidos no seu
+          painel da MagicBox:
         </Typography>
 
         <Box display="flex" flexDirection="column" gap={2}>
@@ -168,7 +173,9 @@ export default function MetasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Este valor indica quanto foi guardado especificamente dentro do período filtrado. É o número principal em destaque no topo do card.
+              Este valor indica quanto foi guardado especificamente dentro do
+              período filtrado. É o número principal em destaque no topo do
+              card.
             </Typography>
           </Box>
 
@@ -256,7 +263,8 @@ export default function MetasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Objetivos financeiros estruturados (ex: comprar um carro, viagem de férias). Possuem data limite definida e valor de alvo final.
+              Objetivos financeiros estruturados (ex: comprar um carro, viagem
+              de férias). Possuem data limite definida e valor de alvo final.
             </Typography>
           </Box>
 
@@ -296,7 +304,9 @@ export default function MetasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Poupança livre e descompromissada, ideal para criar reservas financeiras gerais sem a necessidade de estipular prazos ou limites finais.
+              Poupança livre e descompromissada, ideal para criar reservas
+              financeiras gerais sem a necessidade de estipular prazos ou
+              limites finais.
             </Typography>
           </Box>
 
@@ -336,7 +346,8 @@ export default function MetasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Soma de todos os valores planejados e livres adicionados até hoje. Representa o patrimônio total guardado no módulo de metas.
+              Soma de todos os valores planejados e livres adicionados até hoje.
+              Representa o patrimônio total guardado no módulo de metas.
             </Typography>
           </Box>
 
@@ -457,7 +468,8 @@ export default function MetasDetailDialog({
               color="text.secondary"
               sx={{ display: "block", fontSize: "0.75rem", lineHeight: 1.35 }}
             >
-              Visão quantitativa de todos os seus objetivos cadastrados e monitorados ativamente no sistema.
+              Visão quantitativa de todos os seus objetivos cadastrados e
+              monitorados ativamente no sistema.
             </Typography>
           </Box>
         </Box>

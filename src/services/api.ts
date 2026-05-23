@@ -73,7 +73,7 @@ const baseQueryInterceptor: BaseQueryFn<
 
     // Mostrar notificação para o usuário
     import("react-hot-toast").then(({ toast }) => {
-      toast.error(message);
+      toast.error(message, { id: message });
     });
 
     // Log detalhado para desenvolvimento
@@ -94,7 +94,7 @@ export const api = createApi({
   reducerPath: "api",
   keepUnusedDataFor: 300, // Mantém dados por 5 minutos se não houver componentes montados
   refetchOnMountOrArgChange: 300, // Revalida automaticamente se o cache for mais antigo que 5 min ao montar
-  refetchOnFocus: true, // Revalida quando a janela ganha foco
+  // refetchOnFocus: true, // Revalida quando a janela ganha foco
   refetchOnReconnect: true, // Revalida quando a conexão é recuperada
   baseQuery: baseQueryInterceptor,
   tagTypes: [

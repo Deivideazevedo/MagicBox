@@ -235,7 +235,7 @@ export function useMetas() {
 
     const confirmed = await confirm.delete({
       title: "Excluir Meta?",
-      description: `Você está prestes a remover a meta "${target.nome}". Essa ação não poderá ser desfeita.`,
+      description: `Você está prestes a remover a meta "${target.nome}".`,
       confirmText: "Sim, excluir",
     });
     if (!confirmed) return;

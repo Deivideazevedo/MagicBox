@@ -1,30 +1,27 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
-import { useRouter } from "next/navigation";
-import type { UIMessage } from "ai";
-import toast from "react-hot-toast";
+import { alpha } from "@mui/material";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
-import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
+import { keyframes, styled, useTheme } from "@mui/material/styles";
+import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
-import Divider from "@mui/material/Divider";
+import Typography from "@mui/material/Typography";
 import {
   IconChevronRight,
-  IconSend,
   IconRobotFace,
+  IconSend,
   IconTrash,
 } from "@tabler/icons-react";
+import type { UIMessage } from "ai";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
-import { styled, useTheme, keyframes } from "@mui/material/styles";
-import { alpha } from "@mui/material";
 
 import ChatSuggestions from "./ChatSuggestions";
 
@@ -416,268 +413,261 @@ const ChatDrawerContent = ({ open, onClose }: ChatDrawerProps) => {
 
   return (
     <DrawerContainer>
-        {/* Header */}
-        <HeaderBox>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconRobotFace size={26} />
-            <Typography variant="subtitle1" fontWeight={600}>
-              Assistente MagicBox
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <Tooltip title="Limpar conversa">
-              <IconButton
-                color="inherit"
-                onClick={handleLimparChat}
-                size="small"
-              >
-                <IconTrash size={18} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Minimizar">
-              <IconButton color="inherit" onClick={onClose} size="small">
-                <IconChevronRight size={20} />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        </HeaderBox>
+      {/* Header */}
+      <HeaderBox>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconRobotFace size={26} />
+          <Typography variant="subtitle1" fontWeight={600}>
+            Assistente MagicBox
+          </Typography>
+        </Stack>
+        <Stack direction="row" spacing={2}>
+          <Tooltip title="Limpar conversa">
+            <IconButton color="inherit" onClick={handleLimparChat} size="small">
+              <IconTrash size={18} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Minimizar">
+            <IconButton color="inherit" onClick={onClose} size="small">
+              <IconChevronRight size={20} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </HeaderBox>
 
-        {/* Histórico */}
-        <MessageList>
-          {visibleMessages.length === 0 && !isLoading ? (
-            <ChatSuggestions
-              onSelectQuestion={(q) => sendMessage({ text: q })}
-            />
-          ) : (
-            visibleMessages.map((msg: UIMessage, index: number) => {
-              const texto = extrairTexto(msg);
-              if (!texto) return null;
+      {/* Histórico */}
+      <MessageList>
+        {visibleMessages.length === 0 && !isLoading ? (
+          <ChatSuggestions onSelectQuestion={(q) => sendMessage({ text: q })} />
+        ) : (
+          visibleMessages.map((msg: UIMessage, index: number) => {
+            const texto = extrairTexto(msg);
+            if (!texto) return null;
 
-              const ts = timestamps[msg.id];
-              const hora = ts ? formatarHora(ts) : "";
-              const isNew = !shownMessagesRef.current.has(msg.id);
+            const ts = timestamps[msg.id];
+            const hora = ts ? formatarHora(ts) : "";
+            const isNew = !shownMessagesRef.current.has(msg.id);
 
-              return (
-                <React.Fragment key={msg.id}>
-                  {renderDateSeparator(msg, index)}
+            return (
+              <React.Fragment key={msg.id}>
+                {renderDateSeparator(msg, index)}
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems:
-                        msg.role === "user" ? "flex-end" : "flex-start",
-                      ...(isNew && {
-                        animation: `${slideUp} 0.35s ease-out both`,
-                      }),
-                    }}
-                  >
-                    <MessageBubble isUser={msg.role === "user"}>
-                      {msg.role === "user" ? (
-                        <Typography
-                          variant="body2"
-                          fontSize={13}
-                          fontWeight={500}
-                        >
-                          {texto}
-                        </Typography>
-                      ) : (
-                        <Box
-                          sx={{
-                            position: "relative",
-                            "& p:last-child::after, & li:last-child::after":
-                              status === "streaming" &&
-                              index === visibleMessages.length - 1
-                                ? {
-                                    content: '""',
-                                    display: "inline-block",
-                                    width: "6px",
-                                    height: "14px",
-                                    backgroundColor: "primary.main",
-                                    ml: 0.5,
-                                    verticalAlign: "middle",
-                                    borderRadius: "2px",
-                                    animation: `${blink} 1s step-end infinite`,
-                                  }
-                                : {},
-                          }}
-                        >
-                          <ReactMarkdown
-                            remarkPlugins={[remarkBreaks]}
-                            components={{
-                              a: ({ href, children }) => {
-                                const isInternal = href?.startsWith("/");
-                                if (isInternal) {
-                                  return (
-                                    <a
-                                      href={href}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        router.push(href as string);
-                                        onClose(); // Fecha a gaveta ao navegar para uma rota interna
-                                      }}
-                                    >
-                                      {children}
-                                    </a>
-                                  );
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                    ...(isNew && {
+                      animation: `${slideUp} 0.35s ease-out both`,
+                    }),
+                  }}
+                >
+                  <MessageBubble isUser={msg.role === "user"}>
+                    {msg.role === "user" ? (
+                      <Typography
+                        variant="body2"
+                        fontSize={13}
+                        fontWeight={500}
+                      >
+                        {texto}
+                      </Typography>
+                    ) : (
+                      <Box
+                        sx={{
+                          position: "relative",
+                          "& p:last-child::after, & li:last-child::after":
+                            status === "streaming" &&
+                            index === visibleMessages.length - 1
+                              ? {
+                                  content: '""',
+                                  display: "inline-block",
+                                  width: "6px",
+                                  height: "14px",
+                                  backgroundColor: "primary.main",
+                                  ml: 0.5,
+                                  verticalAlign: "middle",
+                                  borderRadius: "2px",
+                                  animation: `${blink} 1s step-end infinite`,
                                 }
+                              : {},
+                        }}
+                      >
+                        <ReactMarkdown
+                          remarkPlugins={[remarkBreaks]}
+                          components={{
+                            a: ({ href, children }) => {
+                              const isInternal = href?.startsWith("/");
+                              if (isInternal) {
                                 return (
                                   <a
                                     href={href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      router.push(href as string);
+                                      onClose(); // Fecha a gaveta ao navegar para uma rota interna
+                                    }}
                                   >
                                     {children}
                                   </a>
                                 );
-                              },
-                            }}
-                          >
-                            {texto}
-                          </ReactMarkdown>
-                        </Box>
-                      )}
-                    </MessageBubble>
-                    {hora && (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          opacity: 0.45,
-                          fontSize: "0.65rem",
-                          mt: 0.3,
-                          px: 0.5,
-                        }}
-                      >
-                        {hora}
-                      </Typography>
+                              }
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {children}
+                                </a>
+                              );
+                            },
+                          }}
+                        >
+                          {texto}
+                        </ReactMarkdown>
+                      </Box>
                     )}
-                  </Box>
-                </React.Fragment>
-              );
-            })
-          )}
-          {isLoading &&
-            (messages[messages.length - 1]?.role !== "assistant" ||
-              !extrairTexto(messages[messages.length - 1])) && (
-              <MessageBubble>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ py: 0.5, px: 0.5 }}
+                  </MessageBubble>
+                  {hora && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        opacity: 0.45,
+                        fontSize: "0.65rem",
+                        mt: 0.3,
+                        px: 0.5,
+                      }}
+                    >
+                      {hora}
+                    </Typography>
+                  )}
+                </Box>
+              </React.Fragment>
+            );
+          })
+        )}
+        {isLoading &&
+          (messages[messages.length - 1]?.role !== "assistant" ||
+            !extrairTexto(messages[messages.length - 1])) && (
+            <MessageBubble>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ py: 0.5, px: 0.5 }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    opacity: 0.8,
+                    fontWeight: 500,
+                    letterSpacing: "0.5px",
+                  }}
                 >
-                  <Typography
-                    variant="caption"
+                  Pensando
+                </Typography>
+                <Stack direction="row" spacing={0.5}>
+                  <Box
                     sx={{
-                      opacity: 0.8,
-                      fontWeight: 500,
-                      letterSpacing: "0.5px",
+                      width: 5,
+                      height: 5,
+                      bgcolor: theme.palette.primary.main,
+                      borderRadius: "50%",
+                      animation: `${wave} 1.3s infinite 0s`,
                     }}
-                  >
-                    Pensando
-                  </Typography>
-                  <Stack direction="row" spacing={0.5}>
-                    <Box
-                      sx={{
-                        width: 5,
-                        height: 5,
-                        bgcolor: theme.palette.primary.main,
-                        borderRadius: "50%",
-                        animation: `${wave} 1.3s infinite 0s`,
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        width: 5,
-                        height: 5,
-                        bgcolor: theme.palette.primary.main,
-                        borderRadius: "50%",
-                        animation: `${wave} 1.3s infinite 0.2s`,
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        width: 5,
-                        height: 5,
-                        bgcolor: theme.palette.primary.main,
-                        borderRadius: "50%",
-                        animation: `${wave} 1.3s infinite 0.4s`,
-                      }}
-                    />
-                  </Stack>
+                  />
+                  <Box
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      bgcolor: theme.palette.primary.main,
+                      borderRadius: "50%",
+                      animation: `${wave} 1.3s infinite 0.2s`,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      bgcolor: theme.palette.primary.main,
+                      borderRadius: "50%",
+                      animation: `${wave} 1.3s infinite 0.4s`,
+                    }}
+                  />
                 </Stack>
-              </MessageBubble>
-            )}
-          <div ref={messagesEndRef} />
-        </MessageList>
+              </Stack>
+            </MessageBubble>
+          )}
+        <div ref={messagesEndRef} />
+      </MessageList>
 
-        {/* Input */}
-        <InputContainer onSubmit={handleSubmit}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <TextField
-              fullWidth
-              inputRef={inputRef}
-              variant="outlined"
-              size="small"
-              placeholder="O que deseja consultar?"
-              value={input}
-              onChange={(e) =>
-                setInput(e.target.value.substring(0, MAX_INPUT_CHARS + 100))
-              } // permitimos digitar um pouco mais para ver o erro
-              disabled={isLoading}
-              autoComplete="off"
-              error={input.length > MAX_INPUT_CHARS}
-              helperText={
-                input.length > MAX_INPUT_CHARS
-                  ? `Ops! O limite é de ${MAX_INPUT_CHARS} caracteres. Tente resumir um pouco! ✨`
-                  : ""
-              }
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  height: 40, // Altura fixa para alinhar com o botão
-                  borderRadius: 100,
-                  bgcolor: theme.palette.background.default,
-                },
-                "& .MuiFormHelperText-root": {
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
-                },
-              }}
-            />
-            <IconButton
-              type="submit"
-              disabled={
-                isLoading || !input.trim() || input.length > MAX_INPUT_CHARS
-              }
-              sx={{
-                width: 40, // Mesmo tamanho da altura do input
-                height: 40,
-                bgcolor: "primary.main",
+      {/* Input */}
+      <InputContainer onSubmit={handleSubmit}>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <TextField
+            fullWidth
+            inputRef={inputRef}
+            variant="outlined"
+            size="small"
+            placeholder="O que deseja consultar?"
+            value={input}
+            onChange={(e) =>
+              setInput(e.target.value.substring(0, MAX_INPUT_CHARS + 100))
+            } // permitimos digitar um pouco mais para ver o erro
+            disabled={isLoading}
+            autoComplete="off"
+            error={input.length > MAX_INPUT_CHARS}
+            helperText={
+              input.length > MAX_INPUT_CHARS
+                ? `Ops! O limite é de ${MAX_INPUT_CHARS} caracteres. Tente resumir um pouco! ✨`
+                : ""
+            }
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                height: 40, // Altura fixa para alinhar com o botão
+                borderRadius: 100,
+                bgcolor: theme.palette.background.default,
+              },
+              "& .MuiFormHelperText-root": {
+                fontSize: "0.7rem",
+                fontWeight: 500,
+              },
+            }}
+          />
+          <IconButton
+            type="submit"
+            disabled={
+              isLoading || !input.trim() || input.length > MAX_INPUT_CHARS
+            }
+            sx={{
+              width: 40, // Mesmo tamanho da altura do input
+              height: 40,
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              boxShadow: (theme) =>
+                `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+              "&:hover": {
                 color: "primary.contrastText",
-                boxShadow: (theme) =>
-                  `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
-                "&:hover": {
-                  color: "primary.contrastText",
-                  bgcolor: "primary.dark",
-                  transform: "scale(1.05)",
-                },
-                "&.Mui-disabled": {
-                  border: (theme) =>
-                    `1.5px solid ${
-                      theme.palette.mode === "dark"
-                        ? theme.palette.divider
-                        : theme.palette.grey[300]
-                    }`,
-                  boxShadow: "none",
-                },
-                transition: "all 0.2s",
-              }}
-            >
-              <IconSend size={20} />
-            </IconButton>
-          </Stack>
-        </InputContainer>
-      </DrawerContainer>
+                bgcolor: "primary.dark",
+                transform: "scale(1.05)",
+              },
+              "&.Mui-disabled": {
+                border: (theme) =>
+                  `1.5px solid ${
+                    theme.palette.mode === "dark"
+                      ? theme.palette.divider
+                      : theme.palette.grey[300]
+                  }`,
+                boxShadow: "none",
+              },
+              transition: "all 0.2s",
+            }}
+          >
+            <IconSend size={20} />
+          </IconButton>
+        </Stack>
+      </InputContainer>
+    </DrawerContainer>
   );
 };
 
@@ -696,7 +686,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
         },
       }}
     >
-      {open && <ChatDrawerContent open={open} onClose={onClose} />}
+      <ChatDrawerContent open={open} onClose={onClose} />
     </Drawer>
   );
 };

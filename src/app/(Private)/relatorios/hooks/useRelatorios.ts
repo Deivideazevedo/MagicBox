@@ -106,6 +106,18 @@ export function useRelatorios() {
     return "Consolidado";
   }, [selectedItemsDetails]);
 
+  const isTodoDespesa = useMemo(() => {
+    return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "DESPESA");
+  }, [selectedItemsDetails]);
+
+  const isTodoReceita = useMemo(() => {
+    return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "RECEITA");
+  }, [selectedItemsDetails]);
+
+  const isTodoMeta = useMemo(() => {
+    return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "META");
+  }, [selectedItemsDetails]);
+
   // ==================== HISTÓRICO ====================
   const paramsHistorico = useMemo(() => {
     if (selectedItemsDetails.length === 0) return null;
@@ -206,6 +218,9 @@ export function useRelatorios() {
     selectedNames,
     titleHistorico,
     resumoExibido,
+    isTodoDespesa,
+    isTodoReceita,
+    isTodoMeta,
     // Nova API de Evolução
     evolucaoAnual: evolucaoAnual || [],
     isLoadingEvolucao,

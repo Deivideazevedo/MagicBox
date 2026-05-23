@@ -126,7 +126,7 @@ export const useCategorias = ({
   const handleDelete = useCallback(async (categoria: Categoria) => {
     const confirmed = await confirm.delete({
       title: "Excluir Categoria?",
-      description: `Você está prestes a remover a categoria "${categoria.nome}". Essa ação não poderá ser desfeita.`,
+      description: `Você está prestes a remover a categoria "${categoria.nome}".`,
       confirmText: "Excluir Categoria",
     });
     if (!confirmed) return;

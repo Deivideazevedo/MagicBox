@@ -203,7 +203,7 @@ export const useReceitas = ({
   const handleDelete = useCallback(async (receita: Receita) => {
     const confirmed = await confirm.delete({
       title: "Excluir Receita?",
-      description: `Você está prestes a remover a receita "${receita.nome}". Essa ação não poderá ser desfeita.`,
+      description: `Você está prestes a remover a receita "${receita.nome}".`,
       confirmText: "Excluir Receita",
     });
     if (!confirmed) return;
