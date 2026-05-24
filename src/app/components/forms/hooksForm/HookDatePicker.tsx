@@ -85,18 +85,18 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
         },
       }}
       PopperProps={{
-        placement: "bottom-start", // Garante abertura correta em inputs colados nas bordas da tela (ex: Drawers e modais)
-        style: { zIndex: 99999 }, // Força o zIndex de forma inline na raiz do Popper gerado pelo Portal
+        placement: "bottom-end",
         sx: {
-          zIndex: "99999 !important", // Força nas regras CSS
+          zIndex: (theme) => theme.zIndex.modal + 2,
           "& .MuiPaper-root": {
             marginTop: "4px", // Um pequeno espaço visual
+            marginRight: "-45px", // Use isso SÓ SE precisar empurrar mais para a direita
           },
         },
       }}
       DialogProps={{
         sx: {
-          zIndex: (theme) => theme.zIndex.modal + 200, // Garante que no modo mobile/responsivo (Dialog) ele fique na frente!
+          zIndex: (theme) => theme.zIndex.modal + 2, // Garante que no modo mobile/responsivo (Dialog) ele fique na frente!
         },
       }}
       componentsProps={{

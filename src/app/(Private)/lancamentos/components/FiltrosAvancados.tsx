@@ -495,6 +495,7 @@ export default function FiltrosAvancados({
           <Tooltip title="Filtros" arrow>
             <Badge
               badgeContent={quantidadeFiltrosAplicados}
+              showZero
               color="primary"
               anchorOrigin={{
                 vertical: "top",
