@@ -10,16 +10,16 @@ import { PickersDay } from "@mui/x-date-pickers";
 
 type HookDatePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-  Omit<
-    DatePickerProps<Date | null, Date>,
-    "value" | "onChange" | "renderInput"
-  > & {
-    shrinkLabel?: boolean;
-    size?: TextFieldProps["size"];
-    actions?: Array<"today" | "clear" | "accept">;
-    helperText?: React.ReactNode;
-  };
-  
+    Omit<
+      DatePickerProps<Date | null, Date>,
+      "value" | "onChange" | "renderInput"
+    > & {
+      shrinkLabel?: boolean;
+      size?: TextFieldProps["size"];
+      actions?: Array<"today" | "clear" | "accept">;
+      helperText?: React.ReactNode;
+    };
+
 export function HookDatePicker<TFieldValues extends FieldValues>({
   name,
   control,
@@ -62,13 +62,17 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           }}
           sx={{
             "& .MuiInputBase-root": {
-              pr: 0.5, // Reduz padding à direita para acomodar o ícone sem zona morta
+              pr: 1, // Mantém um padding mínimo à direita para a borda
             },
             "& .MuiInputBase-input": {
-              pr: 0.5, // Reduz padding do input de texto real
+              pr: 0, // Permite que o texto utilize o espaço até o limite
+            },
+            "& .MuiInputAdornment-root": {
+              ml: 0, // Remove margem esquerda para aproximar o ícone do texto
             },
             "& .MuiIconButton-root": {
-              p: 0.5, // Reduz o padding do botão de calendário
+              p: 0.5, // Botão compacto
+              mr: -0.25, // Centraliza o botão dentro do padding direito do input
             },
             ...params.sx,
           }}
