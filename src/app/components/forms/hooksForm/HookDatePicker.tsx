@@ -86,8 +86,9 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
       }}
       PopperProps={{
         placement: "bottom-start", // Garante abertura correta em inputs colados nas bordas da tela (ex: Drawers e modais)
+        style: { zIndex: 99999 }, // Força o zIndex de forma inline na raiz do Popper gerado pelo Portal
         sx: {
-          zIndex: (theme) => theme.zIndex.modal + 101,
+          zIndex: "99999 !important", // Força nas regras CSS
           "& .MuiPaper-root": {
             marginTop: "4px", // Um pequeno espaço visual
           },
