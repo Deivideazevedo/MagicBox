@@ -430,8 +430,12 @@ export default function FiltrosAvancados({
     ) {
       count++;
     }
-    // 6. Status (só conta se ativado e diferir do padrão "A")
-    if (filtrosAtivos.includes("status") && formValues.status !== "A") {
+    // 6. Status (só conta se ativado e preenchido com valor diferente de vazio)
+    if (
+      filtrosAtivos.includes("status") &&
+      formValues.status &&
+      String(formValues.status) !== ""
+    ) {
       count++;
     }
 
