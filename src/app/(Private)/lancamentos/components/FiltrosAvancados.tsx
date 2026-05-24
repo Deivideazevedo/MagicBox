@@ -272,6 +272,18 @@ export default function FiltrosAvancados({
     );
   };
 
+  // Retorna os tamanhos de coluna dinâmicos para responsividade com base no campo
+  const getGridSizes = (key: FiltroKey) => {
+    if (key === "periodo") {
+      return { xs: 12, sm: 12, md: 6 };
+    }
+    if (key === "item" || key === "observacao") {
+      return { xs: 12, sm: 6, md: 4 };
+    }
+    // Para campos pequenos (origem, tipo, status)
+    return { xs: 12, sm: 6, md: 2 };
+  };
+
   // Renderiza o campo de acordo com a chave do filtro
   const renderCampoFiltro = (key: FiltroKey) => {
     switch (key) {
@@ -668,14 +680,14 @@ export default function FiltrosAvancados({
           {filtrosAtivos.length > 0 &&
             filtrosAtivos.map((key) => {
               const definicao = FILTROS_DISPONIVEIS.find((f) => f.key === key);
-              const isPeriodo = key === "periodo";
+              const sizes = getGridSizes(key);
 
               return (
                 <Grid
                   item
-                  xs={12}
-                  sm={isPeriodo ? 12 : 6}
-                  md={isPeriodo ? 6 : 3}
+                  xs={sizes.xs}
+                  sm={sizes.sm}
+                  md={sizes.md}
                   key={key}
                 >
                   <Box position="relative">
