@@ -1,4 +1,4 @@
-import { DatePicker, DatePickerProps } from "@mui/x-date-pickers/DatePicker";
+import { DesktopDatePicker, DesktopDatePickerProps } from "@mui/x-date-pickers/DesktopDatePicker";
 import { Badge, TextField, TextFieldProps } from "@mui/material";
 import {
   FieldValues,
@@ -11,7 +11,7 @@ import { PickersDay } from "@mui/x-date-pickers";
 type HookDatePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<
-      DatePickerProps<Date | null, Date>,
+      DesktopDatePickerProps<Date | null, Date>,
       "value" | "onChange" | "renderInput"
     > & {
       shrinkLabel?: boolean;
@@ -36,7 +36,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   } = useController({ name, control, rules });
 
   return (
-    <DatePicker
+    <DesktopDatePicker
       inputFormat="dd/MM/yyyy"
       views={["year", "day"]}
       value={field.value ? new Date(field.value + "T00:00:00") : null}
@@ -62,7 +62,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           }}
           sx={{
             "& .MuiInputBase-root": {
-              pr: 1, // Mantém um padding mínimo à direita para a borda
+              pr: 0.5, // Mantém um padding mínimo à direita para a borda
             },
             "& .MuiInputBase-input": {
               pr: 0, // Permite que o texto utilize o espaço até o limite
