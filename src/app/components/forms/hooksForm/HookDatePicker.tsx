@@ -1,4 +1,4 @@
-import { DesktopDatePicker, DesktopDatePickerProps } from "@mui/x-date-pickers/DesktopDatePicker";
+import { DatePicker, DatePickerProps } from "@mui/x-date-pickers/DatePicker";
 import { Badge, TextField, TextFieldProps } from "@mui/material";
 import {
   FieldValues,
@@ -11,7 +11,7 @@ import { PickersDay } from "@mui/x-date-pickers";
 type HookDatePickerProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
     Omit<
-      DesktopDatePickerProps<Date | null, Date>,
+      DatePickerProps<Date | null, Date>,
       "value" | "onChange" | "renderInput"
     > & {
       shrinkLabel?: boolean;
@@ -36,7 +36,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
   } = useController({ name, control, rules });
 
   return (
-    <DesktopDatePicker
+    <DatePicker
       inputFormat="dd/MM/yyyy"
       views={["year", "day"]}
       value={field.value ? new Date(field.value + "T00:00:00") : null}
@@ -85,12 +85,11 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
         },
       }}
       PopperProps={{
-        placement: "bottom-end",
+        placement: "bottom-start", // Garante abertura correta em inputs colados nas bordas da tela (ex: Drawers e modais)
         sx: {
-          zIndex: (theme) => theme.zIndex.modal + 100,
+          zIndex: (theme) => theme.zIndex.modal + 101,
           "& .MuiPaper-root": {
             marginTop: "4px", // Um pequeno espaço visual
-            marginRight: "-45px", // Use isso SÓ SE precisar empurrar mais para a direita
           },
         },
       }}
