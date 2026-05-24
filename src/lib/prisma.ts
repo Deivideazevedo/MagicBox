@@ -14,7 +14,7 @@ const createPrismaClient = () => {
     // Performance optimizations
     max: 10, // Reduzido para 10 para maior compatibilidade com planos gratuitos (ex: Neon)
     idleTimeoutMillis: 60000, // Aumentado para 60s para manter conexões vivas por mais tempo
-    connectionTimeoutMillis: 5000, 
+    connectionTimeoutMillis: 10000, 
     // Em desenvolvimento, evitamos fechar o pool agressivamente
     allowExitOnIdle: isProduction, 
     ssl: connectionString?.includes("sslmode=verify-full")
