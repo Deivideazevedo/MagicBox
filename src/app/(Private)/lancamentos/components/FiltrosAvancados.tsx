@@ -105,8 +105,8 @@ export default function FiltrosAvancados({
     });
 
   // Filtros ativos (opcionais adicionados pelo usuário)
-  // Agora todos os filtros iniciam vazios conforme solicitação
-  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>(["item"]);
+  // Agora inicia exibindo por padrão Nome (item) e Status
+  const [filtrosAtivos, setFiltrosAtivos] = useState<FiltroKey[]>(["item", "status"]);
 
   // Estado para controlar a expansão do Accordion
   const [expandido, setExpandido] = useState(true);
@@ -264,8 +264,8 @@ export default function FiltrosAvancados({
       observacao: "",
       status: "A",
     });
-    setExpandido(false);
-    setFiltrosAtivos([]);
+    setExpandido(true);
+    setFiltrosAtivos(["item", "status"]);
     setTipoPeriodo("mes");
     handleSearch(
       {
@@ -434,7 +434,7 @@ export default function FiltrosAvancados({
     if (
       filtrosAtivos.includes("status") &&
       formValues.status &&
-      String(formValues.status) !== ""
+      String(formValues.status).trim() !== ""
     ) {
       count++;
     }
