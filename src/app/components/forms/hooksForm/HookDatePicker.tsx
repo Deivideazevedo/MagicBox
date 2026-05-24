@@ -71,6 +71,7 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
       PopperProps={{
         placement: "bottom-end",
         sx: {
+          zIndex: (theme) => theme.zIndex.modal + 100,
           "& .MuiPaper-root": {
             marginTop: "4px", // Um pequeno espaço visual
             marginRight: "-45px", // Use isso SÓ SE precisar empurrar mais para a direita
