@@ -111,7 +111,7 @@ export default function LancamentoDrawer() {
           handleCloseDrawer();
         }}
         sx={{
-          zIndex: (theme) => theme.zIndex.modal + 100,
+          zIndex: (theme) => theme.zIndex.modal + 1,
         }}
         PaperProps={{
           sx: {
@@ -126,40 +126,40 @@ export default function LancamentoDrawer() {
         }}
       >
         <CustomScrollbar sx={{ minHeight: "calc(100vh - 170px)" }}>
-              <Box
-                p={2.3}
-                px={3}
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{
-                  backgroundColor: "background.paper",
-                  borderRadius: 0,
-                }}
-              >
-                <Typography variant="h4" fontWeight={600} color="primary">
-                  {modo === "editar"
-                    ? "Editar Lançamento"
-                    : modo === "pagar"
-                      ? "Efetuar Pagamento"
-                      : "Novo Lançamento"}
-                </Typography>
+          <Box
+            p={2.3}
+            px={3}
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{
+              backgroundColor: "background.paper",
+              borderRadius: 0,
+            }}
+          >
+            <Typography variant="h4" fontWeight={600} color="primary">
+              {modo === "editar"
+                ? "Editar Lançamento"
+                : modo === "pagar"
+                  ? "Efetuar Pagamento"
+                  : "Novo Lançamento"}
+            </Typography>
 
-                <IconButton color="inherit" onClick={handleCloseDrawer}>
-                  <IconX size="1rem" />
-                </IconButton>
-              </Box>
+            <IconButton color="inherit" onClick={handleCloseDrawer}>
+              <IconX size="1rem" />
+            </IconButton>
+          </Box>
 
-              <Divider />
+          <Divider />
 
-              <Formulario
-                lancamentoParaEditar={lancamentoParaEditar}
-                onSuccess={() => {
-                  if (modo !== "novo") handleCloseDrawer();
-                }}
-                initialOrigem={initialOrigem}
-                dadosIniciais={modo === "pagar" ? dadosIniciais : null}
-              />
+          <Formulario
+            lancamentoParaEditar={lancamentoParaEditar}
+            onSuccess={() => {
+              if (modo !== "novo") handleCloseDrawer();
+            }}
+            initialOrigem={initialOrigem}
+            dadosIniciais={modo === "pagar" ? dadosIniciais : null}
+          />
         </CustomScrollbar>
       </Drawer>
     </>

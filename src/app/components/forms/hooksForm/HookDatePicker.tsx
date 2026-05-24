@@ -94,6 +94,11 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
           },
         },
       }}
+      DialogProps={{
+        sx: {
+          zIndex: (theme) => theme.zIndex.modal + 200, // Garante que no modo mobile/responsivo (Dialog) ele fique na frente!
+        },
+      }}
       componentsProps={{
         actionBar: {
           actions: (variant) =>
