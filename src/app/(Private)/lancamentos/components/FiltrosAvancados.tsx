@@ -390,57 +390,11 @@ export default function FiltrosAvancados({
     }
   };
 
-  // Calcula a quantidade de filtros com valor ativo de filtragem
+  // Calcula a quantidade de filtros visíveis/ativos adicionados (retorna 0 se o accordion estiver fechado)
   const quantidadeFiltrosAplicados = useMemo(() => {
-    let count = 0;
-
-    // 1. Nome/Item (só se estiver visível e preenchido)
-    if (filtrosAtivos.includes("item") && formValues.item) {
-      count++;
-    }
-    // 2. Observação
-    if (
-      filtrosAtivos.includes("observacao") &&
-      formValues.observacao &&
-      formValues.observacao.trim() !== ""
-    ) {
-      count++;
-    }
-    // 3. Origem
-    if (
-      filtrosAtivos.includes("origem") &&
-      formValues.origem &&
-      String(formValues.origem) !== ""
-    ) {
-      count++;
-    }
-    // 4. Tipo
-    if (
-      filtrosAtivos.includes("tipo") &&
-      formValues.tipo &&
-      String(formValues.tipo) !== ""
-    ) {
-      count++;
-    }
-    // 5. Período
-    if (
-      filtrosAtivos.includes("periodo") &&
-      formValues.dataInicio &&
-      formValues.dataFim
-    ) {
-      count++;
-    }
-    // 6. Status (só conta se ativado e preenchido com valor diferente de vazio)
-    if (
-      filtrosAtivos.includes("status") &&
-      formValues.status &&
-      String(formValues.status).trim() !== ""
-    ) {
-      count++;
-    }
-
-    return count;
-  }, [filtrosAtivos, formValues]);
+    if (!expandido) return 0;
+    return filtrosAtivos.length;
+  }, [expandido, filtrosAtivos]);
 
   return (
     <Accordion
