@@ -60,6 +60,18 @@ export function HookDatePicker<TFieldValues extends FieldValues>({
             ...params.InputLabelProps,
             shrink: shrinkLabel,
           }}
+          sx={{
+            "& .MuiInputBase-root": {
+              pr: 0.5, // Reduz padding à direita para acomodar o ícone sem zona morta
+            },
+            "& .MuiInputBase-input": {
+              pr: 0.5, // Reduz padding do input de texto real
+            },
+            "& .MuiIconButton-root": {
+              p: 0.5, // Reduz o padding do botão de calendário
+            },
+            ...params.sx,
+          }}
         />
       )}
       PaperProps={{

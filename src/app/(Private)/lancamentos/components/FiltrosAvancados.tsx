@@ -50,7 +50,13 @@ type ItemComOrigem = (Despesa | Receita | Meta) & {
 };
 
 // Definição de filtros opcionais disponíveis
-type FiltroKey = "periodo" | "origem" | "tipo" | "item" | "observacao" | "status";
+type FiltroKey =
+  | "periodo"
+  | "origem"
+  | "tipo"
+  | "item"
+  | "observacao"
+  | "status";
 
 interface FiltroDefinicao {
   key: FiltroKey;
@@ -275,7 +281,7 @@ export default function FiltrosAvancados({
   // Retorna os tamanhos de coluna dinâmicos para responsividade com base no campo
   const getGridSizes = (key: FiltroKey) => {
     if (key === "periodo") {
-      return { xs: 12, sm: 12, md: 6 };
+      return { xs: 12, sm: 6, md: 5 };
     }
     if (key === "item" || key === "observacao") {
       return { xs: 12, sm: 6, md: 4 };
@@ -393,19 +399,35 @@ export default function FiltrosAvancados({
       count++;
     }
     // 2. Observação
-    if (filtrosAtivos.includes("observacao") && formValues.observacao && formValues.observacao.trim() !== "") {
+    if (
+      filtrosAtivos.includes("observacao") &&
+      formValues.observacao &&
+      formValues.observacao.trim() !== ""
+    ) {
       count++;
     }
     // 3. Origem
-    if (filtrosAtivos.includes("origem") && formValues.origem && String(formValues.origem) !== "") {
+    if (
+      filtrosAtivos.includes("origem") &&
+      formValues.origem &&
+      String(formValues.origem) !== ""
+    ) {
       count++;
     }
     // 4. Tipo
-    if (filtrosAtivos.includes("tipo") && formValues.tipo && String(formValues.tipo) !== "") {
+    if (
+      filtrosAtivos.includes("tipo") &&
+      formValues.tipo &&
+      String(formValues.tipo) !== ""
+    ) {
       count++;
     }
     // 5. Período
-    if (filtrosAtivos.includes("periodo") && formValues.dataInicio && formValues.dataFim) {
+    if (
+      filtrosAtivos.includes("periodo") &&
+      formValues.dataInicio &&
+      formValues.dataFim
+    ) {
       count++;
     }
     // 6. Status (só conta se ativado e diferir do padrão "A")
@@ -683,13 +705,7 @@ export default function FiltrosAvancados({
               const sizes = getGridSizes(key);
 
               return (
-                <Grid
-                  item
-                  xs={sizes.xs}
-                  sm={sizes.sm}
-                  md={sizes.md}
-                  key={key}
-                >
+                <Grid item xs={sizes.xs} sm={sizes.sm} md={sizes.md} key={key}>
                   <Box position="relative">
                     {/* Campo do filtro */}
                     {renderCampoFiltro(key)}
