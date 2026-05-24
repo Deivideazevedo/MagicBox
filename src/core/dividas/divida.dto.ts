@@ -12,6 +12,7 @@ export const createDividaSchema = z.object({
   icone: z.string().nullable().optional(),
   cor: z.string().nullable().optional(),
   status: StatusDividaEnum.default("A"),
+  valorEstimado: z.number().positive().optional(),
 });
 
 export const updateDividaSchema = z.object({
@@ -20,9 +21,11 @@ export const updateDividaSchema = z.object({
   valorTotal: z.number().positive().optional(),
   totalParcelas: z.number().int().min(1).optional(),
   dataInicio: z.coerce.date().optional(),
+  diaVencimento: z.number().int().min(1).max(31).optional(),
   icone: z.string().nullable().optional(),
   cor: z.string().nullable().optional(),
   status: StatusDividaEnum.optional(),
+  valorEstimado: z.number().positive().optional(),
 });
 
 export const processAporteSchema = z.object({

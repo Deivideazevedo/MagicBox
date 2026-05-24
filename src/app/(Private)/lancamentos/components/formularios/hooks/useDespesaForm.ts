@@ -108,7 +108,7 @@ export function useDespesaForm({
         ...defaultValues,
         itemId: dadosIniciais.origemId,
         valor: dadosIniciais.valorPrevisto,
-        data: fnGetTodayISO(),
+        data: dadosIniciais.data || fnGetTodayISO(),
         tipo: "pagamento",
         observacao: "",
         observacaoAutomatica: `Pagamento: ${dadosIniciais.nome}`,

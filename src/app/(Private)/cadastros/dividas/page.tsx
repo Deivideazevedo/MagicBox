@@ -17,16 +17,7 @@ import {
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { CircularProgress } from "@mui/material";
-
-// Importa o Formulário dinamicamente sob demanda
-const Formulario = dynamic(() => import("../components/Divida/Formulario").then((m) => m.Formulario), {
-  loading: () => (
-    <Box display="flex" justifyContent="center" alignItems="center" p={3}>
-      <CircularProgress />
-    </Box>
-  ),
-  ssr: false,
-});
+import { Formulario } from "../components/Divida/Formulario";
 
 // Importações dinâmicas de componentes pesados para reduzir bundle size
 const Listagem = dynamic(() => import("../components/Divida/Listagem").then((m) => m.Listagem), {

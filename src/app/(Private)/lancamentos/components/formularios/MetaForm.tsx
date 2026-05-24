@@ -212,8 +212,12 @@ export default function MetaForm({
                 "& .MuiOutlinedInput-root": { paddingLeft: "0px" },
                 "& .MuiOutlinedInput-adornmentStart": { marginRight: "4px" },
               }}
-              onChange={(_, value) => {
-                value &&
+              onChange={(_, _value, _reason, selectedOption) => {
+                if (selectedOption) {
+                  const item = selectedOption as (typeof itens)[number];
+                  if (item.valorMeta && Number(item.valorMeta) > 0) {
+                    setValue("valor", Number(item.valorMeta));
+                  }
                   setTimeout(
                     () =>
                       tipo === "retirada"
@@ -221,6 +225,7 @@ export default function MetaForm({
                         : setFocus("valor"),
                     0,
                   );
+                }
               }}
             />
           </Grid>

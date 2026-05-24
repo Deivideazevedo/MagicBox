@@ -111,7 +111,7 @@ export default function LancamentoDrawer() {
           handleCloseDrawer();
         }}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer,
+          zIndex: (theme) => theme.zIndex.modal + 100,
         }}
         PaperProps={{
           sx: {

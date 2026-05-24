@@ -248,136 +248,138 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                 Nenhuma conta a pagar pendente.
               </Alert>
             ) : (
-              <List disablePadding>
-                {bills.slice(0, 5).map((bill, index) => {
-                  const dueDateString = getDueDateString(
-                    bill.diaVencido,
-                    bill.mes,
-                    bill.ano,
-                  );
-                  const { status } = getDaysUntilDue(dueDateString);
-                  const billColor = bill.cor || "#757575";
+              <Box sx={{ maxHeight: 380, overflowY: "auto", pr: 1.5 }}>
+                <List disablePadding>
+                  {bills.map((bill, index) => {
+                    const dueDateString = getDueDateString(
+                      bill.diaVencido,
+                      bill.mes,
+                      bill.ano,
+                    );
+                    const { status } = getDaysUntilDue(dueDateString);
+                    const billColor = bill.cor || "#757575";
 
-                  return (
-                    <ListItem
-                      key={bill.id}
-                      sx={{
-                        px: 0,
-                        py: 1,
-                        borderBottom:
-                          index < Math.min(bills.length, 5) - 1
-                            ? "1px solid #f0f0f0"
-                            : "none",
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 48 }}>
-                        <Avatar
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            backgroundColor: `${billColor}20`,
-                            color: billColor,
-                          }}
-                        >
-                          <DynamicIcon
-                            name={bill.icone}
-                            size={20}
-                            fallbackIcon="IconInvoice"
-                            color={billColor}
-                          />
-                        </Avatar>
-                      </ListItemIcon>
-
-                      <ListItemText
-                        primaryTypographyProps={{ component: "div" }}
-                        secondaryTypographyProps={{ component: "div" }}
-                        primary={
-                          <Box
-                            display="flex"
-                            justifyContent="space-between"
-                            alignItems="center"
+                    return (
+                      <ListItem
+                        key={bill.id}
+                        sx={{
+                          px: 0,
+                          py: 1,
+                          borderBottom:
+                            index < bills.length - 1
+                              ? "1px solid #f0f0f0"
+                              : "none",
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 48 }}>
+                          <Avatar
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              backgroundColor: `${billColor}20`,
+                              color: billColor,
+                            }}
                           >
-                            <Typography
-                              variant="body1"
-                              fontWeight={500}
-                              sx={{
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                maxWidth: "70%",
-                              }}
+                            <DynamicIcon
+                              name={bill.icone}
+                              size={20}
+                              fallbackIcon="IconInvoice"
+                              color={billColor}
+                            />
+                          </Avatar>
+                        </ListItemIcon>
+
+                        <ListItemText
+                          primaryTypographyProps={{ component: "div" }}
+                          secondaryTypographyProps={{ component: "div" }}
+                          primary={
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              alignItems="center"
                             >
-                              {bill.nome}
-                            </Typography>
-
-                            <Box display="flex" gap={0.5}>
-                              <Tooltip title="Baixa rápida" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleQuickPay(bill)}
-                                  color="success"
-                                  sx={{ padding: "4px" }}
-                                >
-                                  <IconCheck size={18} />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Preencher detalhes" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => openDrawer(bill)}
-                                  color="primary"
-                                  sx={{ padding: "4px" }}
-                                >
-                                  <IconEditCircle size={18} />
-                                </IconButton>
-                              </Tooltip>
-                            </Box>
-                          </Box>
-                        }
-                        secondary={
-                          <Box
-                            display="flex"
-                            justifyContent="space-between"
-                            alignItems="flex-end"
-                            // mt={0.5}
-                          >
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <Chip
-                                label={getStatusLabel(dueDateString)}
-                                size="small"
-                                icon={<IconClock size={14} />}
-                                sx={{
-                                  backgroundColor: `${getStatusColor(status)}20`,
-                                  color: getStatusColor(status),
-                                  fontSize: "0.75rem",
-                                  height: 20,
-                                  "& .MuiChip-icon": {
-                                    color: "inherit",
-                                  },
-                                }}
-                              />
                               <Typography
-                                variant="caption"
-                                color="text.secondary"
+                                variant="body1"
+                                fontWeight={500}
+                                sx={{
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  maxWidth: "70%",
+                                }}
                               >
-                                {formatDueDate(dueDateString)}
+                                {bill.nome}
+                              </Typography>
+
+                              <Box display="flex" gap={0.5}>
+                                <Tooltip title="Baixa rápida" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleQuickPay(bill)}
+                                    color="success"
+                                    sx={{ padding: "4px" }}
+                                  >
+                                    <IconCheck size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Preencher detalhes" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => openDrawer(bill)}
+                                    color="primary"
+                                    sx={{ padding: "4px" }}
+                                  >
+                                    <IconEditCircle size={18} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          }
+                          secondary={
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              alignItems="flex-end"
+                              // mt={0.5}
+                            >
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Chip
+                                  label={getStatusLabel(dueDateString)}
+                                  size="small"
+                                  icon={<IconClock size={14} />}
+                                  sx={{
+                                    backgroundColor: `${getStatusColor(status)}20`,
+                                    color: getStatusColor(status),
+                                    fontSize: "0.75rem",
+                                    height: 20,
+                                    "& .MuiChip-icon": {
+                                      color: "inherit",
+                                    },
+                                  }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {formatDueDate(dueDateString)}
+                                </Typography>
+                              </Box>
+
+                              <Typography
+                                variant="body1"
+                                fontWeight={600}
+                                color="text.primary"
+                              >
+                                {formatCurrency(bill.valorPrevisto)}
                               </Typography>
                             </Box>
-
-                            <Typography
-                              variant="body1"
-                              fontWeight={600}
-                              color="text.primary"
-                            >
-                              {formatCurrency(bill.valorPrevisto)}
-                            </Typography>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  );
-                })}
-              </List>
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Box>
             )}
           </>
       </CardContent>

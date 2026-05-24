@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import {
-  RelatorioFiltros,
-  RawMetasProgresso,
+  EvolucaoMensalItem,
   RawCardResumo,
   RawDadosBrutosCategoria,
-  RawTotaisMetas,
   RawHistoricoAgrupado,
   RawRelatorioMetas,
-  EvolucaoMensalItem,
+  RelatorioFiltros,
 } from "./relatorio.dto";
 
 export const relatoriosRepository = {
@@ -42,7 +40,7 @@ export const relatoriosRepository = {
           r."createdAt"
         FROM receita r
         LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL AND r.status = 'A'
+        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL
         GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado", r.tipo, r."createdAt"
         
         UNION ALL
@@ -68,7 +66,7 @@ export const relatoriosRepository = {
           d."createdAt"
         FROM despesa d
         LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL AND d.status = 'A'
+        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL
         GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt"
       )
       SELECT 
@@ -421,8 +419,8 @@ export const relatoriosRepository = {
         LEFT JOIN meta m ON l."metaId" = m.id
         WHERE l."userId" = ${userId}
           AND (
-            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
-            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
+            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
+            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
             (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
           )
       )

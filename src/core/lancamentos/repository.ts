@@ -73,6 +73,28 @@ export const lancamentoRepository = {
       };
     }
 
+    // Apenas despesas, receitas ou metas não deletadas (deletedAt null)
+    whereClause.AND = [
+      {
+        OR: [
+          { despesaId: null },
+          { despesa: { deletedAt: null } }
+        ]
+      },
+      {
+        OR: [
+          { receitaId: null },
+          { receita: { deletedAt: null } }
+        ]
+      },
+      {
+        OR: [
+          { metaId: null },
+          { meta: { deletedAt: null } }
+        ]
+      }
+    ];
+
     const [total, data] = await prisma.$transaction([
       prisma.lancamento.count({ where: whereClause }),
       prisma.lancamento.findMany({
@@ -128,8 +150,30 @@ export const lancamentoRepository = {
     const numericId = Number(id);
     if (isNaN(numericId)) return null;
 
-    return await prisma.lancamento.findUnique({
-      where: { id: numericId },
+    return await prisma.lancamento.findFirst({
+      where: {
+        id: numericId,
+        AND: [
+          {
+            OR: [
+              { despesaId: null },
+              { despesa: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { receitaId: null },
+              { receita: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { metaId: null },
+              { meta: { deletedAt: null } }
+            ]
+          }
+        ]
+      },
       include: {
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
@@ -143,6 +187,26 @@ export const lancamentoRepository = {
       where: {
         vinculoId,
         id: excetoId ? { not: excetoId } : undefined,
+        AND: [
+          {
+            OR: [
+              { despesaId: null },
+              { despesa: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { receitaId: null },
+              { receita: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { metaId: null },
+              { meta: { deletedAt: null } }
+            ]
+          }
+        ]
       },
       include: {
         despesa: true,
@@ -157,7 +221,29 @@ export const lancamentoRepository = {
     if (isNaN(numericId)) return [];
 
     return await prisma.lancamento.findMany({
-      where: { userId: numericId },
+      where: {
+        userId: numericId,
+        AND: [
+          {
+            OR: [
+              { despesaId: null },
+              { despesa: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { receitaId: null },
+              { receita: { deletedAt: null } }
+            ]
+          },
+          {
+            OR: [
+              { metaId: null },
+              { meta: { deletedAt: null } }
+            ]
+          }
+        ]
+      },
       orderBy: { data: "desc" },
       include: {
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },

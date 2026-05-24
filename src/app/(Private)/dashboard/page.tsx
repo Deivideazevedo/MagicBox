@@ -170,6 +170,16 @@ const DashboardContent = () => {
 
           {/* Main Content Grid */}
           <Grid container spacing={3} sx={{ mt: 0 }}>
+            {/* Recent Transactions */}
+            <Grid item xs={12} lg={7}>
+              <RecentTransactions date={selectedDate} />
+            </Grid>
+
+            {/* Upcoming Bills */}
+            <Grid item xs={12} lg={5}>
+              <UpcomingBills date={selectedDate} />
+            </Grid>
+
             {/* Monthly Chart */}
             <Grid item xs={12} lg={8}>
               <MonthlyChart
@@ -181,16 +191,6 @@ const DashboardContent = () => {
             {/* Goals Progress */}
             <Grid item xs={12} lg={4}>
               <GoalsProgress date={selectedDate} />
-            </Grid>
-
-            {/* Recent Transactions */}
-            <Grid item xs={12} lg={7}>
-              <RecentTransactions date={selectedDate} />
-            </Grid>
-
-            {/* Upcoming Bills */}
-            <Grid item xs={12} lg={5}>
-              <UpcomingBills date={selectedDate} />
             </Grid>
 
             {/* Quick Stats */}

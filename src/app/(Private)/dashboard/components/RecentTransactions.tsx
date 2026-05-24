@@ -87,75 +87,77 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
             Nenhuma transação recente encontrada.
           </Alert>
         ) : (
-          <List disablePadding>
-            {transactions.map((transaction, index) => {
-              const isReceita = transaction.tipo === "receita";
-              const title = transaction.descricao || "Transação";
-              const iconName = transaction.icone;
-              const color = transaction.cor || (isReceita ? "#13DEB9" : "#FA896B");
-              const categoryName = isReceita ? "Receita" : "Despesa";
+          <Box sx={{ maxHeight: 380, overflowY: "auto", pr: 1.5 }}>
+            <List disablePadding>
+              {transactions.map((transaction, index) => {
+                const isReceita = transaction.tipo === "receita";
+                const title = transaction.descricao || "Transação";
+                const iconName = transaction.icone;
+                const color = transaction.cor || (isReceita ? "#13DEB9" : "#FA896B");
+                const categoryName = isReceita ? "Receita" : "Despesa";
 
-              return (
-                <ListItem
-                  key={transaction.id}
-                  sx={{
-                    px: 0,
-                    py: 1.5,
-                    borderBottom: index < transactions.length - 1 ? "1px solid #f0f0f0" : "none",
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: 48 }}>
-                    <Avatar
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        backgroundColor: `${color}20`,
-                        color: color,
-                      }}
-                    >
-                      <DynamicIcon name={iconName} size={20} fallbackIcon={isReceita ? "IconArrowUp" : "IconArrowDown"} color={color} />
-                    </Avatar>
-                  </ListItemIcon>
-                  
-                  <ListItemText
-                    primaryTypographyProps={{ component: "div" }}
-                    secondaryTypographyProps={{ component: "div" }}
-                    primary={
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
-                          {title}
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          fontWeight={600}
-                          color={isReceita ? "#13DEB9" : "#FA896B"}
-                        >
-                          {isReceita ? "+" : "-"}{formatCurrency(transaction.valor)}
-                        </Typography>
-                      </Box>
-                    }
-                    secondary={
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
-                        <Chip
-                          label={categoryName}
-                          size="small"
-                          sx={{
-                            backgroundColor: `${color}20`,
-                            color: color,
-                            fontSize: "0.75rem",
-                            height: 20,
-                          }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(transaction.data)}
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
+                return (
+                  <ListItem
+                    key={transaction.id}
+                    sx={{
+                      px: 0,
+                      py: 1.5,
+                      borderBottom: index < transactions.length - 1 ? "1px solid #f0f0f0" : "none",
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 48 }}>
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          backgroundColor: `${color}20`,
+                          color: color,
+                        }}
+                      >
+                        <DynamicIcon name={iconName} size={20} fallbackIcon={isReceita ? "IconArrowUp" : "IconArrowDown"} color={color} />
+                      </Avatar>
+                    </ListItemIcon>
+                    
+                    <ListItemText
+                      primaryTypographyProps={{ component: "div" }}
+                      secondaryTypographyProps={{ component: "div" }}
+                      primary={
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
+                            {title}
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            fontWeight={600}
+                            color={isReceita ? "#13DEB9" : "#FA896B"}
+                          >
+                            {isReceita ? "+" : "-"}{formatCurrency(transaction.valor)}
+                          </Typography>
+                        </Box>
+                      }
+                      secondary={
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                          <Chip
+                            label={categoryName}
+                            size="small"
+                            sx={{
+                              backgroundColor: `${color}20`,
+                              color: color,
+                              fontSize: "0.75rem",
+                              height: 20,
+                            }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(transaction.data)}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
         )}
       </CardContent>
     </Card>

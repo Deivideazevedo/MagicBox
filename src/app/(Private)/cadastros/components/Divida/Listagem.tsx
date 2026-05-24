@@ -38,6 +38,7 @@ import DetalhesDividaModal from "./DetalhesDividaModal";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { useDividasTourRefs } from "./DividasTourContext";
 import { useModalUrl } from "@/hooks/useModalUrl";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 
 interface ListagemProps {
   dividas: Divida[];
@@ -59,6 +60,7 @@ export const Listagem = ({
   const theme = useTheme();
   const tourRefs = useDividasTourRefs();
   const modalDetalhes = useModalUrl("dividaDetalhes");
+  const { abrirDrawer: abrirLancamentoDrawer } = useLancamentoDrawer();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedDivida, setSelectedDivida] = useState<Divida | null>(null);
@@ -163,8 +165,8 @@ export const Listagem = ({
           : (divida as DividaVolatil).valorTotalAgendado;
         const progresso = isUnica ? (divida as DividaUnica).progresso : 0;
         const parcelasInfo = isUnica
-          ? `${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas} parcelas`
-          : `${(divida as DividaVolatil).quantidadeParcelas} parcelas agendadas`;
+          ? `Parcelas: ${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas}`
+          : `Parcelas: ${(divida as DividaVolatil).quantidadeParcelas}`;
 
         const isConcluida = isUnica && (divida as DividaUnica).concluida;
         const isArquivada = divida.status === "I";
@@ -173,6 +175,31 @@ export const Listagem = ({
             (divida as DividaUnica).diasParaVencer !== null &&
             (divida as DividaUnica).diasParaVencer! < 0) ||
           (!isUnica && (divida as DividaVolatil).atrasada);
+
+        const situacaoParcelas =
+          (divida as DividaUnica | DividaVolatil).situacaoParcelas || [];
+        const proximaParcelaPendente = situacaoParcelas.find(
+          (p) => p.status !== "pago",
+        );
+
+        const getVencimentoStatusLabel = () => {
+          if (isConcluida || !proximaParcelaPendente) return "Concluído";
+
+          let statusText = "Em dia";
+          if (isAtrasada) {
+            statusText = "Atrasado";
+          } else if (divida.diasParaVencer === 0) {
+            statusText = "Vence hoje";
+          } else if (
+            divida.diasParaVencer !== null &&
+            (divida.diasParaVencer as number) <= 7
+          ) {
+            const dias = divida.diasParaVencer;
+            statusText = `Vence em ${dias} ${dias === 1 ? "dia" : "dias"}`;
+          }
+
+          return statusText;
+        };
 
         return (
           <Grid item xs={12} sm={6} md={4} key={divida.id}>
@@ -229,7 +256,7 @@ export const Listagem = ({
                   </IconButton>
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 3 }}>
+                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2.5 }}>
                   <Box
                     sx={{
                       p: 1,
@@ -310,16 +337,7 @@ export const Listagem = ({
                           fontWeight={800}
                           sx={{ textTransform: "uppercase", fontSize: "10px" }}
                         >
-                          {isConcluida
-                            ? "Concluido"
-                            : isAtrasada
-                              ? "Atrasada"
-                              : divida.diasParaVencer === 0
-                                ? "Vence hoje"
-                                : divida.diasParaVencer !== null &&
-                                    (divida.diasParaVencer as number) <= 7
-                                  ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? "dia" : "dias"}`
-                                  : "Em dia"}
+                          {getVencimentoStatusLabel()}
                         </Typography>
                       </Stack>
                     </Stack>
@@ -327,71 +345,51 @@ export const Listagem = ({
                 </Box>
 
                 {/* Info de Valores */}
-                <Grid container spacing={2} mb={2.5}>
-                  <Grid item xs={6}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                      display="block"
-                      gutterBottom
-                    >
-                      {isUnica ? "VALOR TOTAL (R$)" : "LANÇADO (R$)"}
-                    </Typography>
-                    <Typography
-                      variant={isUnica ? "caption" : "subtitle1"}
-                      fontWeight={800}
-                      color={isUnica ? "text.primary" : "warning.main"}
-                      sx={isUnica ? { display: "block", mt: 0.5 } : {}}
-                    >
-                      {isUnica
-                        ? `${formatValueOnly(valorPago)} / ${formatValueOnly(valorPrincipal)}`
-                        : formatValueOnly(valorPrincipal)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sx={{ textAlign: "right" }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                      display="block"
-                      gutterBottom
-                    >
-                      {isUnica ? "PRÓXIMO" : "PRÓXIMO"}
-                    </Typography>
-                    <Typography
-                      variant={isUnica ? "caption" : "subtitle1"}
-                      fontWeight={800}
-                      color={
-                        isConcluida
-                          ? "success.main"
-                          : isAtrasada
+                <Box sx={{ mb: 2 }}>
+                  {proximaParcelaPendente ? (
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                        sx={{
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          display: "block",
+                        }}
+                      >
+                        PRÓXIMO VENCIMENTO:{" "}
+                        {fnFormatNaiveDate(
+                          proximaParcelaPendente.dataVencimento,
+                          "dd/MM",
+                        )}
+                      </Typography>
+                      <Typography
+                        variant="h5"
+                        fontWeight={800}
+                        color={
+                          proximaParcelaPendente.status === "atrasada"
                             ? "error.main"
-                            : divida.diasParaVencer === 0
-                              ? "primary.main"
-                              : divida.diasParaVencer !== null &&
-                                  (divida.diasParaVencer as number) <= 7
-                                ? "warning.main"
-                                : "success.main"
-                      }
-                      sx={isUnica ? { display: "block", mt: 0.5 } : {}}
+                            : divida.diasParaVencer !== null &&
+                                (divida.diasParaVencer as number) <= 7
+                              ? "warning.main"
+                              : "success.main"
+                        }
+                      >
+                        {formatCurrency(proximaParcelaPendente.valorAgendado)}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      color="success.main"
+                      sx={{ py: 1 }}
                     >
-                      {isUnica
-                        ? divida.proximoVencimento
-                          ? fnFormatNaiveDate(
-                              divida.proximoVencimento,
-                              "dd/MM/yyyy",
-                            )
-                          : "---"
-                        : divida.proximoVencimento
-                          ? fnFormatNaiveDate(
-                              divida.proximoVencimento,
-                              "dd/MM/yyyy",
-                            )
-                          : "---"}
+                      Quitada! 🎉
                     </Typography>
-                  </Grid>
-                </Grid>
+                  )}
+                </Box>
 
                 {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
                 {isUnica ? (
@@ -401,13 +399,9 @@ export const Listagem = ({
                         ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>)
                         : undefined
                     }
+                    sx={{ mt: -1.5 }}
                   >
-                    <Stack
-                      direction="row"
-                      spacing={1.5}
-                      alignItems="center"
-                      mb={1}
-                    >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
                         <LinearProgress
                           variant="determinate"
@@ -440,23 +434,44 @@ export const Listagem = ({
                         </Typography>
                       </Box>
                     </Stack>
+                    <Typography
+                      variant="caption"
+                      color="text.primary"
+                      fontWeight={700}
+                      display="block"
+                      sx={{ mt: -0.5 }}
+                    >
+                      {formatCurrency(valorPago)} /{" "}
+                      {formatCurrency(valorPrincipal)}
+                    </Typography>
+
                     <Stack
                       direction="row"
                       justifyContent="space-between"
-                      mt={1}
+                      alignItems="flex-start"
+                      gap={1}
+                      mt={1.5}
                     >
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={600}
-                      >
-                        {parcelasInfo}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {isConcluida
-                          ? "Dívida quitada! 🎉"
-                          : `${formatCurrency(valorRestante)} restantes`}
-                      </Typography>
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
+                        >
+                          {parcelasInfo}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
+                        >
+                          {isConcluida
+                            ? "Quitada! 🎉"
+                            : `Faltam: ${formatCurrency(valorRestante)}`}
+                        </Typography>
+                      </Box>
                     </Stack>
                   </Box>
                 ) : (
@@ -467,7 +482,7 @@ export const Listagem = ({
                       justifyContent="space-between"
                       alignItems="center"
                     >
-                      <Box>
+                      <Box gap={1} display="flex" flexDirection="column">
                         <Typography
                           variant="caption"
                           color="text.secondary"
@@ -485,39 +500,27 @@ export const Listagem = ({
                           registros
                         </Typography>
                       </Box>
-                      <Box sx={{ textAlign: "right" }}>
+                      <Box
+                        gap={1}
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="flex-end"
+                        textAlign="right"
+                      >
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
                         >
-                          SITUAÇÃO
+                          TOTAL AGENDADO
                         </Typography>
                         <Typography
                           variant="body2"
                           fontWeight={800}
-                          color={
-                            isAtrasada
-                              ? "error.main"
-                              : divida.diasParaVencer === 0
-                                ? "primary.main"
-                                : divida.diasParaVencer !== null &&
-                                    divida.diasParaVencer !== undefined &&
-                                    divida.diasParaVencer <= 7
-                                  ? "warning.main"
-                                  : "success.main"
-                          }
+                          color="text.primary"
                         >
-                          {isAtrasada
-                            ? "Atrasada"
-                            : divida.diasParaVencer === 0
-                              ? "Vence hoje"
-                              : divida.diasParaVencer !== null &&
-                                  divida.diasParaVencer !== undefined &&
-                                  divida.diasParaVencer <= 7
-                                ? `Vence em ${divida.diasParaVencer} ${divida.diasParaVencer === 1 ? "dia" : "dias"}`
-                                : "Em dia"}
+                          {formatCurrency(valorPrincipal)}
                         </Typography>
                       </Box>
                     </Stack>
@@ -593,9 +596,8 @@ export const Listagem = ({
           />
         </MenuItem>
 
-        {selectedDivida?.tipo === "UNICA" &&
-          selectedDivida?.status === "A" &&
-          !selectedDivida.concluida && (
+        {selectedDivida?.status === "A" &&
+          !(selectedDivida.tipo === "UNICA" && selectedDivida.concluida) && (
             <MenuItem
               onClick={() => {
                 onAporte(selectedDivida);

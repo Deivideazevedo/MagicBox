@@ -16,6 +16,7 @@ import {
   Chip,
   Paper,
   LinearProgress,
+  Collapse,
 } from "@mui/material";
 import {
   IconX,
@@ -36,6 +37,9 @@ import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { Divida, DividaUnica, DividaVolatil } from "@/core/dividas/types";
+import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
+import { DetalhesDividaUnica } from "./DetalhesDividaUnica";
+import { DetalhesDividaVolatil } from "./DetalhesDividaVolatil";
 
 interface DetalhesDividaModalProps {
   open: boolean;
@@ -49,6 +53,7 @@ const DetalhesDividaModal = ({
   dividaId,
 }: DetalhesDividaModalProps) => {
   const theme = useTheme();
+  const { abrirDrawer: abrirLancamentoDrawer } = useLancamentoDrawer();
 
   const {
     data: divida,
@@ -64,35 +69,11 @@ const DetalhesDividaModal = ({
   const cor = divida?.cor || theme.palette.primary.main;
   const isUnica = divida?.tipo === "UNICA";
 
-  const valorPrincipal = isUnica
-    ? (divida as DividaUnica)?.valorTotal || 0
-    : (divida as DividaVolatil)?.valorTotalAgendado || 0;
-
-  const valorPago = isUnica
-    ? (divida as DividaUnica)?.valorPago || 0
-    : (divida as DividaVolatil)?.valorPago || 0;
-
-  const valorRestante = isUnica
-    ? (divida as DividaUnica)?.valorRestante || 0
-    : (divida as DividaVolatil)?.valorRestante || 0;
-
-  const progresso = isUnica
-    ? (divida as DividaUnica).progresso || 0
-    : valorPrincipal > 0
-      ? (valorPago / valorPrincipal) * 100
-      : 0;
-
   const lancamentos = (divida as Divida)?.lancamentos || [];
   const situacaoParcelas =
     (divida as DividaUnica | DividaVolatil)?.situacaoParcelas || [];
 
-  const isConcluida = isUnica && (divida as DividaUnica)?.concluida;
   const isArquivada = divida?.status === "I";
-  const isAtrasada =
-    (isUnica &&
-      (divida as DividaUnica)?.diasParaVencer !== null &&
-      (divida as DividaUnica)?.diasParaVencer! < 0) ||
-    (!isUnica && (divida as DividaVolatil)?.atrasada);
 
   const [expandedParcela, setExpandedParcela] = React.useState<number | null>(
     null,
@@ -104,32 +85,20 @@ const DetalhesDividaModal = ({
       onClose={onClose}
       fullWidth
       maxWidth="sm"
+      disableEnforceFocus
       PaperProps={{
         sx: {
-          borderRadius: 5,
+          borderRadius: 4,
           overflow: "hidden",
           bgcolor: "background.paper",
           backgroundImage: `linear-gradient(135deg, ${alpha(cor, 0.03)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+          maxHeight: { xs: "96vh", sm: "90vh" },
+          margin: { xs: 1, sm: 2 },
+          width: { xs: "calc(100% - 16px)", sm: "auto" },
         },
       }}
     >
-      {/* Botão Fechar flutuante */}
-      <IconButton
-        onClick={onClose}
-        size="small"
-        sx={{
-          position: "absolute",
-          top: 30,
-          right: 30,
-          zIndex: 10,
-          bgcolor: alpha(theme.palette.action.active, 0.05),
-          "&:hover": { bgcolor: alpha(theme.palette.action.active, 0.1) },
-        }}
-      >
-        <IconX size={20} />
-      </IconButton>
-
-      <DialogContent sx={{ p: 0, overflow: "hidden" }}>
+      <DialogContent sx={{ p: 0, overflowY: "hidden" }}>
         {isLoading || isFetching ? (
           <Box
             display="flex"
@@ -151,12 +120,12 @@ const DetalhesDividaModal = ({
         ) : (
           <Box>
             {/* Header Area */}
-            <Box sx={{ p: 4, pb: 3 }}>
-              <Stack direction="row" spacing={2.5} alignItems="center" mb={1}>
+            <Box sx={{ p: { xs: 2.5, sm: 4 }, pb: { xs: 2, sm: 3 } }}>
+              <Stack direction="row" spacing={2} alignItems="flex-start" mb={1}>
                 <Box
                   sx={{
-                    width: 56,
-                    height: 56,
+                    width: { xs: 46, sm: 56 },
+                    height: { xs: 46, sm: 56 },
                     borderRadius: 2.5,
                     bgcolor: alpha(cor, 0.1),
                     color: cor,
@@ -164,6 +133,7 @@ const DetalhesDividaModal = ({
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: `0 4px 12px ${alpha(cor, 0.15)}`,
+                    flexShrink: 0,
                   }}
                 >
                   <DynamicIcon
@@ -171,7 +141,7 @@ const DetalhesDividaModal = ({
                       divida.icone ||
                       (isUnica ? "IconCreditCard" : "IconCalendarEvent")
                     }
-                    size={32}
+                    size={28}
                     stroke={1.5}
                   />
                 </Box>
@@ -185,7 +155,11 @@ const DetalhesDividaModal = ({
                     <Typography
                       variant="h5"
                       fontWeight={800}
-                      sx={{ letterSpacing: "-0.02em", color: "text.primary" }}
+                      sx={{
+                        letterSpacing: "-0.02em",
+                        color: "text.primary",
+                        fontSize: { xs: "1.2rem", sm: "1.5rem" },
+                      }}
                     >
                       {divida.nome}
                     </Typography>
@@ -239,301 +213,44 @@ const DetalhesDividaModal = ({
                     )}
                   </Box>
                 </Box>
+                <IconButton
+                  onClick={onClose}
+                  size="small"
+                  sx={{
+                    bgcolor: alpha(theme.palette.action.active, 0.05),
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.action.active, 0.1),
+                    },
+                    flexShrink: 0,
+                    p: 0.5,
+                  }}
+                >
+                  <IconX size={20} />
+                </IconButton>
               </Stack>
             </Box>
 
             {/* Dashboard Summary Section */}
-            <Box sx={{ px: 4, mb: 4 }}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  bgcolor: alpha(theme.palette.background.default, 0.5),
-                  border: `1px solid ${alpha(cor, 0.2)}`,
-                }}
-              >
-                <Box sx={{ mb: 1 }}>
-                  {/* Header de Progresso Centrado */}
-                  <Stack
-                    spacing={0.5}
-                    alignItems="center"
-                    textAlign="center"
-                    mb={3}
-                  >
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={800}
-                      sx={{
-                        textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        opacity: 1,
-                      }}
-                    >
-                      {isUnica ? "Progresso do Pagamento" : "Volume Agendado"}
-                    </Typography>
-                    <Box sx={{ py: 1 }}>
-                      <Typography
-                        variant="h3"
-                        fontWeight={900}
-                        color={isUnica ? "success.main" : "warning.main"}
-                        sx={{ lineHeight: 1 }}
-                      >
-                        {formatCurrency(isUnica ? valorPago : valorPrincipal)}
-                      </Typography>
-                    </Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={700}
-                      color="text.secondary"
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                    >
-                      {isUnica ? (
-                        <>
-                          <Box
-                            component="span"
-                            sx={{ color: cor, fontWeight: 900 }}
-                          >
-                            {progresso.toFixed(0)}%
-                          </Box>
-                          pago
-                        </>
-                      ) : (
-                        "Valor total projetado"
-                      )}
-                    </Typography>
-                  </Stack>
-
-                  {/* Barra de Progresso (SÓ PARA ÚNICAS) */}
-                  {isUnica && (
-                    <Box sx={{ mb: 1.5 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(progresso, 100)}
-                        sx={{
-                          height: 12,
-                          borderRadius: 6,
-                          bgcolor: alpha(cor, 0.1),
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor: cor,
-                            borderRadius: 6,
-                            backgroundImage: `linear-gradient(90deg, ${alpha(cor, 0.6)} 0%, ${cor} 100%)`,
-                          },
-                        }}
-                      />
-                    </Box>
-                  )}
-
-                  {/* Rodapé de contexto */}
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Stack spacing={0}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={700}
-                        sx={{ fontSize: "10px", textTransform: "uppercase" }}
-                      >
-                        {isUnica ? "Total Devido" : "Quantidade"}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={800}
-                        sx={{ color: "text.primary" }}
-                      >
-                        {isUnica
-                          ? formatCurrency(valorPrincipal)
-                          : `${(divida as DividaVolatil).quantidadeParcelas} parcelas`}
-                      </Typography>
-                    </Stack>
-                    <Stack spacing={0} alignItems="flex-end">
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={700}
-                        sx={{ fontSize: "10px", textTransform: "uppercase" }}
-                      >
-                        {isUnica
-                          ? valorRestante > 0
-                            ? "Faltam"
-                            : "Status"
-                          : "Próximo"}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        fontWeight={800}
-                        color={
-                          isAtrasada
-                            ? "error.main"
-                            : (divida as DividaVolatil).diasParaVencer !==
-                                  null &&
-                                (divida as DividaVolatil).diasParaVencer !==
-                                  undefined &&
-                                (divida as DividaVolatil).diasParaVencer! <= 7
-                              ? "warning.main"
-                              : "success.main"
-                        }
-                      >
-                        {isUnica
-                          ? valorRestante > 0
-                            ? formatCurrency(valorRestante)
-                            : "Quitada! 🎉"
-                          : divida.proximoVencimento
-                            ? fnFormatNaiveDate(
-                                divida.proximoVencimento,
-                                "dd/MM/yyyy",
-                              )
-                            : "---"}
-                      </Typography>
-                    </Stack>
-                  </Stack>
-                </Box>
-
-                <Grid container spacing={1} sx={{ mt: 1 }}>
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 0, borderStyle: "dashed" }} />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Grid container spacing={2} justifyContent="space-between">
-                      <Grid item xs={4}>
-                        <Stack spacing={0.5} alignItems="flex-start">
-                          <Stack
-                            direction="row"
-                            spacing={0.4}
-                            alignItems="center"
-                          >
-                            <IconCreditCard
-                              size={12}
-                              color={theme.palette.text.secondary}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              fontWeight={800}
-                              sx={{
-                                fontSize: "9px",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Parcelas
-                            </Typography>
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            fontWeight={900}
-                            sx={{ fontSize: "11px", color: "text.primary" }}
-                          >
-                            {isUnica
-                              ? `${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas}`
-                              : `${(divida as DividaVolatil).quantidadeParcelas} agend.`}
-                          </Typography>
-                        </Stack>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Stack spacing={0.5} alignItems="center">
-                          <Stack
-                            direction="row"
-                            spacing={0.4}
-                            alignItems="center"
-                          >
-                            <IconCalendarEvent
-                              size={12}
-                              color={theme.palette.text.secondary}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              fontWeight={800}
-                              sx={{
-                                fontSize: "9px",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Próximo
-                            </Typography>
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            fontWeight={900}
-                            sx={{
-                              fontSize: "11px",
-                              color: "text.primary",
-                              textAlign: "center",
-                            }}
-                          >
-                            {divida.proximoVencimento
-                              ? fnFormatNaiveDate(
-                                  divida.proximoVencimento,
-                                  "dd MMM yy",
-                                )
-                              : "---"}
-                          </Typography>
-                        </Stack>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Stack spacing={0.5} alignItems="flex-end">
-                          <Stack
-                            direction="row"
-                            spacing={0.4}
-                            alignItems="center"
-                          >
-                            <IconAlertCircle
-                              size={12}
-                              color={theme.palette.text.secondary}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              fontWeight={800}
-                              sx={{
-                                fontSize: "9px",
-                                textTransform: "uppercase",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Situação
-                            </Typography>
-                          </Stack>
-                          <Typography
-                            variant="caption"
-                            fontWeight={900}
-                            sx={{
-                              fontSize: "11px",
-                              textAlign: "right",
-                              color: isAtrasada
-                                ? "error.main"
-                                : divida.diasParaVencer !== null &&
-                                    (divida.diasParaVencer as number) <= 7
-                                  ? "warning.main"
-                                  : "success.main",
-                            }}
-                          >
-                            {isAtrasada
-                              ? "Atrasada"
-                              : divida.diasParaVencer === 0
-                                ? "Vence hoje"
-                                : divida.diasParaVencer !== null &&
-                                    (divida.diasParaVencer as number) <= 7
-                                  ? `Vence em ${divida.diasParaVencer}d`
-                                  : "Em dia"}
-                          </Typography>
-                        </Stack>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                </Grid>
-              </Paper>
+            <Box sx={{ px: { xs: 2.5, sm: 4 }, mb: { xs: 3, sm: 4 } }}>
+              {isUnica ? (
+                <DetalhesDividaUnica
+                  divida={divida as DividaUnica}
+                  cor={cor}
+                  formatCurrency={formatCurrency}
+                  fnFormatNaiveDate={fnFormatNaiveDate}
+                />
+              ) : (
+                <DetalhesDividaVolatil
+                  divida={divida as DividaVolatil}
+                  cor={cor}
+                  formatCurrency={formatCurrency}
+                  fnFormatNaiveDate={fnFormatNaiveDate}
+                />
+              )}
             </Box>
 
             {/* Movements Section */}
-            <Box sx={{ px: 4, mb: 1 }}>
+            <Box sx={{ px: { xs: 2.5, sm: 4 }, mb: 1 }}>
               <Typography
                 variant="subtitle2"
                 fontWeight={800}
@@ -551,424 +268,508 @@ const DetalhesDividaModal = ({
 
             <Box
               sx={{
-                maxHeight: "42vh",
-                overflowY: "auto",
-                pl: 4,
-                pr: 2.5,
-                pb: 2,
-                mb: 3,
+                pl: { xs: 2.5, sm: 4 },
+                pr: { xs: 2.5, sm: 4 },
+                pb: { xs: 3, sm: 5 },
               }}
             >
-              {situacaoParcelas.length > 0 ? (
-                <Stack spacing={1.5} pt={0.5}>
-                  {situacaoParcelas.map((p) => {
-                    const statusConfig = {
-                      pago: {
-                        label: "Pago",
-                        color: theme.palette.success.main,
-                        icon: <IconArrowUpRight size={18} />,
-                      },
-                      parcial: {
-                        label: "Parcial",
-                        color: theme.palette.info.main,
-                        icon: <IconClock size={18} />,
-                      },
-                      pendente: {
-                        label: "Pendente",
-                        color: theme.palette.warning.main,
-                        icon: <IconArrowDownLeft size={18} />,
-                      },
-                      atrasada: {
-                        label: "Atrasada",
-                        color: theme.palette.error.main,
-                        icon: <IconAlertCircle size={18} />,
-                      },
-                    };
+              <Box
+                sx={{
+                  maxHeight: { xs: "280px", sm: "320px" },
+                  overflowY: "auto",
+                  pr: 1.5,
+                  "&::-webkit-scrollbar": {
+                    width: "6px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    background: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    background: alpha(theme.palette.text.secondary, 0.2),
+                    borderRadius: "4px",
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    background: alpha(theme.palette.text.secondary, 0.4),
+                  },
+                }}
+              >
+                {situacaoParcelas.length > 0 ? (
+                  <Stack spacing={1.5} pt={0.5}>
+                    {situacaoParcelas.map((p) => {
+                      const statusConfig = {
+                        pago: {
+                          label: "Pago",
+                          color: theme.palette.success.main,
+                          icon: <IconArrowUpRight size={18} />,
+                        },
+                        parcial: {
+                          label: "Parcial",
+                          color: theme.palette.info.main,
+                          icon: <IconClock size={18} />,
+                        },
+                        pendente: {
+                          label: "Pendente",
+                          color: theme.palette.warning.main,
+                          icon: <IconArrowDownLeft size={18} />,
+                        },
+                        atrasada: {
+                          label: "Atrasada",
+                          color: theme.palette.error.main,
+                          icon: <IconAlertCircle size={18} />,
+                        },
+                      };
 
-                    // Se estiver pendente mas a data já passou, considerar como atrasada
-                    const hoje = new Date().toLocaleDateString("sv-SE");
-                    const isParcelaAtrasada =
-                      p.status === "pendente" && p.dataVencimento < hoje;
-                    const statusFinal = isParcelaAtrasada
-                      ? "atrasada"
-                      : p.status;
+                      // Se estiver pendente mas a data já passou, considerar como atrasada
+                      const hoje = new Date().toLocaleDateString("sv-SE");
+                      const isParcelaAtrasada =
+                        p.status === "pendente" && p.dataVencimento < hoje;
+                      const statusFinal = isParcelaAtrasada
+                        ? "atrasada"
+                        : p.status;
 
-                    const config = statusConfig[statusFinal];
-                    const corItem = config.color;
-                    const isExpanded = expandedParcela === p.numero;
+                      const config = statusConfig[statusFinal];
+                      const corItem = config.color;
+                      const isExpanded = expandedParcela === p.numero;
 
-                    const pDate = new Date(p.dataVencimento);
-                    const month = pDate.getUTCMonth();
-                    const year = pDate.getUTCFullYear();
-                    const matchingLancamentos = lancamentos.filter((l) => {
-                      const lDate = new Date(l.data);
+                      const pDate = new Date(p.dataVencimento);
+                      const month = pDate.getUTCMonth();
+                      const year = pDate.getUTCFullYear();
+                      const matchingLancamentos = lancamentos.filter((l) => {
+                        const lDate = new Date(l.data);
+                        return (
+                          lDate.getUTCMonth() === month &&
+                          lDate.getUTCFullYear() === year
+                        );
+                      });
+
                       return (
-                        lDate.getUTCMonth() === month &&
-                        lDate.getUTCFullYear() === year
-                      );
-                    });
-
-                    return (
-                      <Box key={p.numero}>
-                        <Paper
-                          elevation={0}
-                          onClick={() =>
-                            setExpandedParcela(isExpanded ? null : p.numero)
-                          }
-                          sx={{
-                            p: 1.2,
-                            borderRadius: 2.5,
-                            bgcolor: isExpanded
-                              ? alpha(corItem, 0.05)
-                              : alpha(theme.palette.background.paper, 0.6),
-                            border: `1px solid ${alpha(corItem, isExpanded ? 0.3 : 0.15)}`,
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            "&:hover": {
-                              border: `1px solid ${alpha(corItem, 0.3)}`,
-                              bgcolor: alpha(theme.palette.background.paper, 1),
-                              boxShadow: `0 2px 7px ${alpha(corItem, 0.1)}`,
-                              transform: "translateY(-1px)",
-                            },
-                          }}
-                        >
-                          <Stack
-                            direction="row"
-                            spacing={1.5}
-                            alignItems="center"
-                          >
-                            <Box
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 1.2,
-                                bgcolor: alpha(corItem, 0.1),
-                                color: corItem,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {config.icon}
-                            </Box>
-                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                              <Stack
-                                direction="row"
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Box sx={{ minWidth: 0 }}>
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight={800}
-                                    lineHeight={1.1}
-                                    sx={{ mb: -0.3, mt: 0.5 }}
-                                  >
-                                    {p.label ||
-                                      `Parcela ${String(p.numero).padStart(2, "0")}/${String((divida as DividaUnica).totalParcelas).padStart(2, "0")}`}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    fontWeight={600}
-                                    sx={{ fontSize: "0.65rem", opacity: 0.8 }}
-                                  >
-                                    Vencimento:{" "}
-                                    {fnFormatNaiveDate(
-                                      p.dataVencimento,
-                                      "dd MMM yy",
-                                    )}
-                                  </Typography>
-                                </Box>
-
-                                <Stack
-                                  direction="row"
-                                  spacing={2}
-                                  alignItems="center"
-                                >
-                                  <Stack spacing={0} alignItems="flex-end">
-                                    <Typography
-                                      variant="caption"
-                                      color={corItem}
-                                      fontWeight={900}
-                                      sx={{
-                                        fontSize: 10,
-                                        textTransform: "uppercase",
-                                        mb: -0.2,
-                                        letterSpacing: "0.04em",
-                                      }}
-                                    >
-                                      {config.label}
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight={900}
-                                      color={corItem}
-                                      sx={{ lineHeight: 1 }}
-                                    >
-                                      {p.status === "parcial"
-                                        ? `${formatCurrency(p.valorPago)} / ${formatCurrency(p.valorAgendado)}`
-                                        : formatCurrency(
-                                            p.status === "pago"
-                                              ? p.valorPago
-                                              : p.valorAgendado,
-                                          )}
-                                    </Typography>
-                                  </Stack>
-                                  <IconButton
-                                    size="small"
-                                    sx={{ color: alpha(corItem, 0.5) }}
-                                  >
-                                    <IconEye
-                                      size={16}
-                                      stroke={isExpanded ? 3 : 1.5}
-                                    />
-                                  </IconButton>
-                                </Stack>
-                              </Stack>
-                            </Box>
-                          </Stack>
-                        </Paper>
-
-                        {/* Detalhes (Lançamentos do Mês) - Padrão RESUMO */}
-                        {isExpanded && (
-                          <Box
+                        <Box key={p.numero}>
+                          <Paper
+                            elevation={0}
+                            onClick={() =>
+                              setExpandedParcela(isExpanded ? null : p.numero)
+                            }
                             sx={{
-                              mt: 2,
-                              ml: 8,
-                              mr: 1,
-                              mb: 2,
-                              position: "relative",
+                              p: 1.2,
+                              borderRadius: 2.5,
+                              bgcolor: isExpanded
+                                ? alpha(corItem, 0.05)
+                                : alpha(theme.palette.background.paper, 0.6),
+                              border: `1px solid ${alpha(corItem, isExpanded ? 0.3 : 0.15)}`,
+                              cursor: "pointer",
+                              transition: "all 0.2s",
+                              "&:hover": {
+                                border: `1px solid ${alpha(corItem, 0.3)}`,
+                                bgcolor: alpha(
+                                  theme.palette.background.paper,
+                                  1,
+                                ),
+                                boxShadow: `0 2px 7px ${alpha(corItem, 0.1)}`,
+                                transform: "translateY(-1px)",
+                              },
                             }}
                           >
-                            <Typography
-                              variant="subtitle2"
-                              fontWeight={700}
-                              sx={{
-                                mb: 1.5,
-                                ml: -2.8,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                color: "text.secondary",
-                                fontSize: "0.75rem",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                              }}
+                            <Stack
+                              direction="row"
+                              spacing={1.5}
+                              alignItems="center"
                             >
-                              <IconCalendar size={16} stroke={2.5} />
-                              Movimentações do Período
-                            </Typography>
-
-                            <Box sx={{ position: "relative" }}>
-                              {/* Linha Vertical - Centralizada com o Dot */}
                               <Box
                                 sx={{
-                                  position: "absolute",
-                                  top: 0,
-                                  bottom: 0,
-                                  left: -14,
-                                  width: "2px",
-                                  bgcolor: "divider",
-                                  zIndex: 0,
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: 1.2,
+                                  bgcolor: alpha(corItem, 0.1),
+                                  color: corItem,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
                                 }}
-                              />
-
-                              <Stack
-                                spacing={1.5}
-                                sx={{ position: "relative", zIndex: 1 }}
                               >
-                                {matchingLancamentos.length === 0 ? (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.disabled"
-                                    fontStyle="italic"
-                                    sx={{ ml: 2 }}
-                                  >
-                                    Nenhuma movimentação detalhada encontrada.
-                                  </Typography>
-                                ) : (
-                                  matchingLancamentos.map((l: any) => {
-                                    const isPagamento = l.tipo === "pagamento";
-                                    const temObservacao = !!(
-                                      l.observacao || l.observacaoAutomatica
-                                    );
+                                {config.icon}
+                              </Box>
+                              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                <Stack
+                                  direction="row"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                >
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={800}
+                                      lineHeight={1.1}
+                                      sx={{
+                                        mb: -0.3,
+                                        mt: 0.5,
+                                        fontSize: {
+                                          xs: "0.78rem",
+                                          sm: "0.85rem",
+                                        },
+                                      }}
+                                    >
+                                      {p.label ||
+                                        `Parcela ${String(p.numero).padStart(2, "0")}/${String((divida as DividaUnica).totalParcelas).padStart(2, "0")}`}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      fontWeight={600}
+                                      sx={{
+                                        fontSize: {
+                                          xs: "0.58rem",
+                                          sm: "0.65rem",
+                                        },
+                                        opacity: 0.8,
+                                      }}
+                                    >
+                                      Vencimento:{" "}
+                                      {fnFormatNaiveDate(
+                                        p.dataVencimento,
+                                        "dd MMM yy",
+                                      )}
+                                    </Typography>
+                                  </Box>
 
-                                    return (
-                                      <Box
-                                        key={l.id}
+                                  <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    alignItems="center"
+                                  >
+                                    <Stack spacing={0} alignItems="flex-end">
+                                      <Typography
+                                        variant="caption"
+                                        color={corItem}
+                                        fontWeight={900}
                                         sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          position: "relative",
-                                          "&:hover": {
-                                            "& .timeline-dot": {
-                                              bgcolor: "primary.main",
-                                              transform: "scale(1.25)", // Removido translateY para não desalinhcar
-                                            },
-                                            "& .timeline-text": {
-                                              fontSize: "0.8rem",
-                                              color: "primary.main",
-                                            },
-                                            "& .card-slim": {
-                                              transform: "translateY(-2px)",
-                                              borderColor: alpha(
-                                                theme.palette.primary.main,
-                                                0.4,
-                                              ),
-                                              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.06)}`,
-                                            },
-                                            "& .card-value": {
-                                              color: isPagamento
-                                                ? "success.main"
-                                                : "warning.main",
-                                              transform: "scale(1.05)",
-                                            },
+                                          fontSize: { xs: 8, sm: 10 },
+                                          textTransform: "uppercase",
+                                          mb: -0.2,
+                                          letterSpacing: "0.04em",
+                                        }}
+                                      >
+                                        {config.label}
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        fontWeight={900}
+                                        color={corItem}
+                                        sx={{
+                                          lineHeight: 1,
+                                          fontSize: {
+                                            xs: "0.78rem",
+                                            sm: "0.85rem",
                                           },
                                         }}
                                       >
-                                        {/* Indicador Lateral (Data + Dot) */}
-                                        <Box
-                                          sx={{
-                                            position: "absolute",
-                                            left: -28,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: 30,
-                                            height: 30,
-                                          }}
-                                        >
-                                          {/* Data à esquerda do Dot */}
-                                          <Typography
-                                            variant="caption"
-                                            className="timeline-text"
-                                            fontWeight={800}
-                                            sx={{
-                                              position: "absolute",
-                                              right: 28,
-                                              color: "text.secondary",
-                                              whiteSpace: "nowrap",
-                                              fontSize: "0.65rem",
-                                              transition: "all 0.2s ease",
-                                            }}
-                                          >
-                                            {fnFormatNaiveDate(l.data, "dd/MM")}
-                                          </Typography>
-
-                                          {/* Dot */}
-                                          <Box
-                                            className="timeline-dot"
-                                            sx={{
-                                              width: 10,
-                                              height: 10,
-                                              borderRadius: "50%",
-                                              bgcolor: isPagamento
-                                                ? "success.main"
-                                                : "warning.main",
-                                              border: "2px solid white",
-                                              boxShadow: 1,
-                                              transition: "all 0.2s ease",
-                                              zIndex: 2,
-                                            }}
-                                          />
-                                        </Box>
-
-                                        {/* Card Slim */}
-                                        <Paper
-                                          variant="outlined"
-                                          className="card-slim"
-                                          sx={{
-                                            flex: 1,
-                                            p: "10px 16px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            transition: "all 0.2s ease",
-                                            borderRadius: "12px",
-                                            bgcolor: alpha(
-                                              theme.palette.background.paper,
-                                              0.8,
+                                        {p.status === "parcial"
+                                          ? `${formatCurrency(p.valorPago)} / ${formatCurrency(p.valorAgendado)}`
+                                          : formatCurrency(
+                                              p.status === "pago"
+                                                ? p.valorPago
+                                                : p.valorAgendado,
+                                            )}
+                                      </Typography>
+                                    </Stack>
+                                    {p.status !== "pago" && (
+                                      <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          abrirLancamentoDrawer("pagar", {
+                                            origem: "despesa",
+                                            origemId: Number(
+                                              (divida as DividaVolatil)
+                                                .despesaId || divida.id,
                                             ),
-                                            border: `1px solid ${theme.palette.divider}`,
-                                          }}
-                                        >
-                                          <Box>
-                                            <Typography
-                                              variant="body2"
-                                              fontWeight={700}
-                                              sx={{
-                                                fontSize: "0.85rem",
-                                                color:
-                                                  theme.palette.text.primary,
-                                                lineHeight: 1.2,
-                                              }}
-                                            >
-                                              {l.observacaoAutomatica ||
-                                                l.observacao ||
-                                                "Sem descrição"}
-                                            </Typography>
+                                            valorPrevisto: Number(
+                                              (
+                                                p.valorAgendado - p.valorPago
+                                              ).toFixed(2),
+                                            ),
+                                            nome: divida.nome,
+                                            data: p.dataVencimento,
+                                          });
+                                        }}
+                                        sx={{
+                                          color: theme.palette.success.main,
+                                          mr: 0.5,
+                                          "&:hover": {
+                                            bgcolor: alpha(
+                                              theme.palette.success.main,
+                                              0.1,
+                                            ),
+                                          },
+                                        }}
+                                        title="Pagar esta parcela"
+                                      >
+                                        <IconCoin size={16} />
+                                      </IconButton>
+                                    )}
+                                    <IconButton
+                                      size="small"
+                                      sx={{ color: alpha(corItem, 0.5) }}
+                                    >
+                                      <IconEye
+                                        size={16}
+                                        stroke={isExpanded ? 3 : 1.5}
+                                      />
+                                    </IconButton>
+                                  </Stack>
+                                </Stack>
+                              </Box>
+                            </Stack>
+                          </Paper>
 
-                                            <Typography
-                                              variant="caption"
-                                              sx={{
+                          {/* Detalhes (Lançamentos do Mês) - Padrão RESUMO */}
+                          <Collapse
+                            in={isExpanded}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Box
+                              sx={{
+                                mt: 2,
+                                ml: 8,
+                                mr: 1,
+                                mb: 2,
+                                position: "relative",
+                              }}
+                            >
+                              <Typography
+                                variant="subtitle2"
+                                fontWeight={700}
+                                sx={{
+                                  mb: 1.5,
+                                  ml: -2.8,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  color: "text.secondary",
+                                  fontSize: "0.75rem",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.05em",
+                                }}
+                              >
+                                <IconCalendar size={16} stroke={2.5} />
+                                Movimentações do Período
+                              </Typography>
+
+                              <Box sx={{ position: "relative" }}>
+                                {/* Linha Vertical - Centralizada com o Dot */}
+                                <Box
+                                  sx={{
+                                    position: "absolute",
+                                    top: 0,
+                                    bottom: 0,
+                                    left: -14,
+                                    width: "2px",
+                                    bgcolor: "divider",
+                                    zIndex: 0,
+                                  }}
+                                />
+
+                                <Stack
+                                  spacing={1.5}
+                                  sx={{ position: "relative", zIndex: 1 }}
+                                >
+                                  {matchingLancamentos.length === 0 ? (
+                                    <Typography
+                                      variant="caption"
+                                      color="text.disabled"
+                                      fontStyle="italic"
+                                      sx={{ ml: 2 }}
+                                    >
+                                      Nenhuma movimentação detalhada encontrada.
+                                    </Typography>
+                                  ) : (
+                                    matchingLancamentos.map((l: any) => {
+                                      const isPagamento =
+                                        l.tipo === "pagamento";
+                                      const temObservacao = !!(
+                                        l.observacao || l.observacaoAutomatica
+                                      );
+
+                                      return (
+                                        <Box
+                                          key={l.id}
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            position: "relative",
+                                            "&:hover": {
+                                              "& .timeline-dot": {
+                                                bgcolor: "primary.main",
+                                                transform: "scale(1.25)", // Removido translateY para não desalinhcar
+                                              },
+                                              "& .timeline-text": {
+                                                fontSize: "0.8rem",
+                                                color: "primary.main",
+                                              },
+                                              "& .card-slim": {
+                                                transform: "translateY(-2px)",
+                                                borderColor: alpha(
+                                                  theme.palette.primary.main,
+                                                  0.4,
+                                                ),
+                                                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.06)}`,
+                                              },
+                                              "& .card-value": {
                                                 color: isPagamento
                                                   ? "success.main"
                                                   : "warning.main",
-                                                fontWeight: 800,
-                                                fontSize: "0.65rem",
-                                                textTransform: "uppercase",
-                                                display: "block",
-                                                mt: 0.2,
-                                              }}
-                                            >
-                                              {isPagamento
-                                                ? "Pagamento"
-                                                : "Agendamento"}
-                                            </Typography>
-                                          </Box>
-
-                                          <Typography
-                                            className="card-value"
-                                            variant="subtitle2"
-                                            fontWeight={900}
+                                                transform: "scale(1.05)",
+                                              },
+                                            },
+                                          }}
+                                        >
+                                          {/* Indicador Lateral (Data + Dot) */}
+                                          <Box
                                             sx={{
-                                              transition: "all 0.2s ease",
-                                              color: theme.palette.text.primary,
-                                              fontSize: "0.9rem",
+                                              position: "absolute",
+                                              left: -28,
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              width: 30,
+                                              height: 30,
                                             }}
                                           >
-                                            {formatCurrency(Number(l.valor))}
-                                          </Typography>
-                                        </Paper>
-                                      </Box>
-                                    );
-                                  })
-                                )}
-                              </Stack>
+                                            {/* Data à esquerda do Dot */}
+                                            <Typography
+                                              variant="caption"
+                                              className="timeline-text"
+                                              fontWeight={800}
+                                              sx={{
+                                                position: "absolute",
+                                                right: 28,
+                                                color: "text.secondary",
+                                                whiteSpace: "nowrap",
+                                                fontSize: "0.65rem",
+                                                transition: "all 0.2s ease",
+                                              }}
+                                            >
+                                              {fnFormatNaiveDate(
+                                                l.data,
+                                                "dd/MM",
+                                              )}
+                                            </Typography>
+
+                                            {/* Dot */}
+                                            <Box
+                                              className="timeline-dot"
+                                              sx={{
+                                                width: 10,
+                                                height: 10,
+                                                borderRadius: "50%",
+                                                bgcolor: isPagamento
+                                                  ? "success.main"
+                                                  : "warning.main",
+                                                border: "2px solid white",
+                                                boxShadow: 1,
+                                                transition: "all 0.2s ease",
+                                                zIndex: 2,
+                                              }}
+                                            />
+                                          </Box>
+
+                                          {/* Card Slim */}
+                                          <Paper
+                                            variant="outlined"
+                                            className="card-slim"
+                                            sx={{
+                                              flex: 1,
+                                              p: "10px 16px",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "space-between",
+                                              transition: "all 0.2s ease",
+                                              borderRadius: "12px",
+                                              bgcolor: alpha(
+                                                theme.palette.background.paper,
+                                                0.8,
+                                              ),
+                                              border: `1px solid ${theme.palette.divider}`,
+                                            }}
+                                          >
+                                            <Box>
+                                              <Typography
+                                                variant="body2"
+                                                fontWeight={700}
+                                                sx={{
+                                                  fontSize: "0.85rem",
+                                                  color:
+                                                    theme.palette.text.primary,
+                                                  lineHeight: 1.2,
+                                                }}
+                                              >
+                                                {l.observacaoAutomatica ||
+                                                  l.observacao ||
+                                                  "Sem descrição"}
+                                              </Typography>
+
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
+                                                  color: isPagamento
+                                                    ? "success.main"
+                                                    : "warning.main",
+                                                  fontWeight: 800,
+                                                  fontSize: "0.65rem",
+                                                  textTransform: "uppercase",
+                                                  display: "block",
+                                                  mt: 0.2,
+                                                }}
+                                              >
+                                                {isPagamento
+                                                  ? "Pagamento"
+                                                  : "Agendamento"}
+                                              </Typography>
+                                            </Box>
+
+                                            <Typography
+                                              className="card-value"
+                                              variant="subtitle2"
+                                              fontWeight={900}
+                                              sx={{
+                                                transition: "all 0.2s ease",
+                                                color:
+                                                  theme.palette.text.primary,
+                                                fontSize: "0.9rem",
+                                              }}
+                                            >
+                                              {formatCurrency(Number(l.valor))}
+                                            </Typography>
+                                          </Paper>
+                                        </Box>
+                                      );
+                                    })
+                                  )}
+                                </Stack>
+                              </Box>
                             </Box>
-                          </Box>
-                        )}
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              ) : (
-                <Box
-                  sx={{
-                    p: 4,
-                    textAlign: "center",
-                    bgcolor: alpha(theme.palette.action.hover, 0.05),
-                    borderRadius: 4,
-                    border: `1px dashed ${theme.palette.divider}`,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    Nenhum lançamento vinculado.
-                  </Typography>
-                </Box>
-              )}
+                          </Collapse>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                ) : (
+                  <Box
+                    sx={{
+                      p: 4,
+                      textAlign: "center",
+                      bgcolor: alpha(theme.palette.action.hover, 0.05),
+                      borderRadius: 4,
+                      border: `1px dashed ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Nenhum lançamento vinculado.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
           </Box>
         )}

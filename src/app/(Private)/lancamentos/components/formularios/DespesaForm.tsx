@@ -3,7 +3,10 @@
 import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocomplete";
 import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
-import { HookCurrencyField, HookDecimalField } from "@/app/components/forms/hooksForm/masks";
+import {
+  HookCurrencyField,
+  HookDecimalField,
+} from "@/app/components/forms/hooksForm/masks";
 import CustomToggle from "@/app/components/forms/CustomToggle";
 import { LoadingButton } from "@mui/lab";
 import {
@@ -54,6 +57,7 @@ export default function DespesaForm({
     itens,
     selectedItem,
     setFocus,
+    setValue,
   } = useDespesaForm({ lancamentoParaEditar, dadosIniciais, onSuccess });
   const theme = useTheme();
 
@@ -205,8 +209,14 @@ export default function DespesaForm({
                 "& .MuiOutlinedInput-root": { paddingLeft: "0px" },
                 "& .MuiOutlinedInput-adornmentStart": { marginRight: "4px" },
               }}
-              onChange={(_, value) => {
-                value && setTimeout(() => setFocus("valor"), 0);
+              onChange={(_, _value, _reason, selectedOption) => {
+                if (selectedOption) {
+                  const item = selectedOption as (typeof itens)[number];
+                  if (item.valorEstimado && Number(item.valorEstimado) > 0) {
+                    setValue("valor", Number(item.valorEstimado));
+                  }
+                  setTimeout(() => setFocus("valor"), 0);
+                }
               }}
             />
           </Grid>

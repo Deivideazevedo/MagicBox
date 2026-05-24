@@ -72,7 +72,8 @@ export const dashboardRepository = {
           categoriaId: lancDespesa?.categoriaId ?? null,
         };
       })
-      .sort((a, b) => (a.diaVencido || 0) - (b.diaVencido || 0));
+      .sort((a, b) => (a.diaVencido || 0) - (b.diaVencido || 0))
+      .slice(0, 10);
 
     return {
       cards: {

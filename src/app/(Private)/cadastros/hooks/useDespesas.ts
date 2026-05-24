@@ -169,16 +169,15 @@ export function useDespesas(params?: UseDespesasProps) {
   );
 
   const handleDelete = useCallback(async (despesa: Despesa) => {
-    const confirmed = await confirm.delete({
+    confirm.delete({
       title: "Excluir Despesa?",
       description: `Você está prestes a remover a despesa "${despesa.nome}".`,
       confirmText: "Excluir Despesa",
+      onConfirm: async () => {
+        await deleteDespesa(despesa.id).unwrap();
+        toast.success("Excluído!");
+      },
     });
-    if (!confirmed) return;
-    try {
-      await deleteDespesa(despesa.id).unwrap();
-      toast.success("Excluído!");
-    } catch { }
   }, [deleteDespesa, confirm]);
 
   const handleSubmit = handleSubmitForm(onSubmit);

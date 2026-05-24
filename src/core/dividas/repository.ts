@@ -193,8 +193,8 @@ export const dividasRepository = {
   },
 
   async buscarAgendamentoPorData(despesaId: number, data: Date): Promise<Lancamento | null> {
-    const start = new Date(data.getFullYear(), data.getMonth(), 1);
-    const end = new Date(data.getFullYear(), data.getMonth() + 1, 0);
+    const start = new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth(), 1));
+    const end = new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
     return prisma.lancamento.findFirst({
       where: {
@@ -208,17 +208,7 @@ export const dividasRepository = {
     });
   },
 
-  async liquidarAgendamento(id: number, data: Date, observacao: string): Promise<Lancamento> {
-    return prisma.lancamento.update({
-      where: { id },
-      data: {
-        tipo: 'pagamento',
-        data: data,
-        observacao,
-        updatedAt: new Date()
-      }
-    });
-  },
+
 
   async buscarPorId(id: number): Promise<DividaUnica | null> {
     const despesa = await prisma.despesa.findUnique({
@@ -292,7 +282,12 @@ export const dividasRepository = {
       // usamos o base. Se tem agendamento real, usamos o real (que já é o valor atualizado).
       const numeroParcelaOriginal = mapaParcelasPlanejadas.get(key);
       const isMêsPlanejado = numeroParcelaOriginal !== undefined;
-      const valorFinalAgendado = (valorAgendadoReal > 0) ? valorAgendadoReal : (isMêsPlanejado ? valorParcelaBase : 0);
+      
+      // Se não é planejado (Parcela Adicional), o valor final agendado deve ser igual ao pago nela,
+      // para nunca criar saldo devedor/parcial pendente artificial.
+      const valorFinalAgendado = isMêsPlanejado 
+        ? ((valorAgendadoReal > 0) ? valorAgendadoReal : valorParcelaBase)
+        : valorPagoNoMes;
 
       // Se não tem agendamento nem é planejado, mas TAMBÉM não tem pagamento, ignoramos
       if (valorFinalAgendado === 0 && valorPagoNoMes === 0 && !isMêsPlanejado) return;
@@ -309,7 +304,9 @@ export const dividasRepository = {
       const dateRef = new Date(Date.UTC(ano, mes, diaVencimentoBanco));
       let status: StatusSituacaoParcela = 'pendente';
 
-      if (valorFinalAgendado > 0) {
+      if (!isMêsPlanejado && valorPagoNoMes > 0) {
+        status = 'pago';
+      } else if (valorFinalAgendado > 0) {
         if (valorPagoNoMes >= valorFinalAgendado - 0.01) {
           status = 'pago';
         } else if (valorPagoNoMes > 0) {
@@ -339,10 +336,22 @@ export const dividasRepository = {
       .filter(l => l.tipo === 'pagamento')
       .reduce((acc, l) => acc + Number(l.valor), 0);
 
-    const valorRestante = Math.max(0, valorTotalCalculado - valorPagoTotalGlobal);
+    const valorTotalOriginal = Number(d.valorTotal || 0);
+    const valorRestante = Math.max(0, valorTotalOriginal - valorPagoTotalGlobal);
     const parcelasPagas = situacaoParcelas.filter(p => p.status === 'pago').length;
-    const progresso = valorTotalCalculado > 0 ? (valorPagoTotalGlobal / valorTotalCalculado) * 100 : 0;
+    
+    // Progresso é medido sobre o planejado original para permitir progresso > 100%
+    const progresso = valorTotalOriginal > 0 ? (valorPagoTotalGlobal / valorTotalOriginal) * 100 : 0;
     const proximoAgendamento = situacaoParcelas.find(p => p.status !== 'pago');
+
+    // Parcelas restantes medem apenas as parcelas em aberto do plano original
+    const parcelasRestantes = situacaoParcelas.filter(p => {
+      const date = new Date(p.dataVencimento);
+      const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+      return mapaParcelasPlanejadas.has(key) && p.status !== 'pago';
+    }).length;
+
+    const concluida = (valorRestante <= 0 && valorTotalOriginal > 0) || parcelasRestantes === 0;
 
     return {
       id: d.id,
@@ -351,17 +360,17 @@ export const dividasRepository = {
       cor: d.cor,
       status: d.status as StatusDivida,
       tipo: "UNICA",
-      valorTotal: valorTotalCalculado,
-      totalParcelas: situacaoParcelas.length,
+      valorTotal: valorTotalOriginal,
+      totalParcelas: totalParcelasPlanejadas,
       valorParcela: valorParcelaBase,
       dataInicio: d.dataInicio || d.createdAt,
       diaVencimento: d.diaVencimento || 0,
       valorPago: valorPagoTotalGlobal,
       valorRestante,
       parcelasPagas,
-      parcelasRestantes: Math.max(0, situacaoParcelas.length - parcelasPagas),
+      parcelasRestantes,
       progresso,
-      concluida: (valorRestante <= 0 && valorTotalCalculado > 0) || parcelasPagas >= situacaoParcelas.length,
+      concluida,
       proximoVencimento: proximoAgendamento?.dataVencimento || null,
       diasParaVencer: proximoAgendamento ? differenceInCalendarDays(new Date(proximoAgendamento.dataVencimento), hoje) : null,
       lancamentos: d.lancamentos,
@@ -381,6 +390,7 @@ export const dividasRepository = {
         tipo: "DIVIDA",
         valorTotal: dados.valorTotal,
         totalParcelas: dados.totalParcelas,
+        valorEstimado: dados.valorEstimado,
         diaVencimento: new Date(dados.dataInicio).getUTCDate(),
         dataInicio: new Date(dados.dataInicio),
         icone: dados.icone,

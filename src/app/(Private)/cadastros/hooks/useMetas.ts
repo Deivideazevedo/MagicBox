@@ -208,20 +208,18 @@ export function useMetas() {
     const color = isAtivo ? "success" : "info";
     const icon = isAtivo ? IconCheck : IconTarget;
 
-    const confirmed = await confirm.show({
+    confirm.show({
       title,
       description,
       confirmText,
       color,
       icon,
+      onConfirm: async () => {
+        const novoStatus = isAtivo ? 'I' : 'A';
+        await updateMeta({ id: meta.id, data: { status: novoStatus } }).unwrap();
+        toast.success("Status atualizado!");
+      }
     });
-    if (!confirmed) return;
-
-    try {
-      const novoStatus = isAtivo ? 'I' : 'A';
-      await updateMeta({ id: meta.id, data: { status: novoStatus } }).unwrap();
-      toast.success("Status atualizado!");
-    } catch {}
   }, [updateMeta, confirm]);
 
   const handleDelete = useCallback(async (meta: Meta | number | string) => {
@@ -233,17 +231,15 @@ export function useMetas() {
     }
     if (!target) return;
 
-    const confirmed = await confirm.delete({
+    confirm.delete({
       title: "Excluir Meta?",
       description: `Você está prestes a remover a meta "${target.nome}".`,
       confirmText: "Sim, excluir",
+      onConfirm: async () => {
+        await deleteMeta(Number(target.id)).unwrap();
+        toast.success("Meta removida!");
+      }
     });
-    if (!confirmed) return;
-
-    try {
-      await deleteMeta(Number(target.id)).unwrap();
-      toast.success("Meta removida!");
-    } catch {}
   }, [deleteMeta, metas, confirm]);
 
   const isEditing = Boolean(watch("id"));

@@ -1,24 +1,23 @@
 "use client";
 
+import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import { Divida, DividaUnica } from "@/core/dividas/types";
 import {
   Box,
-  Grid,
-  Slide,
-  useTheme,
   Dialog,
   DialogContent,
+  Grid,
+  Slide,
   useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { useState } from "react";
-import { Formulario } from "./Formulario";
-import { Listagem } from "./Listagem";
-import { DividasDashboard } from "./DividasDashboard";
+import { useMemo, useState } from "react";
 import { useDividas } from "../../hooks/useDividas";
-import { Divida, DividaUnica } from "@/core/dividas/types";
-import { useMemo } from "react";
-import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import { DividasDashboard } from "./DividasDashboard";
 import { DividasTourProvider, useDividasTourRefs } from "./DividasTourContext";
 import { criarDividasTourSteps } from "./dividasTourSteps";
+import { Formulario } from "./Formulario";
+import { Listagem } from "./Listagem";
 
 export const DividasTab = () => {
   return (

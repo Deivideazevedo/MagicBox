@@ -20,20 +20,20 @@ async function obterDadosMétricasCota(userId: number): Promise<{
     WITH 
     global_2min AS (
       SELECT COUNT(1)::int AS total_global_2min
-      FROM "AiUsageLog"
+      FROM "ai_usage_log"
       WHERE status != 'FAILED'
         AND "createdAt" >= NOW() - INTERVAL '2 minutes'
     ),
     user_1hour AS (
       SELECT COUNT(1)::int AS total_user_1hour
-      FROM "AiUsageLog"
+      FROM "ai_usage_log"
       WHERE "userId" = ${userId}
         AND status != 'FAILED'
         AND "createdAt" >= NOW() - INTERVAL '1 hour'
     ),
     last_success AS (
       SELECT "createdAt" AS last_success_date
-      FROM "AiUsageLog"
+      FROM "ai_usage_log"
       WHERE "userId" = ${userId}
         AND status != 'FAILED'
       ORDER BY "createdAt" DESC

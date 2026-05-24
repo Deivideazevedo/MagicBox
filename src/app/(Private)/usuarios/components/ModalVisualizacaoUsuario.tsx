@@ -368,15 +368,15 @@ export default function ModalVisualizacaoUsuario({
                                       size="small"
                                       color="error"
                                       onClick={async () => {
-                                        const confirmed = await confirm.delete({
+                                        confirm.delete({
                                           title: "Remover Senha de Acesso?",
                                           description: `Você está prestes a remover a senha de "${user.name}". Este usuário perderá o acesso via e-mail/senha. O login só será possível através de contas sociais já vinculadas!`,
                                           confirmText: "Remover Senha",
                                           cancelText: "Cancelar",
+                                          onConfirm: async () => {
+                                            await handleRemovePassword();
+                                          }
                                         });
-                                        if (confirmed) {
-                                          await handleRemovePassword();
-                                        }
                                       }}
                                       sx={{
                                         p: 0,

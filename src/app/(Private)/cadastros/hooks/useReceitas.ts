@@ -201,16 +201,15 @@ export const useReceitas = ({
   }, [reset, defaultValues]);
 
   const handleDelete = useCallback(async (receita: Receita) => {
-    const confirmed = await confirm.delete({
+    confirm.delete({
       title: "Excluir Receita?",
       description: `Você está prestes a remover a receita "${receita.nome}".`,
       confirmText: "Excluir Receita",
+      onConfirm: async () => {
+        await deleteReceita(String(receita.id)).unwrap();
+        toast.success("Receita excluída com sucesso!");
+      },
     });
-    if (!confirmed) return;
-    try {
-      await deleteReceita(String(receita.id)).unwrap();
-      toast.success("Receita excluída com sucesso!");
-    } catch { }
   }, [deleteReceita, confirm]);
 
   const handleSubmit = handleSubmitForm(onSubmit);

@@ -67,26 +67,21 @@ export function useDivergencias() {
     if (saldoRealFilter === undefined) return;
 
     const diferenca = saldoRealFilter - (auditoria?.saldoLivreGeral ?? 0);
-    const confirmed = await confirm.show({
+    confirm.show({
       title: "Reconciliar Saldo?",
       description: `Deseja realmente ajustar o saldo livre do MagicBox para bater com o seu saldo bancário real de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoRealFilter)}?`,
       confirmText: "Ajustar Saldo",
       cancelText: "Cancelar",
       color: diferenca < 0 ? "error" : "success",
       icon: IconAlertTriangle,
-    });
-
-    if (!confirmed) return;
-
-    try {
-      const res = await reconciliar({ saldoReal: saldoRealFilter }).unwrap();
-      if (res.success) {
-        toast.success(res.message);
-        handleLimparBusca();
+      onConfirm: async () => {
+        const res = await reconciliar({ saldoReal: saldoRealFilter }).unwrap();
+        if (res.success) {
+          toast.success(res.message);
+          handleLimparBusca();
+        }
       }
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Falha ao reconciliar saldo");
-    }
+    });
   }, [saldoRealFilter, reconciliar, handleLimparBusca, confirm, auditoria]);
 
   // Cobertura automática de deficit mensal
@@ -103,51 +98,45 @@ export function useDivergencias() {
 
   // Marcar lançamento planejado vencido como Pago
   const handlePagarLancamento = useCallback(async (id: number, nome: string, valor: number) => {
-    const confirmed = await confirm.show({
+    confirm.show({
       title: "Confirmar Pagamento",
       description: `Deseja marcar o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)} como pago?`,
       confirmText: "Confirmar",
       cancelText: "Cancelar",
       color: "success",
       icon: IconCheck,
+      onConfirm: async () => {
+        try {
+          setAcaoPagarId(id);
+          await updateLancamento({
+            id: String(id),
+            data: { tipo: "pagamento" } as any,
+          }).unwrap();
+          toast.success("Lançamento confirmado como pago com sucesso!");
+        } finally {
+          setAcaoPagarId(null);
+        }
+      }
     });
-
-    if (!confirmed) return;
-
-    try {
-      setAcaoPagarId(id);
-      await updateLancamento({
-        id: String(id),
-        data: { tipo: "pagamento" } as any,
-      }).unwrap();
-      toast.success("Lançamento confirmado como pago com sucesso!");
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Erro ao liquidar lançamento");
-    } finally {
-      setAcaoPagarId(null);
-    }
   }, [updateLancamento, confirm]);
 
   // Excluir lançamento
   const handleExcluirLancamento = useCallback(async (id: number, nome: string, valor: number) => {
-    const confirmed = await confirm.delete({
+    confirm.delete({
       title: "Excluir Lançamento?",
       description: `Deseja realmente excluir permanentemente o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)}?`,
       confirmText: "Excluir",
       cancelText: "Cancelar",
+      onConfirm: async () => {
+        try {
+          setAcaoExcluirId(id);
+          await deleteLancamento(String(id)).unwrap();
+          toast.success("Ajuste de conciliação removido!");
+        } finally {
+          setAcaoExcluirId(null);
+        }
+      }
     });
-
-    if (!confirmed) return;
-
-    try {
-      setAcaoExcluirId(id);
-      await deleteLancamento(String(id)).unwrap();
-      toast.success("Ajuste de conciliação removido!");
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Erro ao excluir lançamento");
-    } finally {
-      setAcaoExcluirId(null);
-    }
   }, [deleteLancamento, confirm]);
 
   return {

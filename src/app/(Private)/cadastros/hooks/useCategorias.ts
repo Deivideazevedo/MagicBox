@@ -124,17 +124,16 @@ export const useCategorias = ({
   }, [reset, defaultValues, setFocus]);
 
   const handleDelete = useCallback(async (categoria: Categoria) => {
-    const confirmed = await confirm.delete({
+    confirm.delete({
       title: "Excluir Categoria?",
       description: `Você está prestes a remover a categoria "${categoria.nome}".`,
       confirmText: "Excluir Categoria",
+      onConfirm: async () => {
+        await deleteCategoria(String(categoria.id)).unwrap();
+        setValue("id", undefined);
+        toast.success("Categoria excluída com sucesso!");
+      },
     });
-    if (!confirmed) return;
-    try {
-      await deleteCategoria(String(categoria.id)).unwrap();
-      setValue("id", undefined);
-      toast.success("Categoria excluída com sucesso!");
-    } catch { }
   }, [deleteCategoria, setValue, confirm]);
 
   // submit é o handler que o <form> espera

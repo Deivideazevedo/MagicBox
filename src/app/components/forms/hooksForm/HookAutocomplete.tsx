@@ -391,6 +391,14 @@ export function HookAutocomplete<
               shrink: shrinkLabel,
             }}
             {...restTextFieldProps}
+            inputProps={{
+              ...params.inputProps,
+              autoComplete: "off", // Quebra as sugestões do navegador/celular sem ativar gerenciadores de senhas
+              autoCorrect: "off", // Desativa a correção do teclado mobile
+              spellCheck: false, // Remove linhas vermelhas de erro gramatical
+              autoCapitalize: "none", // Remove a capitalização e ajuda a sumir com as sugestões
+              ...restTextFieldProps?.inputProps,
+            }}
             InputProps={{
               ...params.InputProps,
               ...InputProps,

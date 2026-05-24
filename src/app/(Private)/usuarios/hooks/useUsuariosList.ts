@@ -63,31 +63,30 @@ export function useUsuariosList() {
 
   const handleToggleStatus = async (user: User) => {
     const isActivating = user.status !== "A";
-    const confirmed = await confirm.show({
+    confirm.show({
       title: isActivating ? "Ativar Usuário?" : "Inativar Usuário?",
       description: `Deseja realmente ${isActivating ? "ativar" : "inativar"} o acesso de ${user.name}?`,
       confirmText: isActivating ? "Ativar" : "Inativar",
       cancelText: "Cancelar",
       color: isActivating ? "success" : "warning",
-    });
+      onConfirm: async () => {
+        try {
+          const newStatus = isActivating ? "A" : "I";
+          const updated = await updateUsuario({
+            id: user.id,
+            data: { status: newStatus },
+          }).unwrap();
 
-    if (!confirmed) return;
+          if (userVisualizar?.id === user.id) {
+            setUserVisualizar(updated);
+          }
 
-    try {
-      const newStatus = isActivating ? "A" : "I";
-      const updated = await updateUsuario({
-        id: user.id,
-        data: { status: newStatus },
-      }).unwrap();
-
-      if (userVisualizar?.id === user.id) {
-        setUserVisualizar(updated);
+          toast.success(`Usuário ${isActivating ? "ativado" : "inativado"} com sucesso`);
+        } catch (error) {
+          toast.error("Erro ao atualizar status do usuário");
+        }
       }
-
-      toast.success(`Usuário ${isActivating ? "ativado" : "inativado"} com sucesso`);
-    } catch (error) {
-      toast.error("Erro ao atualizar status do usuário");
-    }
+    });
   };
 
   const handleUpdateUser = async (data: UpdateUserDTO) => {
@@ -108,25 +107,25 @@ export function useUsuariosList() {
   };
 
   const handleBulkDelete = async (ids: number[]) => {
-    if (!ids || ids.length === 0) return;
+    if (!ids || ids.length === 0) return false;
 
     const confirmed = await confirm.delete({
       title: "Excluir Permanentemente?",
       description: `Você está prestes a excluir ${ids.length} usuário(s) permanentemente. Esta ação é irreversível. Todos os lançamentos, categorias e dados vinculados a estes usuários serão apagados do servidor de forma definitiva!`,
       confirmText: "Excluir Agora",
       cancelText: "Cancelar",
+      onConfirm: async () => {
+        try {
+          await bulkDelete(ids).unwrap();
+          toast.success(`${ids.length} usuário(s) removido(s) permanentemente`);
+        } catch (error: any) {
+          toast.error("Erro ao remover usuários");
+          throw error;
+        }
+      }
     });
 
-    if (!confirmed) return false;
-
-    try {
-      await bulkDelete(ids).unwrap();
-      toast.success(`${ids.length} usuário(s) removido(s) permanentemente`);
-      return true;
-    } catch (error: any) {
-      toast.error("Erro ao remover usuários");
-      return false;
-    }
+    return confirmed;
   };
 
   const paginacaoHandlers = useMemo(
