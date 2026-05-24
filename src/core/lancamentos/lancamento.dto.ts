@@ -43,6 +43,7 @@ export const findAllQuerySchema = z.object({
   tipo: z.enum(["pagamento", "agendamento"]).optional(),
   observacao: z.string().optional(),
   origem: z.string().optional(),
+  status: z.string().optional(),
 }).strict();
 
 

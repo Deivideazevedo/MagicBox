@@ -26,6 +26,7 @@ export const lancamentoRepository = {
       despesaId,
       receitaId,
       origem,
+      status,
     } = filtros;
 
     let whereClause: Prisma.LancamentoWhereInput = {};
@@ -73,24 +74,24 @@ export const lancamentoRepository = {
       };
     }
 
-    // Apenas despesas, receitas ou metas não deletadas (deletedAt null)
+    // Apenas despesas, receitas ou metas não deletadas (deletedAt null) e filtrando pelo status do vínculo
     whereClause.AND = [
       {
         OR: [
           { despesaId: null },
-          { despesa: { deletedAt: null } }
+          { despesa: { deletedAt: null, ...(status ? { status } : {}) } }
         ]
       },
       {
         OR: [
           { receitaId: null },
-          { receita: { deletedAt: null } }
+          { receita: { deletedAt: null, ...(status ? { status } : {}) } }
         ]
       },
       {
         OR: [
           { metaId: null },
-          { meta: { deletedAt: null } }
+          { meta: { deletedAt: null, ...(status ? { status } : {}) } }
         ]
       }
     ];

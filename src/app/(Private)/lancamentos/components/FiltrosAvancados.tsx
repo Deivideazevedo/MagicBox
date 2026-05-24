@@ -50,7 +50,7 @@ type ItemComOrigem = (Despesa | Receita | Meta) & {
 };
 
 // Definição de filtros opcionais disponíveis
-type FiltroKey = "periodo" | "origem" | "tipo" | "item" | "observacao";
+type FiltroKey = "periodo" | "origem" | "tipo" | "item" | "observacao" | "status";
 
 interface FiltroDefinicao {
   key: FiltroKey;
@@ -63,6 +63,7 @@ const FILTROS_DISPONIVEIS: FiltroDefinicao[] = [
   { key: "tipo", label: "Tipo" },
   { key: "item", label: "Nome" },
   { key: "observacao", label: "Observação" },
+  { key: "status", label: "Status" },
 ];
 
 interface FiltrosAvancadosProps {
@@ -89,6 +90,7 @@ export default function FiltrosAvancados({
     tipo: "",
     observacao: "",
     item: null,
+    status: filtros.status || "A",
   };
 
   const { control, handleSubmit, reset, watch, setValue } =
@@ -129,6 +131,7 @@ export default function FiltrosAvancados({
     else if (key === "origem") setValue("origem", "");
     else if (key === "tipo") setValue("tipo", "");
     else if (key === "observacao") setValue("observacao", "");
+    else if (key === "status") setValue("status", "A");
     else if (key === "periodo") {
       setValue("dataInicio", defaultValues.dataInicio);
       setValue("dataFim", defaultValues.dataFim);
@@ -185,7 +188,7 @@ export default function FiltrosAvancados({
 
   const onConvert = useCallback(
     (rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
-      const { item, origem, tipo, ...rest } = rawFilters;
+      const { item, origem, tipo, status, ...rest } = rawFilters;
 
       const spllitedItem = item ? item.split("-") : [];
       const despesaId =
@@ -203,6 +206,7 @@ export default function FiltrosAvancados({
         origem,
         observacao: rest.observacao || undefined,
         tipo: tipo || undefined,
+        status: status || undefined,
       };
       return result;
     },
@@ -234,7 +238,8 @@ export default function FiltrosAvancados({
       (novosFiltros.receitaId || undefined) !==
         (filtros.receitaId || undefined) ||
       (novosFiltros.observacao || undefined) !==
-        (filtros.observacao || undefined);
+        (filtros.observacao || undefined) ||
+      (novosFiltros.status || "A") !== (filtros.status || "A");
 
     if (!mudou) return;
 
@@ -251,6 +256,7 @@ export default function FiltrosAvancados({
       origem: "",
       tipo: "",
       observacao: "",
+      status: "A",
     });
     setExpandido(false);
     setFiltrosAtivos([]);
@@ -260,6 +266,7 @@ export default function FiltrosAvancados({
         ...getDefaultDates(),
         page: 0,
         limit: 10,
+        status: "A",
       },
       true,
     );
@@ -346,8 +353,56 @@ export default function FiltrosAvancados({
             shrinkLabel
           />
         );
+      case "status":
+        return (
+          <HookSelect
+            name="status"
+            control={control}
+            label="Status"
+            placeholder="Todos"
+            returnAsNumber={false}
+            size="small"
+            displayEmpty
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="A">Ativo</MenuItem>
+            <MenuItem value="I">Inativo</MenuItem>
+          </HookSelect>
+        );
     }
   };
+
+  // Calcula a quantidade de filtros com valor ativo de filtragem
+  const quantidadeFiltrosAplicados = useMemo(() => {
+    let count = 0;
+
+    // 1. Nome/Item (só se estiver visível e preenchido)
+    if (filtrosAtivos.includes("item") && formValues.item) {
+      count++;
+    }
+    // 2. Observação
+    if (filtrosAtivos.includes("observacao") && formValues.observacao && formValues.observacao.trim() !== "") {
+      count++;
+    }
+    // 3. Origem
+    if (filtrosAtivos.includes("origem") && formValues.origem && String(formValues.origem) !== "") {
+      count++;
+    }
+    // 4. Tipo
+    if (filtrosAtivos.includes("tipo") && formValues.tipo && String(formValues.tipo) !== "") {
+      count++;
+    }
+    // 5. Período
+    if (filtrosAtivos.includes("periodo") && formValues.dataInicio && formValues.dataFim) {
+      count++;
+    }
+    // 6. Status (só conta se ativado e diferir do padrão "A")
+    if (filtrosAtivos.includes("status") && formValues.status !== "A") {
+      count++;
+    }
+
+    return count;
+  }, [filtrosAtivos, formValues]);
 
   return (
     <Accordion
@@ -405,7 +460,7 @@ export default function FiltrosAvancados({
         >
           <Tooltip title="Filtros" arrow>
             <Badge
-              badgeContent={filtrosAtivos.length}
+              badgeContent={quantidadeFiltrosAplicados}
               color="primary"
               anchorOrigin={{
                 vertical: "top",

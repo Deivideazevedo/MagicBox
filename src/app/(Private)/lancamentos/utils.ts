@@ -7,6 +7,7 @@ export interface FiltrosLancamentos {
   observacao?: string;
   origem?: "despesa" | "receita" | "meta" | "";
   tipo?: "pagamento" | "agendamento" | "";
+  status?: string;
 }
 
 // Função para obter primeiro e último dia do mês atual
@@ -32,5 +33,6 @@ export const getDefaultFilters = (): FindAllFilters => {
     observacao: undefined,
     despesaId: undefined,
     receitaId: undefined,
+    status: "A",
   };
 };
