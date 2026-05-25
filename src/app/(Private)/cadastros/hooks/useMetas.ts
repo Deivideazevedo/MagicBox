@@ -37,6 +37,26 @@ const metaSchema = z.object({
 }).superRefine((data, ctx) => {
   const hoje = getHojeLocal();
 
+  // Validação do valor
+  if (data.isAporte) {
+    if (!data.valorMeta || data.valorMeta <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Valor do aporte deve ser maior que zero",
+        path: ["valorMeta"],
+      });
+      return;
+    }
+  } else {
+    if (data.valorMeta !== undefined && data.valorMeta !== null && data.valorMeta <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "O valor objetivo deve ser maior que zero",
+        path: ["valorMeta"],
+      });
+    }
+  }
+
   // Validação de Data Alvo (apenas se informada e não for Aporte)
   if (!data.isAporte && data.dataAlvo && data.dataAlvo < hoje) {
     ctx.addIssue({
@@ -109,7 +129,7 @@ export function useMetas() {
     resolver: zodResolver(metaSchema),
     defaultValues: {
       nome: "",
-      valorMeta: "",
+      valorMeta: null,
       dataAlvo: getHojeLocal(),
       isAporte: false,
       valorRestante: undefined,
@@ -150,7 +170,7 @@ export function useMetas() {
             await createMeta(payload).unwrap();
           }
         }
-        reset({ nome: "", valorMeta: "", dataAlvo: getHojeLocal(), icone: "IconTarget", cor: "" });
+        reset({ nome: "", valorMeta: null, dataAlvo: getHojeLocal(), icone: "IconTarget", cor: "" });
         setIsAporte(false);
       } catch (error) {
         // Erro tratado globalmente pelo RTK Query e API
@@ -165,7 +185,7 @@ export function useMetas() {
     reset({
       id: meta.id,
       nome: meta.nome,
-      valorMeta: meta.valorMeta ?? undefined,
+      valorMeta: meta.valorMeta ?? null,
       dataAlvo: meta.dataAlvo ? new Date(meta.dataAlvo).toISOString().split("T")[0] : "",
       icone: meta.icone,
       cor: meta.cor,
@@ -183,7 +203,7 @@ export function useMetas() {
     reset({
       id: undefined,
       nome: meta.nome,
-      valorMeta: "",
+      valorMeta: null,
       dataAlvo: getHojeLocal(),
       isAporte: true,
       valorRestante: restante,
@@ -267,7 +287,7 @@ export function useMetas() {
     handleCancelEdit: () => {
       setIsAporte(false);
       setTargetMeta(null);
-      reset({ id: undefined, nome: "", valorMeta: "", isAporte: false, valorRestante: undefined });
+      reset({ id: undefined, nome: "", valorMeta: null, isAporte: false, valorRestante: undefined });
     },
   };
 }

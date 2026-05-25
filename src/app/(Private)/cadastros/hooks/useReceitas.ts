@@ -26,7 +26,7 @@ const receitaSchemaZod = z.object({
   icone: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
   // Tornamos opcional no objeto base para validar manualmente depois
-  valorEstimado: z.union([z.number(), z.string()]).optional().nullable(),
+  valorEstimado: z.union([z.number(), z.string(), z.null()]).optional().nullable(),
   diaRecebimento: z.number().min(1).max(31).optional().nullable(),
   status: z.enum(["A", "I"]),
   categoriaId: z.number().min(1, "Categoria é obrigatória"),
@@ -82,7 +82,7 @@ interface UseReceitasProps {
 export const useReceitas = ({
   receitas: receitasProps,
   categorias: categoriasProps,
-}: UseReceitasProps = {}) => {
+  }: UseReceitasProps = {}) => {
   const { data: session } = useSession();
   const confirm = useConfirm();
 
@@ -108,7 +108,7 @@ export const useReceitas = ({
       icone: "IconWallet",
       cor: "",
       categoriaId: 0,
-      valorEstimado: "",
+      valorEstimado: null,
       diaRecebimento: null,
       status: "A" as const,
       tipo: "VARIAVEL" as const,

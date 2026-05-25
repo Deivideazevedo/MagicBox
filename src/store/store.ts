@@ -1,6 +1,16 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { combineReducers } from "redux";
-import { persistReducer, persistStore, createTransform } from "redux-persist";
+import {
+  persistReducer,
+  persistStore,
+  createTransform,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
 import storage from "redux-persist/lib/storage";
 import CustomizerReducer from "./customizer/CustomizerSlice";
 import LancamentoUiReducer from "./apps/lancamentos/LancamentoSlice";
@@ -59,7 +69,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
       immutableCheck: false,
     }).concat(api.middleware),

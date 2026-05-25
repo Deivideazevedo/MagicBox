@@ -5,6 +5,8 @@ import {
   AutocompleteRenderOptionState,
   AutocompleteValue,
   Chip,
+  CircularProgress,
+  InputAdornment,
   ListItemText,
   MenuItem,
   TextFieldProps,
@@ -39,6 +41,7 @@ type HookAutocompleteProps<
     getOptionLabel?: (option: T) => string;
     getOptionValue?: (option: T) => string | number;
     isOptionEqualToValue?: (option: T, value: T) => boolean;
+    loadingPosition?: "start" | "end";
     onChange?: (
       event: SyntheticEvent,
       value: AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>,
@@ -69,6 +72,10 @@ export function HookAutocomplete<
   shrinkLabel,
   options,
   onChange,
+  loading = false,
+  loadingText = "Carregando opções...",
+  noOptionsText = "Não há opções",
+  loadingPosition = "start",
   ...props
 }: HookAutocompleteProps<
   TFieldValues,
@@ -356,6 +363,9 @@ export function HookAutocomplete<
 
   return (
     <Autocomplete
+      loading={loading}
+      loadingText={loadingText}
+      noOptionsText={noOptionsText}
       value={getCurrentValue()}
       options={componentOptions}
       onChange={handleChange}
@@ -376,6 +386,11 @@ export function HookAutocomplete<
             zIndex: (theme) => theme.zIndex.modal + 100,
           },
         },
+        paper: {
+          sx: {
+            backgroundColor: "background.default",
+          },
+        },
       }}
       renderInput={(params) => {
         const { InputProps, ...restTextFieldProps } = textFieldProps || {};
@@ -393,17 +408,28 @@ export function HookAutocomplete<
             {...restTextFieldProps}
             inputProps={{
               ...params.inputProps,
-              autoComplete: "off", // Quebra as sugestões do navegador/celular sem ativar gerenciadores de senhas
+              autoComplete: "new-password", // Quebra as sugestões do navegador/celular sem ativar gerenciadores de senhas
               autoCorrect: "off", // Desativa a correção do teclado mobile
               spellCheck: false, // Remove linhas vermelhas de erro gramatical
               autoCapitalize: "none", // Remove a capitalização e ajuda a sumir com as sugestões
+              name: "hidden-autofill-name",
               ...restTextFieldProps?.inputProps,
             }}
-            InputProps={{
+             InputProps={{
               ...params.InputProps,
               ...InputProps,
+              startAdornment: (loading && loadingPosition === "start") ? (
+                <InputAdornment position="start" sx={{ pl: 1.5 }}>
+                  <CircularProgress color="inherit" size={16} />
+                </InputAdornment>
+              ) : (
+                InputProps?.startAdornment || params.InputProps.startAdornment
+              ),
               endAdornment: (
                 <>
+                  {loading && loadingPosition === "end" ? (
+                    <CircularProgress color="inherit" size={16} sx={{ mr: 1 }} />
+                  ) : null}
                   {params.InputProps.endAdornment}
                   {InputProps?.endAdornment}
                 </>

@@ -19,7 +19,11 @@ const receitaSchema = z.object({
   id: z.number().optional(),
   itemId: z.number().min(1, "Selecione uma receita"),
   tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.number().min(0.01, "Valor obrigatório"),
+  valor: z
+    .number()
+    .min(0.01, "Valor obrigatório")
+    .nullable()
+    .refine((val) => val !== null && val > 0, "Valor obrigatório"),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
   observacaoAutomatica: z.string().optional(),
@@ -46,7 +50,7 @@ export function useReceitaForm({
   const { data: session } = useSession();
 
   // Query de receitas
-  const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
+  const { data: receitasApi = [], isLoading: isReceitasLoading } = useGetReceitasQuery(undefined, { skip: !session });
 
   const [createLancamento, { isLoading: isCreating }] = useCreateLancamentoMutation();
   const [updateLancamento, { isLoading: isUpdating }] = useUpdateLancamentoMutation();
@@ -56,7 +60,7 @@ export function useReceitaForm({
       id: undefined,
       itemId: 0,
       tipo: "pagamento",
-      valor: "" as any,
+      valor: null,
       data: fnGetTodayISO(),
       observacao: "",
       observacaoAutomatica: "",
@@ -147,7 +151,7 @@ export function useReceitaForm({
           receitaId: formData.itemId,
           metaId: null,
           tipo: formData.tipo as any,
-          valor: formData.valor,
+          valor: Number(formData.valor),
           data: formData.data,
           observacao: formData.observacao || undefined,
           observacaoAutomatica: formData.observacaoAutomatica || undefined,
@@ -203,6 +207,7 @@ export function useReceitaForm({
     isCreating: isCreating || isUpdating,
     itens: receitasApi,
     selectedItem,
+    isLoading: isReceitasLoading,
     reset,
     defaultValues,
     setFocus,

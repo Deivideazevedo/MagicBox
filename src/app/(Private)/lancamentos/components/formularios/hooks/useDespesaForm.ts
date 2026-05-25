@@ -1,6 +1,9 @@
 "use client";
 
-import { LancamentoPayload, LancamentoResposta } from "@/core/lancamentos/types";
+import {
+  LancamentoPayload,
+  LancamentoResposta,
+} from "@/core/lancamentos/types";
 import {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
@@ -19,7 +22,11 @@ const despesaSchema = z.object({
   id: z.number().optional(),
   itemId: z.number().min(1, "Selecione uma despesa"),
   tipo: z.enum(["pagamento", "agendamento"]),
-  valor: z.union([z.number(), z.string()]).refine((v) => Number(v) > 0, "Valor obrigatório").nullable(),
+  valor: z
+    .number()
+    .min(0.01, "Valor obrigatório")
+    .nullable()
+    .refine((val) => val !== null && val > 0, "Valor obrigatório"),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
   observacaoAutomatica: z.string().optional(),
@@ -46,17 +53,21 @@ export function useDespesaForm({
   const { data: session } = useSession();
 
   // Query de despesas
-  const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
+  const { data: despesasApi = [], isLoading: isDespesasLoading } = useGetDespesasQuery(undefined, {
+    skip: !session,
+  });
 
-  const [createLancamento, { isLoading: isCreating }] = useCreateLancamentoMutation();
-  const [updateLancamento, { isLoading: isUpdating }] = useUpdateLancamentoMutation();
+  const [createLancamento, { isLoading: isCreating }] =
+    useCreateLancamentoMutation();
+  const [updateLancamento, { isLoading: isUpdating }] =
+    useUpdateLancamentoMutation();
 
   const defaultValues: DespesaFormData = useMemo(
     () => ({
       id: undefined,
       itemId: 0,
       tipo: "pagamento",
-      valor: "",
+      valor: null,
       data: fnGetTodayISO(),
       observacao: "",
       observacaoAutomatica: "",
@@ -113,7 +124,6 @@ export function useDespesaForm({
         observacao: "",
         observacaoAutomatica: `Pagamento: ${dadosIniciais.nome}`,
       });
-
     }
   }, [lancamentoParaEditar, dadosIniciais, reset, defaultValues]);
 
@@ -151,12 +161,15 @@ export function useDespesaForm({
           data: formData.data,
           observacao: formData.observacao || undefined,
           observacaoAutomatica: formData.observacaoAutomatica || undefined,
-          parcelas: formData.parcelar && formData.parcelas ? formData.parcelas : null,
-
+          parcelas:
+            formData.parcelar && formData.parcelas ? formData.parcelas : null,
         };
 
         if (formData.id) {
-          await updateLancamento({ id: String(formData.id), data: payload }).unwrap();
+          await updateLancamento({
+            id: String(formData.id),
+            data: payload,
+          }).unwrap();
           toast.success("Despesa atualizada com sucesso");
         } else {
           await createLancamento(payload).unwrap();
@@ -164,10 +177,10 @@ export function useDespesaForm({
         }
 
         // Reseta mantendo o tipo (Pagamento/Agendamento) e a data correta
-        reset({ 
-          ...defaultValues, 
+        reset({
+          ...defaultValues,
           tipo: formData.tipo,
-          data: fnGetTodayISO() 
+          data: fnGetTodayISO(),
         });
 
         // Foca novamente no campo inicial
@@ -178,7 +191,15 @@ export function useDespesaForm({
         // Erro tratado pelo interceptor
       }
     },
-    [session, createLancamento, updateLancamento, reset, defaultValues, onSuccess, setFocus],
+    [
+      session,
+      createLancamento,
+      updateLancamento,
+      reset,
+      defaultValues,
+      onSuccess,
+      setFocus,
+    ],
   );
 
   const handleTipoChange = useCallback(
@@ -203,6 +224,7 @@ export function useDespesaForm({
     isCreating: isCreating || isUpdating,
     itens: despesasApi,
     selectedItem,
+    isLoading: isDespesasLoading,
     reset,
     defaultValues,
     setFocus,

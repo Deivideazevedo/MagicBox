@@ -21,7 +21,11 @@ const metaSchema = z.object({
   id: z.number().optional(),
   itemId: z.number().min(1, "Selecione uma meta"),
   tipo: z.enum(["investimento", "retirada"]),
-  valor: z.union([z.number(), z.string()]).refine((v) => Number(v) > 0, "Valor obrigatório").nullable(),
+  valor: z
+    .number()
+    .min(0.01, "Valor obrigatório")
+    .nullable()
+    .refine((val) => val !== null && val > 0, "Valor obrigatório"),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
   observacaoAutomatica: z.string().optional(),
@@ -46,7 +50,7 @@ export function useMetaForm({
   const { data: session } = useSession();
 
   // Queries
-  const { data: metasApi = [] } = useGetMetasQuery(undefined, { skip: !session });
+  const { data: metasApi = [], isLoading: isMetasLoading } = useGetMetasQuery(undefined, { skip: !session });
   const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
   const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
 
@@ -58,7 +62,7 @@ export function useMetaForm({
       id: undefined,
       itemId: 0,
       tipo: "investimento" as const,
-      valor: "",
+      valor: null,
       data: fnGetTodayISO(),
       observacao: "",
       observacaoAutomatica: "",
@@ -226,6 +230,7 @@ export function useMetaForm({
     isCreating: isCreating || isUpdating,
     itens: metasApi,
     selectedItem,
+    isLoading: isMetasLoading,
     reset,
     defaultValues,
     setFocus,

@@ -36,9 +36,9 @@ const dividaSchema = z
       .optional()
       .nullable(),
     valorTotal: z
-      .union([z.number(), z.string()])
+      .union([z.number(), z.string(), z.null()])
       .transform((val) =>
-        val === "" || val === undefined ? undefined : Number(val),
+        val === "" || val === undefined || val === null ? undefined : Number(val),
       )
       .optional()
       .nullable(),
@@ -56,7 +56,7 @@ const dividaSchema = z
     // Contexto de Aporte
     isAporte: z.boolean().optional(),
     valorAporte: z
-      .union([z.number(), z.string()])
+      .union([z.number(), z.string(), z.null()])
       .optional()
       .nullable()
       .transform((val) =>
@@ -141,7 +141,7 @@ export function useDividas() {
     resolver: zodResolver(dividaSchema),
     defaultValues: {
       nome: "",
-      valorTotal: "",
+      valorTotal: null,
       totalParcelas: 1,
       dataInicio: getHojeLocal(),
       isAporte: false,
@@ -301,7 +301,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
             id: undefined,
             nome: targetDivida.nome,
             isAporte: true,
-            valorAporte: "",
+            valorAporte: null,
             dataInicio: getHojeLocal(),
           });
           setTimeout(() => setFocus("valorAporte"), 100);
@@ -325,7 +325,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
         }
         reset({
           nome: "",
-          valorTotal: "",
+          valorTotal: null,
           totalParcelas: 1,
           dataInicio: getHojeLocal(),
           icone: "IconCreditCard",
@@ -462,7 +462,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     handleCancelEdit: () => {
       setIsAporte(false);
       setTargetDivida(null);
-      reset({ id: undefined, nome: "", valorTotal: "", isAporte: false });
+      reset({ id: undefined, nome: "", valorTotal: null, isAporte: false });
     },
   };
 }

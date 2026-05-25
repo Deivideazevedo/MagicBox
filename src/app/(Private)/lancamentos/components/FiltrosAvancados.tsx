@@ -8,6 +8,9 @@ import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 import { Despesa } from "@/core/despesas/types";
 import { Meta } from "@/core/metas/types";
 import { Receita } from "@/core/receitas/types";
+import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
+import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
+import { useGetMetasQuery } from "@/services/endpoints/metasApi";
 import {
   Accordion,
   AccordionDetails,
@@ -74,9 +77,9 @@ const FILTROS_DISPONIVEIS: FiltroDefinicao[] = [
 
 interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
-  despesas: Despesa[];
-  receitas: Receita[];
-  metas: Meta[];
+  despesas?: Despesa[];
+  receitas?: Receita[];
+  metas?: Meta[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
   refs?: LancamentosTourRefs;
 }
@@ -89,6 +92,16 @@ export default function FiltrosAvancados({
   handleSearch,
   refs,
 }: FiltrosAvancadosProps) {
+  const { data: despesasApi = [], isLoading: isDespesasLoading } = useGetDespesasQuery();
+  const { data: receitasApi = [], isLoading: isReceitasLoading } = useGetReceitasQuery();
+  const { data: metasApi = [], isLoading: isMetasLoading } = useGetMetasQuery();
+
+  const finalDespesas = despesas && despesas.length > 0 ? despesas : despesasApi;
+  const finalReceitas = receitas && receitas.length > 0 ? receitas : receitasApi;
+  const finalMetas = metas && metas.length > 0 ? metas : metasApi;
+
+  const loadingItens = isDespesasLoading || isReceitasLoading || isMetasLoading;
+
   const defaultValues: FiltrosLancamentos = {
     dataInicio: filtros.dataInicio || "",
     dataFim: filtros.dataFim || "",
@@ -151,32 +164,32 @@ export default function FiltrosAvancados({
   // Dados processados
   const despesasComOrigem: ItemComOrigem[] = useMemo(
     () =>
-      despesas.map((d) => ({
+      finalDespesas.map((d) => ({
         ...d,
         origem: "despesa" as const,
         uniqueId: `despesa-${d.id}`,
       })),
-    [despesas],
+    [finalDespesas],
   );
 
   const receitasComOrigem: ItemComOrigem[] = useMemo(
     () =>
-      receitas.map((f) => ({
+      finalReceitas.map((f) => ({
         ...f,
         origem: "receita" as const,
         uniqueId: `receita-${f.id}`,
       })),
-    [receitas],
+    [finalReceitas],
   );
 
   const metasComOrigem: ItemComOrigem[] = useMemo(
     () =>
-      metas.map((m) => ({
+      finalMetas.map((m) => ({
         ...m,
         origem: "meta" as const,
         uniqueId: `meta-${m.id}`,
       })),
-    [metas],
+    [finalMetas],
   );
 
   const despesasFiltradas = despesasComOrigem;
@@ -358,6 +371,8 @@ export default function FiltrosAvancados({
             getOptionLabel={(item) => item.nome}
             size="small"
             shrinkLabel
+            loading={loadingItens}
+            loadingPosition="end"
           />
         );
       case "observacao":

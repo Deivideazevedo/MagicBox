@@ -508,7 +508,7 @@ const components: any = (theme: Theme) => {
             borderColor: theme.palette.grey[400],
           },
           "& .MuiSelect-icon": {
-            color: theme.palette.grey[500],
+            color: theme.palette.action.active,
             transition: "color 0.15s ease-in-out",
           },
 

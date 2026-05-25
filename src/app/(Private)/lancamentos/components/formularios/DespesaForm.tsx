@@ -56,6 +56,7 @@ export default function DespesaForm({
     isCreating,
     itens,
     selectedItem,
+    isLoading,
     setFocus,
     setValue,
   } = useDespesaForm({ lancamentoParaEditar, dadosIniciais, onSuccess });
@@ -197,7 +198,7 @@ export default function DespesaForm({
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
-              forcePopupIcon={false}
+              loading={isLoading}
               textFieldProps={{
                 InputProps: {
                   startAdornment: (

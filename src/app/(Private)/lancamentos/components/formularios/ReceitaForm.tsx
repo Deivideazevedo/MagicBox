@@ -56,6 +56,7 @@ export default function ReceitaForm({
     isCreating,
     itens,
     selectedItem,
+    isLoading,
     setFocus,
     setValue,
   } = useReceitaForm({ lancamentoParaEditar, dadosIniciais, onSuccess });
@@ -196,7 +197,7 @@ export default function ReceitaForm({
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
-              forcePopupIcon={false}
+              loading={isLoading}
               textFieldProps={{
                 InputProps: {
                   startAdornment: (
@@ -293,7 +294,7 @@ export default function ReceitaForm({
                     placeholder="Ex: 12"
                     InputLabelProps={{ shrink: true }}
                   />
-                  {parcelar && parcelas && valorTotal > 0 ? (
+                  {parcelar && parcelas && valorTotal && valorTotal > 0 ? (
                     <Box
                       mt={1.5}
                       p={1.5}

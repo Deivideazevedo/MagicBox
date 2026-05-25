@@ -50,6 +50,7 @@ export default function MetaForm({
     isCreating,
     itens,
     selectedItem,
+    isLoading,
     setFocus,
     setValue,
     destinoOrigem,
@@ -200,7 +201,7 @@ export default function MetaForm({
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
-              forcePopupIcon={false}
+              loading={isLoading}
               textFieldProps={{
                 InputProps: {
                   startAdornment: (

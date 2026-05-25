@@ -5,22 +5,22 @@ import {
   useController,
   UseControllerProps,
 } from "react-hook-form";
-import {
-  useNumberFormat,
-  unformat,
-  format,
-} from "@react-input/number-format";
 import CustomTextField from "../../../theme-elements/CustomTextField";
-import { NumberFormatOptions } from "./types";
 
 type HookCurrencyFieldProps<TFieldValues extends FieldValues> =
   UseControllerProps<TFieldValues> &
-  Omit<TextFieldProps, "name" | "value" | "onChange"> & {
-    /** Opções de formatação do número */
-    formatOptions?: NumberFormatOptions;
-    /** Se true, retorna o valor como number, se false retorna como string formatada */
-    returnAsNumber?: boolean;
-  };
+    Omit<TextFieldProps, "name" | "value" | "onChange"> & {
+      returnAsNumber?: boolean;
+    };
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
 
 export function HookCurrencyField<TFieldValues extends FieldValues>({
   name,
@@ -28,8 +28,7 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
   rules,
   defaultValue,
   shouldUnregister,
-  formatOptions,
-  returnAsNumber = false,
+  returnAsNumber = true,
   ...textFieldProps
 }: HookCurrencyFieldProps<TFieldValues>) {
   const {
@@ -37,64 +36,43 @@ export function HookCurrencyField<TFieldValues extends FieldValues>({
     fieldState: { error },
   } = useController({ name, control, rules, defaultValue, shouldUnregister });
 
-  // Defaults para formatação de moeda
-  const defaultFormatOptions: NumberFormatOptions = {
-    locales: "pt-BR",
-    format: "currency",
-    currency: "BRL",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-    ...formatOptions, // Sobrescreve com as opções do usuário
-  } as any; // Type assertion para evitar erro de tipo do signDisplay
-
-  const inputRef = useNumberFormat(defaultFormatOptions as any);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // remover formataçoes matematica nativamente aplicadas no input
     const rawValue = e.target.value;
+    const onlyDigits = rawValue.replace(/\D/g, "");
 
-    if (rawValue === "") {
-        field.onChange(returnAsNumber ? null : "");
-        return;
+    // ADIÇÃO: Se o usuário apagar tudo, o valor no form passa a ser null (ou string vazia)
+    // CORREÇÃO: Se não houver dígitos, ou se o valor numérico restante for zero absoluto
+    // Isso captura tanto o "selecionar tudo e apagar" quanto o "apagar dígito por dígito até o fim"
+    if (!onlyDigits || onlyDigits === "0" || onlyDigits === "00") {
+      field.onChange(returnAsNumber ? null : "");
+      return;
     }
 
-    const numericString = unformat(
-      rawValue,
-      defaultFormatOptions.locales
-    );
-
-    if (returnAsNumber) {
-      const number = Number(numericString);
-      field.onChange(isNaN(number) ? null : number);
-    } else {
-      field.onChange(numericString);
-    }
+    const numericValue = parseInt(onlyDigits, 10) / 100;
+    field.onChange(returnAsNumber ? numericValue : numericValue.toString());
   };
 
-  const visualValue = field.value !== undefined && field.value !== null && field.value !== ""
-    ? format(String(field.value), defaultFormatOptions as any)
-    : "";
+  // ADIÇÃO: Se o valor for null/undefined/vazio, a interface mostra "" (campo limpo)
+  const displayValue =
+    field.value !== undefined && field.value !== null && field.value !== ""
+      ? formatCurrency(Number(field.value))
+      : "";
 
   return (
     <CustomTextField
       {...textFieldProps}
       {...field}
-      value={visualValue}
+      value={displayValue}
       onChange={handleChange}
       type="text"
-      // ADIÇÃO: inputMode="decimal" abre o teclado numérico no celular (com vírgula/ponto)
+      // Um placeholder amigável ajuda o usuário a entender o formato esperado quando o campo está vazio
+      placeholder="R$ 0,00"
       inputProps={{
-        inputMode: "decimal",
-        ...textFieldProps.inputProps, // Mantém outros props se passados
+        inputMode: "numeric",
+        ...textFieldProps.inputProps,
       }}
       InputLabelProps={{
         shrink: true,
-      }}
-      inputRef={(ref) => {
-        if (ref) {
-          inputRef.current = ref;
-          field.ref(ref);
-        }
       }}
       fullWidth
       error={!!error}
