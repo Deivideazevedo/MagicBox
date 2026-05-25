@@ -1,7 +1,5 @@
 {
-  "terminal.integrated.commandsToSkipShell": [
-    "antigravity.approve"
-  ],
+  "terminal.integrated.commandsToSkipShell": ["antigravity.approve"],
   "chat.tools.terminal.autoApprove": {
     "**": true,
     "mv": true,

@@ -21,14 +21,14 @@ const generateCircles = () => {
     `<circle cx="45" cy="5" r="0.6" fill="white" opacity="0.06"/>`,
     `<circle cx="65" cy="9" r="0.8" fill="white" opacity="0.1"/>`,
     `<circle cx="88" cy="4" r="1.2" fill="white" opacity="0.07"/>`,
-    
+
     // Faixa 10-20 (Meio do topo)
     `<circle cx="30" cy="15" r="0.7" fill="white" opacity="0.1"/>`,
     `<circle cx="40" cy="10" r="1.3" fill="white" opacity="0.11"/>`,
     `<circle cx="30" cy="12" r="0.5" fill="white" opacity="0.05"/>`,
     `<circle cx="55" cy="14" r="1.0" fill="white" opacity="0.15"/>`,
     `<circle cx="95" cy="11" r="0.8" fill="white" opacity="0.09"/>`,
-    
+
     // Faixa 20-30 (Limite inferior da decoração)
     `<circle cx="8" cy="28" r="0.6" fill="white" opacity="0.06"/>`,
     `<circle cx="25" cy="24" r="0.9" fill="white" opacity="0.13"/>`,
@@ -50,6 +50,7 @@ export const ThemedHeroSection = styled(Box)(({ theme }) => {
   return {
     background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
     color: theme.palette.primary.contrastText,
+    borderRadius: 0,
     textAlign: "center",
     py: { xs: 8, md: 12 },
     position: "relative",
