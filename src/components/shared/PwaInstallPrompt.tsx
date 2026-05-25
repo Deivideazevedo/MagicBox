@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import {
   Box,
@@ -17,6 +17,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import ShareIcon from "@mui/icons-material/Share";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
@@ -28,6 +29,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PwaInstallPrompt() {
+  const { status } = useSession();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   
@@ -35,7 +37,15 @@ export default function PwaInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
+  const canInstallPwa = useMemo(() => {
+    // 🛡️ Critério Centralizado de Instalação do PWA:
+    // Atualmente exige usuário autenticado. Para liberar a todos no futuro, mude para: return true;
+    return status === "authenticated";
+  }, [status]);
+
   useEffect(() => {
+    if (!canInstallPwa) return;
+
     // 1. Registro do Service Worker de forma performática
     if ("serviceWorker" in navigator) {
       const registerSW = () => {
@@ -57,9 +67,11 @@ export default function PwaInstallPrompt() {
         return () => window.removeEventListener("load", registerSW);
       }
     }
-  }, []);
+  }, [canInstallPwa]);
 
   useEffect(() => {
+    if (!canInstallPwa) return;
+
     // 2. Detecção e escuta dos eventos do PWA
 
     // Verifica se já está instalado (standalone)
@@ -71,12 +83,12 @@ export default function PwaInstallPrompt() {
       return;
     }
 
-    // Verifica se o prompt foi rejeitado recentemente nos últimos 7 dias
+    // Verifica se o prompt foi rejeitado recentemente nas últimas 24 horas (1 dia)
     const dismissedTime = localStorage.getItem("pwa-prompt-dismissed");
     if (dismissedTime) {
       const diffDays = (Date.now() - parseInt(dismissedTime, 10)) / (1000 * 60 * 60 * 24);
-      if (diffDays < 7) {
-        return; // Ignora o prompt por 7 dias
+      if (diffDays < 1) {
+        return; // Ignora o prompt por 1 dia
       }
     }
 
@@ -120,7 +132,7 @@ export default function PwaInstallPrompt() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, []);
+  }, [canInstallPwa]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -147,7 +159,7 @@ export default function PwaInstallPrompt() {
     localStorage.setItem("pwa-prompt-dismissed", Date.now().toString());
   };
 
-  if (!showPrompt) return null;
+  if (!canInstallPwa || !showPrompt) return null;
 
   return (
     <Slide direction="up" in={showPrompt} mountOnEnter unmountOnExit>
@@ -261,15 +273,17 @@ export default function PwaInstallPrompt() {
                 variant="text"
                 onClick={handleDismiss}
                 sx={{
-                  color: "text.secondary",
+                  color: theme.palette.text.secondary,
                   fontWeight: 600,
                   fontSize: "13px",
                   borderRadius: "8px",
                   px: 2,
                   py: 0.8,
                   textTransform: "none",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: alpha(theme.palette.text.secondary, 0.05),
+                    color: theme.palette.text.primary,
+                    backgroundColor: alpha(theme.palette.text.primary, 0.08),
                   },
                 }}
               >
@@ -291,6 +305,8 @@ export default function PwaInstallPrompt() {
                   boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
                   transition: "all 0.2s ease",
                   "&:hover": {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                    color: "common.white",
                     transform: "translateY(-1px)",
                     boxShadow: `0 6px 18px ${alpha(theme.palette.primary.main, 0.55)}`,
                   },

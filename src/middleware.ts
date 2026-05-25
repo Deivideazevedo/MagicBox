@@ -29,6 +29,13 @@ export async function middleware(request: NextRequest) {
   const pathname = nextUrl.pathname;
 
   // ============================================================
+  // Liberação imediata de arquivos estáticos críticos do PWA (CRÍTICO)
+  // ============================================================
+  if (pathname === "/manifest.webmanifest" || pathname === "/sw.js") {
+    return NextResponse.next();
+  }
+
+  // ============================================================
   // 1. ROTAS PÚBLICAS DO NEXTAUTH - Liberação Imediata (CRÍTICO)
   //    ✅ /api/auth/session, /api/auth/signin, /api/auth/callback, etc.
   //    ❌ /api/auth/token (PROTEGIDA) /api/auth/oauth-token (PROTEGIDA)
@@ -109,7 +116,9 @@ export const config = {
   // - _next/image/ (Imagens otimizadas do Next.js)
   // - images/ (Sua pasta de imagens em /public)
   // - favicon.ico (O ícone do site)
+  // - manifest.webmanifest (O manifesto PWA do Next.js)
+  // - sw.js (O Service Worker do PWA)
   // - api/auth/session, api/auth/csrf (rotas públicas do NextAuth)
   // Agora o middleware TAMBÉM intercepta rotas /api/* (exceto /api/auth/*)
-  matcher: ["/((?!_next/static|_next/image|images|favicon.ico|api/auth/session|api/auth/csrf).*)"],
+  matcher: ["/((?!_next/static|_next/image|images|favicon.ico|manifest.webmanifest|sw.js|api/auth/session|api/auth/csrf).*)"],
 };
