@@ -11,6 +11,6 @@ async function processarAporte(
 ) {
   const { userId } = await getAuthUser(request);
   const body = await request.json();
-  const resultado = await dividasService.processarAporte(params.id, body, userId);
+  const resultado = await dividasService.processarAporte(Number(params.id), body, userId);
   return NextResponse.json(resultado);
 }
