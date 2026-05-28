@@ -27,7 +27,7 @@ const getHojeLocal = () => new Date().toLocaleDateString("sv-SE");
 
 const dividaSchema = z
   .object({
-    id: z.union([z.string(), z.number()]).optional(),
+    id: z.number().optional(),
     nome: z.string().min(1, "Nome é obrigatório"),
     categoriaId: z.coerce
       .number()
@@ -38,7 +38,9 @@ const dividaSchema = z
     valorTotal: z
       .union([z.number(), z.string(), z.null()])
       .transform((val) =>
-        val === "" || val === undefined || val === null ? undefined : Number(val),
+        val === "" || val === undefined || val === null
+          ? undefined
+          : Number(val),
       )
       .optional()
       .nullable(),
@@ -276,7 +278,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
           const valorRestante = Number(
             targetDivida.tipo === "UNICA"
               ? (targetDivida as DividaUnica).valorRestante || 0
-              : (targetDivida as DividaVolatil).valorRestante || 0
+              : (targetDivida as DividaVolatil).valorRestante || 0,
           );
 
           if (valorAporte > valorRestante && targetDivida.tipo === "UNICA") {
@@ -288,7 +290,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
           }
 
           const resultado = await processarAporte({
-            id: Number(targetDivida.id.toString().replace("vol-", "")),
+            id: Number(targetDivida.id),
             data: {
               valor: valorAporte,
               data: new Date(data.dataInicio),
@@ -376,9 +378,9 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     const valorPadrao =
       divida.tipo === "UNICA"
         ? (divida as DividaUnica).valorParcela
-        : ((divida as DividaVolatil).situacaoParcelas?.find(
-            (p: SituacaoParcela) => p.status !== "pago"
-          )?.valorAgendado || "");
+        : (divida as DividaVolatil).situacaoParcelas?.find(
+            (p: SituacaoParcela) => p.status !== "pago",
+          )?.valorAgendado || "";
 
     reset({
       id: undefined,

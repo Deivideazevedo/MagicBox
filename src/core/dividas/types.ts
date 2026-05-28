@@ -14,7 +14,7 @@ export interface SituacaoParcela {
 }
 
 export interface DividaBase {
-  id: string | number;
+  id: number;
   nome: string;
   icone?: string | null;
   cor?: string | null;

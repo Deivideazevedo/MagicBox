@@ -37,119 +37,142 @@ export const dividasRepository = {
     return despesas.map((d) => this.mapearDividaUnica(d as DespesaComRelacoes));
   },
 
-  async listarVolateis(userId: number, incluirPagos: boolean = false, filtros?: { dataInicio: string; dataFim: string }): Promise<DividaVolatil[]> {
-    const dataInicio = filtros ? new Date(filtros.dataInicio) : null;
-    const dataFim = filtros ? new Date(filtros.dataFim) : null;
+  async listarVolateis(userId: number, incluirPagos: boolean = false, filtros?: { dataInicio?: string; dataFim?: string; despesaId?: number }): Promise<DividaVolatil[]> {
+    const dataInicio = filtros?.dataInicio ? new Date(filtros.dataInicio) : null;
+    const dataFim = filtros?.dataFim ? new Date(filtros.dataFim) : null;
 
-    type LancamentoOtimizado = {
-      id: number;
-      tipo: string;
-      valor: Prisma.Decimal;
-      data: Date;
-      observacao: string | null;
-      observacaoAutomatica: string | null;
+    type RowAgregado = {
+      despesaId: number;
+      mes_referencia: Date;
+      valorAgendado: number;
+      valorPago: number;
+      nomeDespesa: string;
+      icone: string | null;
+      cor: string | null;
+      userId: number;
+      categoriaId: number;
+      categoriaNome: string | null;
     };
 
-    const despesasBase = await prisma.despesa.findMany({
-      where: {
-        userId,
-        tipo: "VARIAVEL",
-        deletedAt: null,
-        status: "A",
-        ...(filtros ? {
-          lancamentos: {
-            some: {
-              data: { gte: dataInicio!, lte: dataFim! }
-            }
-          }
-        } : {})
-      },
-      select: {
-        id: true,
-        nome: true,
-        icone: true,
-        cor: true,
-        userId: true,
-        categoria: {
-          select: { nome: true }
-        },
-        lancamentos: {
-          where: filtros ? {
-            data: { gte: dataInicio!, lte: dataFim! }
-          } : {},
-          select: {
-            id: true,
-            tipo: true,
-            valor: true,
-            data: true,
-            observacao: true,
-            observacaoAutomatica: true
-          },
-          orderBy: { data: "asc" }
-        }
-      }
-    });
+    const queryFiltroDespesa = filtros?.despesaId ?? null;
+    const queryFiltroDataInicio = dataInicio ?? null;
+    const queryFiltroDataFim = dataFim ?? null;
+
+    // 1. Executa a Common Table Expression (CTE) agregando os totais diretamente no PostgreSQL
+    const rows = await prisma.$queryRaw<RowAgregado[]>`
+      WITH lancamentos_agrupados AS (
+        SELECT 
+          l."despesaId",
+          DATE_TRUNC('month', l.data) as mes_referencia,
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as valor_agendado,
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as valor_pago
+        FROM lancamento l
+        INNER JOIN despesa d ON l."despesaId" = d.id
+        WHERE d."userId" = ${userId} 
+          AND d.tipo IN ('VARIAVEL', 'FIXA') 
+          AND d."deletedAt" IS NULL 
+          AND d.status = 'A'
+          AND (${queryFiltroDespesa}::integer IS NULL OR d.id = ${queryFiltroDespesa})
+          AND (${queryFiltroDataInicio}::timestamp IS NULL OR l.data >= ${queryFiltroDataInicio}::timestamp)
+          AND (${queryFiltroDataFim}::timestamp IS NULL OR l.data <= ${queryFiltroDataFim}::timestamp)
+        GROUP BY l."despesaId", DATE_TRUNC('month', l.data)
+      )
+      SELECT 
+        la."despesaId",
+        la.mes_referencia,
+        la.valor_agendado as "valorAgendado",
+        la.valor_pago as "valorPago",
+        d.nome as "nomeDespesa",
+        d.icone,
+        d.cor,
+        d."userId",
+        d."categoriaId",
+        c.nome as "categoriaNome"
+      FROM lancamentos_agrupados la
+      JOIN despesa d ON la."despesaId" = d.id
+      LEFT JOIN categorias c ON d."categoriaId" = c.id
+      WHERE 
+        la.valor_agendado > 0
+        AND (
+          ${incluirPagos} = true 
+          OR la.valor_pago < (la.valor_agendado - 0.01)
+        )
+      ORDER BY la.mes_referencia ASC;
+    `;
 
     const hoje = new Date();
     const volateis: DividaVolatil[] = [];
 
-    for (const d of despesasBase) {
-      const lancamentos = d.lancamentos as LancamentoOtimizado[];
+    if (rows.length === 0) {
+      return volateis;
+    }
 
-      // Agrupamento cronológico em passada única (Preserva ordem ASC do banco)
-      const mesesAgrupados = new Map<string, {
-        dataReferencia: Date;
-        valorAgendado: number;
-        valorPago: number;
-        observacao?: string;
-      }>();
+    // 2. Agrupar as linhas retornadas por despesaId em memória
+    const mapaDespesas = new Map<number, RowAgregado[]>();
+    for (const row of rows) {
+      const list = mapaDespesas.get(row.despesaId) || [];
+      list.push(row);
+      mapaDespesas.set(row.despesaId, list);
+    }
 
-      for (const l of lancamentos) {
-        const date = new Date(l.data);
-        const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+    // 3. Buscar os lançamentos detalhados em lote apenas para as despesas voláteis retornadas
+    const idsEncontrados = Array.from(mapaDespesas.keys());
+    const todosLancamentos = await prisma.lancamento.findMany({
+      where: { 
+        despesaId: { in: idsEncontrados },
+        ...(dataInicio && dataFim ? {
+          data: { gte: dataInicio, lte: dataFim }
+        } : {})
+      },
+      orderBy: { data: "asc" }
+    });
 
-        const grupo = mesesAgrupados.get(key) || {
-          dataReferencia: l.data,
-          valorAgendado: 0,
-          valorPago: 0,
-          observacao: l.observacao || l.observacaoAutomatica || undefined
-        };
+    const mapaLancamentos = new Map<number, typeof todosLancamentos>();
+    for (const l of todosLancamentos) {
+      const list = mapaLancamentos.get(l.despesaId!) || [];
+      list.push(l);
+      mapaLancamentos.set(l.despesaId!, list);
+    }
 
-        if (l.tipo === 'agendamento') {
-          grupo.valorAgendado += Number(l.valor);
-        } else if (l.tipo === 'pagamento') {
-          grupo.valorPago += Number(l.valor);
-        }
-
-        mesesAgrupados.set(key, grupo);
-      }
+    // 4. Montar a estrutura da DividaVolatil[]
+    for (const [despesaId, meses] of mapaDespesas.entries()) {
+      const primeiraRow = meses[0];
+      const lancamentosDespesa = mapaLancamentos.get(despesaId) || [];
 
       const situacaoParcelas: SituacaoParcela[] = [];
       let numeroSeq = 1;
 
-      // Iteramos o Map que já está em ordem cronológica de inserção (devido ao orderBy ASC do prisma)
-      mesesAgrupados.forEach((grupo, key) => {
-        const { dataReferencia, valorAgendado, valorPago, observacao } = grupo;
+      for (const m of meses) {
+        const dateRefTruncated = new Date(m.mes_referencia);
 
-        // REGRA: Se foi TOTALMENTE paga e não solicitamos incluir pagos, IGNORA
-        const isTotalmentePaga = Math.round(valorPago * 100) >= Math.round(valorAgendado * 100);
-        if (!incluirPagos && isTotalmentePaga) return;
+        // Buscar a observação correspondente da primeira transação do mês, se houver
+        const primeiroLancamentoDoMes = lancamentosDespesa.find(
+          l => new Date(l.data).getUTCMonth() === dateRefTruncated.getUTCMonth() && 
+               new Date(l.data).getUTCFullYear() === dateRefTruncated.getUTCFullYear()
+        );
 
-        let status: StatusSituacaoParcela = isTotalmentePaga ? 'pago' : (valorPago > 0 ? 'parcial' : 'pendente');
-        if (status === 'pendente' && new Date(dataReferencia) < hoje && !isSameMonth(new Date(dataReferencia), hoje)) {
+        // Restaura a data original do agendamento (ex: dia 08 em vez de dia 01)
+        const dateRef = primeiroLancamentoDoMes ? new Date(primeiroLancamentoDoMes.data) : dateRefTruncated;
+
+        const isTotalmentePaga = Math.round(m.valorPago * 100) >= Math.round(m.valorAgendado * 100);
+
+        let status: StatusSituacaoParcela = isTotalmentePaga ? 'pago' : (m.valorPago > 0 ? 'parcial' : 'pendente');
+        if (status === 'pendente' && dateRef < hoje && !isSameMonth(dateRef, hoje)) {
           status = 'atrasada';
         }
 
+        const observacao = primeiroLancamentoDoMes?.observacao || primeiroLancamentoDoMes?.observacaoAutomatica || undefined;
+
         situacaoParcelas.push({
           numero: numeroSeq++,
-          label: `Referência: ${format(new Date(dataReferencia), 'MM/yyyy', { locale: ptBR })}`,
-          dataVencimento: new Date(dataReferencia).toISOString().split('T')[0],
-          valorAgendado,
-          valorPago,
+          label: `Referência: ${format(dateRef, 'MM/yyyy', { locale: ptBR })}`,
+          dataVencimento: dateRef.toISOString().split('T')[0],
+          valorAgendado: m.valorAgendado,
+          valorPago: m.valorPago,
           status,
           observacao
         });
-      });
+      }
 
       if (situacaoParcelas.length === 0) continue;
 
@@ -158,11 +181,11 @@ export const dividasRepository = {
       const valorPagoPendentes = situacaoParcelas.reduce((acc, p) => acc + p.valorPago, 0);
 
       volateis.push({
-        id: `vol-${d.id}`,
-        despesaId: d.id,
-        nome: d.nome,
-        icone: d.icone,
-        cor: d.cor,
+        id: despesaId,
+        despesaId,
+        nome: primeiraRow.nomeDespesa,
+        icone: primeiraRow.icone,
+        cor: primeiraRow.cor,
         status: "A",
         tipo: "VOLATIL",
         valorTotalAgendado: valorTotalPendentes,
@@ -172,9 +195,9 @@ export const dividasRepository = {
         proximoVencimento: proximo?.dataVencimento || null,
         diasParaVencer: proximo ? differenceInCalendarDays(new Date(proximo.dataVencimento), hoje) : null,
         atrasada: situacaoParcelas.some(p => p.status === 'atrasada'),
-        categoriaNome: d.categoria?.nome,
-        userId: d.userId,
-        lancamentos: lancamentos as unknown as Lancamento[],
+        categoriaNome: primeiraRow.categoriaNome || undefined,
+        userId: primeiraRow.userId,
+        lancamentos: lancamentosDespesa as unknown as Lancamento[],
         situacaoParcelas
       });
     }
@@ -183,13 +206,8 @@ export const dividasRepository = {
   },
 
   async buscarVolatilPorDespesaId(despesaId: number, userId: number): Promise<DividaVolatil | null> {
-    const d = await prisma.despesa.findFirst({
-      where: { id: despesaId, userId, tipo: "VARIAVEL", deletedAt: null },
-      include: { categoria: true, lancamentos: { orderBy: { data: "asc" } } }
-    });
-    if (!d) return null;
-    const mapped = await this.listarVolateis(userId);
-    return mapped.find(v => v.despesaId === despesaId) || null;
+    const mapped = await this.listarVolateis(userId, false, { despesaId });
+    return mapped[0] || null;
   },
 
   async buscarAgendamentoPorData(despesaId: number, data: Date): Promise<Lancamento | null> {

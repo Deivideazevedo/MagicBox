@@ -573,10 +573,5 @@ const CustomRow = memo(
         </TableCell>
       </TableRow>
     );
-  },
-  (prev, next) => {
-    // Comparador customizado: re-renderiza apenas se row.id ou isSelected mudarem
-    // false = re-renderiza, true = mantém memoizado
-    return prev.row.id === next.row.id && prev.isSelected === next.isSelected;
-  },
+  }
 );

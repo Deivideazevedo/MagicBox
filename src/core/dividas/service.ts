@@ -49,13 +49,18 @@ export const dividasService = {
     return { resumo, dividas };
   },
 
-  async buscarPorId(id: string | number, userId: number) {
-    if (typeof id === "string" && id.startsWith("vol-")) {
-      const despesaId = Number(id.replace("vol-", ""));
-      const divida = await repositorio.buscarVolatilPorDespesaId(
-        despesaId,
-        userId,
-      );
+  async buscarPorId(id: number, userId: number) {
+    const despesaBase = await prisma.despesa.findUnique({
+      where: { id: Number(id) },
+      select: { tipo: true, userId: true, deletedAt: true }
+    });
+
+    if (!despesaBase || despesaBase.userId !== userId || despesaBase.deletedAt) {
+      throw new NotFoundError("Dívida não encontrada");
+    }
+
+    if (despesaBase.tipo === "VARIAVEL" || despesaBase.tipo === "FIXA") {
+      const divida = await repositorio.buscarVolatilPorDespesaId(Number(id), userId);
       if (!divida) throw new NotFoundError("Dívida volátil não encontrada");
       return divida;
     }
@@ -117,7 +122,7 @@ export const dividasService = {
     return novaDivida;
   },
 
-  async atualizar(id: string | number, dados: UpdateDividaDTO) {
+  async atualizar(id: number, dados: UpdateDividaDTO) {
     const hasDivida = await repositorio.buscarPorId(Number(id));
     if (!hasDivida) throw new NotFoundError("Dívida não encontrada");
 
@@ -314,7 +319,7 @@ export const dividasService = {
     return dividaAtualizada;
   },
 
-  async remover(id: string | number) {
+  async remover(id: number) {
     const hasDivida = await repositorio.buscarPorId(Number(id));
     if (!hasDivida) throw new NotFoundError("Dívida não encontrada");
 
@@ -322,7 +327,7 @@ export const dividasService = {
   },
 
   async processarAporte(
-    id: string | number,
+    id: number,
     dados: ProcessAporteDTO,
     userId: number,
   ) {
