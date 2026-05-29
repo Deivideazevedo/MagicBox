@@ -96,16 +96,75 @@ export const objetivosRepository = {
       include: {
         lancamentos: {
           where: { tipo: 'pagamento' },
-          select: { valor: true }
+          select: { valor: true, data: true }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    return objetivos.map(o => ({
-      ...o,
-      valorAcumulado: o.lancamentos.reduce((acc, l) => acc + Number(l.valor), 0)
-    })) as unknown as Objetivo[];
+    const hojeObj = new Date();
+    const anoHoje = hojeObj.getFullYear();
+    const mesHoje = hojeObj.getMonth();
+
+    return objetivos.map(o => {
+      const valorObj = o.valorObjetivo ? Number(o.valorObjetivo) : 0;
+      const acumulado = o.lancamentos.reduce((acc, l) => acc + Number(l.valor), 0);
+      const faltante = valorObj > 0 ? Math.max(valorObj - acumulado, 0) : 0;
+
+      // Calcular meses pendentes
+      let mesesPendentes = 1;
+      let difMeses = 0;
+      if (o.dataAlvo) {
+        const targetDate = new Date(o.dataAlvo);
+        const anoAlvo = targetDate.getFullYear();
+        const mesAlvo = targetDate.getMonth();
+
+        difMeses = (anoAlvo * 12 + mesAlvo) - (anoHoje * 12 + mesHoje);
+        mesesPendentes = difMeses <= 0 ? 1 : difMeses;
+      }
+
+      // Somar aportes realizados no mês corrente
+      const aportesDesteMes = o.lancamentos.reduce((acc, l) => {
+        if (!l.data) return acc;
+        const d = new Date(l.data);
+        if (d.getFullYear() === anoHoje && d.getMonth() === mesHoje) {
+          return acc + Number(l.valor);
+        }
+        return acc;
+      }, 0);
+
+      // Calcular previsão sugerida original antes dos aportes deste mês
+      const acumuladoAntesDesteMes = Math.max(acumulado - aportesDesteMes, 0);
+      const faltanteAntesDesteMes = Math.max(valorObj - acumuladoAntesDesteMes, 0);
+      const previsaoOriginalDesteMes = mesesPendentes > 0 ? (faltanteAntesDesteMes / mesesPendentes) : 0;
+
+      // Calcular previsão restante
+      const previsaoRestanteDesteMes = Math.max(previsaoOriginalDesteMes - aportesDesteMes, 0);
+
+      // Encontrar a data do último aporte (lançamento mais recente)
+      let ultimoAporte: Date | null = null;
+      if (o.lancamentos.length > 0) {
+        ultimoAporte = o.lancamentos.reduce((max, l) => {
+          if (!l.data) return max;
+          const d = new Date(l.data);
+          if (!max || d > max) return d;
+          return max;
+        }, null as Date | null);
+      }
+
+      // Desestruturamos para remover a lista completa de lançamentos e manter o payload leve
+      const { lancamentos, ...resto } = o;
+
+      return {
+        ...resto,
+        valorAcumulado: acumulado,
+        previsaoDesteMes: previsaoRestanteDesteMes,
+        aportesDesteMes: aportesDesteMes,
+        difMeses: difMeses,
+        qtdAportes: o.lancamentos.length,
+        ultimoAporte: ultimoAporte
+      };
+    }) as unknown as Objetivo[];
   },
 
   async buscarPorId(id: number): Promise<Objetivo | null> {

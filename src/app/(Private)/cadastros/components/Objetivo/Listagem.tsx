@@ -157,7 +157,28 @@ export const Listagem = ({
         const qtdAportes = objetivo.lancamentos?.length || 0;
         const isMetaAtingida = !isReserva && valorObj > 0 && progresso >= 100 && objetivo.status === "A";
 
-        // Lógica de Atraso (usando arquitetura Naive)
+        // Projeção Temporal Consumida Nativamente da API (Sem duplicação de cálculo)
+        const previsaoDesteMes = objetivo.previsaoDesteMes || 0;
+        const aportesDesteMes = objetivo.aportesDesteMes || 0;
+        const difMeses = objetivo.difMeses || 0;
+
+        const getPrazoMesesLabel = (dif: number) => {
+          if (dif < 0) {
+            const absMeses = Math.abs(dif);
+            return `Atrasada há ${absMeses} ${absMeses === 1 ? "mês" : "meses"}`;
+          }
+          if (dif === 0) return "Prazo final este mês";
+          if (dif === 1) return "Falta 1 mês";
+          return `Faltam ${dif} meses`;
+        };
+
+        const getPrazoMesesColor = (dif: number) => {
+          if (dif <= 0) return "error.main";
+          if (dif === 1) return "warning.main";
+          if (dif <= 3) return "info.main";
+          return "success.main";
+        };
+
         const hoje = new Date().toLocaleDateString("sv-SE");
         const dataAlvoStr = objetivo.dataAlvo
           ? fnFormatNaiveDate(objetivo.dataAlvo, "yyyy-MM-dd")
@@ -166,9 +187,10 @@ export const Listagem = ({
           objetivo.status === "A" && !isReserva && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
 
         return (
-          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={objetivo.id}>
+          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={objetivo.id} sx={{ display: "flex" }}>
             <Card
               sx={{
+                width: "100%",
                 padding: 0,
                 borderRadius: 4,
                 position: "relative",
@@ -176,6 +198,9 @@ export const Listagem = ({
                 transition: "all 0.2s ease-in-out",
                 opacity: objetivo.status === "I" ? 0.8 : 1,
                 filter: objetivo.status === "I" ? "grayscale(0.3)" : "none",
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
 
                 // Estilo Condicional Centralizado
                 border: isMetaAtingida
@@ -199,7 +224,7 @@ export const Listagem = ({
               }}
               elevation={1}
             >
-              <CardContent sx={{ p: "36px" }}>
+              <CardContent sx={{ p: "36px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
                 <Box
                   sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
                 >
@@ -290,15 +315,22 @@ export const Listagem = ({
                         direction="row"
                         spacing={0.5}
                         alignItems="center"
-                        sx={{ color: "text.secondary" }}
+                        sx={{
+                          color: isReserva
+                            ? "success.main"
+                            : getPrazoMesesColor(difMeses),
+                          fontWeight: 700,
+                        }}
                       >
                         <IconCalendar size={14} />
-                        <Typography variant="caption" fontWeight={500}>
+                        <Typography
+                          variant="caption"
+                          fontWeight={800}
+                          sx={{ textTransform: "uppercase", fontSize: "10px" }}
+                        >
                           {isReserva
-                            ? "Aportes livres"
-                            : objetivo.dataAlvo
-                              ? fnFormatNaiveDate(objetivo.dataAlvo)
-                              : "Sem data limite"}
+                            ? "Sem prazo"
+                            : getPrazoMesesLabel(difMeses)}
                         </Typography>
                       </Stack>
                     </Stack>
@@ -307,83 +339,107 @@ export const Listagem = ({
 
                 {/* Info de Valores */}
                 {isReserva ? (
-                  /* Layout da Reserva: Saldo Acumulado à Esquerda e Aportes à Direita */
-                  <Grid container spacing={2} mb={2.5}>
-                    <Grid item xs={6}>
+                  /* Layout da Reserva Refinado e Padronizado */
+                  <Box sx={{ mb: 2 }}>
+                    <Box>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         fontWeight={600}
-                        display="block"
-                        gutterBottom
+                        sx={{
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          display: "block",
+                        }}
                       >
-                        ACUMULADO
+                        Total acumulado
                       </Typography>
                       <Typography
-                        variant="subtitle1"
+                        variant="h5"
                         fontWeight={800}
                         color="success.main"
                       >
                         {formatCurrency(acumulado)}
                       </Typography>
-                    </Grid>
-                    <Grid item xs={6} sx={{ textAlign: "right" }}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={600}
-                        display="block"
-                        gutterBottom
-                      >
-                        APORTES REALIZADOS
-                      </Typography>
-                      <Typography variant="subtitle1" fontWeight={800} color="warning.main">
-                        {qtdAportes} registros
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 ) : (
-                  /* Layout da Meta: Saldo Acumulado à Esquerda e Objetivo à Direita */
-                  <Grid container spacing={2} mb={2.5}>
-                    <Grid item xs={6}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={600}
-                        display="block"
-                        gutterBottom
-                      >
-                        ACUMULADO
-                      </Typography>
-                      <Typography
-                        variant="subtitle1"
-                        fontWeight={800}
-                        color="success.main"
-                      >
-                        {formatCurrency(acumulado)}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6} sx={{ textAlign: "right" }}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        fontWeight={600}
-                        display="block"
-                        gutterBottom
-                      >
-                        OBJETIVO
-                      </Typography>
-                      <Typography variant="subtitle1" fontWeight={800} color="text.primary">
-                        {valorObj > 0 ? formatCurrency(valorObj) : "---"}
-                      </Typography>
-                    </Grid>
-                  </Grid>
+                  /* Layout da Meta Refinado com foco na Previsão Mensal (Backend-driven) */
+                  <Box sx={{ mb: 2 }}>
+                    {isMetaAtingida || progresso >= 100 ? (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          sx={{
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                          }}
+                        >
+                          PARABÉNS!
+                        </Typography>
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          color="success.main"
+                        >
+                          Meta batida! 🎉
+                        </Typography>
+                      </Box>
+                    ) : previsaoDesteMes <= 0 ? (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          sx={{
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                          }}
+                        >
+                          PREVISÃO DESTE MÊS
+                        </Typography>
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          color="success.main"
+                        >
+                          Aporte concluído! 🚀
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          sx={{
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            display: "block",
+                          }}
+                        >
+                          {aportesDesteMes > 0 ? "PREVISÃO DESTE MÊS (RESTANTE)" : "PREVISÃO DESTE MÊS"}
+                        </Typography>
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          color={getPrazoMesesColor(difMeses)}
+                        >
+                          {formatCurrency(previsaoDesteMes)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 )}
 
                 {/* Seção Inferior - Condicional baseada no Tipo (Mantém Altura e Simetria Consistentes) */}
                 {isReserva ? (
                   /* Reserva: Linha Pontilhada e Informações de Atualização Limpas (Sem progresso forçado) */
-                  <Box>
+                  <Box sx={{ mt: "auto", width: "100%" }}>
                     <Box
                       sx={{
                         borderTop: "1px dashed",
@@ -391,32 +447,37 @@ export const Listagem = ({
                         my: 2.5,
                       }}
                     />
-                    <Stack direction="row" justifyContent="space-between" mt={1}>
-                      <Typography variant="caption" color="text.secondary">
-                        Última alteração: {objetivo.updatedAt ? fnFormatNaiveDate(objetivo.updatedAt, "dd/MM/yyyy") : "Sem data"}
-                      </Typography>
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        alignItems="center"
-                        color="success.main"
-                      >
-                        <IconTrendingUp size={14} />
-                        <Typography variant="caption" fontWeight={700}>
-                          Livre / Sem Prazo
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={1}
+                      mt={1.5}
+                    >
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
+                        >
+                          Último aporte: {objetivo.ultimoAporte ? fnFormatNaiveDate(objetivo.ultimoAporte) : "Sem aportes"}
                         </Typography>
-                      </Stack>
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
+                        >
+                          Aportes: {objetivo.qtdAportes || 0} registros
+                        </Typography>
+                      </Box>
                     </Stack>
                   </Box>
                 ) : (
                   /* Meta: Barra de Progresso Real e Informações de Progresso/Restantes */
-                  <Box>
-                    <Stack
-                      direction="row"
-                      spacing={1.5}
-                      alignItems="center"
-                      mb={1}
-                    >
+                  <Box sx={{ mt: "auto", width: "100%" }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
                         <LinearProgress
                           variant="determinate"
@@ -449,29 +510,41 @@ export const Listagem = ({
                         </Typography>
                       </Box>
                     </Stack>
-                    <Stack direction="row" justifyContent="space-between" mt={1}>
-                      <Typography variant="caption" color="text.secondary">
-                        {progresso >= 100
-                          ? "Meta atingida! 🎉"
-                          : `${formatCurrency(faltante)} restantes`}
-                      </Typography>
-                      {progresso >= 100 ? (
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          alignItems="center"
-                          color="success.main"
+                    <Typography
+                      variant="caption"
+                      color="text.primary"
+                      fontWeight={700}
+                      display="block"
+                      sx={{ mt: 0.5, mb: 1.5 }}
+                    >
+                      {formatCurrency(acumulado)} / {formatCurrency(valorObj)}
+                    </Typography>
+
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={1}
+                      mt={1.5}
+                    >
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
                         >
-                          <IconTrendingUp size={14} />
-                          <Typography variant="caption" fontWeight={700}>
-                            Excelente!
-                          </Typography>
-                        </Stack>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          {objetivo.dataAlvo ? "No prazo" : ""}
+                          Prazo Final: {objetivo.dataAlvo ? fnFormatNaiveDate(objetivo.dataAlvo) : "Sem prazo"}
                         </Typography>
-                      )}
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.secondary"
+                        >
+                          Falta: {formatCurrency(faltante)}
+                        </Typography>
+                      </Box>
                     </Stack>
                   </Box>
                 )}

@@ -19,6 +19,11 @@ export interface Objetivo {
   progresso?: number | null;
   concluida?: boolean;
   lancamentos?: LancamentoResposta[];
+  previsaoDesteMes?: number;
+  aportesDesteMes?: number;
+  difMeses?: number;
+  qtdAportes?: number;
+  ultimoAporte?: string | Date | null;
 }
 
 export interface ObjetivoPayload {
