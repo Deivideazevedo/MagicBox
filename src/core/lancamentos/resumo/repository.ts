@@ -74,7 +74,7 @@ export const resumoRepository = {
           AND m.mes_referencia >= date_trunc('month', d."createdAt")
         
         UNION ALL
-
+        
         -- DÍVIDAS (Amortizadas)
         SELECT 
           d.id as "origemId",
@@ -122,10 +122,10 @@ export const resumoRepository = {
       ),
       lancamentos_reais_agrupados AS (
           SELECT
-              COALESCE(l."receitaId", l."despesaId", l."metaId") as "origemId",
+              COALESCE(l."receitaId", l."despesaId", l."objetivoId") as "origemId",
               CASE 
                 WHEN l."receitaId" IS NOT NULL THEN 'receita' 
-                WHEN l."metaId" IS NOT NULL THEN 'meta'
+                WHEN l."objetivoId" IS NOT NULL THEN 'meta'
                 ELSE 'despesa' 
               END as "origem",
               EXTRACT(MONTH FROM l.data) as "mes",
@@ -145,15 +145,15 @@ export const resumoRepository = {
           FROM lancamento l
           LEFT JOIN despesa d ON l."despesaId" = d.id
           LEFT JOIN receita r ON l."receitaId" = r.id
-          LEFT JOIN meta m ON l."metaId" = m.id
+          LEFT JOIN objetivo m ON l."objetivoId" = m.id
           WHERE l."userId" = ${userId} 
             AND l.data >= ${dataInicio}::date 
             AND l.data <= ${dataFim}::date
             AND (
               (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
               (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
-              (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL) OR
-              (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."metaId" IS NULL)
+              (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL) OR
+              (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."objetivoId" IS NULL)
             )
           GROUP BY 1, 2, 3, 4
       ),
@@ -188,7 +188,7 @@ export const resumoRepository = {
             AND rec."mes" = real."mes" AND rec."ano" = real."ano"
           LEFT JOIN despesa d ON real."origemId" = d.id AND real."origem" = 'despesa'
           LEFT JOIN receita f ON real."origemId" = f.id AND real."origem" = 'receita'
-          LEFT JOIN meta m ON real."origemId" = m.id AND real."origem" = 'meta'
+          LEFT JOIN objetivo m ON real."origemId" = m.id AND real."origem" = 'meta'
       )
       SELECT * FROM uniao_de_dados ORDER BY "ano", "mes", "nome";
     `;
@@ -283,11 +283,11 @@ export const resumoRepository = {
         )
       ),
       metas_ativas AS (
-        -- Saldo Bloqueado NO PERÍODO: aportes feitos em metas ativas no intervalo selecionado
+        -- Saldo Bloqueado NO PERÍODO: aportes feitos em objetivos ativos no intervalo selecionado
         SELECT 
           COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
         FROM lancamento l
-        INNER JOIN meta m ON l."metaId" = m.id
+        INNER JOIN objetivo m ON l."objetivoId" = m.id
         WHERE m."userId" = ${userId} 
           AND l."userId" = ${userId}
           AND m.status = 'A' 
@@ -311,23 +311,22 @@ export const resumoRepository = {
           -- saidasPagas
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasPagas",
           -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasAgendadas",
-          -- Metas
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."metaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasPagas",
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."metaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasAgendadas"
+          -- Metas (Objetivos)
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."objetivoId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasPagas",
+          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."objetivoId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasAgendadas"
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
-        LEFT JOIN meta m ON l."metaId" = m.id
+        LEFT JOIN objetivo m ON l."objetivoId" = m.id
         WHERE l."userId" = ${userId} 
           AND l.data >= ${dataInicio}::date 
           AND l.data <= ${dataFim}::date
           AND (
             (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
             (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
-            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL) OR
-            (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."metaId" IS NULL)
+            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL) OR
+            (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."objetivoId" IS NULL)
           )
       ) real,
       (
@@ -345,7 +344,7 @@ export const resumoRepository = {
     const resData = res[0] as ResumoCardDB;
 
     // LÓGICA DE CÁLCULO ESTABELECIDA
-    // IMPORTANTÍSSIMO: aportes em metas NÃO são gastos.
+    // IMPORTANTÍSSIMO: aportes em metas (objetivos) NÃO são gastos.
     // Eles são controlados via `saldoBloqueado` e devem impactar o `saldoLivre`, não as saídas.
     const saidasPagas = Number(resData.saidasPagas);
     const saidasPrevistas =
@@ -445,16 +444,16 @@ export const resumoRepository = {
           SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as rec_prev,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
-          SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
+          SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
-        LEFT JOIN meta m ON l."metaId" = m.id
+        LEFT JOIN objetivo m ON l."objetivoId" = m.id
         WHERE l."userId" = ${userId}
           AND (
             (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
             (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
-            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
           )
       )
       SELECT 

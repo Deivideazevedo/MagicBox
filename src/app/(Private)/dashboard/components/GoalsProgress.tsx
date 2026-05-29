@@ -64,7 +64,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
               <IconTarget size={20} />
             </Box>
             <Typography variant="h6" fontWeight={600}>
-              Metas Financeiras
+              Objetivos Financeiros
             </Typography>
           </Box>
           
@@ -75,7 +75,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
               textTransform: "none",
               color: "primary.main",
             }}
-            href="/cadastros/metas"
+            href="/cadastros/objetivos"
           >
             Ver todas
           </Button>
@@ -84,7 +84,7 @@ const GoalsProgress = ({ date }: { date?: Date }) => {
         <Box sx={{ space: 3 }}>
           {goals.length === 0 ? (
             <Alert severity="info" sx={{ borderRadius: 2 }}>
-              Nenhuma meta financeira cadastrada.
+              Nenhum objetivo financeiro cadastrado.
             </Alert>
           ) : (
             goals.map((goal, index) => {

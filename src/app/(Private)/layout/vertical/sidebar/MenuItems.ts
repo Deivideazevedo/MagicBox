@@ -62,9 +62,9 @@ const Menuitems: MenuitemsType[] = [
   },
   {
     id: uniqueId(),
-    title: "Metas",
+    title: "Objetivos",
     icon: IconTarget,
-    href: "/cadastros/metas",
+    href: "/cadastros/objetivos",
   },
   {
     id: uniqueId(),

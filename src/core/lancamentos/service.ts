@@ -26,7 +26,7 @@ export function gerarObservacaoAutomatica(
     ? ` - R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
     : "";
 
-  return `${descParte} (${p}/${t}) ${valorParte}`;
+  return `${descParte} (${p}/${t})${valorParte}`;
 }
 
 export const lancamentoService = {
@@ -47,9 +47,9 @@ export const lancamentoService = {
       throw new ValidationError("Usuário é obrigatório");
     }
 
-    // Regra: Deve ter despesaId, receitaId OU metaId
-    if (!dados.despesaId && !dados.receitaId && !dados.metaId) {
-      throw new ValidationError("Lançamento deve estar vinculado a uma despesa, receita ou meta");
+    // Regra: Deve ter despesaId, receitaId OU objetivoId
+    if (!dados.despesaId && !dados.receitaId && !dados.objetivoId) {
+      throw new ValidationError("Lançamento deve estar vinculado a uma despesa, receita ou objetivo");
     }
 
     if (dados.despesaId && dados.receitaId) {
@@ -80,7 +80,7 @@ export const lancamentoService = {
         observacaoAutomatica: undefined,
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
-        metaId: dados.metaId || null,
+        objetivoId: dados.objetivoId || null,
         vinculoId: dados.vinculoId || null,
       };
 
@@ -120,7 +120,7 @@ export const lancamentoService = {
         observacaoAutomatica,
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
-        metaId: dados.metaId || null,
+        objetivoId: dados.objetivoId || null,
         vinculoId: dados.vinculoId || null,
       };
 

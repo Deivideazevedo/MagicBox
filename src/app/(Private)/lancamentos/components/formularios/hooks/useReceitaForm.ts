@@ -149,7 +149,7 @@ export function useReceitaForm({
           userId,
           despesaId: null,
           receitaId: formData.itemId,
-          metaId: null,
+          objetivoId: null,
           tipo: formData.tipo as any,
           valor: Number(formData.valor),
           data: formData.data,

@@ -5,7 +5,7 @@ import {
   useCreateLancamentoMutation,
   useUpdateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
-import { useGetMetasQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivosQuery } from "@/services/endpoints/objetivosApi";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { toast } from "react-hot-toast";
@@ -19,7 +19,7 @@ import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 
 const metaSchema = z.object({
   id: z.number().optional(),
-  itemId: z.number().min(1, "Selecione uma meta"),
+  itemId: z.number().min(1, "Selecione um objetivo"),
   tipo: z.enum(["investimento", "retirada"]),
   valor: z
     .number()
@@ -50,7 +50,7 @@ export function useMetaForm({
   const { data: session } = useSession();
 
   // Queries
-  const { data: metasApi = [], isLoading: isMetasLoading } = useGetMetasQuery(undefined, { skip: !session });
+  const { data: objetivosApi = [], isLoading: isObjetivosLoading } = useGetObjetivosQuery(undefined, { skip: !session });
   const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
   const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
 
@@ -93,7 +93,7 @@ export function useMetaForm({
 
   // Mapeamento Interno: API -> Form
   useEffect(() => {
-    if (lancamentoParaEditar && lancamentoParaEditar.metaId) {
+    if (lancamentoParaEditar && lancamentoParaEditar.objetivoId) {
       const dataLancamento =
         typeof lancamentoParaEditar.data === "string"
           ? lancamentoParaEditar.data.split("T")[0]
@@ -101,7 +101,7 @@ export function useMetaForm({
 
       reset({
         id: lancamentoParaEditar.id,
-        itemId: Number(lancamentoParaEditar.metaId),
+        itemId: Number(lancamentoParaEditar.objetivoId),
         tipo: Number(lancamentoParaEditar.valor) < 0 ? "retirada" : "investimento",
         valor: Math.abs(Number(lancamentoParaEditar.valor)),
         data: dataLancamento,
@@ -115,8 +115,8 @@ export function useMetaForm({
   // Item selecionado para o ícone
   const selectedItem = useMemo(() => {
     if (!itemId) return null;
-    return metasApi.find((item) => item.id === itemId) ?? null;
-  }, [itemId, metasApi]);
+    return objetivosApi.find((item) => item.id === itemId) ?? null;
+  }, [itemId, objetivosApi]);
 
   // Itens para o destino da retirada
   const itensDestino = destinoOrigem === "despesa" ? despesasApi : receitasApi;
@@ -131,18 +131,18 @@ export function useMetaForm({
         const userId = Number(session?.user?.id);
         const isRetirada = formData.tipo === "retirada";
 
-        // CASO ESPECIAL: Retirada de Meta com Destino (Apenas Novo Lançamento)
+        // CASO ESPECIAL: Retirada de Objetivo com Destino (Apenas Novo Lançamento)
         if (isRetirada && !formData.id) {
           const vinculoId = `${Date.now()}-${userId}`;
           const valorNum = Math.abs(Number(formData.valor));
-          const metaNome = selectedItem?.nome || "Meta";
+          const objetivoNome = selectedItem?.nome || "Objetivo";
           const destinoNome = selectedDestino?.nome || "Destino";
 
           await Promise.all([
-            // 1. Saída da Meta
+            // 1. Saída do Objetivo
             createLancamento({
               userId,
-              metaId: formData.itemId,
+              objetivoId: formData.itemId,
               tipo: "pagamento" as any,
               valor: -valorNum,
               data: formData.data,
@@ -161,7 +161,7 @@ export function useMetaForm({
               data: formData.data,
               vinculoId,
               observacao: formData.observacao || undefined,
-              observacaoAutomatica: `Dinheiro realocado da meta: ${metaNome}`,
+              observacaoAutomatica: `Dinheiro realocado do objetivo: ${objetivoNome}`,
             }).unwrap(),
 
           ]);
@@ -175,8 +175,8 @@ export function useMetaForm({
             userId,
             despesaId: null,
             receitaId: null,
-            metaId: formData.itemId,
-            tipo: "pagamento" as any, // Metas sempre usam tipo "pagamento" internamente
+            objetivoId: formData.itemId,
+            tipo: "pagamento" as any, // Objetivos sempre usam tipo "pagamento" internamente
             valor: isRetirada ? -Math.abs(Number(formData.valor)) : Math.abs(Number(formData.valor)),
             data: formData.data,
             observacao: formData.observacao || undefined,
@@ -228,9 +228,9 @@ export function useMetaForm({
     valor,
     handleTipoChange,
     isCreating: isCreating || isUpdating,
-    itens: metasApi,
+    itens: objetivosApi,
     selectedItem,
-    isLoading: isMetasLoading,
+    isLoading: isObjetivosLoading,
     reset,
     defaultValues,
     setFocus,

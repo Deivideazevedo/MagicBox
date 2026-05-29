@@ -25,6 +25,7 @@ export const lancamentoRepository = {
       userId,
       despesaId,
       receitaId,
+      objetivoId,
       origem,
       status,
     } = filtros;
@@ -40,13 +41,16 @@ export const lancamentoRepository = {
     if (receitaId) {
       whereClause.receitaId = Number(receitaId);
     }
+    if (objetivoId) {
+      whereClause.objetivoId = Number(objetivoId);
+    }
     if (origem) {
       if (origem === "despesa") {
         whereClause.despesaId = { not: null };
       } else if (origem === "renda" || origem === "receita") {
         whereClause.receitaId = { not: null };
-      } else if (origem === "meta") {
-        whereClause.metaId = { not: null };
+      } else if (origem === "objetivo" || origem === "meta") {
+        whereClause.objetivoId = { not: null };
       }
     }
 
@@ -74,7 +78,7 @@ export const lancamentoRepository = {
       };
     }
 
-    // Apenas despesas, receitas ou metas não deletadas (deletedAt null) e filtrando pelo status do vínculo
+    // Apenas despesas, receitas ou objetivos não deletados (deletedAt null) e filtrando pelo status do vínculo
     whereClause.AND = [
       {
         OR: [
@@ -90,8 +94,8 @@ export const lancamentoRepository = {
       },
       {
         OR: [
-          { metaId: null },
-          { meta: { deletedAt: null, ...(status ? { status } : {}) } }
+          { objetivoId: null },
+          { objetivo: { deletedAt: null, ...(status ? { status } : {}) } }
         ]
       }
     ];
@@ -124,12 +128,13 @@ export const lancamentoRepository = {
               cor: true,
             },
           },
-          meta: {
+          objetivo: {
             select: {
               id: true,
               nome: true,
               icone: true,
               cor: true,
+              tipo: true,
             },
           },
         },
@@ -169,8 +174,8 @@ export const lancamentoRepository = {
           },
           {
             OR: [
-              { metaId: null },
-              { meta: { deletedAt: null } }
+              { objetivoId: null },
+              { objetivo: { deletedAt: null } }
             ]
           }
         ]
@@ -178,7 +183,7 @@ export const lancamentoRepository = {
       include: {
         despesa: { select: { id: true, nome: true, valorEstimado: true, diaVencimento: true } },
         receita: { select: { id: true, nome: true, valorEstimado: true, diaRecebimento: true } },
-        meta: { select: { id: true, nome: true, valorMeta: true } },
+        objetivo: { select: { id: true, nome: true, valorObjetivo: true, tipo: true } },
       },
     });
   },
@@ -203,8 +208,8 @@ export const lancamentoRepository = {
           },
           {
             OR: [
-              { metaId: null },
-              { meta: { deletedAt: null } }
+              { objetivoId: null },
+              { objetivo: { deletedAt: null } }
             ]
           }
         ]
@@ -212,7 +217,7 @@ export const lancamentoRepository = {
       include: {
         despesa: true,
         receita: true,
-        meta: true,
+        objetivo: true,
       },
     });
   },
@@ -239,8 +244,8 @@ export const lancamentoRepository = {
           },
           {
             OR: [
-              { metaId: null },
-              { meta: { deletedAt: null } }
+              { objetivoId: null },
+              { objetivo: { deletedAt: null } }
             ]
           }
         ]
@@ -264,7 +269,7 @@ export const lancamentoRepository = {
         observacaoAutomatica: data.observacaoAutomatica ?? null,
         despesaId: data.despesaId ? Number(data.despesaId) : null,
         receitaId: data.receitaId ? Number(data.receitaId) : null,
-        metaId: data.metaId ? Number(data.metaId) : null,
+        objetivoId: data.objetivoId ? Number(data.objetivoId) : null,
         vinculoId: data.vinculoId ?? null,
       },
     });
@@ -308,6 +313,7 @@ export const lancamentoRepository = {
         observacao: data.observacao,
         despesaId: data.despesaId !== undefined ? (data.despesaId ? Number(data.despesaId) : null) : undefined,
         receitaId: data.receitaId !== undefined ? (data.receitaId ? Number(data.receitaId) : null) : undefined,
+        objetivoId: data.objetivoId !== undefined ? (data.objetivoId ? Number(data.objetivoId) : null) : undefined,
         vinculoId: data.vinculoId !== undefined ? data.vinculoId : undefined,
       },
     });

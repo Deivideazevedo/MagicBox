@@ -18,13 +18,13 @@ export const divergenciasRepository = {
         OR: [
           { despesa: { deletedAt: null } },
           { receita: { deletedAt: null } },
-          { meta: { deletedAt: null } },
+          { objetivo: { deletedAt: null } },
         ],
       },
       include: {
         despesa: { select: { nome: true, cor: true } },
         receita: { select: { nome: true, cor: true } },
-        meta: { select: { nome: true, cor: true } },
+        objetivo: { select: { nome: true, cor: true } },
       },
       orderBy: {
         data: "desc",
@@ -48,16 +48,16 @@ export const divergenciasRepository = {
         TO_CHAR(l.data, 'YYYY-MM') as mes,
         COALESCE(SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as receitas,
         COALESCE(SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as despesas,
-        COALESCE(SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as metas
+        COALESCE(SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as metas
       FROM lancamento l
       LEFT JOIN despesa d ON l."despesaId" = d.id
       LEFT JOIN receita r ON l."receitaId" = r.id
-      LEFT JOIN meta m ON l."metaId" = m.id
+      LEFT JOIN objetivo m ON l."objetivoId" = m.id
       WHERE l."userId" = ${userId}
         AND (
           (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
           (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
-          (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+          (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
         )
       GROUP BY TO_CHAR(l.data, 'YYYY-MM')
       ORDER BY mes ASC

@@ -1,14 +1,12 @@
-
-
 /**
  * Tags invalidadas por qualquer mutação de Lançamento.
- * Garante refetch unificado de: lista de lançamentos, resumo, dashboard e metas.
+ * Garante refetch unificado de: lista de lançamentos, resumo, dashboard e objetivos.
  */
 export const LANCAMENTO_INVALIDATION_TAGS = [
   "Lancamentos",
   "Resumo",
   "Dashboard",
-  "Metas",
+  "Objetivos",
   "Dividas",
 ] as const;
 
@@ -36,24 +34,25 @@ export const RECEITA_INVALIDATION_TAGS = [
 ] as const;
 
 /**
- * Tags invalidadas por qualquer mutação de Meta.
- * Uma mudança em meta afeta: saldo bloqueado no resumo, dashboard e lançamentos de aporte.
+ * Tags invalidadas por qualquer mutação de Objetivo.
+ * Uma mudança em objetivo afeta: saldo bloqueado no resumo, dashboard e lançamentos de aporte.
  */
-export const META_INVALIDATION_TAGS = [
-  "Metas",
+export const OBJETIVO_INVALIDATION_TAGS = [
+  "Objetivos",
   "Resumo",
   "Dashboard",
   "Lancamentos",
 ] as const;
+
 /**
  * Tags invalidadas por qualquer mutação de Dívida.
- * Uma mudança em dívida afeta: resumo projetado, dashboard, lançamentos e metas.
+ * Uma mudança em dívida afeta: resumo projetado, dashboard, lançamentos, despesas e objetivos.
  */
 export const DIVIDA_INVALIDATION_TAGS = [
   "Dividas",
   "Resumo",
   "Dashboard",
   "Lancamentos",
-  "Metas",
+  "Objetivos",
   "Despesas",
 ] as const;

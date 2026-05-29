@@ -1,9 +1,9 @@
 "use client";
 
-import { useGetMetasQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivosQuery } from "@/services/endpoints/objetivosApi";
 
 export const useGoalsProgress = (date?: Date) => {
-  const { data: metas = [], isLoading } = useGetMetasQuery();
+  const { data: objetivos = [], isLoading } = useGetObjetivosQuery();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -35,13 +35,13 @@ export const useGoalsProgress = (date?: Date) => {
   };
 
   // Mapeia para o formato esperado pelo componente GoalsProgress (Legacy support)
-  const goals = metas.map(meta => ({
-    id: meta.id,
-    title: meta.nome,
-    current: meta.valorAcumulado || 0,
-    target: meta.valorMeta ? Number(meta.valorMeta) : 0,
-    deadline: meta.dataAlvo,
-    color: meta.cor || "#5D87FF",
+  const goals = objetivos.map(objetivo => ({
+    id: objetivo.id,
+    title: objetivo.nome,
+    current: objetivo.valorAcumulado || 0,
+    target: objetivo.valorObjetivo ? Number(objetivo.valorObjetivo) : 0,
+    deadline: objetivo.dataAlvo,
+    color: objetivo.cor || "#5D87FF",
   }));
 
   const overallProgress = goals.length > 0 

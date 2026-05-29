@@ -220,6 +220,7 @@ function DividasPageContent() {
                 onDelete={handleDelete}
                 onAporte={handleOpenAporte}
                 onToggleStatus={handleToggleStatus}
+                isFormOpen={exibirFormulario}
               />
             </Grid>
           </Grid>

@@ -6,11 +6,11 @@ import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { SeletorPeriodo } from "@/app/components/forms/SeletorPeriodo";
 import { Despesa } from "@/core/despesas/types";
-import { Meta } from "@/core/metas/types";
+import { Objetivo } from "@/core/objetivos/types";
 import { Receita } from "@/core/receitas/types";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
-import { useGetMetasQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivosQuery } from "@/services/endpoints/objetivosApi";
 import {
   Accordion,
   AccordionDetails,
@@ -46,7 +46,7 @@ import { debounce } from "lodash";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // Tipo para item com origem e ID único
-type ItemComOrigem = (Despesa | Receita | Meta) & {
+type ItemComOrigem = (Despesa | Receita | Objetivo) & {
   origem: "despesa" | "receita" | "meta";
   uniqueId: string;
   nome: string;
@@ -79,7 +79,7 @@ interface FiltrosAvancadosProps {
   filtros: FindAllFilters;
   despesas?: Despesa[];
   receitas?: Receita[];
-  metas?: Meta[];
+  objetivos?: Objetivo[];
   handleSearch: (filtros: Partial<FindAllFilters>, replace?: boolean) => void;
   refs?: LancamentosTourRefs;
 }
@@ -88,19 +88,19 @@ export default function FiltrosAvancados({
   filtros,
   despesas,
   receitas,
-  metas,
+  objetivos,
   handleSearch,
   refs,
 }: FiltrosAvancadosProps) {
   const { data: despesasApi = [], isLoading: isDespesasLoading } = useGetDespesasQuery();
   const { data: receitasApi = [], isLoading: isReceitasLoading } = useGetReceitasQuery();
-  const { data: metasApi = [], isLoading: isMetasLoading } = useGetMetasQuery();
+  const { data: objetivosApi = [], isLoading: isObjetivosLoading } = useGetObjetivosQuery();
 
   const finalDespesas = despesas && despesas.length > 0 ? despesas : despesasApi;
   const finalReceitas = receitas && receitas.length > 0 ? receitas : receitasApi;
-  const finalMetas = metas && metas.length > 0 ? metas : metasApi;
+  const finalObjetivos = objetivos && objetivos.length > 0 ? objetivos : objetivosApi;
 
-  const loadingItens = isDespesasLoading || isReceitasLoading || isMetasLoading;
+  const loadingItens = isDespesasLoading || isReceitasLoading || isObjetivosLoading;
 
   const defaultValues: FiltrosLancamentos = {
     dataInicio: filtros.dataInicio || "",
@@ -182,19 +182,19 @@ export default function FiltrosAvancados({
     [finalReceitas],
   );
 
-  const metasComOrigem: ItemComOrigem[] = useMemo(
+  const objetivosComOrigem: ItemComOrigem[] = useMemo(
     () =>
-      finalMetas.map((m) => ({
-        ...m,
+      finalObjetivos.map((o) => ({
+        ...o,
         origem: "meta" as const,
-        uniqueId: `meta-${m.id}`,
+        uniqueId: `meta-${o.id}`,
       })),
-    [finalMetas],
+    [finalObjetivos],
   );
 
   const despesasFiltradas = despesasComOrigem;
   const receitasFiltradas = receitasComOrigem;
-  const metasFiltradas = metasComOrigem;
+  const objetivosFiltradas = objetivosComOrigem;
 
   const opcoesNome =
     origemWatch === "despesa"
@@ -202,8 +202,8 @@ export default function FiltrosAvancados({
       : origemWatch === "receita"
         ? receitasFiltradas
         : origemWatch === "meta"
-          ? metasFiltradas
-          : [...despesasFiltradas, ...receitasComOrigem, ...metasComOrigem];
+          ? objetivosFiltradas
+          : [...despesasFiltradas, ...receitasComOrigem, ...objetivosComOrigem];
 
   const onConvert = useCallback(
     (rawFilters: FiltrosLancamentos): Partial<FindAllFilters> => {
@@ -214,14 +214,14 @@ export default function FiltrosAvancados({
         spllitedItem[0] === "despesa" ? Number(spllitedItem[1]) : undefined;
       const receitaId =
         spllitedItem[0] === "receita" ? Number(spllitedItem[1]) : undefined;
-      const metaId =
+      const objetivoId =
         spllitedItem[0] === "meta" ? Number(spllitedItem[1]) : undefined;
 
       const result: Partial<FindAllFilters> = {
         ...rest,
         despesaId,
         receitaId,
-        metaId,
+        objetivoId,
         origem,
         observacao: rest.observacao || undefined,
         tipo: tipo || undefined,
@@ -256,6 +256,8 @@ export default function FiltrosAvancados({
         (filtros.despesaId || undefined) ||
       (novosFiltros.receitaId || undefined) !==
         (filtros.receitaId || undefined) ||
+      (novosFiltros.objetivoId || undefined) !==
+        (filtros.objetivoId || undefined) ||
       (novosFiltros.observacao || undefined) !==
         (filtros.observacao || undefined) ||
       (novosFiltros.status || "A") !== (filtros.status || "A");

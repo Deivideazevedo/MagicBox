@@ -1,4 +1,4 @@
-import { Meta } from "@/core/metas/types";
+import { Objetivo } from "@/core/objetivos/types";
 import {
   alpha,
   Box,
@@ -81,41 +81,48 @@ const SummaryCard = ({ title, value, subtitle, icon: Icon, color }: SummaryCardP
   </Card>
 );
 
-interface MetasDashboardProps {
-  metas: Meta[];
+interface ObjetivosDashboardProps {
+  objetivos: Objetivo[];
   onNew: () => void;
   children: React.ReactNode;
   mostrarConcluidas?: boolean;
   onToggleConcluidas?: (val: boolean) => void;
 }
 
-export const MetasDashboard = ({
-  metas,
+export const ObjetivosDashboard = ({
+  objetivos,
   onNew,
   children,
   mostrarConcluidas = false,
   onToggleConcluidas
-}: MetasDashboardProps) => {
+}: ObjetivosDashboardProps) => {
   const theme = useTheme();
 
-  const totalObjetivado = metas.reduce((acc, m) => acc + (m.status === 'A' ? Number(m.valorMeta) : 0), 0);
-  const totalAcumulado = metas.reduce((acc, m) => acc + Number(m.valorAcumulado), 0);
-  const concluidasCount = metas.filter((m) => m.status === "I").length;
-  const atingidasCount = metas.filter(
-    (m) => m.status === "A" && Number(m.valorAcumulado) >= Number(m.valorMeta)
-  ).length;
-
-  const faltante = Math.max(
-    totalObjetivado -
-      metas.reduce(
-        (acc, m) => acc + (m.status === "A" ? Number(m.valorAcumulado) : 0),
-        0
-      ),
+  const totalObjetivado = objetivos.reduce(
+    (acc, m) => acc + (m.status === 'A' && m.tipo === 'META' ? Number(m.valorObjetivo || 0) : 0),
     0
   );
+  const totalAcumulado = objetivos.reduce((acc, m) => acc + Number(m.valorAcumulado || 0), 0);
+  const concluidasCount = objetivos.filter((m) => m.status === "I").length;
+  const atingidasCount = objetivos.filter(
+    (m) => m.status === "A" && m.tipo === 'META' && Number(m.valorAcumulado || 0) >= Number(m.valorObjetivo || 0)
+  ).length;
+
+  const totalObjetivoMetas = objetivos.reduce(
+    (acc, m) => acc + (m.status === 'A' && m.tipo === 'META' ? Number(m.valorObjetivo || 0) : 0),
+    0
+  );
+  const totalAcumuladoMetasAtivas = objetivos.reduce(
+    (acc, m) => acc + (m.status === 'A' && m.tipo === 'META' ? Number(m.valorAcumulado || 0) : 0),
+    0
+  );
+  const faltante = Math.max(totalObjetivoMetas - totalAcumuladoMetasAtivas, 0);
 
   const formatCurrency = (val: number) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const metasAtivasCount = objetivos.filter((m) => m.status === "A" && m.tipo === "META").length;
+  const reservasAtivasCount = objetivos.filter((m) => m.status === "A" && m.tipo === "RESERVA").length;
 
   return (
     <Box>
@@ -125,7 +132,7 @@ export const MetasDashboard = ({
           <SummaryCard
             title="Total Objetivado"
             value={formatCurrency(totalObjetivado)}
-            subtitle={`${metas.filter((m) => m.status === "A").length} objetivos ativos`}
+            subtitle={`${metasAtivasCount} metas ativas`}
             icon={IconTarget}
             color={theme.palette.primary.main}
           />
@@ -134,14 +141,14 @@ export const MetasDashboard = ({
           <SummaryCard
             title="Total Guardado"
             value={formatCurrency(totalAcumulado)}
-            subtitle="Valor total reservado"
+            subtitle={`${reservasAtivasCount} reservas ativas`}
             icon={IconTrendingUp}
             color={theme.palette.success.main}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SummaryCard
-            title="Faltante"
+            title="Faltante (Metas)"
             value={formatCurrency(faltante)}
             subtitle="Para atingir 100%"
             icon={IconChartPie}
@@ -150,9 +157,9 @@ export const MetasDashboard = ({
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <SummaryCard
-            title="Concluídas"
+            title="Concluídos"
             value={concluidasCount.toString()}
-            subtitle={`${atingidasCount} atingidas (elegíveis)`}
+            subtitle={`${atingidasCount} atingidos (elegíveis)`}
             icon={IconCircleCheck}
             color={theme.palette.info.main}
           />
@@ -172,7 +179,7 @@ export const MetasDashboard = ({
             Seus Objetivos
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.8 }}>
-            Gerencie e acompanhe o progresso das suas metas financeiras
+            Gerencie e acompanhe o progresso dos seus objetivos e reservas financeiras
           </Typography>
         </Box>
 
@@ -200,7 +207,7 @@ export const MetasDashboard = ({
             }
             label={
               <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', ml: 0, letterSpacing: '0.5px' }}>
-                Concluídas
+                Concluídos
               </Typography>
             }
             sx={{ m: 0, mx: 1 }}
@@ -237,4 +244,4 @@ export const MetasDashboard = ({
   );
 };
 
-export default MetasDashboard;
+export default ObjetivosDashboard;

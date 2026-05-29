@@ -1,10 +1,11 @@
 import { LancamentoResposta } from "../lancamentos/types";
 
-export interface Meta {
+export interface Objetivo {
   id: number;
   userId: number;
   nome: string;
-  valorMeta: number | null;
+  tipo: "META" | "RESERVA";
+  valorObjetivo: number | null;
   dataAlvo: string | Date | null;
   status: string;
   icone: string | null;
@@ -20,10 +21,11 @@ export interface Meta {
   lancamentos?: LancamentoResposta[];
 }
 
-export interface MetaPayload {
+export interface ObjetivoPayload {
   id?: number;
   nome?: string;
-  valorMeta?: number | null;
+  tipo?: "META" | "RESERVA";
+  valorObjetivo?: number | null;
   dataAlvo?: string | Date | null;
   status?: string;
   icone?: string | null;

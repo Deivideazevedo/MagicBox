@@ -17,7 +17,7 @@ import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 import { useModalUrl } from "@/hooks/useModalUrl";
 import { useGetDespesasQuery } from "@/services/endpoints/despesasApi";
 import { useBulkDeleteLancamentosMutation } from "@/services/endpoints/lancamentosApi";
-import { useGetMetasQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivosQuery } from "@/services/endpoints/objetivosApi";
 import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -57,7 +57,7 @@ function LancamentosPageContent() {
 
   const { data: despesas = [] } = useGetDespesasQuery();
   const { data: receitas = [] } = useGetReceitasQuery();
-  const { data: metas = [] } = useGetMetasQuery();
+  const { data: metas = [] } = useGetObjetivosQuery();
 
   const {
     lancamentos,
@@ -155,16 +155,22 @@ function LancamentosPageContent() {
 
   const fullLancamentos = useMemo(() => {
     return lancamentos.map((lancamento) => {
+      const isObjetivo = Boolean(
+        lancamento.objetivoId ||
+        lancamento.objetivo_id ||
+        (lancamento as any).metaId ||
+        (lancamento as any).meta_id
+      );
       return {
         ...lancamento,
-        origem:
-          lancamento.metaId || lancamento.meta_id
-            ? "Meta"
-            : lancamento.despesa
-              ? "Despesa"
-              : "Receita",
+        origem: isObjetivo
+          ? "Objetivo"
+          : lancamento.despesa
+            ? "Despesa"
+            : "Receita",
         nome:
-          lancamento.meta?.nome ||
+          lancamento.objetivo?.nome ||
+          (lancamento as any).meta?.nome ||
           lancamento.despesa?.nome ||
           lancamento.receita?.nome ||
           "-",
@@ -210,7 +216,7 @@ function LancamentosPageContent() {
           filtros={filtros}
           despesas={despesas}
           receitas={receitas}
-          metas={metas}
+          objetivos={metas}
           handleSearch={handleSearch}
           refs={tourRefs}
         />

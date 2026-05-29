@@ -20,7 +20,7 @@ export const lancamentoSchema = z.object({
   observacaoAutomatica: z.string().nullable(),
   despesaId: z.number().int().positive().nullable(),
   receitaId: z.number().int().positive().nullable(),
-  metaId: z.number().int().positive().nullable(),
+  objetivoId: z.number().int().positive().nullable(),
   vinculoId: z.string().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -38,7 +38,7 @@ export const findAllQuerySchema = z.object({
 
   despesaId: z.coerce.number().optional(),
   receitaId: z.coerce.number().optional(),
-  metaId: z.coerce.number().optional(),
+  objetivoId: z.coerce.number().optional(),
 
   tipo: z.enum(["pagamento", "agendamento"]).optional(),
   observacao: z.string().optional(),
@@ -60,7 +60,7 @@ export const createLancamentoSchema = z
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
     receitaId: z.number().int().positive().nullable().optional(),
-    metaId: z.number().int().positive().nullable().optional(),
+    objetivoId: z.number().int().positive().nullable().optional(),
     vinculoId: z.string().nullable().optional(),
 
     // Parcelas (usado para criar múltiplos registros)
@@ -74,12 +74,12 @@ export const createLancamentoSchema = z
   })
   .refine(
     (data) => {
-      // REGRA: Deve ter AO MENOS UM vínculo (despesa, receita ou meta)
-      return !!data.despesaId || !!data.receitaId || !!data.metaId;
+      // REGRA: Deve ter AO MENOS UM vínculo (despesa, receita ou objetivo)
+      return !!data.despesaId || !!data.receitaId || !!data.objetivoId;
     },
     {
       message:
-        "Lançamento deve estar vinculado a uma despesa, receita ou meta",
+        "Lançamento deve estar vinculado a uma despesa, receita ou objetivo",
       path: ["despesaId"],
     },
   )
@@ -106,7 +106,7 @@ export const updateLancamentoSchema = z
     observacao: z.string().min(1).max(255).trim().optional(),
     despesaId: z.number().int().positive().nullable().optional(),
     receitaId: z.number().int().positive().nullable().optional(),
-    metaId: z.number().int().positive().nullable().optional(),
+    objetivoId: z.number().int().positive().nullable().optional(),
     vinculoId: z.string().nullable().optional(),
   })
   .refine(

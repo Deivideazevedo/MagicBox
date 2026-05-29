@@ -145,7 +145,7 @@ export const dashboardRepository = {
           SUM(CASE WHEN l.tipo = 'agendamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END)::float as rec_projetada_real,
           SUM(CASE WHEN l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END)::float as desp_realizada,
           SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END)::float as desp_projetada_real,
-          SUM(CASE WHEN l.tipo = 'pagamento' AND l."metaId" IS NOT NULL THEN l.valor ELSE 0 END)::float as metas
+          SUM(CASE WHEN l.tipo = 'pagamento' AND l."objetivoId" IS NOT NULL THEN l.valor ELSE 0 END)::float as metas
         FROM lancamento l
         WHERE l."userId" = ${userId}
           AND l.data >= ${dataInicio}::date

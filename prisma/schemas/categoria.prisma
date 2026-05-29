@@ -10,7 +10,7 @@ model Categoria {
   cor       String?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   despesas  Despesa[]
-  metas     Meta[]
+  objetivos Objetivo[]
   receitas  Receita[]
 
   @@index([userId])

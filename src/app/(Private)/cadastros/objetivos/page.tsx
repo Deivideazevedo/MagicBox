@@ -2,36 +2,24 @@
 
 import PageContainer from "@/app/components/container/PageContainer";
 import Breadcrumb from "@/app/(Private)/layout/shared/breadcrumb/Breadcrumb";
-import { Meta } from "@/core/metas/types";
+import { Objetivo } from "@/core/objetivos/types";
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
   Grid,
-  Typography,
-  useTheme,
-  alpha,
-  Stack,
-  Collapse,
   Dialog,
   DialogContent,
+  CircularProgress,
 } from "@mui/material";
-import {
-  IconTarget,
-  IconChevronDown,
-  IconChevronUp,
-  IconPlus,
-  IconTrash,
-  IconCheck,
-  IconRefresh,
-} from "@tabler/icons-react";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
-import { CircularProgress } from "@mui/material";
+import { useObjetivos } from "../hooks/useObjetivos";
+import Slide from "@mui/material/Slide";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 // Importa os modais e formulários dinamicamente sob demanda
-const Formulario = dynamic(() => import("../components/Meta/Formulario").then((m) => m.Formulario), {
+const Formulario = dynamic(() => import("../components/Objetivo/Formulario").then((m) => m.Formulario), {
   loading: () => (
     <Box display="flex" justifyContent="center" alignItems="center" p={3}>
       <CircularProgress />
@@ -40,12 +28,12 @@ const Formulario = dynamic(() => import("../components/Meta/Formulario").then((m
   ssr: false,
 });
 
-const RetiradaMetaModal = dynamic(() => import("../components/Meta/RetiradaMetaModal"), {
+const RetiradaObjetivoModal = dynamic(() => import("../components/Objetivo/RetiradaObjetivoModal"), {
   ssr: false,
 });
 
-// Importações dinâmicas dos painéis de metas para máxima performance
-const Listagem = dynamic(() => import("../components/Meta/Listagem").then((m) => m.Listagem), {
+// Importações dinâmicas dos painéis de objetivos para máxima performance
+const Listagem = dynamic(() => import("../components/Objetivo/Listagem").then((m) => m.Listagem), {
   loading: () => (
     <Box display="flex" justifyContent="center" p={4}>
       <CircularProgress />
@@ -54,18 +42,14 @@ const Listagem = dynamic(() => import("../components/Meta/Listagem").then((m) =>
   ssr: false,
 });
 
-const MetasDashboard = dynamic(() => import("../components/Meta/MetasDashboard").then((m) => m.MetasDashboard), {
+const ObjetivosDashboard = dynamic(() => import("../components/Objetivo/ObjetivosDashboard").then((m) => m.ObjetivosDashboard), {
   ssr: false,
 });
-import { useMetas } from "../hooks/useMetas";
-import Slide from "@mui/material/Slide";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useModalUrl } from "@/hooks/useModalUrl";
 
-export default function MetasPage() {
+export default function ObjetivosPage() {
   const theme = useTheme();
   const {
-    metas,
+    objetivos,
     isLoading,
     isCreating,
     isUpdating,
@@ -73,7 +57,7 @@ export default function MetasPage() {
     isAporte,
     isRetiradaModalOpen,
     setIsRetiradaModalOpen,
-    targetMeta,
+    targetObjetivo,
     isAportando,
     control,
     handleSubmit,
@@ -83,37 +67,30 @@ export default function MetasPage() {
     handleDelete,
     handleToggleStatus,
     handleCancelEdit,
-  } = useMetas();
+  } = useObjetivos();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isMobileForm = useMediaQuery(theme.breakpoints.down("sm"));
-  const modalForm = useModalUrl("metaForm");
-  const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
-  const [aporteState, setAporteState] = useState<{
-    open: boolean;
-    target: Meta | null;
-  }>({
-    open: false,
-    target: null,
-  });
+  const modalForm = useModalUrl("objetivoForm");
+  const [mostrarConcluidos, setMostrarConcluidos] = useState(false);
 
   const BREADCRUMBS = [
     { title: "Dashboard", to: "/" },
-    { title: "Metas", to: "/cadastros/metas" },
+    { title: "Objetivos", to: "/cadastros/objetivos" },
   ];
 
-  const handleOpenAporte = (meta: Meta) => {
-    handleAporte(meta);
+  const handleOpenAporte = (objetivo: Objetivo) => {
+    handleAporte(objetivo);
     modalForm.openModal();
   };
 
-  const handleNovaMeta = () => {
+  const handleNovoObjetivo = () => {
     handleCancelEdit();
     modalForm.openModal();
   };
 
-  const handleEditarMeta = (meta: Meta) => {
-    handleEdit(meta);
+  const handleEditarObjetivo = (objetivo: Objetivo) => {
+    handleEdit(objetivo);
     modalForm.openModal();
   };
 
@@ -122,26 +99,25 @@ export default function MetasPage() {
     modalForm.closeModal();
   };
 
-  const metasFiltradas = mostrarConcluidas ? metas : metas.filter(m => m.status === 'A');
+  const objetivosFiltrados = mostrarConcluidos ? objetivos : objetivos.filter(o => o.status === 'A');
 
   return (
-    <PageContainer title="Metas" description="Gerencie seus objetivos financeiros">
-      <Breadcrumb title="Metas" items={BREADCRUMBS} />
+    <PageContainer title="Objetivos" description="Gerencie seus objetivos financeiros e reservas">
+      <Breadcrumb title="Objetivos" items={BREADCRUMBS} />
 
       {/* Dashboard de Totalizadores */}
       <Box mb={4}>
-        <MetasDashboard
-          metas={metas}
-          onNew={handleNovaMeta}
-          mostrarConcluidas={mostrarConcluidas}
-          onToggleConcluidas={setMostrarConcluidas}
+        <ObjetivosDashboard
+          objetivos={objetivos}
+          onNew={handleNovoObjetivo}
+          mostrarConcluidas={mostrarConcluidos}
+          onToggleConcluidas={setMostrarConcluidos}
         >
           <Grid
             container
             spacing={3}
             sx={{
               flexWrap: isMobile ? 'wrap' : 'nowrap',
-              // overflow: 'hidden',
               alignItems: 'flex-start'
             }}
           >
@@ -159,7 +135,7 @@ export default function MetasPage() {
                     isCreating={isCreating}
                     isUpdating={isUpdating}
                     handleCancelEdit={handleFecharFormulario}
-                    targetMeta={targetMeta}
+                    targetObjetivo={targetObjetivo}
                   />
                 </Grid>
               </Slide>
@@ -184,7 +160,7 @@ export default function MetasPage() {
                     isCreating={isCreating}
                     isUpdating={isUpdating}
                     handleCancelEdit={handleFecharFormulario}
-                    targetMeta={targetMeta}
+                    targetObjetivo={targetObjetivo}
                   />
                 </DialogContent>
               </Dialog>
@@ -199,10 +175,9 @@ export default function MetasPage() {
                 minWidth: 0,
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 width: '100%',
-                // Estilização dinâmica para crescimento suave
                 ...(!isMobileForm && {
-                  flexBasis: (modalForm.isOpen && !isMobileForm) ? '66.66% !important' : '100% !important',
-                  maxWidth: (modalForm.isOpen && !isMobileForm) ? '66.66% !important' : '100% !important',
+                  flexBasis: (modalForm.isOpen && !isMobile) ? '66.66% !important' : '100% !important',
+                  maxWidth: (modalForm.isOpen && !isMobile) ? '66.66% !important' : '100% !important',
                 }),
                 ...(isMobileForm && {
                   width: '100% !important',
@@ -210,23 +185,24 @@ export default function MetasPage() {
               }}
             >
               <Listagem
-                metas={metasFiltradas}
+                objetivos={objetivosFiltrados}
                 isLoading={isLoading}
-                onEdit={handleEditarMeta}
+                onEdit={handleEditarObjetivo}
                 onDelete={handleDelete}
                 onAporte={handleOpenAporte}
                 onRetirada={handleRetirada}
                 onToggleStatus={handleToggleStatus}
+                isFormOpen={modalForm.isOpen}
               />
             </Grid>
           </Grid>
-        </MetasDashboard>
+        </ObjetivosDashboard>
       </Box>
 
-      <RetiradaMetaModal
+      <RetiradaObjetivoModal
         open={isRetiradaModalOpen}
         onClose={() => setIsRetiradaModalOpen(false)}
-        meta={targetMeta}
+        objetivo={targetObjetivo}
       />
     </PageContainer>
   );

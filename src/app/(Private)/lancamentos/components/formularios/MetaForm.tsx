@@ -108,7 +108,7 @@ export default function MetaForm({
           })()}
           <Box>
             <Typography variant="subtitle2" fontWeight={600}>
-              Lançamento de Meta
+              Lançamento de Objetivo
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Registre um investimento ou retirada
@@ -186,7 +186,7 @@ export default function MetaForm({
             </ToggleButtonGroup>
           </Grid>
 
-          {/* Autocomplete Meta */}
+          {/* Autocomplete Objetivo */}
           <Grid item xs={12}>
             <HookAutocomplete
               name="itemId"
@@ -194,10 +194,10 @@ export default function MetaForm({
               options={itens}
               label={
                 tipo === "retirada"
-                  ? "Meta de Origem (Onde sai o saldo)"
-                  : "Meta Selecionada"
+                  ? "Objetivo de Origem (Onde sai o saldo)"
+                  : "Objetivo Selecionado"
               }
-              placeholder="Buscar meta..."
+              placeholder="Buscar objetivo..."
               getOptionLabel={(opt) => opt.nome}
               getOptionValue={(opt) => opt.id}
               shrinkLabel
@@ -205,7 +205,7 @@ export default function MetaForm({
               textFieldProps={{
                 InputProps: {
                   startAdornment: (
-                    <ItemIconAdornment item={selectedItem} isMeta />
+                    <ItemIconAdornment item={selectedItem} isObjetivo />
                   ),
                 },
               }}
@@ -216,8 +216,8 @@ export default function MetaForm({
               onChange={(_, _value, _reason, selectedOption) => {
                 if (selectedOption) {
                   const item = selectedOption as (typeof itens)[number];
-                  if (item.valorMeta && Number(item.valorMeta) > 0) {
-                    setValue("valor", Number(item.valorMeta));
+                  if (item.valorObjetivo && Number(item.valorObjetivo) > 0) {
+                    setValue("valor", Number(item.valorObjetivo));
                   }
                   setTimeout(
                     () =>

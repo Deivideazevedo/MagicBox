@@ -1,19 +1,19 @@
 import { useState, useRef, useEffect } from "react";
-import { MetasDashboard } from "./MetasDashboard";
+import { ObjetivosDashboard } from "./ObjetivosDashboard";
 import { Listagem } from "./Listagem";
 import { Formulario } from "./Formulario";
-import { useMetas } from "../../hooks/useMetas";
-import { Meta } from "@/core/metas/types";
+import { useObjetivos } from "../../hooks/useObjetivos";
+import { Objetivo } from "@/core/objetivos/types";
 import { Box, Grid, Slide, useTheme } from "@mui/material";
-import RetiradaMetaModal from "./RetiradaMetaModal";
+import RetiradaObjetivoModal from "./RetiradaObjetivoModal";
 
-export const MetasTab = () => {
+export const ObjetivosTab = () => {
   const theme = useTheme();
   const [exibirFormulario, setExibirFormulario] = useState(false);
   const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
 
   const {
-    metas,
+    objetivos,
     isLoading,
     isCreating,
     isUpdating,
@@ -30,16 +30,16 @@ export const MetasTab = () => {
     handleDelete,
     handleToggleStatus,
     handleCancelEdit,
-    targetMeta,
-  } = useMetas();
+    targetObjetivo,
+  } = useObjetivos();
 
   const handleOpenNew = () => {
     handleCancelEdit();
     setExibirFormulario(true);
   };
 
-  const handleOpenEdit = (meta: Meta) => {
-    handleEdit(meta);
+  const handleOpenEdit = (objetivo: Objetivo) => {
+    handleEdit(objetivo);
     setExibirFormulario(true);
   };
 
@@ -48,23 +48,23 @@ export const MetasTab = () => {
     setExibirFormulario(false);
   };
 
-  const handleAporteInterno = (meta: Meta) => {
-    handleAporte(meta);
+  const handleAporteInterno = (objetivo: Objetivo) => {
+    handleAporte(objetivo);
     setExibirFormulario(true);
   };
 
-  const handleRetiradaInterno = (meta: Meta) => {
-    handleRetirada(meta);
+  const handleRetiradaInterno = (objetivo: Objetivo) => {
+    handleRetirada(objetivo);
   };
 
-  const metasFiltradas = mostrarConcluidas
-    ? metas
-    : metas.filter((m) => m.status === "A");
+  const objetivosFiltrados = mostrarConcluidas
+    ? objetivos
+    : objetivos.filter((m) => m.status === "A");
 
   return (
     <Box px={5} pt={1.5} pb={2.5}>
-      <MetasDashboard
-        metas={metas}
+      <ObjetivosDashboard
+        objetivos={objetivos}
         onNew={handleOpenNew}
         mostrarConcluidas={mostrarConcluidas}
         onToggleConcluidas={setMostrarConcluidas}
@@ -87,14 +87,14 @@ export const MetasTab = () => {
                 isCreating={isCreating}
                 isUpdating={isUpdating}
                 handleCancelEdit={handleFecharFormulario}
-                targetMeta={targetMeta}
+                targetObjetivo={targetObjetivo}
               />
             </Grid>
           </Slide>
 
           <Grid item xs={12} md={exibirFormulario ? 8 : 12}>
             <Listagem
-              metas={metasFiltradas}
+              objetivos={objetivosFiltrados}
               isLoading={isLoading}
               onEdit={handleOpenEdit}
               onDelete={handleDelete}
@@ -104,15 +104,15 @@ export const MetasTab = () => {
             />
           </Grid>
         </Grid>
-      </MetasDashboard>
+      </ObjetivosDashboard>
 
-      <RetiradaMetaModal
+      <RetiradaObjetivoModal
         open={isRetiradaModalOpen}
         onClose={() => setIsRetiradaModalOpen(false)}
-        meta={targetMeta}
+        objetivo={targetObjetivo}
       />
     </Box>
   );
 };
 
-export default MetasTab;
+export default ObjetivosTab;

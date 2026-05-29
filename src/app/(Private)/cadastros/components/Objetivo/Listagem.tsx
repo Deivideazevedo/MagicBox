@@ -1,4 +1,4 @@
-import { Meta } from "@/core/metas/types";
+import { Objetivo } from "@/core/objetivos/types";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 import { ReplayCircleFilled } from "@mui/icons-material";
@@ -35,61 +35,62 @@ import {
   IconTrendingDown,
   IconHistory,
   IconEye,
+  IconPig,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
-import DetalhesMetaModal from "./DetalhesMetaModal";
+import DetalhesObjetivoModal from "./DetalhesObjetivoModal";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { useModalUrl } from "@/hooks/useModalUrl";
 
 interface ListagemProps {
-  metas: Meta[];
+  objetivos: Objetivo[];
   isLoading: boolean;
-  onEdit: (meta: Meta) => void;
+  onEdit: (objetivo: Objetivo) => void;
   onDelete: (id: number) => void;
-  onAporte: (meta: Meta) => void;
-  onRetirada: (meta: Meta) => void;
-  onToggleStatus: (meta: Meta) => void;
+  onAporte: (objetivo: Objetivo) => void;
+  onRetirada: (objetivo: Objetivo) => void;
+  onToggleStatus: (objetivo: Objetivo) => void;
+  isFormOpen?: boolean;
 }
 
 export const Listagem = ({
-  metas,
+  objetivos,
   isLoading,
   onEdit,
   onDelete,
   onAporte,
   onRetirada,
   onToggleStatus,
+  isFormOpen = false,
 }: ListagemProps) => {
   const theme = useTheme();
   const customizer = useSelector((state: AppState) => state.customizer);
-  const modalDetalhes = useModalUrl("metaDetalhes");
+  const modalDetalhes = useModalUrl("objetivoDetalhes");
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedMeta, setSelectedMeta] = useState<Meta | null>(null);
-  const [metaDetalhes, setMetaDetalhes] = useState<Meta | null>(null);
+  const [selectedObjetivo, setSelectedObjetivo] = useState<Objetivo | null>(null);
+  const [objetivoDetalhes, setObjetivoDetalhes] = useState<Objetivo | null>(null);
 
   useEffect(() => {
     if (!modalDetalhes.isOpen) {
-      setMetaDetalhes(null);
+      setObjetivoDetalhes(null);
     }
   }, [modalDetalhes.isOpen]);
   const openMenu = Boolean(anchorEl);
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, meta: Meta) => {
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, objetivo: Objetivo) => {
     setAnchorEl(event.currentTarget);
-    setSelectedMeta(meta);
+    setSelectedObjetivo(objetivo);
   };
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
-    // Não alteramos o selectedMeta aqui para evitar que os itens pisquem/sumam
-    // durante a animação de fechamento do menu.
   };
 
-  const handleAction = (callback: (meta: Meta) => void) => {
-    if (selectedMeta) {
-      callback(selectedMeta);
+  const handleAction = (callback: (objetivo: Objetivo) => void) => {
+    if (selectedObjetivo) {
+      callback(selectedObjetivo);
     }
     handleCloseMenu();
   };
@@ -104,7 +105,7 @@ export const Listagem = ({
     );
   }
 
-  if (metas.length === 0) {
+  if (objetivos.length === 0) {
     return (
       <Card
         elevation={0}
@@ -130,10 +131,10 @@ export const Listagem = ({
           </Box>
           <Box>
             <Typography variant="h6" fontWeight={700}>
-              Nenhum objetivo ainda
+              Nenhum objetivo cadastrado
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Suas metas aparecerão aqui para você acompanhar o progresso.
+              Seus objetivos e reservas financeiras aparecerão aqui para você acompanhar o progresso.
             </Typography>
           </Box>
         </Stack>
@@ -146,24 +147,26 @@ export const Listagem = ({
 
   return (
     <Grid container spacing={3}>
-      {metas.map((meta) => {
-        const acumulado = meta.valorAcumulado || 0;
-        const metaValor = meta.valorMeta ? Number(meta.valorMeta) : 0;
-        const progresso = metaValor > 0 ? (acumulado / metaValor) * 100 : 0;
-        const cor = meta.cor || theme.palette.primary.main;
-        const faltante = metaValor > 0 ? Math.max(metaValor - acumulado, 0) : 0;
-        const isMetaAtingida = metaValor > 0 && progresso >= 100 && meta.status === "A";
+      {objetivos.map((objetivo) => {
+        const acumulado = objetivo.valorAcumulado || 0;
+        const valorObj = objetivo.valorObjetivo ? Number(objetivo.valorObjetivo) : 0;
+        const progresso = valorObj > 0 ? (acumulado / valorObj) * 100 : 0;
+        const cor = objetivo.cor || theme.palette.primary.main;
+        const faltante = valorObj > 0 ? Math.max(valorObj - acumulado, 0) : 0;
+        const isReserva = objetivo.tipo === "RESERVA";
+        const qtdAportes = objetivo.lancamentos?.length || 0;
+        const isMetaAtingida = !isReserva && valorObj > 0 && progresso >= 100 && objetivo.status === "A";
 
         // Lógica de Atraso (usando arquitetura Naive)
         const hoje = new Date().toLocaleDateString("sv-SE");
-        const dataAlvoStr = meta.dataAlvo
-          ? fnFormatNaiveDate(meta.dataAlvo, "yyyy-MM-dd")
+        const dataAlvoStr = objetivo.dataAlvo
+          ? fnFormatNaiveDate(objetivo.dataAlvo, "yyyy-MM-dd")
           : null;
         const isMetaAtrasada =
-          meta.status === "A" && metaValor > 0 && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
+          objetivo.status === "A" && !isReserva && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
 
         return (
-          <Grid item xs={12} sm={6} md={4} key={meta.id}>
+          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={objetivo.id}>
             <Card
               sx={{
                 padding: 0,
@@ -171,13 +174,15 @@ export const Listagem = ({
                 position: "relative",
                 overflow: "visible",
                 transition: "all 0.2s ease-in-out",
-                opacity: meta.status === "I" ? 0.8 : 1,
-                filter: meta.status === "I" ? "grayscale(0.3)" : "none",
+                opacity: objetivo.status === "I" ? 0.8 : 1,
+                filter: objetivo.status === "I" ? "grayscale(0.3)" : "none",
 
                 // Estilo Condicional Centralizado
                 border: isMetaAtingida
                   ? `1px solid ${alpha(theme.palette.success.main, 0.5)}`
-                  : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                  : isReserva
+                    ? `1px solid ${alpha(theme.palette.success.main, 0.3)}`
+                    : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
 
                 boxShadow: isMetaAtingida
                   ? `0 2px 7px ${alpha(theme.palette.success.main, 0.4)}`
@@ -187,7 +192,9 @@ export const Listagem = ({
                   transform: "translateY(-2px)",
                   boxShadow: isMetaAtingida
                     ? `0 4px 12px ${alpha(theme.palette.success.main, 0.5)}`
-                    : `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
+                    : isReserva
+                      ? `0 4px 12px ${alpha(theme.palette.success.main, 0.15)}`
+                      : `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}`,
                 },
               }}
               elevation={1}
@@ -198,7 +205,7 @@ export const Listagem = ({
                 >
                   <IconButton
                     size="small"
-                    onClick={(e) => handleOpenMenu(e, meta)}
+                    onClick={(e) => handleOpenMenu(e, objetivo)}
                     sx={{
                       color: "text.secondary",
                       "&:hover": {
@@ -223,7 +230,7 @@ export const Listagem = ({
                     }}
                   >
                     <DynamicIcon
-                      name={meta.icone || "IconTarget"}
+                      name={objetivo.icone || (isReserva ? "IconPig" : "IconTarget")}
                       size={28}
                       stroke={1.5}
                     />
@@ -241,11 +248,22 @@ export const Listagem = ({
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {meta.nome}
+                        {objetivo.nome}
                       </Typography>
-                      {meta.status === "I" && (
+                      <Chip
+                        label={isReserva ? "Reserva" : "Meta"}
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          bgcolor: alpha(cor, 0.1),
+                          color: cor,
+                        }}
+                      />
+                      {objetivo.status === "I" && (
                         <Chip
-                          label="Concluída"
+                          label="Concluído"
                           size="small"
                           color="success"
                           variant="filled"
@@ -276,100 +294,107 @@ export const Listagem = ({
                       >
                         <IconCalendar size={14} />
                         <Typography variant="caption" fontWeight={500}>
-                          {meta.dataAlvo
-                            ? fnFormatNaiveDate(meta.dataAlvo)
-                            : "Sem data"}
+                          {isReserva
+                            ? "Aportes livres"
+                            : objetivo.dataAlvo
+                              ? fnFormatNaiveDate(objetivo.dataAlvo)
+                              : "Sem data limite"}
                         </Typography>
                       </Stack>
                     </Stack>
                   </Box>
                 </Box>
 
-                {/* </Box> */}
-
                 {/* Info de Valores */}
-                <Grid container spacing={2} mb={2.5}>
-                  <Grid item xs={6}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                      display="block"
-                      gutterBottom
-                    >
-                      ACUMULADO
-                    </Typography>
-                    <Typography
-                      variant="subtitle1"
-                      fontWeight={800}
-                      color="success.main"
-                    >
-                      {formatCurrency(meta.valorAcumulado || 0)}
-                    </Typography>
+                {isReserva ? (
+                  /* Layout da Reserva: Saldo Acumulado à Esquerda e Aportes à Direita */
+                  <Grid container spacing={2} mb={2.5}>
+                    <Grid item xs={6}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                        display="block"
+                        gutterBottom
+                      >
+                        ACUMULADO
+                      </Typography>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={800}
+                        color="success.main"
+                      >
+                        {formatCurrency(acumulado)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6} sx={{ textAlign: "right" }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                        display="block"
+                        gutterBottom
+                      >
+                        APORTES REALIZADOS
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight={800} color="warning.main">
+                        {qtdAportes} registros
+                      </Typography>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={6} sx={{ textAlign: "right" }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                      display="block"
-                      gutterBottom
-                    >
-                      OBJETIVO
-                    </Typography>
-                    <Typography variant="subtitle1" fontWeight={800}>
-                      {meta.valorMeta ? formatCurrency(Number(meta.valorMeta)) : "---"}
-                    </Typography>
+                ) : (
+                  /* Layout da Meta: Saldo Acumulado à Esquerda e Objetivo à Direita */
+                  <Grid container spacing={2} mb={2.5}>
+                    <Grid item xs={6}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                        display="block"
+                        gutterBottom
+                      >
+                        ACUMULADO
+                      </Typography>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={800}
+                        color="success.main"
+                      >
+                        {formatCurrency(acumulado)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6} sx={{ textAlign: "right" }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        fontWeight={600}
+                        display="block"
+                        gutterBottom
+                      >
+                        OBJETIVO
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+                        {valorObj > 0 ? formatCurrency(valorObj) : "---"}
+                      </Typography>
+                    </Grid>
                   </Grid>
-                </Grid>
+                )}
 
-                {/* Barra de Progresso com Porcentagem ao final */}
-                <Box>
-                  <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                    mb={1}
-                  >
-                    <Box sx={{ flexGrow: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(progresso, 100)}
-                        sx={{
-                          height: 10,
-                          borderRadius: 5,
-                          bgcolor: alpha(cor, 0.1),
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor: cor,
-                            borderRadius: 5,
-                            boxShadow: `0 2px 4px ${alpha(cor, 0.3)}`,
-                          },
-                        }}
-                      />
-                    </Box>
+                {/* Seção Inferior - Condicional baseada no Tipo (Mantém Altura e Simetria Consistentes) */}
+                {isReserva ? (
+                  /* Reserva: Linha Pontilhada e Informações de Atualização Limpas (Sem progresso forçado) */
+                  <Box>
                     <Box
                       sx={{
-                        px: 1.2,
-                        py: 0.4,
-                        borderRadius: "6px",
-                        bgcolor: alpha(cor, 0.1),
-                        color: cor,
-                        minWidth: "45px",
-                        textAlign: "center",
+                        borderTop: "1px dashed",
+                        borderColor: alpha(theme.palette.divider, 0.8),
+                        my: 2.5,
                       }}
-                    >
-                      <Typography variant="caption" fontWeight={800}>
-                        {progresso.toFixed(0)}%
+                    />
+                    <Stack direction="row" justifyContent="space-between" mt={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        Última alteração: {objetivo.updatedAt ? fnFormatNaiveDate(objetivo.updatedAt, "dd/MM/yyyy") : "Sem data"}
                       </Typography>
-                    </Box>
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between" mt={1}>
-                    <Typography variant="caption" color="text.secondary">
-                      {progresso >= 100
-                        ? "Meta atingida! 🎉"
-                        : `${formatCurrency(faltante)} restantes`}
-                    </Typography>
-                    {progresso >= 100 && (
                       <Stack
                         direction="row"
                         spacing={0.5}
@@ -378,18 +403,84 @@ export const Listagem = ({
                       >
                         <IconTrendingUp size={14} />
                         <Typography variant="caption" fontWeight={700}>
-                          Excelente!
+                          Livre / Sem Prazo
                         </Typography>
                       </Stack>
-                    )}
-                  </Stack>
-                </Box>
+                    </Stack>
+                  </Box>
+                ) : (
+                  /* Meta: Barra de Progresso Real e Informações de Progresso/Restantes */
+                  <Box>
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      mb={1}
+                    >
+                      <Box sx={{ flexGrow: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(progresso, 100)}
+                          sx={{
+                            height: 10,
+                            borderRadius: 5,
+                            bgcolor: alpha(cor, 0.1),
+                            "& .MuiLinearProgress-bar": {
+                              bgcolor: cor,
+                              borderRadius: 5,
+                              boxShadow: `0 2px 4px ${alpha(cor, 0.3)}`,
+                            },
+                          }}
+                        />
+                      </Box>
+                      <Box
+                        sx={{
+                          px: 1.2,
+                          py: 0.4,
+                          borderRadius: "6px",
+                          bgcolor: alpha(cor, 0.1),
+                          color: cor,
+                          minWidth: "45px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Typography variant="caption" fontWeight={800}>
+                          {progresso.toFixed(0)}%
+                        </Typography>
+                      </Box>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" mt={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        {progresso >= 100
+                          ? "Meta atingida! 🎉"
+                          : `${formatCurrency(faltante)} restantes`}
+                      </Typography>
+                      {progresso >= 100 ? (
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                          color="success.main"
+                        >
+                          <IconTrendingUp size={14} />
+                          <Typography variant="caption" fontWeight={700}>
+                            Excelente!
+                          </Typography>
+                        </Stack>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          {objetivo.dataAlvo ? "No prazo" : ""}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                )}
 
                 {/* Badge de meta batida (Atalho rápido para concluir) */}
                 {isMetaAtingida && (
                   <Tooltip title="Meta batida! Clique para concluir" arrow>
                     <IconButton
-                      onClick={() => onToggleStatus(meta)}
+                      onClick={() => onToggleStatus(objetivo)}
                       sx={{
                         position: "absolute",
                         bottom: -18,
@@ -412,7 +503,6 @@ export const Listagem = ({
                         "&:hover": {
                           color: "white",
                           bgcolor: "success.dark",
-                          // boxShadow: `0 6px 20px ${alpha(theme.palette.success.main, 0.6)}`,
                         },
                       }}
                     >
@@ -426,7 +516,7 @@ export const Listagem = ({
         );
       })}
 
-      {/* Menu Global para as Metas */}
+      {/* Menu Global para os Objetivos */}
       <Menu
         anchorEl={anchorEl}
         open={openMenu}
@@ -435,7 +525,7 @@ export const Listagem = ({
         TransitionComponent={Fade}
         TransitionProps={{
           timeout: 200,
-          onExited: () => setSelectedMeta(null),
+          onExited: () => setSelectedObjetivo(null),
         }}
         PaperProps={{
           sx: {
@@ -443,13 +533,13 @@ export const Listagem = ({
             minWidth: 180,
             boxShadow: theme.shadows[10],
             mt: 0.5,
-            transform: "translateZ(0)", // Evita o recálculo de subpixel da fonte (o pulo visual)
+            transform: "translateZ(0)",
           },
         }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        {selectedMeta?.status === "A" && (
+        {selectedObjetivo?.status === "A" && (
           <>
             <MenuItem onClick={() => handleAction(onAporte)}>
               <ListItemIcon sx={{ color: "success.main" }}>
@@ -481,15 +571,15 @@ export const Listagem = ({
           </ListItemIcon>
           <ListItemText
             sx={{ m: 0 }}
-            primary="Editar Meta"
+            primary="Editar Objetivo"
             primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
           />
         </MenuItem>
 
         <MenuItem
           onClick={() => {
-            if (selectedMeta) {
-              setMetaDetalhes(selectedMeta);
+            if (selectedObjetivo) {
+              setObjetivoDetalhes(selectedObjetivo);
               modalDetalhes.openModal();
             }
             handleCloseMenu();
@@ -511,10 +601,10 @@ export const Listagem = ({
           <ListItemIcon
             sx={{
               color:
-                selectedMeta?.status === "A" ? "success.main" : "warning.main",
+                selectedObjetivo?.status === "A" ? "success.main" : "warning.main",
             }}
           >
-            {selectedMeta?.status === "A" ? (
+            {selectedObjetivo?.status === "A" ? (
               <IconCircleCheck size={18} />
             ) : (
               <IconTarget size={18} />
@@ -523,16 +613,16 @@ export const Listagem = ({
           <ListItemText
             sx={{ m: 0 }}
             primary={
-              selectedMeta?.status === "A" ? "Concluir Meta" : "Reativar Meta"
+              selectedObjetivo?.status === "A" ? "Concluir Objetivo" : "Reativar Objetivo"
             }
             primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
           />
         </MenuItem>
 
-        {selectedMeta?.status === "I" && (
+        {selectedObjetivo?.status === "I" && (
           <MenuItem
             onClick={() =>
-              handleAction(() => selectedMeta && onDelete(selectedMeta.id))
+              handleAction(() => selectedObjetivo && onDelete(selectedObjetivo.id))
             }
           >
             <ListItemIcon sx={{ color: "error.main" }}>
@@ -540,7 +630,7 @@ export const Listagem = ({
             </ListItemIcon>
             <ListItemText
               sx={{ m: 0 }}
-              primary="Excluir Meta"
+              primary="Excluir Objetivo"
               primaryTypographyProps={{ variant: "body2", fontWeight: 600 }}
             />
           </MenuItem>
@@ -548,11 +638,11 @@ export const Listagem = ({
       </Menu>
 
       {/* Modal de Detalhes */}
-      {metaDetalhes && (
-        <DetalhesMetaModal
+      {objetivoDetalhes && (
+        <DetalhesObjetivoModal
           open={modalDetalhes.isOpen}
           onClose={modalDetalhes.closeModal}
-          metaId={metaDetalhes.id}
+          objetivoId={objetivoDetalhes.id}
         />
       )}
     </Grid>

@@ -56,7 +56,13 @@ import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker
 
 // ==================== TYPES ====================
 
-type OrigemType = Lancamento & { origem: string; nome: string };
+type OrigemType = Lancamento & {
+  origem: string;
+  nome: string;
+  metaId?: number | null;
+  meta_id?: number | null;
+  meta?: { id: number; nome: string; icone?: string | null; cor?: string | null } | null;
+};
 
 /**
  * Configuração de uma ação individual para uma linha
@@ -89,14 +95,14 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     sortValue: (row) => row.origem,
     render: (row) => {
       const isDespesa = Boolean(row.despesa);
-      const isMeta = Boolean(row.metaId || row.meta_id);
+      const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
 
       if (isMeta) {
         return (
           <Chip
             size="small"
             icon={<IconTarget size={16} />}
-            label="Meta"
+            label="Objetivo"
             color="info"
             variant="outlined"
             sx={{ fontWeight: 600, fontSize: "0.75rem" }}
@@ -125,7 +131,7 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.tipo,
     render: (row) => {
-      const isMeta = Boolean(row.metaId || row.meta_id);
+      const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
       const isInvestimento = row?.valor && Number(row.valor) >= 0;
       const isPagamento = row.tipo === "pagamento";
 
@@ -153,7 +159,7 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
         />
       );
     },
-    filterValue: (row) => row.metaId || row.meta_id ? "Retirada" : (row.tipo === "pagamento" ? "Pagamento" : "Agendamento"),
+    filterValue: (row) => row.objetivoId || row.objetivo_id || row.metaId || row.meta_id ? "Retirada" : (row.tipo === "pagamento" ? "Pagamento" : "Agendamento"),
   },
   {
     key: "nome",
@@ -161,8 +167,8 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.nome,
     render: (row) => {
-      const iconeStr = row.meta?.icone || row.despesa?.icone || row.receita?.icone;
-      const corStr = row.meta?.cor || row.despesa?.cor || row.receita?.cor;
+      const iconeStr = row.objetivo?.icone || row.meta?.icone || row.despesa?.icone || row.receita?.icone;
+      const corStr = row.objetivo?.cor || row.meta?.cor || row.despesa?.cor || row.receita?.cor;
 
       return (
         <Stack direction="row" spacing={1.2} alignItems="center">
@@ -208,7 +214,7 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     sortValue: (row) => row.valor,
     render: (row) => {
       const isDespesa = Boolean(row.despesa);
-      const isMeta = Boolean(row.metaId || row.meta_id);
+      const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
 
       let color = isDespesa ? "error.main" : "success.main";
       if (isMeta) {

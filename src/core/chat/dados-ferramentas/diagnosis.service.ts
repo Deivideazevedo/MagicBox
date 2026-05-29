@@ -1,8 +1,8 @@
 import { DividaResumoItem, dividasRepository } from "@/core/despesas/dividasRepository";
 import { resumoRepository as repositorio } from "@/core/lancamentos/resumo/repository";
 import { ResumoCardFiltros } from "@/core/lancamentos/resumo/resumo.dto";
-import { metasRepository } from "@/core/metas/repository";
-import { Meta } from "@/core/metas/types";
+import { objetivosRepository } from "@/core/objetivos/repository";
+import { Objetivo } from "@/core/objetivos/types";
 import { differenceInDays, isSameMonth, startOfDay, addMonths, setDate, endOfMonth, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
@@ -18,18 +18,18 @@ export const chatDiagnosisService = {
     userId: number,
     filtros?: ResumoCardFiltros,
   ): Promise<DiagnosticoFinanceiro> {
-    const [historico, resumoMetas, resumoDividas, dadosPeriodo] =
+    const [historico, resumoObjetivos, resumoDividas, dadosPeriodo] =
       await Promise.all([
         repositorio.obterTotaisHistoricos(userId),
-        metasRepository.obterResumoMetas(userId),
+        objetivosRepository.obterResumoObjetivos(userId),
         dividasRepository.obterResumoDividas(userId, filtros),
         filtros ? repositorio.obterCardResumo(filtros) : null,
       ]);
 
-    // Saldo Bloqueado = somatório de aportes em METAS ATIVAS
-    const saldoBloqueado = resumoMetas.metas
-      .filter((m: Meta) => m.status === "A")
-      .reduce((acc: number, m: Meta) => acc + (m.valorAcumulado ?? 0), 0);
+    // Saldo Bloqueado = somatório de aportes em OBJETIVOS ATIVOS
+    const saldoBloqueado = resumoObjetivos.objetivos
+      .filter((m: Objetivo) => m.status === "A")
+      .reduce((acc: number, m: Objetivo) => acc + (m.valorAcumulado ?? 0), 0);
 
     // Saldo Atual (GLOBAL) = entradas pagas - saídas pagas
     const saldoAtual = historico.receitasPagas - historico.despesasPagas;
@@ -85,21 +85,21 @@ export const chatDiagnosisService = {
         })),
       },
       pilarMetas: {
-        totalAcumulado: resumoMetas.totalAcumulado || 0,
-        totalObjetivadoAtivas: resumoMetas.totalObjetivado || 0,
-        totalFaltanteAtivas: resumoMetas.totalFaltante || 0,
-        totalAtivas: resumoMetas.totalAtivas || 0,
-        totalConcluidas: resumoMetas.metasConcluidas || 0,
-        metas: resumoMetas.metas.map((m: Meta) => ({
-          id: Number(m.id),
-          nome: m.nome,
-          valorAcumulado: m.valorAcumulado ?? 0,
-          valorMeta: m.valorMeta,
-          progresso: m.progresso ?? null,
-          concluida: m.concluida ?? false,
-          icone: m.icone || null,
-          cor: m.cor || null,
-          dataAlvo: m.dataAlvo || null,
+        totalAcumulado: resumoObjetivos.totalAcumulado || 0,
+        totalObjetivadoAtivas: resumoObjetivos.totalObjetivado || 0,
+        totalFaltanteAtivas: resumoObjetivos.totalFaltante || 0,
+        totalAtivas: resumoObjetivos.totalAtivas || 0,
+        totalConcluidas: resumoObjetivos.objetivosConcluidos || 0,
+        metas: resumoObjetivos.objetivos.map((o: Objetivo) => ({
+          id: Number(o.id),
+          nome: o.nome,
+          valorAcumulado: o.valorAcumulado ?? 0,
+          valorMeta: o.valorObjetivo ?? null,
+          progresso: o.progresso ?? null,
+          concluida: o.concluida ?? false,
+          icone: o.icone || null,
+          cor: o.cor || null,
+          dataAlvo: o.dataAlvo || null,
         })),
       },
       saldos: {

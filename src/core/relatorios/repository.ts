@@ -97,28 +97,28 @@ export const relatoriosRepository = {
     const result = await prisma.$queryRaw<any[]>`
       WITH metas_totais AS (
         SELECT 
-          COALESCE(SUM(m."valorMeta"), 0)::float as "valorTotalMeta",
+          COALESCE(SUM(m."valorObjetivo"), 0)::float as "valorTotalMeta",
           COALESCE(SUM(l.valor), 0)::float as "valorAlcancadoMeta"
-        FROM meta m
-        LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento' AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
+        FROM objetivo m
+        LEFT JOIN lancamento l ON l."objetivoId" = m.id AND l.tipo = 'pagamento' AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL
       ),
       metas_detalhe AS (
         SELECT 
           m.id, m.nome, m.icone, m.cor, m.status::text as status,
-          m."valorMeta"::float as planejado,
+          m."valorObjetivo"::float as planejado,
           COALESCE((
-            SELECT SUM(l.valor) FROM lancamento l WHERE l."metaId" = m.id AND l.tipo = 'pagamento'
+            SELECT SUM(l.valor) FROM lancamento l WHERE l."objetivoId" = m.id AND l.tipo = 'pagamento'
           ), 0)::float as realizado,
           COALESCE((
             SELECT AVG(mensal) FROM (
               SELECT SUM(l2.valor) as mensal
               FROM lancamento l2
-              WHERE l2."metaId" = m.id AND l2.tipo = 'pagamento'
+              WHERE l2."objetivoId" = m.id AND l2.tipo = 'pagamento'
               GROUP BY date_trunc('month', l2.data)
             ) s
           ), 0)::float as "mediaMensal"
-        FROM meta m
+        FROM objetivo m
         WHERE m."userId" = ${userId} AND m."deletedAt" IS NULL
         ORDER BY m.nome
       )
@@ -232,7 +232,7 @@ export const relatoriosRepository = {
           AND (
             (l."despesaId" = ANY(${dIds}::int[])) OR
             (l."receitaId" = ANY(${rIds}::int[])) OR
-            (l."metaId" = ANY(${mIds}::int[]))
+            (l."objetivoId" = ANY(${mIds}::int[]))
           )
           AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         GROUP BY 1, 2
@@ -243,8 +243,8 @@ export const relatoriosRepository = {
           ano,
           SUM(real_pago) as total_pago,
           SUM(real_agendado) as real_agendado,
-          SUM(alvo_sinalizado) as total_alvo,
-          SUM(restante_sinalizado) as restante_real
+          SUM(total_alvo) as total_alvo,
+          SUM(restante_real) as restante_real
         FROM reais_detalhado
         GROUP BY 1, 2
       ),
@@ -317,7 +317,7 @@ export const relatoriosRepository = {
           date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
           COALESCE(SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as receitas,
           COALESCE(SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN ABS(l.valor) ELSE 0 END), 0)::float as despesas,
-          COALESCE(SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN ABS(l.valor) ELSE 0 END), 0)::float as metas
+          COALESCE(SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN ABS(l.valor) ELSE 0 END), 0)::float as metas
         FROM lancamento l
         WHERE l."userId" = ${userId}
           AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
@@ -412,16 +412,16 @@ export const relatoriosRepository = {
           SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as rec_prev,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
-          SUM(CASE WHEN l."metaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
+          SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
-        LEFT JOIN meta m ON l."metaId" = m.id
+        LEFT JOIN objetivo m ON l."objetivoId" = m.id
         WHERE l."userId" = ${userId}
           AND (
             (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
             (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
-            (l."metaId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
           )
       )
       SELECT 

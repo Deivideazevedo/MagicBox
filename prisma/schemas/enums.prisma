@@ -13,3 +13,8 @@ enum TipoReceita {
   FIXA
   VARIAVEL
 }
+
+enum TipoObjetivo {
+  META
+  RESERVA
+}

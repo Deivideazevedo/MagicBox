@@ -37,7 +37,7 @@ const ReceitasTab = dynamic(() => import("./components/Receita/ReceitasTab"), {
   loading: TabLoading,
   ssr: false,
 });
-const MetasTab = dynamic(() => import("./components/Meta/MetasTab"), {
+const ObjetivosTab = dynamic(() => import("./components/Objetivo/ObjetivosTab"), {
   loading: TabLoading,
   ssr: false,
 });
@@ -48,7 +48,7 @@ const DividasTab = dynamic(() => import("./components/Divida/DividasTab"), {
 
 import { IconCategory, IconTarget } from "@tabler/icons-react";
 import { DividasTourProvider } from "./components/Divida/DividasTourContext";
-import { useGetMetasQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivosQuery } from "@/services/endpoints/objetivosApi";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -90,17 +90,17 @@ export default function CadastrosPage() {
     error: errorReceitas,
   } = useGetReceitasQuery();
   const {
-    data: metas = [],
-    isLoading: loadingMetas,
-    error: errorMetas,
-  } = useGetMetasQuery();
+    data: objetivos = [],
+    isLoading: loadingObjetivos,
+    error: errorObjetivos,
+  } = useGetObjetivosQuery();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
 
-  const isLoading = loadingCategorias || loadingDespesas || loadingReceitas || loadingMetas;
-  const error = errorCategorias || errorDespesas || errorReceitas || errorMetas;
+  const isLoading = loadingCategorias || loadingDespesas || loadingReceitas || loadingObjetivos;
+  const error = errorCategorias || errorDespesas || errorReceitas || errorObjetivos;
 
   if (isLoading) {
     return (
@@ -134,7 +134,7 @@ export default function CadastrosPage() {
           Cadastros
         </Typography>
         <Typography variant="h6" color="textSecondary">
-          Gerencie suas categorias, receitas, metas e dívidas
+          Gerencie suas categorias, receitas, objetivos e dívidas
         </Typography>
       </Box>
 
@@ -168,7 +168,7 @@ export default function CadastrosPage() {
               sx={{ minHeight: 48, fontWeight: 600 }}
             />
             <Tab
-              label="Metas"
+              label="Objetivos"
               icon={<IconTarget size={20} />}
               iconPosition="start"
               sx={{ minHeight: 48, fontWeight: 600 }}
@@ -195,7 +195,7 @@ export default function CadastrosPage() {
         </TabPanel>
 
         <TabPanel value={currentTab} index={3}>
-          <MetasTab />
+          <ObjetivosTab />
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>

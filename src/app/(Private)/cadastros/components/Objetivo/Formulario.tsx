@@ -1,9 +1,8 @@
 import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
-import { HookCurrencyField } from "@/app/components/forms/hooksForm/masks";
-import { MetaFormData } from "../../hooks/useMetas";
-import { Meta } from "@/core/metas/types";
+import { ObjetivoFormData } from "../../hooks/useObjetivos";
+import { Objetivo } from "@/core/objetivos/types";
 import { LoadingButton } from "@mui/lab";
 import {
   alpha,
@@ -13,30 +12,36 @@ import {
   CardContent,
   Grid,
   IconButton,
-  InputAdornment,
   Stack,
   Typography,
   useTheme,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
   IconTarget,
+  IconPig,
   IconX
 } from "@tabler/icons-react";
 import { Control, useWatch } from "react-hook-form";
 
+// Importando o HookCurrencyField do caminho correto
+// Vamos verificar o import correto de HookCurrencyField no seu projeto
+import { HookCurrencyField as HookMasksCurrencyField } from "@/app/components/forms/hooksForm/masks";
+
 interface FormProps {
   isEditing: boolean;
-  row: Meta | null;
+  row: Objetivo | null;
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-  control: Control<MetaFormData>;
+  control: Control<ObjetivoFormData>;
   isCreating: boolean;
   isUpdating: boolean;
   isAporte?: boolean;
   isAportando?: boolean;
-  targetMeta?: Meta | null;
+  targetObjetivo?: Objetivo | null;
 }
 
 export const Formulario = (formProps: FormProps) => {
@@ -51,12 +56,13 @@ export const Formulario = (formProps: FormProps) => {
     isAporte = false,
     isAportando = false,
     handleCancelEdit,
-    targetMeta,
+    targetObjetivo,
   } = formProps;
 
   const watchIcon = useWatch({ control, name: "icone" });
   const watchColor = useWatch({ control, name: "cor" });
   const watchNome = useWatch({ control, name: "nome" });
+  const watchTipo = useWatch({ control, name: "tipo" });
 
   const getTitle = () => {
     if (isAporte) return "Fazer Aporte";
@@ -65,7 +71,7 @@ export const Formulario = (formProps: FormProps) => {
 
   const getButtonText = () => {
     if (isAporte) return "Confirmar Aporte";
-    return isEditing ? "Salvar Alterações" : "Confirmar Meta";
+    return isEditing ? "Salvar Alterações" : "Confirmar Objetivo";
   };
 
   return (
@@ -120,15 +126,15 @@ export const Formulario = (formProps: FormProps) => {
               colorName="cor"
               watchIcon={watchIcon}
               watchColor={watchColor}
-              fallbackIcon="IconTarget"
-              fallbackColor={theme.palette.primary.main}
+              fallbackIcon={watchTipo === "RESERVA" ? "IconPig" : "IconTarget"}
+              fallbackColor={watchColor || theme.palette.primary.main}
             />
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                {isEditing ? "Editando Objetivo:" : "Novo Objetivo"}
+                {isEditing ? "Editando:" : "Novo Objetivo"}
               </Typography>
-              <Typography variant="body2" color="primary.main">
-                {isEditing ? targetMeta?.nome : (watchNome || "Defina sua próxima conquista")}
+              <Typography variant="body2" color="primary.main" fontWeight={700}>
+                {isEditing ? targetObjetivo?.nome : (watchNome || "Defina sua próxima conquista")}
               </Typography>
             </Box>
           </Box>
@@ -140,8 +146,8 @@ export const Formulario = (formProps: FormProps) => {
               <Typography variant="subtitle2" fontWeight={600}>
                 Aportando em:
               </Typography>
-              <Typography variant="body2" color="primary.main">
-                {targetMeta?.nome || watchNome}
+              <Typography variant="body2" color="primary.main" fontWeight={700}>
+                {targetObjetivo?.nome || watchNome}
               </Typography>
             </Box>
           </Box>
@@ -149,51 +155,140 @@ export const Formulario = (formProps: FormProps) => {
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={2}>
+            {/* Seletor de Tipo (Meta vs Reserva/Caixinha) */}
+            {!isAporte && !isEditing && (
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 1, textTransform: 'uppercase' }}>
+                  Tipo de Objetivo
+                </Typography>
+                <ToggleButtonGroup
+                  value={watchTipo}
+                  exclusive
+                  onChange={(_, value) => {
+                    if (value) {
+                      control._reset({
+                        ...control._defaultValues,
+                        nome: watchNome || "",
+                        tipo: value,
+                        icone: value === "RESERVA" ? "IconPig" : "IconTarget"
+                      });
+                    }
+                  }}
+                  fullWidth
+                  sx={{
+                    bgcolor: alpha(theme.palette.action.disabledBackground, 0.05),
+                    borderRadius: 3,
+                    p: 0.5,
+                    border: `1px solid ${theme.palette.divider}`,
+                    "& .MuiToggleButtonGroup-grouped": {
+                      border: 0,
+                      borderRadius: "10px",
+                      m: 0.2,
+                    }
+                  }}
+                >
+                  <ToggleButton
+                    value="META"
+                    sx={{
+                      py: 1.2,
+                      fontWeight: 700,
+                      textTransform: "none",
+                      gap: 1,
+                      color: "text.secondary",
+                      "&.Mui-selected": {
+                        bgcolor: "primary.main",
+                        color: "primary.contrastText",
+                        "&:hover": {
+                          bgcolor: "primary.dark",
+                        }
+                      }
+                    }}
+                  >
+                    <IconTarget size={18} />
+                    Meta Planejada
+                  </ToggleButton>
+                  <ToggleButton
+                    value="RESERVA"
+                    sx={{
+                      py: 1.2,
+                      fontWeight: 700,
+                      textTransform: "none",
+                      gap: 1,
+                      color: "text.secondary",
+                      "&.Mui-selected": {
+                        bgcolor: "success.main",
+                        color: "success.contrastText",
+                        "&:hover": {
+                          bgcolor: "success.dark",
+                        }
+                      }
+                    }}
+                  >
+                    <IconPig size={18} />
+                    Reserva Livre
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Grid>
+            )}
+
             {!isAporte && (
               <Grid item xs={12}>
                 <HookTextField
                   label="Nome do Objetivo"
                   name="nome"
                   control={control}
-                  placeholder="Ex: Reserva de Emergência, Viagem Disney..."
+                  placeholder={watchTipo === "RESERVA" ? "Ex: Caixinha da Diversão, Cofrinho..." : "Ex: Reserva de Emergência, Viagem Disney..."}
                 />
               </Grid>
             )}
 
-            {!isAporte && (
-              <Grid item xs={12}>
-                <HookCurrencyField
-                  name="valorMeta"
-                  control={control}
-                  label="Valor Objetivo"
-                  returnAsNumber={true}
-                  placeholder="Ex: 10.000,00"
-                />
-              </Grid>
+            {/* Renderização Condicional de Campos para META */}
+            {(!isAporte && watchTipo === "META") && (
+              <>
+                <Grid item xs={12}>
+                  <HookMasksCurrencyField
+                    name="valorObjetivo"
+                    control={control}
+                    label="Valor Objetivo"
+                    returnAsNumber={true}
+                    placeholder="Ex: 10.000,00"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <HookDatePicker
+                    name="dataAlvo"
+                    control={control}
+                    label="Data Alvo"
+                    helperText="Data limite para atingir o valor total pretendido."
+                  />
+                </Grid>
+              </>
             )}
 
+            {/* Inputs para Aporte */}
             {isAporte && (
-              <Grid item xs={12}>
-                <HookCurrencyField
-                  name="valorMeta"
-                  control={control}
-                  label="Valor do Aporte"
-                  returnAsNumber={true}
-                  placeholder="0,00"
-                />
-              </Grid>
+              <>
+                <Grid item xs={12}>
+                  <HookMasksCurrencyField
+                    name="valorObjetivo"
+                    control={control}
+                    label="Valor do Aporte"
+                    returnAsNumber={true}
+                    placeholder="0,00"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <HookDatePicker
+                    name="dataAlvo"
+                    control={control}
+                    label="Data do Aporte"
+                    helperText="Data da movimentação financeira."
+                  />
+                </Grid>
+              </>
             )}
 
-            <Grid item xs={12}>
-              <HookDatePicker
-                name="dataAlvo"
-                control={control}
-                label={isAporte ? "Data do Aporte" : "Data Alvo"}
-                helperText={!isAporte ? "Data limite para atingir o valor total pretendido." : "Data da movimentação financeira."}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
+            <Grid item xs={12} mt={1}>
               <Stack direction="column" spacing={1.5}>
                 <LoadingButton
                   type="submit"

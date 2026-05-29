@@ -1,5 +1,6 @@
 import { Despesa } from "../despesas/types";
 import { Receita } from "../receitas/types";
+import { Objetivo } from "../objetivos/types";
 
 export type TipoLancamento = "pagamento" | "agendamento";
 
@@ -16,18 +17,18 @@ export interface LancamentoResposta {
   updatedAt: string;
   despesaId?: number | null;
   receitaId?: number | null;
-  metaId?: number | null;
+  objetivoId?: number | null;
 
   despesa?: Despesa;
   receita?: Receita;
-  meta?: any; // ou usar o type apropriado
+  objetivo?: Objetivo | null;
   statusDinamico?: string;
 
   // Compatibilidade com retorno em snake_case (Prisma/raw SQL)
   user_id?: number;
   despesa_id?: number | null;
   receita_id?: number | null;
-  meta_id?: number | null;
+  objetivo_id?: number | null;
   observacao_automatica?: string;
   created_at?: string;
   updated_at?: string;
@@ -44,7 +45,7 @@ export interface LancamentoPayload {
   observacao?: string;
   despesaId?: number | null;
   receitaId?: number | null;
-  metaId?: number | null;
+  objetivoId?: number | null;
   vinculoId?: string | null;
   observacaoAutomatica?: string | null;
   parcelas?: number | null; // Usado apenas no criar para gerar múltiplos registros
@@ -60,7 +61,7 @@ export interface LancamentoForm {
   observacao?: string;
   despesaId?: string | number | null;
   receitaId?: string | number | null;
-  metaId?: string | number | null;
+  objetivoId?: string | number | null;
   parcelas?: string | number | null; // Para formulários com parcelamento
 }
 

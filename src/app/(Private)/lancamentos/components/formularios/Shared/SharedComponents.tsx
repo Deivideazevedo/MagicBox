@@ -7,6 +7,7 @@ interface ItemIconAdornmentProps {
   item: any | null;
   isDespesa?: boolean;
   isMeta?: boolean;
+  isObjetivo?: boolean;
   isReceita?: boolean;
 }
 
@@ -15,11 +16,14 @@ export function ItemIconAdornment({
   item,
   isDespesa,
   isMeta,
+  isObjetivo,
   isReceita,
 }: ItemIconAdornmentProps) {
   const theme = useTheme();
 
-  const color = isMeta
+  const isMetaOrObjetivo = isMeta || isObjetivo;
+
+  const color = isMetaOrObjetivo
     ? theme.palette.primary.main
     : isDespesa
       ? theme.palette.error.main
@@ -47,7 +51,7 @@ export function ItemIconAdornment({
           size={18}
           color={itemColor}
           fallbackIcon={
-            isMeta ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"
+            isMetaOrObjetivo ? "IconTarget" : isDespesa ? "IconCreditCard" : "IconWallet"
           }
         />
       </Box>

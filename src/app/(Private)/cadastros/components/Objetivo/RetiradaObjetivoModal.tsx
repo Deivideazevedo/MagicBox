@@ -29,7 +29,7 @@ import { useGetReceitasQuery } from "@/services/endpoints/receitasApi";
 import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
-import { Meta } from "@/core/metas/types";
+import { Objetivo } from "@/core/objetivos/types";
 import { format } from "date-fns";
 
 const schema = z.object({
@@ -41,10 +41,10 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-interface RetiradaMetaModalProps {
+interface RetiradaObjetivoModalProps {
   open: boolean;
   onClose: () => void;
-  meta: Meta | null;
+  objetivo: Objetivo | null;
 }
 
 // Sub-componente para exibir o ícone selecionado no Autocomplete
@@ -79,7 +79,7 @@ function ItemIconAdornment({ item, isDespesa }: { item: any; isDespesa: boolean 
   );
 }
 
-export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaModalProps) {
+export default function RetiradaObjetivoModal({ open, onClose, objetivo }: RetiradaObjetivoModalProps) {
   const theme = useTheme();
   const { data: session } = useSession();
   const [step, setStep] = useState<1 | 2>(1);
@@ -112,19 +112,18 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!meta || !session?.user?.id || !origem || !selectedItem) return;
+    if (!objetivo || !session?.user?.id || !origem || !selectedItem) return;
 
     try {
       const nomeDestino = selectedItem.nome;
       const userId = Number(session.user.id);
       const vinculoId = `${Date.now()}-${userId}`;
 
-      // Usando Promise.all como requisitado. 
-      // Falhas engatilham o catch e rola o erro antes de mostrar a mensagem de sucesso.
+      // Usando Promise.all como requisitado.
       await Promise.all([
-        // Mutação 1 - Retira da Meta sangrando (valor negativo e fixado como 'pagamento')
+        // Mutação 1 - Retira do Objetivo sangrando (valor negativo e fixado como 'pagamento')
         createLancamento({
-          metaId: meta.id,
+          objetivoId: objetivo.id,
           valor: -Math.abs(Number(data.valor)),
           tipo: "pagamento",
           data: data.data,
@@ -142,16 +141,15 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
           data: data.data,
           userId,
           vinculoId,
-          observacao: data.observacao || `Dinheiro realocado da meta: ${meta.nome}`,
+          observacao: data.observacao || `Dinheiro realocado do objetivo: ${objetivo.nome}`,
         }).unwrap(),
       ]);
 
-      toast.success("Retirada realizada!");
+      toast.success("Retirada realizada com sucesso!");
 
       onClose();
     } catch (error) {
-      // Como padronizamos anteriormente, os erros são tratados a níveis globais do RTK,
-      // aqui o catch apenas barra a execução paralela de seguir pro SWAL de sucesso de as promises falharem
+      // Como padronizamos anteriormente, os erros são tratados a níveis globais do RTK
     }
   };
 
@@ -207,7 +205,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
             Destinar Retirada
           </Typography>
           <Typography variant="body1" color="text.secondary" mb={4}>
-            Como deseja destinar a quantia retirada dessa meta no seu fluxo de caixa?
+            Como deseja destinar a quantia retirada desse objetivo no seu fluxo de caixa?
           </Typography>
 
           <Grid container spacing={2}>
@@ -364,8 +362,7 @@ export default function RetiradaMetaModal({ open, onClose, meta }: RetiradaMetaM
             </LoadingButton>
           </DialogActions>
         </form>
-      )
-      }
-    </Dialog >
+      )}
+    </Dialog>
   );
 }

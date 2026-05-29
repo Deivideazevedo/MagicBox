@@ -27,44 +27,44 @@ import {
   IconCoin,
   IconCalendarEvent,
   IconEye,
+  IconPig,
 } from "@tabler/icons-react";
-import { useGetMetaByIdQuery } from "@/services/endpoints/metasApi";
+import { useGetObjetivoByIdQuery } from "@/services/endpoints/objetivosApi";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { DynamicIcon } from "@/app/components/shared/DynamicIcon";
 
-interface DetalhesMetaModalProps {
+interface DetalhesObjetivoModalProps {
   open: boolean;
   onClose: () => void;
-  metaId: number;
+  objetivoId: number;
 }
 
-const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) => {
+const DetalhesObjetivoModal = ({ open, onClose, objetivoId }: DetalhesObjetivoModalProps) => {
   const theme = useTheme();
 
-  // Busca detelhada da meta (inclui lançamentos via Repository)
-  const { data: meta, isLoading } = useGetMetaByIdQuery(metaId, { skip: !open });
+  // Busca detalhada do objetivo (inclui lançamentos via Repository)
+  const { data: objetivo, isLoading } = useGetObjetivoByIdQuery(objetivoId, { skip: !open });
 
   const formatCurrency = (val: number) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const lancamentos = objetivo?.lancamentos || [];
+  const objetivoColor = objetivo?.cor || theme.palette.primary.main;
+  const isReserva = objetivo?.tipo === "RESERVA";
 
-
-  const lancamentos = meta?.lancamentos || [];
-  const metaColor = meta?.cor || theme.palette.primary.main;
-
-  const acumulado = meta?.valorAcumulado || 0;
-  const objetivo = meta?.valorMeta || 1;
-  const progresso = (acumulado / objetivo) * 100;
-  const faltante = Math.max(objetivo - acumulado, 0);
+  const acumulado = objetivo?.valorAcumulado || 0;
+  const valorObj = objetivo?.valorObjetivo || 0;
+  const progresso = valorObj > 0 ? (acumulado / valorObj) * 100 : 0;
+  const faltante = Math.max(valorObj - acumulado, 0);
 
   const hoje = new Date().toLocaleDateString('sv-SE');
-  const dataAlvoStr = meta?.dataAlvo
-    ? fnFormatNaiveDate(meta.dataAlvo, "yyyy-MM-dd")
+  const dataAlvoStr = objetivo?.dataAlvo
+    ? fnFormatNaiveDate(objetivo.dataAlvo, "yyyy-MM-dd")
     : "";
   const isMetaAtrasada =
-    meta?.status === "A" && (progresso || 0) < 100 && dataAlvoStr < hoje;
+    objetivo?.status === "A" && !isReserva && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
 
   return (
     <Dialog
@@ -77,7 +77,7 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
           borderRadius: 5,
           overflow: "hidden",
           bgcolor: "background.paper",
-          backgroundImage: `linear-gradient(135deg, ${alpha(metaColor, 0.03)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+          backgroundImage: `linear-gradient(135deg, ${alpha(objetivoColor, 0.03)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
         }
       }}
     >
@@ -100,14 +100,14 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
       <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
         {isLoading ? (
           <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" p={10} gap={2}>
-            <CircularProgress size={40} thickness={4} sx={{ color: metaColor }} />
+            <CircularProgress size={40} thickness={4} sx={{ color: objetivoColor }} />
             <Typography variant="body2" color="text.secondary" fontWeight={500}>
               Carregando detalhes...
             </Typography>
           </Box>
-        ) : !meta ? (
+        ) : !objetivo ? (
           <Box p={6} textAlign="center">
-            <Typography variant="h6">Meta não encontrada.</Typography>
+            <Typography variant="h6">Objetivo não encontrado.</Typography>
           </Box>
         ) : (
           <Box>
@@ -119,30 +119,30 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
                     width: 56,
                     height: 56,
                     borderRadius: 2.5,
-                    bgcolor: alpha(metaColor, 0.1),
-                    color: metaColor,
+                    bgcolor: alpha(objetivoColor, 0.1),
+                    color: objetivoColor,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: `0 4px 12px ${alpha(metaColor, 0.15)}`,
+                    boxShadow: `0 4px 12px ${alpha(objetivoColor, 0.15)}`,
                   }}
                 >
-                  <DynamicIcon name={meta.icone || "IconTarget"} size={32} stroke={1.5} />
+                  <DynamicIcon name={objetivo.icone || (isReserva ? "IconPig" : "IconTarget")} size={32} stroke={1.5} />
                 </Box>
                 <Box>
                   <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: "-0.02em", color: "text.primary" }}>
-                    {meta.nome}
+                    {objetivo.nome}
                   </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
                     <Chip
-                      label={meta.status === "A" ? "Em andamento" : "Concluída"}
+                      label={objetivo.status === "A" ? (isReserva ? "Reserva Ativa" : "Meta Ativa") : "Arquivado/Concluído"}
                       size="small"
                       sx={{
                         height: 22,
                         fontSize: "0.7rem",
                         fontWeight: 700,
-                        bgcolor: alpha(meta.status === "A" ? theme.palette.primary.main : theme.palette.success.main, 0.1),
-                        color: meta.status === "A" ? "primary.main" : "success.main",
+                        bgcolor: alpha(objetivo.status === "A" ? (isReserva ? theme.palette.success.main : theme.palette.primary.main) : theme.palette.action.disabled, 0.1),
+                        color: objetivo.status === "A" ? (isReserva ? "success.main" : "primary.main") : "text.secondary",
                         border: "none",
                         px: 0.5
                       }}
@@ -160,57 +160,76 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
                   p: 3,
                   borderRadius: 4,
                   bgcolor: alpha(theme.palette.background.default, 0.5),
-                  border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                  border: `1px solid ${alpha(objetivoColor, 0.2)}`,
                 }}
               >
                 <Box sx={{ mb: 1 }}>
-                  {/* Header de Progresso Centrado */}
-                  <Stack spacing={0.5} alignItems="center" textAlign="center" mb={3}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: "uppercase", letterSpacing: "0.1em", opacity: 1 }}>
-                      Progresso da Meta
-                    </Typography>
-                    <Box sx={{ py: 1 }}>
-                      <Typography variant="h3" fontWeight={900} color="success.main" sx={{ lineHeight: 1 }}>
-                        {formatCurrency(acumulado)}
+                  {isReserva ? (
+                    /* Layout para Reserva Livre */
+                    <Stack spacing={0.5} alignItems="center" textAlign="center" mb={2}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                        Total Guardado
                       </Typography>
-                    </Box>
-                    <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box component="span" sx={{ color: metaColor, fontWeight: 900 }}>{progresso.toFixed(0)}%</Box>
-                      concluído
-                    </Typography>
-                  </Stack>
-
-                  {/* Barra de Progresso Full Width */}
-                  <Box sx={{ mb: 1.5 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={Math.min(progresso, 100)}
-                      sx={{
-                        height: 12,
-                        borderRadius: 6,
-                        bgcolor: alpha(metaColor, 0.1),
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: metaColor,
-                          borderRadius: 6,
-                          backgroundImage: `linear-gradient(90deg, ${alpha(metaColor, 0.6)} 0%, ${metaColor} 100%)`,
-                        }
-                      }}
-                    />
-                  </Box>
-
-                  {/* Rodapé de contexto */}
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack spacing={0}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '10px', textTransform: 'uppercase' }}>Objetivo</Typography>
-                      <Typography variant="body2" fontWeight={800} sx={{ color: 'text.primary' }}>{formatCurrency(objetivo)}</Typography>
-                    </Stack>
-                    <Stack spacing={0} alignItems="flex-end">
-                      <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '10px', textTransform: 'uppercase' }}>{faltante > 0 ? "Faltam" : "Status"}</Typography>
-                      <Typography variant="body2" fontWeight={800} color={faltante > 0 ? 'text.primary' : 'success.main'}>
-                        {faltante > 0 ? formatCurrency(faltante) : "Meta atingida! 🎉"}
+                      <Box sx={{ py: 1 }}>
+                        <Typography variant="h3" fontWeight={900} color="success.main" sx={{ lineHeight: 1 }}>
+                          {formatCurrency(acumulado)}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" fontWeight={600} color="text.secondary">
+                        Cofrinho livre para aportes e retiradas a qualquer momento
                       </Typography>
                     </Stack>
-                  </Stack>
+                  ) : (
+                    /* Layout para Meta Planejada */
+                    <>
+                      <Stack spacing={0.5} alignItems="center" textAlign="center" mb={3}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={800} sx={{ textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                          Progresso da Meta
+                        </Typography>
+                        <Box sx={{ py: 1 }}>
+                          <Typography variant="h3" fontWeight={900} color="success.main" sx={{ lineHeight: 1 }}>
+                            {formatCurrency(acumulado)}
+                          </Typography>
+                        </Box>
+                        <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Box component="span" sx={{ color: objetivoColor, fontWeight: 900 }}>{progresso.toFixed(0)}%</Box>
+                          concluído
+                        </Typography>
+                      </Stack>
+
+                      {/* Barra de Progresso Full Width */}
+                      <Box sx={{ mb: 1.5 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(progresso, 100)}
+                          sx={{
+                            height: 12,
+                            borderRadius: 6,
+                            bgcolor: alpha(objetivoColor, 0.1),
+                            '& .MuiLinearProgress-bar': {
+                              bgcolor: objetivoColor,
+                              borderRadius: 6,
+                              backgroundImage: `linear-gradient(90deg, ${alpha(objetivoColor, 0.6)} 0%, ${objetivoColor} 100%)`,
+                            }
+                          }}
+                        />
+                      </Box>
+
+                      {/* Rodapé de contexto */}
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Stack spacing={0}>
+                          <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '10px', textTransform: 'uppercase' }}>Objetivo</Typography>
+                          <Typography variant="body2" fontWeight={800} sx={{ color: 'text.primary' }}>{formatCurrency(valorObj)}</Typography>
+                        </Stack>
+                        <Stack spacing={0} alignItems="flex-end">
+                          <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '10px', textTransform: 'uppercase' }}>{faltante > 0 ? "Faltam" : "Status"}</Typography>
+                          <Typography variant="body2" fontWeight={800} color={faltante > 0 ? 'text.primary' : 'success.main'}>
+                            {faltante > 0 ? formatCurrency(faltante) : "Meta atingida! 🎉"}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    </>
+                  )}
                 </Box>
 
                 <Grid container spacing={1} sx={{ mt: 1 }}>
@@ -220,27 +239,41 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
 
                   <Grid item xs={12}>
                     <Grid container spacing={1} justifyContent="space-between">
-                      <Grid item xs={4}>
-                        <Stack spacing={0.5} alignItems="flex-start">
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <IconCalendarEvent size={14} color={theme.palette.text.secondary} />
-                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '12px' }}>Alvo</Typography>
+                      {!isReserva ? (
+                        <Grid item xs={4}>
+                          <Stack spacing={0.5} alignItems="flex-start">
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <IconCalendarEvent size={14} color={theme.palette.text.secondary} />
+                              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '12px' }}>Alvo</Typography>
+                            </Stack>
+                            <Typography
+                              variant="caption"
+                              fontWeight={800}
+                              sx={{
+                                textTransform: "capitalize",
+                                whiteSpace: "nowrap",
+                                fontSize: "11px",
+                                color: isMetaAtrasada ? "error.main" : "text.primary",
+                              }}
+                            >
+                              {fnFormatNaiveDate(objetivo.dataAlvo, "dd MMM yy") || "---"}
+                              {isMetaAtrasada && " (Atrasada)"}
+                            </Typography>
                           </Stack>
-                          <Typography
-                            variant="caption"
-                            fontWeight={800}
-                            sx={{
-                              textTransform: "capitalize",
-                              whiteSpace: "nowrap",
-                              fontSize: "11px",
-                              color: isMetaAtrasada ? "error.main" : "text.primary",
-                            }}
-                          >
-                            {fnFormatNaiveDate(meta.dataAlvo, "dd MMM yy") || "---"}
-                            {isMetaAtrasada && " (Atrasada)"}
-                          </Typography>
-                        </Stack>
-                      </Grid>
+                        </Grid>
+                      ) : (
+                        <Grid item xs={4}>
+                          <Stack spacing={0.5} alignItems="flex-start">
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <IconPig size={14} color={theme.palette.text.secondary} />
+                              <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '12px' }}>Aportes</Typography>
+                            </Stack>
+                            <Typography variant="caption" fontWeight={800} sx={{ fontSize: "11px", color: "text.primary" }}>
+                              {lancamentos.filter(l => Number(l.valor) > 0).length} aportes
+                            </Typography>
+                          </Stack>
+                        </Grid>
+                      )}
                       <Grid item xs={4}>
                         <Stack spacing={0.5} alignItems="center">
                           <Stack direction="row" spacing={0.5} alignItems="center">
@@ -248,7 +281,7 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
                             <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '12px' }}>Criação</Typography>
                           </Stack>
                           <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'capitalize', whiteSpace: 'nowrap', fontSize: '11px' }}>
-                            {fnFormatNaiveDate(meta.createdAt, 'dd MMM yy') || "---"}
+                            {fnFormatNaiveDate(objetivo.createdAt, 'dd MMM yy') || "---"}
                           </Typography>
                         </Stack>
                       </Grid>
@@ -259,7 +292,7 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
                             <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ fontSize: '12px' }}>Atualização</Typography>
                           </Stack>
                           <Typography variant="caption" fontWeight={800} sx={{ textTransform: 'capitalize', whiteSpace: 'nowrap', fontSize: '11px', textAlign: 'right' }}>
-                            {fnFormatDateInTimeZone({ date: meta.updatedAt, format: 'dd MMM yy HH:mm' }) || "---"}
+                            {fnFormatDateInTimeZone({ date: objetivo.updatedAt, format: 'dd MMM yy HH:mm' }) || "---"}
                           </Typography>
                         </Stack>
                       </Grid>
@@ -388,4 +421,4 @@ const DetalhesMetaModal = ({ open, onClose, metaId }: DetalhesMetaModalProps) =>
   );
 };
 
-export default DetalhesMetaModal;
+export default DetalhesObjetivoModal;

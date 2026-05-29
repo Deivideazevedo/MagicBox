@@ -1,0 +1,24 @@
+model Objetivo {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  categoriaId    Int?
+  nome           String
+  tipo           TipoObjetivo @default(META)
+  valorObjetivo  Decimal?     @db.Decimal(10, 2)
+  dataAlvo       DateTime?
+  status         String       @default("A")
+  icone          String?
+  cor            String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  lancamentos    Lancamento[]
+  categoria      Categoria?   @relation(fields: [categoriaId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, deletedAt])
+  @@index([userId])
+  @@index([status])
+  @@index([categoriaId])
+  @@map("objetivo")
+}

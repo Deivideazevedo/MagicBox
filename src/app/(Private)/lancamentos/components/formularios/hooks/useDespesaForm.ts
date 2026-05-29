@@ -155,7 +155,7 @@ export function useDespesaForm({
           userId,
           despesaId: formData.itemId,
           receitaId: null,
-          metaId: null,
+          objetivoId: null,
           tipo: formData.tipo as any,
           valor: Number(formData.valor),
           data: formData.data,

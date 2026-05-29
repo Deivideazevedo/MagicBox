@@ -14,7 +14,7 @@ model User {
   categorias  Categoria[]
   despesas    Despesa[]
   lancamentos Lancamento[]
-  metas       Meta[]
+  objetivos   Objetivo[]
   receitas    Receita[]
   accessLogs  AccessLog[]
   aiUsageLogs AiUsageLog[]

@@ -43,10 +43,10 @@ export const divergenciasService = {
         tipo = "DESPESA";
         nome = v.despesa.nome;
         cor = v.despesa.cor ?? "#ef4444";
-      } else if (v.meta) {
+      } else if (v.objetivo) {
         tipo = "META";
-        nome = v.meta.nome;
-        cor = v.meta.cor ?? "#3b82f6";
+        nome = v.objetivo.nome;
+        cor = v.objetivo.cor ?? "#3b82f6";
       }
 
       return {

@@ -41,7 +41,7 @@ export default function FormulariosIndex({
     if (lancamentoParaEditar) {
       if (lancamentoParaEditar.despesaId) setOrigem("despesa");
       else if (lancamentoParaEditar.receitaId) setOrigem("receita");
-      else if (lancamentoParaEditar.metaId) setOrigem("meta");
+      else if (lancamentoParaEditar.objetivoId) setOrigem("meta");
     } else if (initialOrigem) {
       setOrigem(initialOrigem);
     }
@@ -116,7 +116,7 @@ export default function FormulariosIndex({
               <IconWallet size={18} /> Receita
             </ToggleButton>
             <ToggleButton value="meta" className="meta">
-              <IconTarget size={18} /> Meta
+              <IconTarget size={18} /> Objetivo
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>

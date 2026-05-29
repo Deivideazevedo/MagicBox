@@ -36,7 +36,7 @@ export const heatmapRepository = {
           CASE 
             WHEN l."receitaId" IS NOT NULL THEN 'receita'
             WHEN l."despesaId" IS NOT NULL THEN 'despesa'
-            WHEN l."metaId" IS NOT NULL THEN 'meta'
+            WHEN l."objetivoId" IS NOT NULL THEN 'meta'
             ELSE 'outros'
           END as origem,
           COALESCE(d.nome, r.nome, m.nome, l.observacao, l."observacaoAutomatica", 'Transação') as nome,
@@ -49,7 +49,7 @@ export const heatmapRepository = {
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
-        LEFT JOIN meta m ON l."metaId" = m.id
+        LEFT JOIN objetivo m ON l."objetivoId" = m.id
         LEFT JOIN "categorias" c ON (d."categoriaId" = c.id OR r."categoriaId" = c.id)
         WHERE l."userId" = ${userId} 
           AND l.data >= ${dataInicio}::date 

@@ -61,7 +61,7 @@ export const TransactionModal = ({
         observacao: data.observacao || `${isMeta ? "Aporte em" : "Pagamento de"} ${targetName}`,
         categoriaId: categoriaId,
         userId: 0, // Backend resolve via token
-        ...(isMeta ? { metaId: targetId } : { despesaId: targetId })
+        ...(isMeta ? { objetivoId: targetId } : { despesaId: targetId })
       };
 
       await createLancamento(payload as any).unwrap();
@@ -97,9 +97,9 @@ export const TransactionModal = ({
       
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" mb={3}>
-           {isMeta 
-             ? `Quanto você deseja guardar para "${targetName}"?` 
-             : `Registrar pagamento para a dívida "${targetName}".`}
+            {isMeta 
+              ? `Quanto você deseja guardar para o objetivo "${targetName}"?` 
+              : `Registrar pagamento para a dívida "${targetName}".`}
         </Typography>
 
         <Grid container spacing={2.5}>

@@ -47,6 +47,7 @@ interface ListagemProps {
   onDelete: (divida: Divida) => void;
   onAporte: (divida: Divida) => void;
   onToggleStatus: (divida: Divida) => void;
+  isFormOpen?: boolean;
 }
 
 export const Listagem = ({
@@ -56,6 +57,7 @@ export const Listagem = ({
   onDelete,
   onAporte,
   onToggleStatus,
+  isFormOpen = false,
 }: ListagemProps) => {
   const theme = useTheme();
   const tourRefs = useDividasTourRefs();
@@ -202,7 +204,7 @@ export const Listagem = ({
         };
 
         return (
-          <Grid item xs={12} sm={6} md={4} key={divida.id}>
+          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={divida.id}>
             <Card
               ref={
                 index === 0

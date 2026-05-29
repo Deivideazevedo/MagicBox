@@ -103,7 +103,7 @@ export const chatDiagnosisRepository = {
               SELECT json_agg(l ORDER BY l.data ASC)
               FROM (
                 SELECT 
-                  l.id, l."userId", l."despesaId", l."receitaId", l."metaId", l.valor, l.data, l.tipo, 
+                  l.id, l."userId", l."despesaId", l."receitaId", l."objetivoId" as "metaId", l.valor, l.data, l.tipo, 
                   l.observacao, l."observacaoAutomatica", l."createdAt", l."updatedAt",
                   false as "isProjecao" 
                 FROM lancamento l WHERE l."despesaId" = d.id

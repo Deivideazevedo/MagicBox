@@ -12,7 +12,7 @@ export const relatoriosApi = api.injectEndpoints({
         url: "/relatorios",
         params,
       }),
-      providesTags: ["Resumo", "Lancamentos", "Metas"],
+      providesTags: ["Resumo", "Lancamentos", "Objetivos"],
     }),
     getHistoricoAgrupado: builder.query<HistoricoMensal[], { itens: string; ano: number }>({
       query: (params) => ({
@@ -20,14 +20,14 @@ export const relatoriosApi = api.injectEndpoints({
         method: "GET",
         params,
       }),
-      providesTags: ["Resumo", "Lancamentos", "Metas", "Dividas"],
+      providesTags: ["Resumo", "Lancamentos", "Objetivos", "Dividas"],
     }),
     getEvolucaoAnual: builder.query<EvolucaoAnualResponse, { ano: number }>({
       query: (params) => ({
         url: "/relatorios/evolucao",
         params,
       }),
-      providesTags: ["Resumo", "Lancamentos", "Metas"],
+      providesTags: ["Resumo", "Lancamentos", "Objetivos"],
     }),
   }),
 });
