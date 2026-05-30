@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
-  Grid,
   Stack,
   Typography,
   useTheme,
@@ -152,7 +151,18 @@ export const Listagem = ({
     });
 
   return (
-    <Grid container spacing={3}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "1fr 1fr",
+          md: isFormOpen ? "1fr 1fr" : "1fr 1fr 1fr",
+        },
+        gap: 3,
+        gridAutoRows: "1fr",
+      }}
+    >
       {dividas.map((divida, index) => {
         const isUnica = divida.tipo === "UNICA";
         const cor = divida.cor || theme.palette.primary.main;
@@ -204,7 +214,7 @@ export const Listagem = ({
         };
 
         return (
-          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={divida.id}>
+          <Box key={divida.id} sx={{ display: "flex" }}>
             <Card
               ref={
                 index === 0
@@ -212,6 +222,10 @@ export const Listagem = ({
                   : undefined
               }
               sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                width: "100%",
                 padding: 0,
                 borderRadius: 4,
                 position: "relative",
@@ -235,7 +249,14 @@ export const Listagem = ({
               }}
               elevation={1}
             >
-              <CardContent sx={{ p: "32px" }}>
+              <CardContent
+                sx={{
+                  p: "32px",
+                  display: "flex",
+                  flexDirection: "column",
+                  flexGrow: 1,
+                }}
+              >
                 <Box
                   sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
                 >
@@ -347,7 +368,7 @@ export const Listagem = ({
                 </Box>
 
                 {/* Info de Valores */}
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 0 }}>
                   {proximaParcelaPendente ? (
                     <Box>
                       <Typography
@@ -401,7 +422,7 @@ export const Listagem = ({
                         ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>)
                         : undefined
                     }
-                    sx={{ mt: -1.5 }}
+                    sx={{ mt: 0.5 }}
                   >
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
@@ -477,33 +498,47 @@ export const Listagem = ({
                     </Stack>
                   </Box>
                 ) : (
-                  <Box>
-                    <Divider sx={{ mb: 2, borderStyle: "dashed" }} />
+                  <>
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          borderTop: "1px dashed",
+                          borderColor: alpha(theme.palette.divider, 0.8),
+                          width: "100%",
+                        }}
+                      />
+                    </Box>
                     <Stack
                       direction="row"
                       justifyContent="space-between"
                       alignItems="center"
                     >
-                      <Box gap={1} display="flex" flexDirection="column">
+                      <Box gap={0} display="flex" flexDirection="column">
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
                         >
-                          PARCELAS EM ABERTO
+                          EM ABERTO
                         </Typography>
                         <Typography
                           variant="body2"
                           fontWeight={800}
                           color="warning.main"
                         >
-                          {(divida as DividaVolatil).quantidadeParcelas}{" "}
-                          registros
+                          {`${(divida as DividaVolatil).quantidadeParcelas} `}{" "}
+                          {`parcela${(divida as DividaVolatil).quantidadeParcelas > 1 ? "s" : ""}`}
                         </Typography>
                       </Box>
                       <Box
-                        gap={1}
+                        gap={0}
                         display="flex"
                         flexDirection="column"
                         alignItems="flex-end"
@@ -515,7 +550,7 @@ export const Listagem = ({
                           fontWeight={600}
                           display="block"
                         >
-                          TOTAL AGENDADO
+                          TOTAL
                         </Typography>
                         <Typography
                           variant="body2"
@@ -526,7 +561,7 @@ export const Listagem = ({
                         </Typography>
                       </Box>
                     </Stack>
-                  </Box>
+                  </>
                 )}
 
                 {/* Badge de conclusão rápida */}
@@ -565,7 +600,7 @@ export const Listagem = ({
                 )}
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         );
       })}
 
@@ -688,6 +723,6 @@ export const Listagem = ({
           dividaId={dividaDetalhesId}
         />
       )}
-    </Grid>
+    </Box>
   );
 };

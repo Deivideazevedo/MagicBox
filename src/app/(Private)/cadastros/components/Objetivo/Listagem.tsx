@@ -69,8 +69,12 @@ export const Listagem = ({
   const modalDetalhes = useModalUrl("objetivoDetalhes");
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedObjetivo, setSelectedObjetivo] = useState<Objetivo | null>(null);
-  const [objetivoDetalhes, setObjetivoDetalhes] = useState<Objetivo | null>(null);
+  const [selectedObjetivo, setSelectedObjetivo] = useState<Objetivo | null>(
+    null,
+  );
+  const [objetivoDetalhes, setObjetivoDetalhes] = useState<Objetivo | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!modalDetalhes.isOpen) {
@@ -79,7 +83,10 @@ export const Listagem = ({
   }, [modalDetalhes.isOpen]);
   const openMenu = Boolean(anchorEl);
 
-  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, objetivo: Objetivo) => {
+  const handleOpenMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    objetivo: Objetivo,
+  ) => {
     setAnchorEl(event.currentTarget);
     setSelectedObjetivo(objetivo);
   };
@@ -134,7 +141,8 @@ export const Listagem = ({
               Nenhum objetivo cadastrado
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Seus objetivos e reservas financeiras aparecerão aqui para você acompanhar o progresso.
+              Seus objetivos e reservas financeiras aparecerão aqui para você
+              acompanhar o progresso.
             </Typography>
           </Box>
         </Stack>
@@ -149,20 +157,38 @@ export const Listagem = ({
     <Grid container spacing={3}>
       {objetivos.map((objetivo) => {
         const acumulado = objetivo.valorAcumulado || 0;
-        const valorObj = objetivo.valorObjetivo ? Number(objetivo.valorObjetivo) : 0;
+        const valorObj = objetivo.valorObjetivo
+          ? Number(objetivo.valorObjetivo)
+          : 0;
         const progresso = valorObj > 0 ? (acumulado / valorObj) * 100 : 0;
         const cor = objetivo.cor || theme.palette.primary.main;
         const faltante = valorObj > 0 ? Math.max(valorObj - acumulado, 0) : 0;
         const isReserva = objetivo.tipo === "RESERVA";
         const qtdAportes = objetivo.lancamentos?.length || 0;
-        const isMetaAtingida = !isReserva && valorObj > 0 && progresso >= 100 && objetivo.status === "A";
+        const isMetaAtingida =
+          !isReserva &&
+          valorObj > 0 &&
+          progresso >= 100 &&
+          objetivo.status === "A";
 
         // Projeção Temporal Consumida Nativamente da API (Sem duplicação de cálculo)
         const previsaoDesteMes = objetivo.previsaoDesteMes || 0;
         const aportesDesteMes = objetivo.aportesDesteMes || 0;
         const difMeses = objetivo.difMeses || 0;
 
+        const hoje = new Date().toLocaleDateString("sv-SE");
+        const dataAlvoStr = objetivo.dataAlvo
+          ? fnFormatNaiveDate(objetivo.dataAlvo, "yyyy-MM-dd")
+          : null;
+        const isMetaAtrasada =
+          objetivo.status === "A" &&
+          !isReserva &&
+          progresso < 100 &&
+          dataAlvoStr &&
+          dataAlvoStr < hoje;
+
         const getPrazoMesesLabel = (dif: number) => {
+          if (isMetaAtrasada) return "Atrasada";
           if (dif < 0) {
             const absMeses = Math.abs(dif);
             return `Atrasada há ${absMeses} ${absMeses === 1 ? "mês" : "meses"}`;
@@ -179,17 +205,20 @@ export const Listagem = ({
           return "success.main";
         };
 
-        const hoje = new Date().toLocaleDateString("sv-SE");
-        const dataAlvoStr = objetivo.dataAlvo
-          ? fnFormatNaiveDate(objetivo.dataAlvo, "yyyy-MM-dd")
-          : null;
-        const isMetaAtrasada =
-          objetivo.status === "A" && !isReserva && progresso < 100 && dataAlvoStr && dataAlvoStr < hoje;
-
         return (
-          <Grid item xs={12} sm={6} md={isFormOpen ? 6 : 4} key={objetivo.id} sx={{ display: "flex" }}>
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={isFormOpen ? 6 : 4}
+            key={objetivo.id}
+            sx={{ display: "flex" }}
+          >
             <Card
               sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
                 width: "100%",
                 padding: 0,
                 borderRadius: 4,
@@ -198,9 +227,6 @@ export const Listagem = ({
                 transition: "all 0.2s ease-in-out",
                 opacity: objetivo.status === "I" ? 0.8 : 1,
                 filter: objetivo.status === "I" ? "grayscale(0.3)" : "none",
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
 
                 // Estilo Condicional Centralizado
                 border: isMetaAtingida
@@ -224,7 +250,14 @@ export const Listagem = ({
               }}
               elevation={1}
             >
-              <CardContent sx={{ p: "36px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
+              <CardContent
+                sx={{
+                  p: "32px",
+                  display: "flex",
+                  flexDirection: "column",
+                  flexGrow: 1,
+                }}
+              >
                 <Box
                   sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
                 >
@@ -242,7 +275,7 @@ export const Listagem = ({
                   </IconButton>
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 3 }}>
+                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2 }}>
                   <Box
                     sx={{
                       p: 1,
@@ -255,7 +288,9 @@ export const Listagem = ({
                     }}
                   >
                     <DynamicIcon
-                      name={objetivo.icone || (isReserva ? "IconPig" : "IconTarget")}
+                      name={
+                        objetivo.icone || (isReserva ? "IconPig" : "IconTarget")
+                      }
                       size={28}
                       stroke={1.5}
                     />
@@ -291,15 +326,6 @@ export const Listagem = ({
                           label="Concluído"
                           size="small"
                           color="success"
-                          variant="filled"
-                          sx={{ height: 20, fontSize: "10px", fontWeight: 700 }}
-                        />
-                      )}
-                      {isMetaAtrasada && (
-                        <Chip
-                          label="Atrasada"
-                          color="error"
-                          size="small"
                           variant="filled"
                           sx={{ height: 20, fontSize: "10px", fontWeight: 700 }}
                         />
@@ -340,7 +366,7 @@ export const Listagem = ({
                 {/* Info de Valores */}
                 {isReserva ? (
                   /* Layout da Reserva Refinado e Padronizado */
-                  <Box sx={{ mb: 2 }}>
+                  <Box sx={{ mb: 0 }}>
                     <Box>
                       <Typography
                         variant="caption"
@@ -365,7 +391,7 @@ export const Listagem = ({
                   </Box>
                 ) : (
                   /* Layout da Meta Refinado com foco na Previsão Mensal (Backend-driven) */
-                  <Box sx={{ mb: 2 }}>
+                  <Box sx={{ mb: 2.5 }}>
                     {isMetaAtingida || progresso >= 100 ? (
                       <Box>
                         <Typography
@@ -422,7 +448,9 @@ export const Listagem = ({
                             display: "block",
                           }}
                         >
-                          {aportesDesteMes > 0 ? "PREVISÃO DESTE MÊS (RESTANTE)" : "PREVISÃO DESTE MÊS"}
+                          {aportesDesteMes > 0
+                            ? "PREVISÃO DESTE MÊS (RESTANTE)"
+                            : "PREVISÃO DESTE MÊS"}
                         </Typography>
                         <Typography
                           variant="h5"
@@ -439,44 +467,74 @@ export const Listagem = ({
                 {/* Seção Inferior - Condicional baseada no Tipo (Mantém Altura e Simetria Consistentes) */}
                 {isReserva ? (
                   /* Reserva: Linha Pontilhada e Informações de Atualização Limpas (Sem progresso forçado) */
-                  <Box sx={{ mt: "auto", width: "100%" }}>
+                  <>
                     <Box
                       sx={{
-                        borderTop: "1px dashed",
-                        borderColor: alpha(theme.palette.divider, 0.8),
-                        my: 2.5,
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
                       }}
-                    />
+                    >
+                      <Box
+                        sx={{
+                          borderTop: "1px dashed",
+                          borderColor: alpha(theme.palette.divider, 0.8),
+                          width: "100%",
+                        }}
+                      />
+                    </Box>
                     <Stack
                       direction="row"
                       justifyContent="space-between"
-                      alignItems="flex-start"
-                      gap={1}
-                      mt={1.5}
+                      alignItems="center"
                     >
-                      <Box>
+                      <Box gap={0} display="flex" flexDirection="column">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
+                          ÚLTIMO APORTE
+                        </Typography>
                         <Typography
                           variant="body2"
                           fontWeight={800}
-                          color="text.secondary"
+                          color="text.primary"
                         >
-                          Último aporte: {objetivo.ultimoAporte ? fnFormatNaiveDate(objetivo.ultimoAporte) : "Sem aportes"}
+                          {objetivo.ultimoAporte
+                            ? fnFormatNaiveDate(objetivo.ultimoAporte)
+                            : "Sem aportes"}
                         </Typography>
                       </Box>
-                      <Box sx={{ textAlign: "right" }}>
+                      <Box
+                        gap={0}
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="flex-end"
+                        textAlign="right"
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
+                          APORTES
+                        </Typography>
                         <Typography
                           variant="body2"
                           fontWeight={800}
-                          color="text.secondary"
+                          color="warning.main"
                         >
-                          Aportes: {objetivo.qtdAportes || 0} registros
+                          {objetivo.qtdAportes || 0} registros
                         </Typography>
                       </Box>
                     </Stack>
-                  </Box>
+                  </>
                 ) : (
                   /* Meta: Barra de Progresso Real e Informações de Progresso/Restantes */
-                  <Box sx={{ mt: "auto", width: "100%" }}>
+                  <Box sx={{ mt: -2 }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
                         <LinearProgress
@@ -515,7 +573,7 @@ export const Listagem = ({
                       color="text.primary"
                       fontWeight={700}
                       display="block"
-                      sx={{ mt: 0.5, mb: 1.5 }}
+                      sx={{ mt: -0.5 }}
                     >
                       {formatCurrency(acumulado)} / {formatCurrency(valorObj)}
                     </Typography>
@@ -523,28 +581,27 @@ export const Listagem = ({
                     <Stack
                       direction="row"
                       justifyContent="space-between"
-                      alignItems="flex-start"
-                      gap={1}
-                      mt={1.5}
+                      mt={2}
+                      gap={2}
                     >
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          fontWeight={800}
-                          color="text.secondary"
-                        >
-                          Prazo Final: {objetivo.dataAlvo ? fnFormatNaiveDate(objetivo.dataAlvo) : "Sem prazo"}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ textAlign: "right" }}>
-                        <Typography
-                          variant="body2"
-                          fontWeight={800}
-                          color="text.secondary"
-                        >
-                          Falta: {formatCurrency(faltante)}
-                        </Typography>
-                      </Box>
+                      <Typography
+                        variant="body2"
+                        fontWeight={800}
+                        color="text.secondary"
+                      >
+                        Término:{" "}
+                        {objetivo.dataAlvo
+                          ? fnFormatNaiveDate(objetivo.dataAlvo)
+                          : "Sem prazo"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={800}
+                        color="text.secondary"
+                        align="right"
+                      >
+                        Falta: {formatCurrency(faltante)}
+                      </Typography>
                     </Stack>
                   </Box>
                 )}
@@ -674,7 +731,9 @@ export const Listagem = ({
           <ListItemIcon
             sx={{
               color:
-                selectedObjetivo?.status === "A" ? "success.main" : "warning.main",
+                selectedObjetivo?.status === "A"
+                  ? "success.main"
+                  : "warning.main",
             }}
           >
             {selectedObjetivo?.status === "A" ? (
@@ -686,7 +745,9 @@ export const Listagem = ({
           <ListItemText
             sx={{ m: 0 }}
             primary={
-              selectedObjetivo?.status === "A" ? "Concluir Objetivo" : "Reativar Objetivo"
+              selectedObjetivo?.status === "A"
+                ? "Concluir Objetivo"
+                : "Reativar Objetivo"
             }
             primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
           />
@@ -695,7 +756,9 @@ export const Listagem = ({
         {selectedObjetivo?.status === "I" && (
           <MenuItem
             onClick={() =>
-              handleAction(() => selectedObjetivo && onDelete(selectedObjetivo.id))
+              handleAction(
+                () => selectedObjetivo && onDelete(selectedObjetivo.id),
+              )
             }
           >
             <ListItemIcon sx={{ color: "error.main" }}>
