@@ -185,11 +185,13 @@ export const ObjetivosDashboard = ({
 
         <Stack
           direction="row"
-          spacing={2}
+          spacing={{ xs: 1, sm: 2 }}
           alignItems="center"
+          justifyContent={{ xs: 'space-between', sm: 'flex-start' }}
+          width={{ xs: '100%', sm: 'auto' }}
           sx={{
             p: 0.8,
-            pl: 2.5,
+            pl: { xs: 1.5, sm: 2.5 },
             bgcolor: theme.palette.mode === 'dark' ? alpha(theme.palette.background.paper, 0.8) : '#fff',
             borderRadius: '20px',
             boxShadow: theme.shadows[1],
@@ -206,25 +208,27 @@ export const ObjetivosDashboard = ({
               />
             }
             label={
-              <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', ml: 0, letterSpacing: '0.5px' }}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', ml: 0, letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
                 Concluídos
               </Typography>
             }
-            sx={{ m: 0, mx: 1 }}
+            sx={{ m: 0, mx: { xs: 0, sm: 1 } }}
           />
 
           <Box sx={{ width: '1px', height: '28px', bgcolor: 'divider', opacity: 0.4 }} />
 
           <Button
             variant="contained"
-            startIcon={<IconPlus size={18} />}
+            startIcon={<IconPlus size={16} />}
             onClick={onNew}
             sx={{
               borderRadius: '14px',
               py: 1.2,
-              px: 3,
+              px: { xs: 2, sm: 3 },
               fontWeight: 700,
               textTransform: 'none',
+              whiteSpace: 'nowrap',
+              fontSize: { xs: '12px', sm: '14px' },
               boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.25)}`,
               "&:hover": {
                 boxShadow: `0 12px 30px ${alpha(theme.palette.primary.main, 0.35)}`,

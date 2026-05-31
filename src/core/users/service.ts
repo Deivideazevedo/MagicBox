@@ -1,6 +1,16 @@
-import { ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "@/lib/errors";
+import {
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "@/lib/errors";
 import { authRepository as repositorio } from "./repository";
-import { ListUsersDTO, RegisterUserDTO, UpdateUserDTO, LoginUserDTO } from "./user.dto";
+import {
+  ListUsersDTO,
+  RegisterUserDTO,
+  UpdateUserDTO,
+  LoginUserDTO,
+} from "./user.dto";
 import { PaginatedResult } from "../types/global";
 import bcrypt from "bcryptjs";
 import { User } from "next-auth";
@@ -11,11 +21,13 @@ interface RecaptchaResult {
   action?: string;
   challenge_ts?: string;
   hostname?: string;
-  'error-codes'?: string[];
+  "error-codes"?: string[];
 }
 
 export const authService = {
-  async listarTodos(filtros: ListUsersDTO): Promise<PaginatedResult<User & { hasPassword: boolean }>> {
+  async listarTodos(
+    filtros: ListUsersDTO,
+  ): Promise<PaginatedResult<User & { hasPassword: boolean }>> {
     const resultado = await repositorio.listarTodos(filtros);
 
     // Remove as senhas de todos os usuários retornados por segurança
@@ -25,9 +37,9 @@ export const authService = {
         const { password, ...userWithoutPassword } = u;
         return {
           ...userWithoutPassword,
-          hasPassword: !!password
+          hasPassword: !!password,
         };
-      })
+      }),
     };
   },
 
@@ -37,14 +49,18 @@ export const authService = {
 
   async criar(dados: RegisterUserDTO): Promise<User> {
     // Verifica especificamente o email
-    const userByEmail = await repositorio.findByUsernameOrEmail({ email: dados.email });
+    const userByEmail = await repositorio.findByUsernameOrEmail({
+      email: dados.email,
+    });
     if (userByEmail) {
       throw new ValidationError("Email já está em uso");
     }
 
     // Verifica especificamente o username (se fornecido)
     if (dados.username) {
-      const userByUsername = await repositorio.findByUsernameOrEmail({ username: dados.username });
+      const userByUsername = await repositorio.findByUsernameOrEmail({
+        username: dados.username,
+      });
       if (userByUsername) {
         throw new ValidationError("Username já está em uso");
       }
@@ -77,12 +93,23 @@ export const authService = {
 
     // Verifica se novo email ou username já estão em uso por outro usuário
     if (usuario.email || usuario.username) {
-      const existing = await repositorio.findByUsernameOrEmail({ email: usuario.email, username: usuario.username });
+      const existing = await repositorio.findByUsernameOrEmail({
+        email: usuario.email,
+        username: usuario.username,
+      });
       if (existing && existing.id !== userId) {
-        if (usuario.email && existing.email && usuario.email.toLowerCase() === existing.email.toLowerCase()) {
+        if (
+          usuario.email &&
+          existing.email &&
+          usuario.email.toLowerCase() === existing.email.toLowerCase()
+        ) {
           throw new ValidationError("Email já está em uso");
         }
-        if (usuario.username && existing.username && usuario.username.toLowerCase() === existing.username.toLowerCase()) {
+        if (
+          usuario.username &&
+          existing.username &&
+          usuario.username.toLowerCase() === existing.username.toLowerCase()
+        ) {
           throw new ValidationError("Username já está em uso");
         }
       }
@@ -96,14 +123,14 @@ export const authService = {
     return await repositorio.atualizar(userId, dataToUpdate);
   },
 
-
-
   /**
    * Valida o token do Google reCAPTCHA v3 (Padrão Ouro de Resiliência)
    */
   async validarRecaptcha(token?: string): Promise<void> {
     if (!token) {
-      throw new ValidationError("Verificação de segurança (reCAPTCHA) ausente.");
+      throw new ValidationError(
+        "Verificação de segurança (reCAPTCHA) ausente.",
+      );
     }
 
     const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
@@ -121,7 +148,8 @@ export const authService = {
       });
 
       // Garante que a resposta HTTP do Google foi bem-sucedida (status 200-299)
-      if (!response.ok) throw new Error(`Erro HTTP na API do Google: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Erro HTTP na API do Google: ${response.status}`);
 
       const recaptchaData = (await response.json()) as RecaptchaResult;
 
@@ -129,15 +157,22 @@ export const authService = {
       const scoreObtido = recaptchaData.score ?? 0;
 
       if (!recaptchaData.success || scoreObtido < 0.5) {
-        console.warn(`[SECURITY_ALERT] Login recusado pelo reCAPTCHA. Score: ${scoreObtido}. Erros: ${recaptchaData["error-codes"]?.join(", ") || "Nenhum"}`);
-        throw new ValidationError("Comportamento suspeito detectado pelo sistema de segurança.");
+        console.warn(
+          `[SECURITY_ALERT] Login recusado pelo reCAPTCHA. Score: ${scoreObtido}. Erros: ${recaptchaData["error-codes"]?.join(", ") || "Nenhum"}`,
+        );
+        throw new ValidationError(
+          "Comportamento suspeito detectado pelo sistema de segurança.",
+        );
       }
     } catch (error: unknown) {
       // Se for o nosso próprio erro de validação (bot detectado), propaga o erro
       if (error instanceof ValidationError) throw error;
 
       // Erros de infraestrutura (timeout, queda do Google, erro 500 deles)
-      console.error("[RECAPTCHA_CRITICAL_ERROR] Falha de comunicação com o Google:", error);
+      console.error(
+        "[RECAPTCHA_CRITICAL_ERROR] Falha de comunicação com o Google:",
+        error,
+      );
 
       // ABORDAGEM RECOMENDADA (Fail-Open): Não bloqueie o usuário se o erro for do Google.
       // Deixamos passar e confiamos na validação de senha/rate-limit padrão do sistema.
@@ -149,22 +184,31 @@ export const authService = {
    * Autentica usuário por username/email e senha
    */
   async authenticate(dados: LoginUserDTO): Promise<User> {
-    const usuario = await repositorio.findByUsernameOrEmail({ username: dados.username, email: dados.email });
+    const usuario = await repositorio.findByUsernameOrEmail({
+      username: dados.username,
+      email: dados.email,
+    });
 
     if (!usuario) {
       throw new UnauthorizedError("Credenciais inválidas");
     }
 
     if (usuario.status !== "A") {
-      throw new ForbiddenError("Sua conta está inativa. Entre em contato com o suporte.");
+      throw new ForbiddenError(
+        "Sua conta está inativa. Entre em contato com o suporte.",
+      );
     }
-
 
     if (!usuario.password) {
-      throw new UnauthorizedError("Usuário sem senha definida (login social? Use seu provedor de login)");
+      throw new UnauthorizedError(
+        "Usuário sem senha definida (login social? Use seu provedor de login)",
+      );
     }
 
-    const isValidPassword = await bcrypt.compare(dados.password, usuario.password);
+    const isValidPassword = await bcrypt.compare(
+      dados.password,
+      usuario.password,
+    );
 
     if (!isValidPassword) {
       throw new UnauthorizedError("Credenciais inválidas");
@@ -173,11 +217,14 @@ export const authService = {
     const { password: _, ...userWithoutPassword } = usuario;
     return {
       ...userWithoutPassword,
-      hasPassword: !!usuario.password
+      hasPassword: !!usuario.password,
     };
   },
 
-  async findByUsernameOrEmail(username?: string, email?: string): Promise<User | null> {
+  async findByUsernameOrEmail(
+    username?: string,
+    email?: string,
+  ): Promise<User | null> {
     return await repositorio.findByUsernameOrEmail({ username, email });
   },
 
@@ -185,13 +232,17 @@ export const authService = {
     email: string;
     name: string;
     image?: string | null;
-    provider: string
+    provider: string;
   }): Promise<{ user: User; isNew: boolean }> {
-    const existingUser = await repositorio.findByUsernameOrEmail({ email: dados.email });
+    const existingUser = await repositorio.findByUsernameOrEmail({
+      email: dados.email,
+    });
 
     if (existingUser) {
       if (existingUser.status !== "A") {
-        throw new ForbiddenError("Sua conta está inativa. Entre em contato com o suporte.");
+        throw new ForbiddenError(
+          "Sua conta está inativa. Entre em contato com o suporte.",
+        );
       }
 
       const updatedUser = await repositorio.atualizar(existingUser.id, {
@@ -204,7 +255,7 @@ export const authService = {
           hasPassword: !!updatedUser.password,
           image: dados.image ?? updatedUser.image,
         },
-        isNew: false
+        isNew: false,
       };
     }
 
@@ -220,9 +271,9 @@ export const authService = {
     return {
       user: {
         ...newUser,
-        hasPassword: false
+        hasPassword: false,
       },
-      isNew: true
+      isNew: true,
     };
   },
 
@@ -278,7 +329,10 @@ export const authService = {
           }
         }
       } catch (error) {
-        console.error("[GEO_IP_FALLBACK_ERROR] Falha ao obter geolocalização do IP local:", error);
+        console.error(
+          "[GEO_IP_FALLBACK_ERROR] Falha ao obter geolocalização do IP local:",
+          error,
+        );
       }
     }
 

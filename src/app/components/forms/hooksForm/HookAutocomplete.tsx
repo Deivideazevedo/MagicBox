@@ -402,17 +402,26 @@ export function HookAutocomplete<
             placeholder={placeholder}
             error={!!error}
             helperText={error?.message}
+            type="search"
             InputLabelProps={{
               shrink: shrinkLabel,
             }}
             {...restTextFieldProps}
+            sx={{
+              "& input::-webkit-search-decoration, & input::-webkit-search-cancel-button, & input::-webkit-search-results-button, & input::-webkit-search-results-decoration": {
+                display: "none",
+                WebkitAppearance: "none",
+              },
+              ...restTextFieldProps?.sx,
+            }}
             inputProps={{
               ...params.inputProps,
-              autoComplete: "new-password", // Quebra as sugestões do navegador/celular sem ativar gerenciadores de senhas
+              autoComplete: "one-time-code", // Força o Chrome a não sugerir CEP, cartões de crédito ou senhas
               autoCorrect: "off", // Desativa a correção do teclado mobile
               spellCheck: false, // Remove linhas vermelhas de erro gramatical
               autoCapitalize: "none", // Remove a capitalização e ajuda a sumir com as sugestões
-              name: "hidden-autofill-name",
+              type: "search", // Garante o tipo search no elemento HTML input
+              name: "search-query-field",
               ...restTextFieldProps?.inputProps,
             }}
              InputProps={{

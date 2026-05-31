@@ -70,6 +70,7 @@ export default function FormulariosIndex({
             onChange={handleOrigemChange}
             fullWidth
             sx={{
+              position: "relative",
               backgroundColor: (theme) => alpha(theme.palette.grey[200], 0.6),
               padding: "4px",
               borderRadius: "12px",
@@ -79,36 +80,60 @@ export default function FormulariosIndex({
               gridTemplateColumns: "1fr 1fr 1fr",
               gap: "4px",
               "& .MuiToggleButton-root": {
-                border: "1px solid transparent",
+                border: "0 !important",
                 borderRadius: "8px !important",
                 textTransform: "none",
                 fontSize: "0.875rem",
                 fontWeight: 700,
                 color: "text.secondary",
                 gap: 1,
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "color 0.25s ease",
                 py: 1,
+                zIndex: 1,
+                backgroundColor: "transparent !important",
 
                 "&:hover": {
-                  backgroundColor: "background.paper",
-                  borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                  color: "text.primary",
                 },
 
                 "&.Mui-selected": {
-                  backgroundColor: "background.paper",
-                  boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
-                  border: "1px solid",
-                  "&.despesa": { color: "error.main", borderColor: alpha(theme.palette.error.main, 0.3) },
-                  "&.receita": { color: "success.main", borderColor: alpha(theme.palette.success.main, 0.3) },
-                  "&.meta": { color: "primary.main", borderColor: alpha(theme.palette.primary.main, 0.3) },
-                  "&:hover": {
-                    backgroundColor: "background.paper",
-                  },
-
+                  "&.despesa": { color: "error.main" },
+                  "&.receita": { color: "success.main" },
+                  "&.meta": { color: "primary.main" },
                 },
               },
             }}
           >
+            {/* Indicador deslizante premium */}
+            <Box
+              style={{
+                left:
+                  origem === "despesa"
+                    ? "calc(0% + 4px)"
+                    : origem === "receita"
+                      ? "calc(33.333% + 2px)"
+                      : "calc(66.666% + 0px)",
+                borderColor:
+                  origem === "despesa"
+                    ? alpha(theme.palette.error.main, 0.3)
+                    : origem === "receita"
+                      ? alpha(theme.palette.success.main, 0.3)
+                      : alpha(theme.palette.primary.main, 0.3),
+              }}
+              sx={{
+                position: "absolute",
+                top: 4,
+                bottom: 4,
+                width: "calc(33.333% - 6px)",
+                borderRadius: "8px",
+                bgcolor: "background.paper",
+                border: "1px solid",
+                transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease",
+                zIndex: 0,
+                boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
+              }}
+            />
+
             <ToggleButton value="despesa" className="despesa">
               <IconCreditCard size={18} /> Despesa
             </ToggleButton>

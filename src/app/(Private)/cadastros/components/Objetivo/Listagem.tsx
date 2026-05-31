@@ -473,6 +473,7 @@ export const Listagem = ({
                         flex: 1,
                         display: "flex",
                         alignItems: "center",
+                        py: 2.5,
                       }}
                     >
                       <Box

@@ -109,7 +109,7 @@ export default function RelatoriosPage() {
     anoReferencia,
     isTodoDespesa,
     isTodoReceita,
-    isTodoMeta,
+    isTodoObjetivo,
   } = useRelatorios();
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
@@ -327,7 +327,7 @@ export default function RelatoriosPage() {
             Relatório Financeiro 360º
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Análise sistêmica de suas receitas, despesas e metas.
+            Análise sistêmica de suas receitas, despesas e objetivos.
           </Typography>
         </Box>
         <FormControlLabel

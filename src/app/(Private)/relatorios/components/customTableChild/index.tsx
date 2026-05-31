@@ -60,7 +60,7 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
     sortValue: (row) => row.nome,
     render: (row) => {
       const isDespesa = row.tipo === "DESPESA";
-      const isMeta = row.tipo === "META";
+      const isObjetivo = row.tipo === "OBJETIVO";
 
       let chipIcon = <IconArrowUp size={14} />;
       let chipColor: any = "success";
@@ -70,10 +70,10 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
         chipIcon = <IconArrowDown size={14} />;
         chipColor = "error";
         chipLabel = "Despesa";
-      } else if (isMeta) {
+      } else if (isObjetivo) {
         chipIcon = <IconTarget size={14} />;
         chipColor = "info";
-        chipLabel = "Meta";
+        chipLabel = "Objetivo";
       }
 
       return (
@@ -165,13 +165,13 @@ const TABLE_COLUMNS: IColumnProps<DetalheRelatorio>[] = [
 
 // ==================== TYPES ====================
 
-type TipoFiltro = "DESPESA" | "RECEITA" | "META";
+type TipoFiltro = "DESPESA" | "RECEITA" | "OBJETIVO";
 
 interface CustomTableChildProps {
   itens: DetalheRelatorio[];
   selectedIds: Set<string>;
   onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
-  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
+  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "OBJETIVO") => void;
   itemSelecionadoParaHistorico: string | null;
   filterText?: string;
   resetToggle?: number;

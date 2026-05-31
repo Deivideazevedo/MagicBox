@@ -75,7 +75,7 @@ export function useRelatorios() {
     });
   }, []);
 
-  const selectItemForHistory = useCallback((id: number, tipo: "RECEITA" | "DESPESA" | "META") => {
+  const selectItemForHistory = useCallback((id: number, tipo: "RECEITA" | "DESPESA" | "OBJETIVO") => {
     const key = `${tipo}-${id}`;
     setSelectedIds(new Set([key]));
   }, []);
@@ -114,8 +114,8 @@ export function useRelatorios() {
     return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "RECEITA");
   }, [selectedItemsDetails]);
 
-  const isTodoMeta = useMemo(() => {
-    return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "META");
+  const isTodoObjetivo = useMemo(() => {
+    return selectedItemsDetails.length > 0 && selectedItemsDetails.every(d => d.tipo === "OBJETIVO");
   }, [selectedItemsDetails]);
 
   // ==================== HISTÓRICO ====================
@@ -220,7 +220,7 @@ export function useRelatorios() {
     resumoExibido,
     isTodoDespesa,
     isTodoReceita,
-    isTodoMeta,
+    isTodoObjetivo,
     // Nova API de Evolução
     evolucaoAnual: evolucaoAnual || [],
     isLoadingEvolucao,

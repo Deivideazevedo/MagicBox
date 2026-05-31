@@ -12,11 +12,14 @@ import { LoadingButton } from "@mui/lab";
 import {
   alpha,
   Box,
+  Button,
   Collapse,
   Grid,
+  InputAdornment,
   Paper,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -50,8 +53,10 @@ export default function DespesaForm({
     tipo,
     parcelar,
     parcelas,
+    modoParcelamento,
     valor,
     valorTotal,
+    valorParcelaCalculado,
     handleTipoChange,
     isCreating,
     itens,
@@ -60,6 +65,13 @@ export default function DespesaForm({
     setFocus,
     setValue,
   } = useDespesaForm({ lancamentoParaEditar, dadosIniciais, onSuccess });
+
+  const formatarValor = (val: number) => {
+    return (val ?? 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
   const theme = useTheme();
 
   // Focar no campo de item (ou valor, se já houver dados) ao montar o formulário
@@ -72,7 +84,13 @@ export default function DespesaForm({
   }, [setFocus, lancamentoParaEditar, dadosIniciais]);
 
   return (
-    <Box py={2} px={3} component="form" onSubmit={handleSubmit}>
+    <Box
+      py={2}
+      px={3}
+      component="form"
+      onSubmit={handleSubmit}
+      autoComplete="off"
+    >
       <Box
         component={Paper}
         elevation={1}
@@ -139,6 +157,7 @@ export default function DespesaForm({
               onChange={handleTipoChange}
               fullWidth
               sx={{
+                position: "relative",
                 backgroundColor: (theme) => alpha(theme.palette.grey[200], 0.6),
                 padding: "4px",
                 borderRadius: "12px",
@@ -148,43 +167,79 @@ export default function DespesaForm({
                 gridTemplateColumns: "1fr 1fr",
                 gap: "4px",
                 "& .MuiToggleButton-root": {
-                  border: "1px solid transparent",
+                  border: "0 !important",
                   borderRadius: "8px !important",
                   textTransform: "none",
                   fontWeight: 600,
                   color: "text.secondary",
                   py: 1.2,
+                  px: { xs: 1, sm: 2 },
+                  zIndex: 1,
+                  backgroundColor: "transparent !important",
+                  transition: "color 0.25s ease",
                   "&.Mui-selected": {
-                    backgroundColor: "background.paper",
-                    border: "1px solid",
-                    boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
                     "&[value='pagamento']": {
                       color: "error.main",
-                      borderColor: (theme) =>
-                        alpha(theme.palette.error.main, 0.4),
                     },
                     "&[value='agendamento']": {
                       color: "warning.main",
-                      borderColor: (theme) =>
-                        alpha(theme.palette.warning.main, 0.4),
                     },
                   },
                 },
               }}
             >
+              {/* Indicador deslizante premium */}
+              <Box
+                style={{
+                  left:
+                    tipo === "pagamento" ? "calc(0% + 4px)" : "calc(50% + 1px)",
+                  borderColor:
+                    tipo === "pagamento"
+                      ? alpha(theme.palette.error.main, 0.4)
+                      : alpha(theme.palette.warning.main, 0.4),
+                }}
+                sx={{
+                  position: "absolute",
+                  top: 4,
+                  bottom: 4,
+                  width: "calc(50% - 7px)",
+                  borderRadius: "8px",
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  transition:
+                    "left 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease",
+                  zIndex: 0,
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
+                }}
+              />
+
               <ToggleButton value="pagamento">
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={0.5}>
                   <IconCoin size={18} />
                   <span>Pagamento</span>
                 </Box>
               </ToggleButton>
               <ToggleButton value="agendamento">
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={0.5}>
                   <IconCalendarEvent size={18} />
                   <span>Agendamento</span>
                 </Box>
               </ToggleButton>
             </ToggleButtonGroup>
+          </Grid>
+
+          {/* Data */}
+          <Grid item xs={12}>
+            <HookDatePicker
+              label={
+                tipo === "pagamento"
+                  ? "Data do Pagamento"
+                  : "Data do Agendamento"
+              }
+              name="data"
+              control={control}
+              shrinkLabel={true}
+            />
           </Grid>
 
           {/* Autocomplete Despesa */}
@@ -225,27 +280,135 @@ export default function DespesaForm({
           {/* Valor */}
           <Grid item xs={12}>
             <HookCurrencyField
-              label="Valor"
+              label={
+                tipo === "agendamento"
+                  ? modoParcelamento === "parcela"
+                    ? "Valor da parcela"
+                    : "Valor total"
+                  : "Valor"
+              }
               name="valor"
               control={control}
               placeholder="R$ 0,00"
               InputLabelProps={{ shrink: true }}
               returnAsNumber
+              autoComplete="one-time-code"
+              inputProps={{
+                name: "field-valor-despesa",
+              }}
             />
           </Grid>
 
-          {/* Data */}
-          <Grid item xs={12}>
-            <HookDatePicker
-              label={
-                tipo === "pagamento"
-                  ? "Data do Pagamento"
-                  : "Data do Agendamento"
-              }
-              name="data"
-              control={control}
-              shrinkLabel={true}
-            />
+          {/* Parcelamento */}
+          <Grid
+            item
+            xs={12}
+            sx={{
+              pt: tipo === "agendamento" ? 1.5 : "0px !important",
+              transition: "padding-top 0.5s ease",
+            }}
+          >
+            <Collapse in={tipo === "agendamento"} timeout={400}>
+              <Box mt={0}>
+                <HookDecimalField
+                  label="Quantidade de Parcelas"
+                  name="parcelas"
+                  control={control}
+                  returnAsNumber
+                  placeholder="Ex: 12"
+                  InputLabelProps={{ shrink: true }}
+                  autoComplete="one-time-code"
+                  inputProps={{
+                    name: "field-parcelas-despesa",
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end" sx={{ mr: -0.5 }}>
+                        <Tooltip
+                          title={
+                            modoParcelamento === "parcela"
+                              ? "Repetir: O valor informado será cobrado integralmente em cada parcela."
+                              : "Dividir: O valor informado é o total e será dividido pelo número de parcelas."
+                          }
+                          arrow
+                          placement="top"
+                        >
+                          <Button
+                            size="small"
+                            variant="text"
+                            onClick={() =>
+                              setValue(
+                                "modoParcelamento",
+                                modoParcelamento === "parcela"
+                                  ? "total"
+                                  : "parcela",
+                              )
+                            }
+                            sx={{
+                              fontSize: "0.7rem",
+                              textTransform: "none",
+                              py: 0.3,
+                              px: 1.2,
+                              minWidth: 0,
+                              color: "primary.main",
+                              backgroundColor: (theme) =>
+                                alpha(theme.palette.primary.main, 0.08),
+                              borderRadius: 1,
+                              fontWeight: 700,
+                              "&:hover": {
+                                backgroundColor: (theme) =>
+                                  alpha(theme.palette.primary.main, 0.15),
+                              },
+                            }}
+                          >
+                            {modoParcelamento === "parcela"
+                              ? "Repetir"
+                              : "Dividir"}
+                          </Button>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                {Number(valor) > 0 ? (
+                  <Box
+                    mt={1.5}
+                    p={1.2}
+                    sx={{
+                      backgroundColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.05),
+                      borderRadius: 1.5,
+                      border: "1px dashed",
+                      borderColor: (theme) =>
+                        alpha(theme.palette.primary.main, 0.3),
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      color="primary.main"
+                    >
+                      {modoParcelamento === "parcela" ? (
+                        <>
+                          {parcelas && parcelas > 0 ? parcelas : 1}x de R${" "}
+                          {formatarValor(valor)} = R${" "}
+                          {formatarValor(valorTotal)}
+                        </>
+                      ) : (
+                        <>
+                          R$ {formatarValor(valorParcelaCalculado)} / mês
+                          (Total: R$ {formatarValor(valor)})
+                        </>
+                      )}
+                    </Typography>
+                  </Box>
+                ) : null}
+              </Box>
+            </Collapse>
           </Grid>
 
           {/* Observação */}
@@ -258,70 +421,15 @@ export default function DespesaForm({
               multiline
               rows={2}
               InputLabelProps={{ shrink: true }}
+              autoComplete="one-time-code"
+              inputProps={{
+                name: "field-observacao-despesa",
+              }}
               sx={{
                 "& .MuiOutlinedInput-root": { padding: 0 },
                 "& .MuiOutlinedInput-input": { padding: "14px 14px" },
               }}
             />
-          </Grid>
-
-          <Grid
-            item
-            xs={12}
-            sx={{
-              pt: tipo === "agendamento" ? 1.5 : "0px !important",
-              transition: "padding-top 0.5s ease",
-            }}
-          >
-            {/* Parcelamento */}
-            <Collapse in={tipo === "agendamento"} timeout={400}>
-              <CustomToggle
-                control={control}
-                name="parcelar"
-                variant="switch"
-                titleActive="Parcelamento Ativado"
-                titleInactive="Parcelamento Desativado"
-                descriptionActive="Criar múltiplos lançamentos mensais"
-                descriptionInactive="Clique para ativar o parcelamento"
-              />
-
-              <Collapse in={parcelar} timeout={400}>
-                <Box mt={2}>
-                  <HookDecimalField
-                    label="Número de Parcelas"
-                    name="parcelas"
-                    control={control}
-                    returnAsNumber
-                    placeholder="Ex: 12"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                  {parcelar && parcelas && valorTotal > 0 ? (
-                    <Box
-                      mt={1.5}
-                      p={1.5}
-                      sx={{
-                        backgroundColor: (theme) =>
-                          alpha(theme.palette.primary.main, 0.08),
-                        borderRadius: 1,
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary">
-                        {parcelas}x de R$ {valor} ={" "}
-                        <Typography
-                          component="span"
-                          variant="caption"
-                          fontWeight={600}
-                          color="primary"
-                          fontSize={13.5}
-                        >
-                          R$ {valorTotal.toFixed(2)}
-                        </Typography>
-                      </Typography>
-                    </Box>
-                  ) : null}
-                </Box>
-              </Collapse>
-            </Collapse>
           </Grid>
 
           <Grid item xs={12}>

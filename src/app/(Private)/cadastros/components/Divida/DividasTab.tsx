@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
 import { Divida, DividaUnica } from "@/core/dividas/types";
 import {
@@ -10,14 +11,24 @@ import {
   Slide,
   useMediaQuery,
   useTheme,
+  alpha,
 } from "@mui/material";
-import { useMemo, useState } from "react";
+import { TransitionProps } from "@mui/material/transitions";
 import { useDividas } from "../../hooks/useDividas";
 import { DividasDashboard } from "./DividasDashboard";
 import { DividasTourProvider, useDividasTourRefs } from "./DividasTourContext";
 import { criarDividasTourSteps } from "./dividasTourSteps";
 import { Formulario } from "./Formulario";
 import { Listagem } from "./Listagem";
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export const DividasTab = () => {
   return (
@@ -51,9 +62,20 @@ const DividasTabContent = () => {
   } = useDividas();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isMobileForm = useMediaQuery(theme.breakpoints.down("sm"));
   const [exibirFormulario, setExibirFormulario] = useState(false);
   const [mostrarConcluidas, setMostrarConcluidas] = useState(false);
+
+  // Fechar formulário após criação/edição/aporte com sucesso
+  const prevLoading = useRef({ isCreating, isUpdating, isAportando });
+  useEffect(() => {
+    const wasLoading = prevLoading.current.isCreating || prevLoading.current.isUpdating || prevLoading.current.isAportando;
+    const isNowLoading = isCreating || isUpdating || isAportando;
+    
+    if (wasLoading && !isNowLoading) {
+      setExibirFormulario(false);
+    }
+    prevLoading.current = { isCreating, isUpdating, isAportando };
+  }, [isCreating, isUpdating, isAportando]);
 
   // Tour guiado com refs
   const tourRefs = useDividasTourRefs();
@@ -118,7 +140,7 @@ const DividasTabContent = () => {
           }}
         >
           {/* Formulário: Lateral no Desktop / Modal no Mobile */}
-          {!isMobileForm ? (
+          {!isMobile ? (
             <Slide
               direction="right"
               in={exibirFormulario}
@@ -144,10 +166,36 @@ const DividasTabContent = () => {
             <Dialog
               open={exibirFormulario}
               onClose={handleFecharFormulario}
+              TransitionComponent={Transition}
+              keepMounted={false}
               fullWidth
-              maxWidth="xs"
+              maxWidth="sm"
+              sx={{
+                "& .MuiDialog-container": {
+                  alignItems: "flex-end", // Alinha no final da tela (Bottom Sheet)
+                },
+                "& .MuiCard-root": {
+                  boxShadow: "none",
+                  border: "none",
+                  borderRadius: 0,
+                  bgcolor: "transparent",
+                },
+                "& .MuiCardContent-root": {
+                  p: { xs: 2.5, sm: 3 },
+                }
+              }}
               PaperProps={{
-                sx: { borderRadius: 4, bgcolor: "background.paper" },
+                sx: {
+                  borderRadius: "24px 24px 0 0",
+                  m: 0,
+                  width: "100%",
+                  maxWidth: "100%",
+                  maxHeight: "85vh",
+                  bgcolor: "background.paper",
+                  border: "none",
+                  boxShadow: `0 -10px 40px ${alpha(theme.palette.common.black, 0.25)}`,
+                  overflowY: "auto",
+                },
               }}
             >
               <DialogContent sx={{ p: 0 }}>
@@ -176,13 +224,13 @@ const DividasTabContent = () => {
               minWidth: 0,
               transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
               width: "100%",
-              ...(!isMobileForm && {
+              ...(!isMobile && {
                 flexBasis:
-                  exibirFormulario && !isMobileForm
+                  exibirFormulario
                     ? "66.66% !important"
                     : "100% !important",
                 maxWidth:
-                  exibirFormulario && !isMobileForm
+                  exibirFormulario
                     ? "66.66% !important"
                     : "100% !important",
               }),

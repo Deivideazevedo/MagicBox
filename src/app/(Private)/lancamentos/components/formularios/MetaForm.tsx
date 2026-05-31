@@ -134,6 +134,7 @@ export default function MetaForm({
               onChange={handleTipoChange}
               fullWidth
               sx={{
+                position: "relative",
                 backgroundColor: (theme) => alpha(theme.palette.grey[200], 0.6),
                 padding: "4px",
                 borderRadius: "12px",
@@ -143,42 +144,61 @@ export default function MetaForm({
                 gridTemplateColumns: "1fr 1fr",
                 gap: "4px",
                 "& .MuiToggleButton-root": {
-                  border: "1px solid transparent",
+                  border: "0 !important",
                   borderRadius: "8px !important",
                   textTransform: "none",
                   fontWeight: 600,
                   color: "text.secondary",
                   py: 1.2,
+                  px: { xs: 1, sm: 2 },
+                  zIndex: 1,
+                  backgroundColor: "transparent !important",
+                  transition: "color 0.25s ease",
                   "&:hover": {
-                    backgroundColor: "background.paper",
-                    borderColor: (theme) => alpha(theme.palette.divider, 0.2),
+                    color: "text.primary",
                   },
                   "&.Mui-selected": {
-                    backgroundColor: "background.paper",
-                    border: "1px solid",
-                    boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
                     "&[value='investimento']": {
                       color: "success.main",
-                      borderColor: (theme) =>
-                        alpha(theme.palette.success.main, 0.4),
                     },
                     "&[value='retirada']": {
                       color: "error.main",
-                      borderColor: (theme) =>
-                        alpha(theme.palette.error.main, 0.4),
                     },
                   },
                 },
               }}
             >
+              {/* Indicador deslizante premium */}
+              <Box
+                style={{
+                  left: tipo === "investimento" ? "calc(0% + 4px)" : "calc(50% + 1px)",
+                  borderColor:
+                    tipo === "investimento"
+                      ? alpha(theme.palette.success.main, 0.4)
+                      : alpha(theme.palette.error.main, 0.4),
+                }}
+                sx={{
+                  position: "absolute",
+                  top: 4,
+                  bottom: 4,
+                  width: "calc(50% - 7px)",
+                  borderRadius: "8px",
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease",
+                  zIndex: 0,
+                  boxShadow: "0px 2px 5px rgba(0,0,0,0.08)",
+                }}
+              />
+
               <ToggleButton value="investimento">
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={0.5}>
                   <IconPlus size={18} />
                   <span>Investimento</span>
                 </Box>
               </ToggleButton>
               <ToggleButton value="retirada">
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={0.5}>
                   <IconMinus size={18} />
                   <span>Retirada</span>
                 </Box>

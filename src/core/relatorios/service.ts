@@ -7,7 +7,7 @@ import {
   RawDadosBrutosCategoria,
   RawTotaisMetas,
   RawHistoricoAgrupado,
-  RawMetasProgresso,
+  RawObjetivosProgresso,
   EvolucaoMensalItem,
   EvolucaoAnualResponse,
 } from "@/core/relatorios/relatorio.dto";
@@ -29,14 +29,14 @@ export const relatoriosService = {
     dataInicio: Date,
     dataFim: Date,
   ): Promise<RelatorioResponse> {
-    const [dadosBrutos, dadosMetasCompletos, contagensETotais] =
+    const [dadosBrutos, dadosObjetivosCompletos, contagensETotais] =
       await Promise.all([
         relatoriosRepository.obterDadosBrutosPorCategoria(
           userId,
           dataInicio,
           dataFim,
         ) as Promise<RawDadosBrutosCategoria[]>,
-        relatoriosRepository.obterDadosCompletosMetas(
+        relatoriosRepository.obterDadosCompletosObjetivos(
           userId,
           dataInicio,
           dataFim,
@@ -130,21 +130,25 @@ export const relatoriosService = {
       categoria.restante += restante;
     });
 
-    // Metas
-    const metasDetalhes: DetalheRelatorio[] = dadosMetasCompletos.detalhes.map(
-      (m: RawMetasProgresso) => {
-        const planejado = -Math.abs(m.planejado);
+    // Objetivos
+    const objetivosDetalhes: DetalheRelatorio[] = dadosObjetivosCompletos.detalhes.map(
+      (m: RawObjetivosProgresso) => {
+        // O valor planejado entra no período apenas se a data alvo (ou de criação se nula) estiver no período
+        const dataReferencia = m.dataAlvo ? new Date(m.dataAlvo) : new Date(m.createdAt!);
+        const estaNoPeriodo = dataReferencia >= dataInicio && dataReferencia <= dataFim;
+
+        const planejado = estaNoPeriodo ? -Math.abs(m.planejado) : 0;
         const realizado = -Math.abs(m.realizado);
-        // Para metas (tratadas como dívida), se planejado -100 e realizado -20, restante = -80 (Red)
+        // Para objetivos (tratados como dívida), se planejado -100 e realizado -20, restante = -80 (Red)
         const restante = planejado - realizado;
 
         return {
           id: m.id,
           nome: m.nome,
-          tipo: "META" as const,
+          tipo: "OBJETIVO" as const,
           valorPlanejado: planejado,
           valorRealizado: realizado,
-          valorAgendado: realizado, // Metas usam o realizado como base para visão não projetada
+          valorAgendado: realizado, // Objetivos usam o realizado como base para visão não projetada
           restante,
           mediaMensal: -Math.abs(m.mediaMensal),
           isProjecao: false,
@@ -153,22 +157,22 @@ export const relatoriosService = {
       },
     );
 
-    if (metasDetalhes.length > 0) {
+    if (objetivosDetalhes.length > 0) {
       categoriasMap.set(-1, {
         id: -1,
-        nome: "Metas e Investimentos",
+        nome: "Objetivos e Investimentos",
         icone: "Target",
         cor: "#1976d2",
-        valorPlanejado: metasDetalhes.reduce(
+        valorPlanejado: objetivosDetalhes.reduce(
           (acc, i) => acc + i.valorPlanejado,
           0,
         ),
-        valorRealizado: metasDetalhes.reduce(
+        valorRealizado: objetivosDetalhes.reduce(
           (acc, i) => acc + i.valorRealizado,
           0,
         ),
-        restante: metasDetalhes.reduce((acc, i) => acc + i.restante, 0),
-        detalhes: metasDetalhes,
+        restante: objetivosDetalhes.reduce((acc, i) => acc + i.restante, 0),
+        detalhes: objetivosDetalhes,
       });
     }
 
@@ -191,7 +195,7 @@ export const relatoriosService = {
           .reduce((sum, i) => sum + i.valorRealizado, 0),
       0,
     );
-    const totalMetasPagas = dadosMetasCompletos.totais?.valorAlcancadoMeta || 0;
+    const totalObjetivosPagas = dadosObjetivosCompletos.totais?.valorAlcancadoMeta || 0;
 
     const totalReceitasPlanejadas = categorias.reduce(
       (acc, c) =>
@@ -221,30 +225,30 @@ export const relatoriosService = {
       }
     });
 
-    let somaRealizadoMetas = 0;
-    let somaPlanejadoMetas = 0;
-    let somaRealizadoTotalMetas = 0;
+    let somaRealizadoObjetivos = 0;
+    let somaPlanejadoObjetivos = 0;
+    let somaRealizadoTotalObjetivos = 0;
 
-    metasDetalhes.forEach((m) => {
-      somaRealizadoTotalMetas += Math.abs(m.valorRealizado);
+    objetivosDetalhes.forEach((m) => {
+      somaRealizadoTotalObjetivos += Math.abs(m.valorRealizado);
       if (Math.abs(m.valorPlanejado) > 0) {
-        somaRealizadoMetas += Math.abs(m.valorRealizado);
-        somaPlanejadoMetas += Math.abs(m.valorPlanejado);
+        somaRealizadoObjetivos += Math.abs(m.valorRealizado);
+        somaPlanejadoObjetivos += Math.abs(m.valorPlanejado);
       }
     });
 
-    const somaRealizadoMetasSemAlvo =
-      somaRealizadoTotalMetas - somaRealizadoMetas;
-    const metasPorcentagem =
-      somaPlanejadoMetas > 0
-        ? (somaRealizadoMetas / somaPlanejadoMetas) * 100
+    const somaRealizadoObjetivosSemAlvo =
+      somaRealizadoTotalObjetivos - somaRealizadoObjetivos;
+    const objetivosPorcentagem =
+      somaPlanejadoObjetivos > 0
+        ? (somaRealizadoObjetivos / somaPlanejadoObjetivos) * 100
         : 0;
 
-    const qtdMetasTotal = metasDetalhes.length;
-    const qtdMetasConcluidas = metasDetalhes.filter(
+    const qtdObjetivosTotal = objetivosDetalhes.length;
+    const qtdObjetivosConcluidas = objetivosDetalhes.filter(
       (m) => m.status === "I",
     ).length;
-    const qtdMetasEmAndamento = metasDetalhes.filter(
+    const qtdObjetivosEmAndamento = objetivosDetalhes.filter(
       (m) => m.status === "A",
     ).length;
 
@@ -257,15 +261,15 @@ export const relatoriosService = {
     const saldoBrutoLiquido = saldoLivreGeral + metasPagasGeral;
 
     const receitasPagasPeriodo = totalReceitasPagas;
-    const metasPagasPeriodo = totalMetasPagas;
+    const objetivosPagasPeriodo = totalObjetivosPagas;
     const saldoLivrePeriodo =
-      totalReceitasPagas + totalDespesasPagas - totalMetasPagas;
+      totalReceitasPagas + totalDespesasPagas - totalObjetivosPagas;
 
     const taxaEconomiaPeriodo =
       receitasPagasPeriodo > 0
         ? Math.max(
             0,
-            ((saldoLivrePeriodo + metasPagasPeriodo) / receitasPagasPeriodo) *
+            ((saldoLivrePeriodo + objetivosPagasPeriodo) / receitasPagasPeriodo) *
               100,
           )
         : 0;
@@ -301,23 +305,23 @@ export const relatoriosService = {
       receitasPagas: totalReceitasPagas,
       totalDespesas: totalDespesasPlanejadas,
       despesasPagas: totalDespesasPagas,
-      totalMetas: totalMetasPagas,
-      metasPorcentagem: metasPorcentagem > 100 ? 100 : metasPorcentagem,
-      saldoLivre: totalReceitasPagas + totalDespesasPagas - totalMetasPagas,
+      totalMetas: totalObjetivosPagas,
+      metasPorcentagem: objetivosPorcentagem > 100 ? 100 : objetivosPorcentagem,
+      saldoLivre: totalReceitasPagas + totalDespesasPagas - totalObjetivosPagas,
       saldoProjetado: totalReceitasPlanejadas + totalDespesasPlanejadas,
-      saldoBloqueado: somaRealizadoMetas,
+      saldoBloqueado: somaRealizadoObjetivos,
       dividaPendente,
       saldoLivreGeral,
       saldoBrutoLiquido,
       taxaEconomiaPeriodo,
-      totalAcumuladoMetas: somaRealizadoTotalMetas,
-      totalPlanejadoMetas: somaPlanejadoMetas,
-      totalAcumuladoMetasComAlvo: somaRealizadoMetas,
-      totalAcumuladoMetasSemAlvo: somaRealizadoMetasSemAlvo,
-      qtdMetasAtivas: qtdMetasEmAndamento, // Metas Ativas referem-se àquelas em andamento
-      qtdMetasTotal,
-      qtdMetasConcluidas,
-      qtdMetasEmAndamento,
+      totalAcumuladoMetas: somaRealizadoTotalObjetivos,
+      totalPlanejadoMetas: somaPlanejadoObjetivos,
+      totalAcumuladoMetasComAlvo: somaRealizadoObjetivos,
+      totalAcumuladoMetasSemAlvo: somaRealizadoObjetivosSemAlvo,
+      qtdMetasAtivas: qtdObjetivosEmAndamento, // Metas Ativas referem-se àquelas em andamento
+      qtdMetasTotal: qtdObjetivosTotal,
+      qtdMetasConcluidas: qtdObjetivosConcluidas,
+      qtdMetasEmAndamento: qtdObjetivosEmAndamento,
       qtdReceitasAtivas: contagensETotais.receitasAtivas,
       qtdReceitasInativas: contagensETotais.receitasInativas,
       qtdReceitasTotal: contagensETotais.receitasTotal,

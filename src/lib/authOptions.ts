@@ -35,10 +35,12 @@ export const authOptions: AuthOptions = {
       authorize: async (credentials) => {
         try {
           // 🛡️ Validação de Segurança do reCAPTCHA v3 (Custo Zero via Service)
-          await authService.validarRecaptcha(credentials?.recaptchaToken);
+          // await authService.validarRecaptcha(credentials?.recaptchaToken);
 
           // return credentials as User;
-          const user = await authService.authenticate(credentials as AuthPayload);
+          const user = await authService.authenticate(
+            credentials as AuthPayload,
+          );
 
           if (user) {
             return {
@@ -46,14 +48,15 @@ export const authOptions: AuthOptions = {
               id: user.id, // ✅ Já é number do Prisma
               createdAt: new Date(user.createdAt).toISOString(),
               updatedAt: new Date(user.updatedAt).toISOString(),
-              deletedAt: user.deletedAt ? new Date(user.deletedAt).toISOString() : null,
+              deletedAt: user.deletedAt
+                ? new Date(user.deletedAt).toISOString()
+                : null,
 
               origem: user.origem,
               status: user.status,
               hasPassword: user.hasPassword,
             } as any as User;
           }
-
 
           return null;
         } catch (error) {
@@ -92,12 +95,13 @@ export const authOptions: AuthOptions = {
           // OAuth login - Busca ou cria usuário no banco
           if (user.email) {
             try {
-              const { user: dbUser, isNew } = await authService.findOrCreateByOAuth({
-                email: user.email,
-                name: user.name || "",
-                image: user.image || undefined,
-                provider: account.provider,
-              });
+              const { user: dbUser, isNew } =
+                await authService.findOrCreateByOAuth({
+                  email: user.email,
+                  name: user.name || "",
+                  image: user.image || undefined,
+                  provider: account.provider,
+                });
 
               // Substitui o usuário do provider pelo usuário do banco
               token.user = {
@@ -122,7 +126,6 @@ export const authOptions: AuthOptions = {
               });
             }
           }
-
         } else {
           // Credentials login (user já formatado no authorize)
           // user aqui já é User (não AdapterUser) pois vem do authorize
@@ -141,7 +144,8 @@ export const authOptions: AuthOptions = {
             const headersList = headers();
 
             // Obter IP do cliente
-            const ip = headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
+            const ip =
+              headersList.get("x-forwarded-for")?.split(",")[0] || "127.0.0.1";
 
             // Obter geolocalização gratuita fornecida pelos cabeçalhos de borda da Vercel
             const latitude = headersList.get("x-vercel-ip-latitude") || null;
@@ -150,20 +154,28 @@ export const authOptions: AuthOptions = {
             const country = headersList.get("x-vercel-ip-country") || null;
 
             // 🚀 Executa em segundo plano para performance máxima no login e trata erros assincronamente
-            authService.registrarLogAcesso({
-              userId: Number(dbUserToLog.id),
-              email: dbUserToLog.email || user.email || "",
-              ip,
-              latitude,
-              longitude,
-              city,
-              country,
-              provider: account.provider,
-            }).catch((err) => {
-              console.error("[BACKGROUND_LOG_ERROR] Erro assíncrono ao persistir log de acesso:", err);
-            });
+            authService
+              .registrarLogAcesso({
+                userId: Number(dbUserToLog.id),
+                email: dbUserToLog.email || user.email || "",
+                ip,
+                latitude,
+                longitude,
+                city,
+                country,
+                provider: account.provider,
+              })
+              .catch((err) => {
+                console.error(
+                  "[BACKGROUND_LOG_ERROR] Erro assíncrono ao persistir log de acesso:",
+                  err,
+                );
+              });
           } catch (error) {
-            console.error("Falha silenciosa ao capturar headers para o log no JWT callback:", error);
+            console.error(
+              "Falha silenciosa ao capturar headers para o log no JWT callback:",
+              error,
+            );
           }
         }
       }

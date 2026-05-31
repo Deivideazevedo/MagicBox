@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useRef, useEffect } from "react";
 import PageContainer from "@/app/components/container/PageContainer";
 import Breadcrumb from "@/app/(Private)/layout/shared/breadcrumb/Breadcrumb";
 import { Objetivo } from "@/core/objetivos/types";
@@ -9,42 +10,67 @@ import {
   Dialog,
   DialogContent,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
+  alpha,
+  Slide,
 } from "@mui/material";
-import { useState } from "react";
-import dynamic from "next/dynamic";
+import { TransitionProps } from "@mui/material/transitions";
 import { useObjetivos } from "../hooks/useObjetivos";
-import Slide from "@mui/material/Slide";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 import { useModalUrl } from "@/hooks/useModalUrl";
+import dynamic from "next/dynamic";
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>,
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 // Importa os modais e formulários dinamicamente sob demanda
-const Formulario = dynamic(() => import("../components/Objetivo/Formulario").then((m) => m.Formulario), {
-  loading: () => (
-    <Box display="flex" justifyContent="center" alignItems="center" p={3}>
-      <CircularProgress />
-    </Box>
-  ),
-  ssr: false,
-});
+const Formulario = dynamic(
+  () => import("../components/Objetivo/Formulario").then((m) => m.Formulario),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  },
+);
 
-const RetiradaObjetivoModal = dynamic(() => import("../components/Objetivo/RetiradaObjetivoModal"), {
-  ssr: false,
-});
+const RetiradaObjetivoModal = dynamic(
+  () => import("../components/Objetivo/RetiradaObjetivoModal"),
+  {
+    ssr: false,
+  },
+);
 
 // Importações dinâmicas dos painéis de objetivos para máxima performance
-const Listagem = dynamic(() => import("../components/Objetivo/Listagem").then((m) => m.Listagem), {
-  loading: () => (
-    <Box display="flex" justifyContent="center" p={4}>
-      <CircularProgress />
-    </Box>
-  ),
-  ssr: false,
-});
+const Listagem = dynamic(
+  () => import("../components/Objetivo/Listagem").then((m) => m.Listagem),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  },
+);
 
-const ObjetivosDashboard = dynamic(() => import("../components/Objetivo/ObjetivosDashboard").then((m) => m.ObjetivosDashboard), {
-  ssr: false,
-});
+const ObjetivosDashboard = dynamic(
+  () =>
+    import("../components/Objetivo/ObjetivosDashboard").then(
+      (m) => m.ObjetivosDashboard,
+    ),
+  {
+    ssr: false,
+  },
+);
 
 export default function ObjetivosPage() {
   const theme = useTheme();
@@ -60,6 +86,7 @@ export default function ObjetivosPage() {
     targetObjetivo,
     isAportando,
     control,
+    setValue,
     handleSubmit,
     handleEdit,
     handleAporte,
@@ -70,14 +97,23 @@ export default function ObjetivosPage() {
   } = useObjetivos();
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isMobileForm = useMediaQuery(theme.breakpoints.down("sm"));
   const modalForm = useModalUrl("objetivoForm");
   const [mostrarConcluidos, setMostrarConcluidos] = useState(false);
 
-  const BREADCRUMBS = [
-    { title: "Dashboard", to: "/" },
-    { title: "Objetivos", to: "/cadastros/objetivos" },
-  ];
+  // Fechar formulário após criação/edição/aporte com sucesso
+  const prevLoading = useRef({ isCreating, isUpdating, isAportando });
+  useEffect(() => {
+    const wasLoading =
+      prevLoading.current.isCreating ||
+      prevLoading.current.isUpdating ||
+      prevLoading.current.isAportando;
+    const isNowLoading = isCreating || isUpdating || isAportando;
+
+    if (wasLoading && !isNowLoading) {
+      modalForm.closeModal();
+    }
+    prevLoading.current = { isCreating, isUpdating, isAportando };
+  }, [isCreating, isUpdating, isAportando]);
 
   const handleOpenAporte = (objetivo: Objetivo) => {
     handleAporte(objetivo);
@@ -99,12 +135,15 @@ export default function ObjetivosPage() {
     modalForm.closeModal();
   };
 
-  const objetivosFiltrados = mostrarConcluidos ? objetivos : objetivos.filter(o => o.status === 'A');
+  const objetivosFiltrados = mostrarConcluidos
+    ? objetivos
+    : objetivos.filter((o) => o.status === "A");
 
   return (
-    <PageContainer title="Objetivos" description="Gerencie seus objetivos financeiros e reservas">
-      <Breadcrumb title="Objetivos" items={BREADCRUMBS} />
-
+    <PageContainer
+      title="Objetivos"
+      description="Gerencie seus objetivos financeiros e reservas"
+    >
       {/* Dashboard de Totalizadores */}
       <Box mb={4}>
         <ObjetivosDashboard
@@ -117,13 +156,18 @@ export default function ObjetivosPage() {
             container
             spacing={3}
             sx={{
-              flexWrap: isMobile ? 'wrap' : 'nowrap',
-              alignItems: 'flex-start'
+              flexWrap: isMobile ? "wrap" : "nowrap",
+              alignItems: "flex-start",
             }}
           >
             {/* Formulário: Lateral no Desktop / Modal no Mobile */}
-            {!isMobileForm ? (
-              <Slide direction="right" in={modalForm.isOpen} mountOnEnter unmountOnExit>
+            {!isMobile ? (
+              <Slide
+                direction="right"
+                in={modalForm.isOpen}
+                mountOnEnter
+                unmountOnExit
+              >
                 <Grid item xs={12} md={4} sx={{ flexShrink: 0 }}>
                   <Formulario
                     isEditing={isEditing}
@@ -131,6 +175,7 @@ export default function ObjetivosPage() {
                     isAportando={isAportando}
                     row={null}
                     control={control}
+                    setValue={setValue}
                     handleSubmit={handleSubmit}
                     isCreating={isCreating}
                     isUpdating={isUpdating}
@@ -143,10 +188,36 @@ export default function ObjetivosPage() {
               <Dialog
                 open={modalForm.isOpen}
                 onClose={handleFecharFormulario}
+                TransitionComponent={Transition}
+                keepMounted={false}
                 fullWidth
-                maxWidth="xs"
+                maxWidth="sm"
+                sx={{
+                  "& .MuiDialog-container": {
+                    alignItems: "flex-end", // Alinha no final da tela (Bottom Sheet)
+                  },
+                  "& .MuiCard-root": {
+                    boxShadow: "none",
+                    border: "none",
+                    borderRadius: 0,
+                    bgcolor: "transparent",
+                  },
+                  "& .MuiCardContent-root": {
+                    p: { xs: 2.5, sm: 3 },
+                  },
+                }}
                 PaperProps={{
-                  sx: { borderRadius: 4, bgcolor: 'background.paper' }
+                  sx: {
+                    borderRadius: "24px 24px 0 0",
+                    m: 0,
+                    width: "100%",
+                    maxWidth: "100%",
+                    maxHeight: "85vh",
+                    bgcolor: "background.paper",
+                    border: "none",
+                    boxShadow: `0 -10px 40px ${alpha(theme.palette.common.black, 0.25)}`,
+                    overflowY: "auto",
+                  },
                 }}
               >
                 <DialogContent sx={{ p: 0 }}>
@@ -156,6 +227,7 @@ export default function ObjetivosPage() {
                     isAportando={isAportando}
                     row={null}
                     control={control}
+                    setValue={setValue}
                     handleSubmit={handleSubmit}
                     isCreating={isCreating}
                     isUpdating={isUpdating}
@@ -173,15 +245,16 @@ export default function ObjetivosPage() {
               sx={{
                 flexGrow: 1,
                 minWidth: 0,
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                width: '100%',
-                ...(!isMobileForm && {
-                  flexBasis: (modalForm.isOpen && !isMobile) ? '66.66% !important' : '100% !important',
-                  maxWidth: (modalForm.isOpen && !isMobile) ? '66.66% !important' : '100% !important',
+                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                width: "100%",
+                ...(!isMobile && {
+                  flexBasis: modalForm.isOpen
+                    ? "66.66% !important"
+                    : "100% !important",
+                  maxWidth: modalForm.isOpen
+                    ? "66.66% !important"
+                    : "100% !important",
                 }),
-                ...(isMobileForm && {
-                  width: '100% !important',
-                })
               }}
             >
               <Listagem

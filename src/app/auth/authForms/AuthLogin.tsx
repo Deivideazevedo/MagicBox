@@ -71,18 +71,20 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   // --- 3. Lógica de login com credenciais ---
   const onSubmit = async (data: { username: string; password: string }) => {
     if (!executeRecaptcha) {
-      toast.error("O sistema de segurança reCAPTCHA está carregando. Aguarde um instante.");
+      toast.error(
+        "O sistema de segurança reCAPTCHA está carregando. Aguarde um instante.",
+      );
       return;
     }
 
     try {
-      const recaptchaToken = await executeRecaptcha("login");
+      // const recaptchaToken = await executeRecaptcha("login");
 
       const result = await signIn("credentials", {
         redirect: false,
         username: data.username,
         password: data.password,
-        recaptchaToken,
+        // recaptchaToken,
       });
 
       if (result?.error) {

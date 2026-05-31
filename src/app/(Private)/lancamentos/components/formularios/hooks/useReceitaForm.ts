@@ -28,8 +28,9 @@ const receitaSchema = z.object({
   observacao: z.string().optional(),
   observacaoAutomatica: z.string().optional(),
   parcelas: z.number().nullable().optional(),
+  modoParcelamento: z.enum(["parcela", "total"]).optional(),
 
-  parcelar: z.boolean(),
+  parcelar: z.boolean().optional(),
 });
 
 export type ReceitaFormData = z.infer<typeof receitaSchema>;
@@ -65,6 +66,7 @@ export function useReceitaForm({
       observacao: "",
       observacaoAutomatica: "",
       parcelas: null,
+      modoParcelamento: "parcela",
 
       parcelar: false,
     }),
@@ -86,8 +88,9 @@ export function useReceitaForm({
   const tipo = watch("tipo");
   const parcelar = watch("parcelar");
   const parcelas = watch("parcelas");
-  const valor = watch("valor");
+  const valor = Number(watch("valor"));
   const itemId = watch("itemId");
+  const modoParcelamento = watch("modoParcelamento") || "parcela";
 
   // Mapeamento Interno: API -> Form (Edição ou Pagamento vindo do Drawer)
   useEffect(() => {
@@ -121,12 +124,13 @@ export function useReceitaForm({
     }
   }, [lancamentoParaEditar, dadosIniciais, reset, defaultValues]);
 
-  // Limpar parcelas quando toggle for desligado
+  // Limpar parcelas quando for tipo pagamento
   useEffect(() => {
-    if (!parcelar) {
+    if (tipo === "pagamento") {
       setValue("parcelas", null);
+      setValue("modoParcelamento", "parcela");
     }
-  }, [parcelar, setValue]);
+  }, [tipo, setValue]);
 
   // Item selecionado para o ícone
   const selectedItem = useMemo(() => {
@@ -135,14 +139,28 @@ export function useReceitaForm({
   }, [itemId, receitasApi]);
 
   const valorTotal = useMemo(() => {
-    if (!parcelar || !parcelas || !valor) return valor;
-    return valor * parcelas;
-  }, [parcelar, parcelas, valor]);
+    if (tipo !== "agendamento" || !valor) return valor;
+    if (modoParcelamento === "total") return valor;
+    const qtd = parcelas && parcelas > 0 ? parcelas : 1;
+    return valor * qtd;
+  }, [tipo, parcelas, valor, modoParcelamento]);
+
+  const valorParcelaCalculado = useMemo(() => {
+    if (tipo !== "agendamento" || !valor) return valor;
+    if (modoParcelamento === "parcela") return valor;
+    const qtd = parcelas && parcelas > 0 ? parcelas : 1;
+    return valor / qtd;
+  }, [tipo, parcelas, valor, modoParcelamento]);
 
   const onSubmit = useCallback(
     async (formData: ReceitaFormData) => {
       try {
         const userId = Number(session?.user?.id);
+
+        const isMultipleInstallments = formData.tipo === "agendamento" && formData.parcelas && formData.parcelas > 1;
+        const finalValor = isMultipleInstallments && formData.modoParcelamento === "total"
+          ? Number(formData.valor) / Number(formData.parcelas)
+          : Number(formData.valor);
 
         // Mapeamento Interno: Form -> Payload
         const payload: LancamentoPayload = {
@@ -151,12 +169,11 @@ export function useReceitaForm({
           receitaId: formData.itemId,
           objetivoId: null,
           tipo: formData.tipo as any,
-          valor: Number(formData.valor),
+          valor: finalValor,
           data: formData.data,
           observacao: formData.observacao || undefined,
           observacaoAutomatica: formData.observacaoAutomatica || undefined,
-          parcelas: formData.parcelar && formData.parcelas ? formData.parcelas : null,
-
+          parcelas: isMultipleInstallments ? formData.parcelas : null,
         };
 
         if (formData.id) {
@@ -189,7 +206,10 @@ export function useReceitaForm({
     (_: any, newTipo: "pagamento" | "agendamento" | null) => {
       if (newTipo) {
         setValue("tipo", newTipo);
-        if (newTipo === "pagamento") setValue("parcelar", false);
+        if (newTipo === "pagamento") {
+          setValue("parcelar", false);
+          setValue("parcelas", null);
+        }
       }
     },
     [setValue],
@@ -201,8 +221,10 @@ export function useReceitaForm({
     tipo,
     parcelar,
     parcelas,
+    modoParcelamento,
     valor,
     valorTotal,
+    valorParcelaCalculado,
     handleTipoChange,
     isCreating: isCreating || isUpdating,
     itens: receitasApi,

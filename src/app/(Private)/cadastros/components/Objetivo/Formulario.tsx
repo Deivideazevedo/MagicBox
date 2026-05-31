@@ -17,13 +17,14 @@ import {
   useTheme,
   ToggleButton,
   ToggleButtonGroup,
+  Collapse,
 } from "@mui/material";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
   IconTarget,
   IconPig,
-  IconX
+  IconX,
 } from "@tabler/icons-react";
 import { Control, useWatch } from "react-hook-form";
 
@@ -37,6 +38,7 @@ interface FormProps {
   handleCancelEdit: () => void;
   handleSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   control: Control<ObjetivoFormData>;
+  setValue: any;
   isCreating: boolean;
   isUpdating: boolean;
   isAporte?: boolean;
@@ -51,6 +53,7 @@ export const Formulario = (formProps: FormProps) => {
     row,
     handleSubmit,
     control,
+    setValue,
     isCreating,
     isUpdating,
     isAporte = false,
@@ -103,7 +106,10 @@ export const Formulario = (formProps: FormProps) => {
             onClick={handleCancelEdit}
             sx={{
               color: "text.secondary",
-              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main" }
+              "&:hover": {
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: "primary.main",
+              },
             }}
           >
             <IconArrowLeft size={20} />
@@ -134,7 +140,9 @@ export const Formulario = (formProps: FormProps) => {
                 {isEditing ? "Editando:" : "Novo Objetivo"}
               </Typography>
               <Typography variant="body2" color="primary.main" fontWeight={700}>
-                {isEditing ? targetObjetivo?.nome : (watchNome || "Defina sua próxima conquista")}
+                {isEditing
+                  ? targetObjetivo?.nome
+                  : watchNome || "Defina sua próxima conquista"}
               </Typography>
             </Box>
           </Box>
@@ -154,11 +162,16 @@ export const Formulario = (formProps: FormProps) => {
         )}
 
         <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
+          <Stack spacing={2.5}>
             {/* Seletor de Tipo (Meta vs Reserva/Caixinha) */}
             {!isAporte && !isEditing && (
-              <Grid item xs={12}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 1, textTransform: 'uppercase' }}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  fontWeight={700}
+                  sx={{ display: "block", mb: 1, textTransform: "uppercase" }}
+                >
                   Tipo de Objetivo
                 </Typography>
                 <ToggleButtonGroup
@@ -166,176 +179,221 @@ export const Formulario = (formProps: FormProps) => {
                   exclusive
                   onChange={(_, value) => {
                     if (value) {
-                      control._reset({
-                        ...control._defaultValues,
-                        nome: watchNome || "",
-                        tipo: value,
-                        icone: value === "RESERVA" ? "IconPig" : "IconTarget"
-                      });
+                      setValue("tipo", value);
+                      setValue(
+                        "icone",
+                        value === "RESERVA" ? "IconPig" : "IconTarget",
+                      );
+                      if (value === "RESERVA") {
+                        setValue("valorObjetivo", null);
+                        setValue("dataAlvo", null);
+                      } else {
+                        setValue(
+                          "dataAlvo",
+                          new Date().toLocaleDateString("sv-SE"),
+                        );
+                      }
                     }
                   }}
                   fullWidth
                   sx={{
-                    bgcolor: alpha(theme.palette.action.disabledBackground, 0.05),
-                    borderRadius: 3,
+                    position: "relative",
+                    bgcolor: alpha(
+                      theme.palette.action.disabledBackground,
+                      0.05,
+                    ),
+                    borderRadius: "30px",
                     p: 0.5,
                     border: `1px solid ${theme.palette.divider}`,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "4px",
                     "& .MuiToggleButtonGroup-grouped": {
                       border: 0,
-                      borderRadius: "10px",
-                      m: 0.2,
-                    }
+                      borderRadius: "30px",
+                      m: 0,
+                    },
                   }}
                 >
+                  <Box
+                    style={{
+                      left: watchTipo === "RESERVA" ? "calc(50% + 2px)" : "4px",
+                      right:
+                        watchTipo === "RESERVA" ? "4px" : "calc(50% + 2px)",
+                      backgroundColor:
+                        watchTipo === "RESERVA"
+                          ? theme.palette.success.main
+                          : theme.palette.primary.main,
+                      boxShadow: `0 4px 12px ${alpha(
+                        watchTipo === "RESERVA"
+                          ? theme.palette.success.main
+                          : theme.palette.primary.main,
+                        0.25,
+                      )}`,
+                    }}
+                    sx={{
+                      position: "absolute",
+                      top: 4,
+                      bottom: 4,
+                      borderRadius: "30px",
+                      transition:
+                        "left 0.25s cubic-bezier(0.4, 0, 0.2, 1), right 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease, box-shadow 0.25s ease",
+                      zIndex: 0,
+                    }}
+                  />
                   <ToggleButton
                     value="META"
                     sx={{
-                      py: 1.2,
+                      p: 1,
+                      borderRadius: "30px",
                       fontWeight: 700,
                       textTransform: "none",
-                      gap: 1,
-                      color: "text.secondary",
-                      "&.Mui-selected": {
-                        bgcolor: "primary.main",
-                        color: "primary.contrastText",
-                        "&:hover": {
-                          bgcolor: "primary.dark",
-                        }
-                      }
+                      gap: 0.5,
+                      // fontSize: "13px",
+                      whiteSpace: "nowrap",
+                      color:
+                        watchTipo === "META"
+                          ? "primary.contrastText"
+                          : "text.secondary",
+                      zIndex: 1,
+                      backgroundColor: "transparent !important",
+                      transition: "color 0.25s ease",
                     }}
                   >
-                    <IconTarget size={18} />
-                    Meta Planejada
+                    <IconTarget size={16} />
+                    Meta
                   </ToggleButton>
                   <ToggleButton
                     value="RESERVA"
                     sx={{
-                      py: 1.2,
+                      py: 1,
+                      borderRadius: "30px !important",
                       fontWeight: 700,
                       textTransform: "none",
-                      gap: 1,
-                      color: "text.secondary",
-                      "&.Mui-selected": {
-                        bgcolor: "success.main",
-                        color: "success.contrastText",
-                        "&:hover": {
-                          bgcolor: "success.dark",
-                        }
-                      }
+                      gap: 0.5,
+                      // fontSize: { xs: "11px", sm: "13px", md: "14px" },
+                      whiteSpace: "nowrap",
+                      color:
+                        watchTipo === "RESERVA"
+                          ? "success.contrastText"
+                          : "text.secondary",
+                      zIndex: 1,
+                      backgroundColor: "transparent !important",
+                      transition: "color 0.25s ease",
                     }}
                   >
-                    <IconPig size={18} />
-                    Reserva Livre
+                    <IconPig size={16} />
+                    Reserva
                   </ToggleButton>
                 </ToggleButtonGroup>
-              </Grid>
+              </Box>
             )}
 
             {!isAporte && (
-              <Grid item xs={12}>
+              <Stack spacing={0}>
                 <HookTextField
                   label="Nome do Objetivo"
                   name="nome"
                   control={control}
-                  placeholder={watchTipo === "RESERVA" ? "Ex: Caixinha da Diversão, Cofrinho..." : "Ex: Reserva de Emergência, Viagem Disney..."}
+                  placeholder={
+                    watchTipo === "RESERVA"
+                      ? "Ex: Caixinha da Diversão, Cofrinho..."
+                      : "Ex: Reserva de Emergência, Viagem Disney..."
+                  }
                 />
-              </Grid>
-            )}
 
-            {/* Renderização Condicional de Campos para META */}
-            {(!isAporte && watchTipo === "META") && (
-              <>
-                <Grid item xs={12}>
-                  <HookMasksCurrencyField
-                    name="valorObjetivo"
-                    control={control}
-                    label="Valor Objetivo"
-                    returnAsNumber={true}
-                    placeholder="Ex: 10.000,00"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <HookDatePicker
-                    name="dataAlvo"
-                    control={control}
-                    label="Data Alvo"
-                    helperText="Data limite para atingir o valor total pretendido."
-                  />
-                </Grid>
-              </>
+                {/* Renderização Condicional de Campos para META com Collapse */}
+                <Collapse
+                  in={watchTipo === "META"}
+                  timeout={300}
+                  mountOnEnter
+                  unmountOnExit
+                >
+                  <Stack spacing={2.5} sx={{ pt: 2.5 }}>
+                    <HookMasksCurrencyField
+                      name="valorObjetivo"
+                      control={control}
+                      label="Valor Objetivo"
+                      returnAsNumber={true}
+                      placeholder="Ex: 10.000,00"
+                    />
+                    <HookDatePicker
+                      name="dataAlvo"
+                      control={control}
+                      label="Data Alvo"
+                      helperText="Data limite para atingir o valor total pretendido."
+                    />
+                  </Stack>
+                </Collapse>
+              </Stack>
             )}
 
             {/* Inputs para Aporte */}
             {isAporte && (
-              <>
-                <Grid item xs={12}>
-                  <HookMasksCurrencyField
-                    name="valorObjetivo"
-                    control={control}
-                    label="Valor do Aporte"
-                    returnAsNumber={true}
-                    placeholder="0,00"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <HookDatePicker
-                    name="dataAlvo"
-                    control={control}
-                    label="Data do Aporte"
-                    helperText="Data da movimentação financeira."
-                  />
-                </Grid>
-              </>
+              <Stack spacing={2}>
+                <HookMasksCurrencyField
+                  name="valorObjetivo"
+                  control={control}
+                  label="Valor do Aporte"
+                  returnAsNumber={true}
+                  placeholder="0,00"
+                />
+                <HookDatePicker
+                  name="dataAlvo"
+                  control={control}
+                  label="Data do Aporte"
+                  helperText="Data da movimentação financeira."
+                />
+              </Stack>
             )}
 
-            <Grid item xs={12} mt={1}>
-              <Stack direction="column" spacing={1.5}>
-                <LoadingButton
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  loading={isCreating || isUpdating || isAportando}
-                  color="primary"
-                  startIcon={<IconDeviceFloppy size={18} />}
-                  sx={{
-                    borderRadius: 3,
-                    py: 1.5,
-                    fontWeight: 700,
-                    boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`
-                    }
-                  }}
-                >
-                  {getButtonText()}
-                </LoadingButton>
+            {/* <Stack direction="column" spacing={1} sx={{ mt: 5 }}> */}
+            <LoadingButton
+              type="submit"
+              fullWidth
+              variant="contained"
+              loading={isCreating || isUpdating || isAportando}
+              color="primary"
+              startIcon={<IconDeviceFloppy size={18} />}
+              sx={{
+                borderRadius: 3,
+                mt: 0,
+                py: 1.5,
+                fontWeight: 700,
+                boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
+                transition: "all 0.2s",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                },
+              }}
+            >
+              {getButtonText()}
+            </LoadingButton>
 
-                {(isEditing || isAporte) && (
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={handleCancelEdit}
-                    sx={{
-                      borderRadius: 3,
-                      py: 1.5,
-                      fontWeight: 600,
-                      borderColor: alpha(theme.palette.divider, 0.2),
-                      color: 'text.secondary',
-                      '&:hover': {
-                        borderColor: theme.palette.primary.main,
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        color: 'primary.main'
-                      }
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                )}
-              </Stack>
-            </Grid>
-          </Grid>
+            {(isEditing || isAporte) && (
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={handleCancelEdit}
+                sx={{
+                  borderRadius: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  borderColor: alpha(theme.palette.divider, 0.2),
+                  color: "text.secondary",
+                  "&:hover": {
+                    borderColor: theme.palette.primary.main,
+                    bgcolor: alpha(theme.palette.primary.main, 0.04),
+                    color: "primary.main",
+                  },
+                }}
+              >
+                Cancelar
+              </Button>
+            )}
+            {/* </Stack> */}
+          </Stack>
         </Box>
       </CardContent>
     </Card>

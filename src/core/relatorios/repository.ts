@@ -4,7 +4,7 @@ import {
   RawCardResumo,
   RawDadosBrutosCategoria,
   RawHistoricoAgrupado,
-  RawRelatorioMetas,
+  RawRelatorioObjetivos,
   RelatorioFiltros,
 } from "./relatorio.dto";
 
@@ -89,11 +89,11 @@ export const relatoriosRepository = {
     `;
   },
 
-  async obterDadosCompletosMetas(
+  async obterDadosCompletosObjetivos(
     userId: number,
     dataInicio: Date,
     dataFim: Date,
-  ): Promise<RawRelatorioMetas> {
+  ): Promise<RawRelatorioObjetivos> {
     const result = await prisma.$queryRaw<any[]>`
       WITH metas_totais AS (
         SELECT 
@@ -106,6 +106,7 @@ export const relatoriosRepository = {
       metas_detalhe AS (
         SELECT 
           m.id, m.nome, m.icone, m.cor, m.status::text as status,
+          m."dataAlvo", m."createdAt",
           m."valorObjetivo"::float as planejado,
           COALESCE((
             SELECT SUM(l.valor) FROM lancamento l WHERE l."objetivoId" = m.id AND l.tipo = 'pagamento'
@@ -187,11 +188,11 @@ export const relatoriosRepository = {
     const receitaIds = itens
       .filter((i) => i.tipo === "RECEITA")
       .map((i) => i.id);
-    const metaIds = itens.filter((i) => i.tipo === "META").map((i) => i.id);
+    const objetivoIds = itens.filter((i) => i.tipo === "OBJETIVO").map((i) => i.id);
 
     const dIds = despesaIds.length > 0 ? despesaIds : [-1];
     const rIds = receitaIds.length > 0 ? receitaIds : [-1];
-    const mIds = metaIds.length > 0 ? metaIds : [-1];
+    const mIds = objetivoIds.length > 0 ? objetivoIds : [-1];
 
     const dataInicio = `${ano}-01-01`;
     const dataFim = `${ano}-12-31`;
@@ -243,9 +244,18 @@ export const relatoriosRepository = {
           ano,
           SUM(real_pago) as total_pago,
           SUM(real_agendado) as real_agendado,
-          SUM(total_alvo) as total_alvo,
-          SUM(restante_real) as restante_real
+          SUM(alvo_sinalizado) as total_alvo,
+          SUM(restante_sinalizado) as restante_real
         FROM reais_detalhado
+        GROUP BY 1, 2
+      ),
+      objetivos_planejado AS (
+        SELECT 
+          date_trunc('month', COALESCE(m."dataAlvo", m."createdAt"))::date as mes_ref,
+          EXTRACT(YEAR FROM COALESCE(m."dataAlvo", m."createdAt"))::int as ano,
+          -SUM(COALESCE(m."valorObjetivo", 0))::float as total_alvo_objetivo
+        FROM objetivo m
+        WHERE m.id = ANY(${mIds}::int[]) AND m."deletedAt" IS NULL
         GROUP BY 1, 2
       ),
       projecoes AS (
@@ -285,17 +295,18 @@ export const relatoriosRepository = {
         GROUP BY 1, 2
       )
       SELECT 
-        COALESCE(r.mes_ref, p.mes_ref) as "mes",
-        COALESCE(r.ano, p.ano) as "ano",
+        COALESCE(r.mes_ref, p.mes_ref, o.mes_ref) as "mes",
+        COALESCE(r.ano, p.ano, o.ano) as "ano",
         COALESCE(r.total_pago, 0)::float as "totalPago",
         COALESCE(r.real_agendado, 0)::float as "realAgendado",
         COALESCE(p.total_projetado, 0)::float as "totalProjetado",
-        COALESCE(r.total_alvo, 0)::float as "totalPrevisto",
-        (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0))::float as "totalPrevistoComProjecao",
-        (COALESCE(r.total_pago, 0) - COALESCE(r.total_alvo, 0))::float as "restanteReal",
-        (COALESCE(r.total_pago, 0) - (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0)))::float as "restanteComProjecao"
+        (COALESCE(r.total_alvo, 0) + COALESCE(o.total_alvo_objetivo, 0))::float as "totalPrevisto",
+        (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0) + COALESCE(o.total_alvo_objetivo, 0))::float as "totalPrevistoComProjecao",
+        (COALESCE(r.total_pago, 0) - (COALESCE(r.total_alvo, 0) + COALESCE(o.total_alvo_objetivo, 0)))::float as "restanteReal",
+        (COALESCE(r.total_pago, 0) - (COALESCE(r.total_alvo, 0) + COALESCE(p.total_alvo_projetado, 0) + COALESCE(o.total_alvo_objetivo, 0)))::float as "restanteComProjecao"
       FROM reais_agrupado r
       FULL OUTER JOIN projecoes p ON r.mes_ref = p.mes_ref
+      FULL OUTER JOIN objetivos_planejado o ON COALESCE(r.mes_ref, p.mes_ref) = o.mes_ref
       ORDER BY 1 ASC
     `;
   },

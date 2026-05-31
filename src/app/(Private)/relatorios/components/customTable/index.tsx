@@ -176,7 +176,7 @@ interface CustomTableProps {
   data: CategoriaRelatorio[];
   selectedIds: Set<string>;
   onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
-  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
+  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "OBJETIVO") => void;
   itemSelecionadoParaHistorico: string | null;
   isLoading?: boolean;
   isFetching?: boolean;
@@ -218,7 +218,7 @@ export function CustomTable({
       .map((cat) => {
         const detalhesFiltrados = cat.detalhes
           .map((d) => {
-            if (!incluirProjecao && d.tipo !== "META") {
+            if (!incluirProjecao && d.tipo !== "OBJETIVO") {
               const novoPlanejado = d.valorAgendado;
               return {
                 ...d,
@@ -500,16 +500,16 @@ export function CustomTable({
                     }}
                   />
                 )}
-                {tiposExistentes.has("META") && (
+                {tiposExistentes.has("OBJETIVO") && (
                   <Chip
                     size="small"
                     icon={<IconTarget size={14} />}
-                    label="Metas"
+                    label="Objetivos"
                     color="info"
                     variant={
-                      tiposFiltro.includes("META") ? "filled" : "outlined"
+                      tiposFiltro.includes("OBJETIVO") ? "filled" : "outlined"
                     }
-                    onClick={() => onToggleTipo("META")}
+                    onClick={() => onToggleTipo("OBJETIVO")}
                     sx={{
                       fontWeight: 600,
                       fontSize: "0.7rem",
@@ -687,13 +687,13 @@ export function CustomTable({
                   }}
                 />
               )}
-              {tiposExistentes.has("META") && (
+              {tiposExistentes.has("OBJETIVO") && (
                 <Chip
                   icon={<IconTarget size={14} />}
-                  label="Metas"
+                  label="Objetivos"
                   color="info"
-                  variant={tiposFiltro.includes("META") ? "filled" : "outlined"}
-                  onClick={() => onToggleTipo("META")}
+                  variant={tiposFiltro.includes("OBJETIVO") ? "filled" : "outlined"}
+                  onClick={() => onToggleTipo("OBJETIVO")}
                   sx={{
                     fontWeight: 600,
                     justifyContent: "flex-start",
@@ -888,7 +888,7 @@ interface CustomRowProps {
   columns: IColumnProps<CategoriaRelatorio>[];
   selectedIds: Set<string>;
   onToggle: (idOrIds: string | string[], forceState?: boolean) => void;
-  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "META") => void;
+  onSelectItem: (id: number, tipo: "RECEITA" | "DESPESA" | "OBJETIVO") => void;
   itemSelecionadoParaHistorico: string | null;
   filterText: string;
   resetToggle: number;

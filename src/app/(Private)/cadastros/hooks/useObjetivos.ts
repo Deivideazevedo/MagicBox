@@ -307,6 +307,7 @@ export function useObjetivos() {
     setIsRetiradaModalOpen: (open: boolean) => open ? modalRetirada.openModal() : modalRetirada.closeModal(),
     targetObjetivo,
     control,
+    setValue,
     handleSubmit,
     handleEdit,
     handleAporte,

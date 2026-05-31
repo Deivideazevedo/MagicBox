@@ -9,7 +9,7 @@ export interface RelatorioFiltros {
 export interface DetalheRelatorio {
   id: number;
   nome: string;
-  tipo: "RECEITA" | "DESPESA" | "META";
+  tipo: "RECEITA" | "DESPESA" | "OBJETIVO";
   valorPlanejado: number;
   valorRealizado: number;
   valorAgendado: number;
@@ -109,7 +109,7 @@ export interface RawDadosBrutosCategoria {
   categoriaTipo: string;
   itemId: number;
   itemName: string;
-  itemTipo: "RECEITA" | "DESPESA" | "META";
+  itemTipo: "RECEITA" | "DESPESA" | "OBJETIVO";
   valorRealizado: number;
   valorAgendado: number;
   valorPlanejado: number;
@@ -130,7 +130,7 @@ export interface RawCardResumo {
   projecoes: number;
 }
 
-export interface RawMetasProgresso {
+export interface RawObjetivosProgresso {
   id: number;
   nome: string;
   icone: string;
@@ -139,11 +139,13 @@ export interface RawMetasProgresso {
   realizado: number;
   mediaMensal: number;
   status?: string;
+  dataAlvo?: Date | string;
+  createdAt?: Date | string;
 }
 
-export interface RawRelatorioMetas {
+export interface RawRelatorioObjetivos {
   totais: RawTotaisMetas;
-  detalhes: RawMetasProgresso[];
+  detalhes: RawObjetivosProgresso[];
 }
 
 export interface RawHistoricoAgrupado {
@@ -181,7 +183,7 @@ export const historicoFiltroSchema = z.object({
     z.array(
       z.object({
         id: z.coerce.number().int().positive(),
-        tipo: z.enum(["RECEITA", "DESPESA", "META"])
+        tipo: z.enum(["RECEITA", "DESPESA", "OBJETIVO"])
       })
     )
   ),
