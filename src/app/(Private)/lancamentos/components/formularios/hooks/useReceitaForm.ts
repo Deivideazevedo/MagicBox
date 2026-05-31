@@ -138,6 +138,11 @@ export function useReceitaForm({
     return receitasApi.find((item) => item.id === itemId) ?? null;
   }, [itemId, receitasApi]);
 
+  // Filtrar receitas para listar apenas as ativas no Drawer (ou a já selecionada se for edição)
+  const receitasAtivas = useMemo(() => {
+    return receitasApi.filter((item) => item.status === "A" || item.id === itemId);
+  }, [receitasApi, itemId]);
+
   const valorTotal = useMemo(() => {
     if (tipo !== "agendamento" || !valor) return valor;
     if (modoParcelamento === "total") return valor;
@@ -227,7 +232,7 @@ export function useReceitaForm({
     valorParcelaCalculado,
     handleTipoChange,
     isCreating: isCreating || isUpdating,
-    itens: receitasApi,
+    itens: receitasAtivas,
     selectedItem,
     isLoading: isReceitasLoading,
     reset,

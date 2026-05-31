@@ -260,7 +260,7 @@ export default function FiltrosAvancados({
         (filtros.objetivoId || undefined) ||
       (novosFiltros.observacao || undefined) !==
         (filtros.observacao || undefined) ||
-      (novosFiltros.status || "A") !== (filtros.status || "A");
+      (novosFiltros.status || "") !== (filtros.status || "");
 
     if (!mudou) return;
 

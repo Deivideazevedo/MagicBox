@@ -42,6 +42,20 @@ interface ReceitaFormProps {
   onSuccess?: () => void;
 }
 
+const obterDataProximoMes = (dia?: number | null) => {
+  const hoje = new Date();
+  let ano = hoje.getFullYear();
+  let mes = hoje.getMonth() + 1; // Próximo mês
+  if (mes > 11) {
+    mes = 0;
+    ano += 1;
+  }
+  const diaFinal = dia && dia >= 1 && dia <= 31 ? dia : 1;
+  const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
+  const diaGarantido = Math.min(diaFinal, ultimoDiaDoMes);
+  return new Date(ano, mes, diaGarantido).toLocaleDateString("sv-SE");
+};
+
 export default function ReceitaForm({
   lancamentoParaEditar,
   dadosIniciais,
@@ -82,6 +96,15 @@ export default function ReceitaForm({
       300,
     );
   }, [setFocus, lancamentoParaEditar?.id]);
+
+  // Sincronizar automaticamente a data de agendamento ao mudar para "agendamento" com item selecionado
+  useEffect(() => {
+    if (tipo === "agendamento" && selectedItem) {
+      const dia = selectedItem.diaRecebimento;
+      const dataProximoMes = obterDataProximoMes(dia);
+      setValue("data", dataProximoMes);
+    }
+  }, [tipo, selectedItem, setValue]);
 
   return (
     <Box
@@ -228,20 +251,6 @@ export default function ReceitaForm({
             </ToggleButtonGroup>
           </Grid>
 
-          {/* Data */}
-          <Grid item xs={12}>
-            <HookDatePicker
-              label={
-                tipo === "pagamento"
-                  ? "Data do Recebimento"
-                  : "Data do Agendamento"
-              }
-              name="data"
-              control={control}
-              shrinkLabel={true}
-            />
-          </Grid>
-
           {/* Autocomplete Receita */}
           <Grid item xs={12}>
             <HookAutocomplete
@@ -296,6 +305,58 @@ export default function ReceitaForm({
               inputProps={{
                 name: "field-valor-receita",
               }}
+              InputProps={
+                tipo === "agendamento"
+                  ? {
+                      endAdornment: (
+                        <InputAdornment position="end" sx={{ mr: -0.5 }}>
+                          <Tooltip
+                            title={
+                              modoParcelamento === "parcela"
+                                ? "O valor será repetido em cada parcela"
+                                : "O valor será dividido entre as parcelas"
+                            }
+                            arrow
+                            placement="top"
+                          >
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() =>
+                                setValue(
+                                  "modoParcelamento",
+                                  modoParcelamento === "parcela"
+                                    ? "total"
+                                    : "parcela",
+                                )
+                              }
+                              sx={{
+                                fontSize: "0.7rem",
+                                textTransform: "none",
+                                py: 0.3,
+                                px: 1.2,
+                                minWidth: 0,
+                                color: "primary.main",
+                                backgroundColor: (theme) =>
+                                  alpha(theme.palette.primary.main, 0.08),
+                                borderRadius: 1,
+                                fontWeight: 700,
+                                "&:hover": {
+                                  backgroundColor: (theme) =>
+                                    alpha(theme.palette.primary.main, 0.2),
+                                },
+                              }}
+                            >
+                              {modoParcelamento === "parcela"
+                                ? "p/ parcela"
+                                : "Total"}
+                            </Button>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }
+                  : undefined
+              }
             />
           </Grid>
 
@@ -320,54 +381,6 @@ export default function ReceitaForm({
                   autoComplete="one-time-code"
                   inputProps={{
                     name: "field-parcelas-receita",
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end" sx={{ mr: -0.5 }}>
-                        <Tooltip
-                          title={
-                            modoParcelamento === "parcela"
-                              ? "Repetir: O valor informado será cobrado integralmente em cada parcela."
-                              : "Dividir: O valor informado é o total e será dividido pelo número de parcelas."
-                          }
-                          arrow
-                          placement="top"
-                        >
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() =>
-                              setValue(
-                                "modoParcelamento",
-                                modoParcelamento === "parcela"
-                                  ? "total"
-                                  : "parcela",
-                              )
-                            }
-                            sx={{
-                              fontSize: "0.7rem",
-                              textTransform: "none",
-                              py: 0.3,
-                              px: 1.2,
-                              minWidth: 0,
-                              color: "primary.main",
-                              backgroundColor: (theme) =>
-                                alpha(theme.palette.primary.main, 0.08),
-                              borderRadius: 1,
-                              fontWeight: 700,
-                              "&:hover": {
-                                backgroundColor: (theme) =>
-                                  alpha(theme.palette.primary.main, 0.2),
-                              },
-                            }}
-                          >
-                            {modoParcelamento === "parcela"
-                              ? "Repetir"
-                              : "Dividir"}
-                          </Button>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
                   }}
                 />
 
@@ -409,6 +422,20 @@ export default function ReceitaForm({
                 ) : null}
               </Box>
             </Collapse>
+          </Grid>
+
+          {/* Data */}
+          <Grid item xs={12}>
+            <HookDatePicker
+              label={
+                tipo === "pagamento"
+                  ? "Data de Recebimento"
+                  : "Agendar apartir de"
+              }
+              name="data"
+              control={control}
+              shrinkLabel={true}
+            />
           </Grid>
 
           {/* Observação */}

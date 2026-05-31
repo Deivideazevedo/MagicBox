@@ -144,6 +144,11 @@ export function useDespesaForm({
     return despesasApi.find((item) => item.id === itemId) ?? null;
   }, [itemId, despesasApi]);
 
+  // Filtrar despesas para listar apenas as ativas no Drawer (ou a já selecionada se for edição)
+  const despesasAtivas = useMemo(() => {
+    return despesasApi.filter((item) => item.status === "A" || item.id === itemId);
+  }, [despesasApi, itemId]);
+
   const valorTotal = useMemo(() => {
     if (tipo !== "agendamento" || !valor) return valor;
     if (modoParcelamento === "total") return valor;
@@ -244,7 +249,7 @@ export function useDespesaForm({
     valorParcelaCalculado,
     handleTipoChange,
     isCreating: isCreating || isUpdating,
-    itens: despesasApi,
+    itens: despesasAtivas,
     selectedItem,
     isLoading: isDespesasLoading,
     reset,
