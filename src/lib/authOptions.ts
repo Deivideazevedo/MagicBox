@@ -35,7 +35,7 @@ export const authOptions: AuthOptions = {
       authorize: async (credentials) => {
         try {
           // 🛡️ Validação de Segurança do reCAPTCHA v3 (Custo Zero via Service)
-          // await authService.validarRecaptcha(credentials?.recaptchaToken);
+          await authService.validarRecaptcha(credentials?.recaptchaToken);
 
           // return credentials as User;
           const user = await authService.authenticate(

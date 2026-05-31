@@ -78,13 +78,13 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     }
 
     try {
-      // const recaptchaToken = await executeRecaptcha("login");
+      const recaptchaToken = await executeRecaptcha("login");
 
       const result = await signIn("credentials", {
         redirect: false,
         username: data.username,
         password: data.password,
-        // recaptchaToken,
+        recaptchaToken,
       });
 
       if (result?.error) {
