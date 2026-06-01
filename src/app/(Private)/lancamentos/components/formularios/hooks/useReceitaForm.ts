@@ -214,6 +214,7 @@ export function useReceitaForm({
         if (newTipo === "pagamento") {
           setValue("parcelar", false);
           setValue("parcelas", null);
+          setValue("data", fnGetTodayISO());
         }
       }
     },

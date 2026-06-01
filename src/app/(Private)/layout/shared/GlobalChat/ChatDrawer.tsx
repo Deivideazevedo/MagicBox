@@ -10,6 +10,7 @@ import { keyframes, styled, useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   IconChevronRight,
   IconRobotFace,
@@ -253,6 +254,7 @@ interface ChatDrawerProps {
 const ChatDrawerContent = ({ open, onClose }: ChatDrawerProps) => {
   const router = useRouter();
   const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
   const initialMessages = useRef(carregarHistorico());
   const initialTimestamps = useRef(carregarTimestamps());
 
@@ -364,11 +366,13 @@ const ChatDrawerContent = ({ open, onClose }: ChatDrawerProps) => {
   useEffect(() => {
     if (open) {
       setTimeout(() => {
-        inputRef.current?.focus();
+        if (isDesktop) {
+          inputRef.current?.focus();
+        }
         messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-      }, 100);
+      }, 200);
     }
-  }, [open]);
+  }, [open, isDesktop]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -616,6 +620,12 @@ const ChatDrawerContent = ({ open, onClose }: ChatDrawerProps) => {
             } // permitimos digitar um pouco mais para ver o erro
             disabled={isLoading}
             autoComplete="off"
+            inputProps={{
+              autoComplete: "new-password",
+              autoCorrect: "off",
+              autoCapitalize: "off",
+              spellCheck: false,
+            }}
             error={input.length > MAX_INPUT_CHARS}
             helperText={
               input.length > MAX_INPUT_CHARS

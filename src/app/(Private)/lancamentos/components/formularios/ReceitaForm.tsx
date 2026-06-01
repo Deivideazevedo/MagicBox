@@ -99,12 +99,17 @@ export default function ReceitaForm({
 
   // Sincronizar automaticamente a data de agendamento ao mudar para "agendamento" com item selecionado
   useEffect(() => {
+    // Se estiver editando, não sobrescrevemos a data na inicialização se o item selecionado for o original
+    if (lancamentoParaEditar && selectedItem && Number(lancamentoParaEditar.receitaId) === selectedItem.id) {
+      return;
+    }
+
     if (tipo === "agendamento" && selectedItem) {
       const dia = selectedItem.diaRecebimento;
       const dataProximoMes = obterDataProximoMes(dia);
       setValue("data", dataProximoMes);
     }
-  }, [tipo, selectedItem, setValue]);
+  }, [tipo, selectedItem, setValue, lancamentoParaEditar]);
 
   return (
     <Box

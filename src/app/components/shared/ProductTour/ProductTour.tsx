@@ -368,8 +368,8 @@ export const ProductTour = ({
               overflow: "hidden",
               bgcolor:
                 theme.palette.mode === "dark"
-                  ? alpha(theme.palette.background.paper, 0.98)
-                  : "#fff",
+                  ? alpha(theme.palette.background.paper, 0.85)
+                  : alpha("#fff", 0.85),
               boxShadow: `
                 0 20px 60px ${alpha("#000", 0.22)},
                 0 0 0 1px ${alpha(theme.palette.primary.main, 0.06)}

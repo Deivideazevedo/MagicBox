@@ -9,7 +9,7 @@ export interface DiagnosticoFinanceiro {
 }
 
 export interface LancamentoAtrasado {
-  id: number;
+  id: number | string;
   nome: string;
   tipo: "RECEITA" | "DESPESA" | "META";
   valor: number;

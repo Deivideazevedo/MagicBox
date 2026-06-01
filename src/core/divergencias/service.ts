@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { relatoriosRepository } from "@/core/relatorios/repository";
 import { divergenciasRepository } from "./repository";
 import { DiagnosticoFinanceiro, ResumoAuditoria, LancamentoAtrasado, HistoricoDiscrepancia } from "./divergencia.dto";
+import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { TIME_ZONE } from "@/constants/globals";
 
 function formatarMesAno(mesAnoStr: string): string {
   const [ano, mes] = mesAnoStr.split("-");
@@ -28,9 +30,14 @@ export const divergenciasService = {
     const saldoBrutoLiquido = saldoLivreGeral + metasPagasGeral;
     const saldoDigital = saldoBrutoLiquido;
 
-    // 2. Buscar lançamentos atrasados
+    // Calcular início do dia de hoje no fuso horário configurado e converter para UTC para comparação consistente de atrasados
+    const agoraNoFuso = utcToZonedTime(new Date(), TIME_ZONE);
+    agoraNoFuso.setHours(0, 0, 0, 0); // Início do dia no fuso horário local
+    const hojeUTC = zonedTimeToUtc(agoraNoFuso, TIME_ZONE); // Convertido para UTC
+
+    // 2. Buscar lançamentos atrasados reais (agendamentos gravados)
     const vencidosRaw = await divergenciasRepository.obterLancamentosVencidosNaoPagos(userId);
-    const lancamentosAtrasados: LancamentoAtrasado[] = vencidosRaw.map((v) => {
+    const lancamentosAtrasadosReais: LancamentoAtrasado[] = vencidosRaw.map((v) => {
       let tipo: "RECEITA" | "DESPESA" | "META" = "DESPESA";
       let nome = "Lançamento";
       let cor = "#94a3b8";
@@ -58,6 +65,97 @@ export const divergenciasService = {
         categoriaCor: cor,
       };
     });
+
+    // 2.2. Buscar despesas fixas recorrentes do tipo FIXA ativas e pendentes no passado
+    const despesasFixas = await prisma.despesa.findMany({
+      where: {
+        userId,
+        tipo: "FIXA",
+        status: "A",
+        deletedAt: null,
+      },
+      include: {
+        categoria: true,
+      },
+    });
+
+    const despesaIds = despesasFixas.map((d) => d.id);
+
+    // Buscar lançamentos reais associados a essas despesas fixas
+    const lancamentosFixos = await prisma.lancamento.findMany({
+      where: {
+        userId,
+        despesaId: { in: despesaIds },
+      },
+    });
+
+    // Mapear lançamentos em memória por despesaId e por mês/ano correspondente à data
+    const mapaLancamentosFixos = new Map<string, typeof lancamentosFixos>();
+    for (const l of lancamentosFixos) {
+      const d = new Date(l.data);
+      const key = `${l.despesaId}-${d.getUTCMonth() + 1}-${d.getUTCFullYear()}`;
+      const list = mapaLancamentosFixos.get(key) || [];
+      list.push(l);
+      mapaLancamentosFixos.set(key, list);
+    }
+
+    const lancamentosAtrasadosVirtuais: LancamentoAtrasado[] = [];
+
+    // Iterar para cada despesa fixa para verificar ocorrências pendentes no passado
+    for (const despesa of despesasFixas) {
+      const dataCriacao = new Date(despesa.createdAt);
+      const anoCriacao = dataCriacao.getUTCFullYear();
+      const mesCriacao = dataCriacao.getUTCMonth() + 1;
+
+      const anoHoje = hojeUTC.getUTCFullYear();
+      const mesHoje = hojeUTC.getUTCMonth() + 1;
+
+      let anoIter = anoCriacao;
+      let mesIter = mesCriacao;
+
+      while (anoIter < anoHoje || (anoIter === anoHoje && mesIter <= mesHoje)) {
+        // Data de vencimento correspondente àquele mês
+        const ultimoDiaMes = new Date(anoIter, mesIter, 0).getDate();
+        const diaVenc = Math.min(despesa.diaVencimento || 1, ultimoDiaMes);
+        const dataVenc = new Date(Date.UTC(anoIter, mesIter - 1, diaVenc));
+
+        // Só consideramos no passado (atrasado) se o vencimento for menor que hojeUTC
+        if (dataVenc < hojeUTC) {
+          const key = `${despesa.id}-${mesIter}-${anoIter}`;
+          const lancsDoMes = mapaLancamentosFixos.get(key) || [];
+
+          // Calcular se foi paga ou se há agendamento real para este mês
+          const totalPago = lancsDoMes
+            .filter((l) => l.tipo === "pagamento")
+            .reduce((sum, l) => sum + Number(l.valor), 0);
+
+          const temAgendamento = lancsDoMes.some((l) => l.tipo === "agendamento");
+
+          const valorPrevisto = Number(despesa.valorEstimado || 0);
+          if (totalPago < valorPrevisto && !temAgendamento) {
+            lancamentosAtrasadosVirtuais.push({
+              id: `virtual-fix-${despesa.id}-${mesIter}-${anoIter}`,
+              nome: `${despesa.nome} (Ref: ${String(mesIter).padStart(2, "0")}/${anoIter})`,
+              tipo: "DESPESA",
+              valor: valorPrevisto - totalPago,
+              data: dataVenc.toISOString(),
+              categoriaCor: despesa.cor ?? despesa.categoria?.cor ?? "#ef4444",
+            });
+          }
+        }
+
+        // Avançar um mês
+        mesIter++;
+        if (mesIter > 12) {
+          mesIter = 1;
+          anoIter++;
+        }
+      }
+    }
+
+    // Unir lançamentos atrasados reais e virtuais
+    const lancamentosAtrasados = [...lancamentosAtrasadosReais, ...lancamentosAtrasadosVirtuais];
+    lancamentosAtrasados.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
     // 3. Buscar fluxo mensal histórico
     const fluxoRaw = await divergenciasRepository.obterFluxoMensalHistorico(userId);

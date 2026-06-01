@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
+import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
+import { TIME_ZONE } from "@/constants/globals";
 
 export const divergenciasRepository = {
   /**
    * Busca lançamentos agendados cuja data de vencimento está no passado (não quitados)
    */
   async obterLancamentosVencidosNaoPagos(userId: number) {
-    const hoje = new Date();
-    hoje.setHours(23, 59, 59, 999);
+    const agoraNoFuso = utcToZonedTime(new Date(), TIME_ZONE);
+    agoraNoFuso.setHours(0, 0, 0, 0); // Início do dia no fuso horário local
+    const hoje = zonedTimeToUtc(agoraNoFuso, TIME_ZONE); // Convertido de volta para UTC
 
     return await prisma.lancamento.findMany({
       where: {
@@ -16,9 +19,9 @@ export const divergenciasRepository = {
           lt: hoje,
         },
         OR: [
-          { despesa: { deletedAt: null } },
-          { receita: { deletedAt: null } },
-          { objetivo: { deletedAt: null } },
+          { despesa: { status: "A", deletedAt: null } },
+          { receita: { status: "A", deletedAt: null } },
+          { objetivo: { status: "A", deletedAt: null } },
         ],
       },
       include: {

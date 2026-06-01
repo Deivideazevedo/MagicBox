@@ -231,6 +231,7 @@ export function useDespesaForm({
         if (newTipo === "pagamento") {
           setValue("parcelar", false);
           setValue("parcelas", null);
+          setValue("data", fnGetTodayISO());
         }
       }
     },

@@ -23,10 +23,10 @@ export const PROTECTED_API_ROUTES = [
 ];
 
 // Rotas administrativas (requerem role admin)
-const ADMIN_ROUTES = ["/usuarios"];
+const ADMIN_ROUTES = ["/usuarios", "/sistema"];
 
 // Padrões de rotas de API administrativas (requerem role admin)
-const ADMIN_API_PATTERNS = ["/api/usuarios"];
+const ADMIN_API_PATTERNS = ["/api/usuarios", "/api/cron/cleanup"];
 
 // Verificadores de rota
 const isPublicRoute = (path: string) => PUBLIC_ROUTES.includes(path);

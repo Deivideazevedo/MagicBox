@@ -45,21 +45,39 @@ export const categoriaRepository = {
 
   async remover(id: number): Promise<boolean> {
     try {
-      // Soft delete: apenas marca como deletado
-      await prisma.categoria.update({
-        where: { id },
-        data: { deletedAt: new Date() },
-      });
+      const dataDelecao = new Date(); // Armazena a data exata em uma variável para padronizar todos os registros
+
+      // Soft delete obrigatório em cascata lógica via transação do Prisma
+      await prisma.$transaction([
+        // 1. Soft delete da categoria
+        prisma.categoria.update({
+          where: { id },
+          data: { deletedAt: dataDelecao },
+        }),
+        // 2. Soft delete das despesas vinculadas
+        prisma.despesa.updateMany({
+          where: { categoriaId: id, deletedAt: null },
+          data: { deletedAt: dataDelecao },
+        }),
+        // 3. Soft delete das receitas vinculadas
+        prisma.receita.updateMany({
+          where: { categoriaId: id, deletedAt: null },
+          data: { deletedAt: dataDelecao },
+        }),
+        // 4. Soft delete dos objetivos vinculados
+        prisma.objetivo.updateMany({
+          where: { categoriaId: id, deletedAt: null },
+          data: { deletedAt: dataDelecao },
+        }),
+      ]);
       return true;
     } catch (error) {
       return false;
     }
   },
 
-  async atualizar(id: number, data: UpdateCategoriaDTO): Promise<Categoria> {
-    return await prisma.categoria.update({
-      where: { id },
-      data,
-    });
-  },
-};
+  async atualizar(id: number, data: UpdateCategoriaDTO & { deletedAt?: Date | null }): Promise<Categoria> {
+    // Se a categoria está sendo reativada (deletedAt definido como null)
+    if (data.deletedAt === null) {
+      const [categoriaReativada] = await prisma.$transaction([
+        // 1. Reativa a categoria

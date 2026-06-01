@@ -46,6 +46,12 @@ import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { useDivergencias } from "./hooks/useDivergencias";
 import { useModalUrl } from "@/hooks/useModalUrl";
 
+// Importações do Tour Guiado
+import { DivergenciasTourProvider, useDivergenciasTourRefs } from "./components/DivergenciasTourContext";
+import { criarDivergenciasTourSteps } from "./components/divergenciasTourSteps";
+import { ProductTour, useTour } from "@/app/components/shared/ProductTour";
+import { ProductTourButton } from "@/app/components/shared/ProductTour/ProductTourButton";
+
 const BREADCRUMBS = [{ to: "/", title: "Home" }, { title: "Divergências" }];
 
 function formatCurrency(valor: number): string {
@@ -65,7 +71,7 @@ function formatarMesAnoUI(mesAnoStr: string): string {
   return `${meses[mesIndex]} de ${ano}`;
 }
 
-export default function DivergenciasPage() {
+function DivergenciasPageContent() {
   const theme = useTheme();
   const {
     auditoria,
@@ -102,6 +108,21 @@ export default function DivergenciasPage() {
     }
   }, [isAjusteFuroOpen]);
 
+  // Lógica do Tour Guiado
+  const tourRefs = useDivergenciasTourRefs();
+  const steps = React.useMemo(() => criarDivergenciasTourSteps(tourRefs), [tourRefs]);
+  const tour = useTour({ storageKey: "tour-divergencias-visto", steps, autoStart: true });
+
+  // Abre automaticamente a expansão de Lançamentos Atrasados quando o tour estiver explicando ela
+  React.useEffect(() => {
+    if (tour.isOpen && tour.currentStep === 4 && auditoria?.diagnosticos) {
+      const diagAtrasado = auditoria.diagnosticos.find(d => d.tipo === "LANCA_ATRASADO");
+      if (diagAtrasado) {
+        setExpandidoId(diagAtrasado.id);
+      }
+    }
+  }, [tour.isOpen, tour.currentStep, auditoria]);
+
   const getSeverityColor = (severity: string) => {
     if (severity === "high") return theme.palette.error.main;
     if (severity === "medium") return theme.palette.warning.main;
@@ -128,9 +149,19 @@ export default function DivergenciasPage() {
 
   return (
     <PageContainer title="Divergências" description="Central de Auditoria de Saldos e Lançamentos">
-      <Breadcrumb title="Divergências" items={BREADCRUMBS} />
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ flexWrap: "wrap", gap: 2 }}>
+        <Breadcrumb title="Divergências" items={BREADCRUMBS} />
+        <ProductTourButton
+          onClick={() => {
+            tour.reset();
+            tour.start();
+          }}
+          title="Iniciar Tour de Ajuda Guiada"
+          variant="text"
+        />
+      </Box>
 
-      <Box sx={{ mt: 3 }}>
+      <Box sx={{ mt: 1 }}>
         {loading && !auditoria ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
             <CircularProgress />
@@ -140,6 +171,7 @@ export default function DivergenciasPage() {
             {/* 1. Score Card e Explicação */}
             <Grid item xs={12} md={7}>
               <Card
+                ref={tourRefs.scoreRef}
                 sx={{
                   height: "100%",
                   background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(
@@ -207,6 +239,7 @@ export default function DivergenciasPage() {
             {/* 2. Conciliador Bancário Expresso */}
             <Grid item xs={12} md={5}>
               <Card
+                ref={tourRefs.conciliadorRef}
                 sx={{
                   height: "100%",
                   background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(
@@ -308,11 +341,19 @@ export default function DivergenciasPage() {
 
             {/* 3. Lista de Diagnósticos e Inconsistências */}
             <Grid item xs={12}>
-              <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], border: `1px solid ${theme.palette.divider}` }}>
+              <Card
+                ref={tourRefs.diagnosticosRef}
+                sx={{ borderRadius: 3, boxShadow: theme.shadows[2], border: `1px solid ${theme.palette.divider}` }}
+              >
                 <CardHeader
                   title="Inconsistências e Diagnósticos Ativos"
                   subheader="Análises automáticas da integridade de suas receitas, despesas e poupanças históricas"
                   titleTypographyProps={{ fontWeight: "bold", variant: "h6" }}
+                  action={
+                    <IconButton onClick={() => refetch()} color="primary" title="Recarregar Diagnósticos">
+                      <IconReload />
+                    </IconButton>
+                  }
                 />
                 <CardContent sx={{ pt: 0 }}>
                   {auditoria?.diagnosticos && auditoria.diagnosticos.length === 0 ? (
@@ -331,6 +372,7 @@ export default function DivergenciasPage() {
                           <Paper
                             key={diag.id}
                             variant="outlined"
+                            ref={diag.tipo === "LANCA_ATRASADO" ? tourRefs.atrasadosCardRef : undefined}
                             sx={{
                               p: 2.5,
                               borderRadius: 2,
@@ -347,7 +389,6 @@ export default function DivergenciasPage() {
                                   <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
                                     {diag.titulo}
                                   </Typography>
-                                  {/* Exibe o motivo/descrição do diagnóstico IMEDIATAMENTE para ser transparente */}
                                   <Typography variant="body2" sx={{ mt: 0.5, mb: 1, color: "text.secondary", lineHeight: 1.6 }}>
                                     {diag.descricao}
                                   </Typography>
@@ -386,16 +427,203 @@ export default function DivergenciasPage() {
                             </Box>
 
                             <Collapse in={isExpanded}>
-                              <Box sx={{ mt: 2, pl: 5, pt: 1, borderTop: `1px dashed ${theme.palette.divider}` }}>
-                                <Typography variant="body2" color="text.secondary" fontWeight="600">
+                              <Box sx={{ mt: 2, pl: { xs: 1, sm: 5 }, pt: 2, borderTop: `1px dashed ${theme.palette.divider}` }}>
+                                <Typography variant="body2" color="text.secondary" fontWeight="600" sx={{ mb: 1 }}>
                                   💡 Como resolver na sua vida real:
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: "italic" }}>
-                                  {diag.tipo === "LANCA_ATRASADO" && "Complete os lançamentos vencidos na tabela abaixo marcando como pagos ou remova-os caso tenham sido cancelados."}
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: "italic" }}>
+                                  {diag.tipo === "LANCA_ATRASADO" && "Marque os lançamentos planejados que já venceram como pagos ou exclua-os se forem cancelados."}
                                   {diag.tipo === "DEFICIT_PASSADO" && "Mantenha um fundo de reserva. Deficits do passado reduzem seu saldo disponível hoje, mesmo se o mês atual estiver positivo."}
                                   {diag.tipo === "CONCILIACAO_DESVIO" && "Utilize a ferramenta de Auto-Ajuste expressa no painel acima para calibrar o saldo com sua conta do banco."}
                                   {diag.tipo === "INCOERENCIA_METAS" && "Revise a quantia poupada em metas; você não pode alocar em poupança mais dinheiro do que o total recebido historicamente."}
                                 </Typography>
+
+                                {/* Listagem Otimizada e 100% Responsiva de Atrasados Integrada */}
+                                {diag.tipo === "LANCA_ATRASADO" && (
+                                  <Box sx={{ mt: 2 }}>
+                                    {(!auditoria?.lancamentosAtrasados || auditoria.lancamentosAtrasados.length === 0) ? (
+                                      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ py: 4 }}>
+                                        <IconCheck size={36} color={theme.palette.success.main} />
+                                        <Typography variant="body2" fontWeight="bold" sx={{ mt: 1 }}>Nenhum lançamento atrasado!</Typography>
+                                      </Box>
+                                    ) : (
+                                      <>
+                                        {/* Tabela para Desktop */}
+                                        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflow: "hidden", display: { xs: "none", md: "block" } }}>
+                                          <Table size="small">
+                                            <TableHead sx={{ backgroundColor: theme.palette.action.hover }}>
+                                              <TableRow>
+                                                <TableCell><Typography fontWeight="600" variant="body2">Descrição / Categoria</Typography></TableCell>
+                                                <TableCell><Typography fontWeight="600" variant="body2">Tipo</Typography></TableCell>
+                                                <TableCell><Typography fontWeight="600" variant="body2">Valor</Typography></TableCell>
+                                                <TableCell><Typography fontWeight="600" variant="body2">Data Esperada</Typography></TableCell>
+                                                <TableCell align="right"><Typography fontWeight="600" variant="body2">Ações Rápidas</Typography></TableCell>
+                                              </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                              {auditoria.lancamentosAtrasados.map((item) => (
+                                                <TableRow key={item.id} hover>
+                                                  <TableCell>
+                                                    <Box display="flex" alignItems="center" gap={1.5}>
+                                                      <Box
+                                                        sx={{
+                                                          width: 10,
+                                                          height: 10,
+                                                          borderRadius: "50%",
+                                                          backgroundColor: item.categoriaCor,
+                                                        }}
+                                                      />
+                                                      <Typography fontWeight="500" variant="body2">{item.nome}</Typography>
+                                                    </Box>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Typography
+                                                      variant="caption"
+                                                      fontWeight="600"
+                                                      sx={{
+                                                        color:
+                                                          item.tipo === "RECEITA"
+                                                            ? "success.main"
+                                                            : item.tipo === "DESPESA"
+                                                            ? "error.main"
+                                                            : "info.main",
+                                                      }}
+                                                    >
+                                                      {item.tipo}
+                                                    </Typography>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Typography fontWeight="bold" variant="body2">{formatCurrency(item.valor)}</Typography>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Box display="flex" alignItems="center" gap={0.5} color="error.main">
+                                                      <IconClock size={14} />
+                                                      <Typography variant="caption">
+                                                        {new Date(item.data).toLocaleDateString("pt-BR")}
+                                                      </Typography>
+                                                    </Box>
+                                                  </TableCell>
+                                                  <TableCell align="right">
+                                                    <Box display="flex" justifyContent="flex-end" gap={0.5}>
+                                                      <Tooltip title="Marcar como Pago">
+                                                        <IconButton
+                                                          size="small"
+                                                          color="success"
+                                                          onClick={() => handlePagarLancamento(item.id, item.nome, item.valor)}
+                                                          disabled={acaoPagarId === item.id}
+                                                        >
+                                                          {acaoPagarId === item.id ? (
+                                                            <CircularProgress size={18} color="inherit" />
+                                                          ) : (
+                                                            <IconCheck size={18} />
+                                                          )}
+                                                        </IconButton>
+                                                      </Tooltip>
+                                                      <Tooltip title="Excluir/Inativar">
+                                                        <IconButton
+                                                          size="small"
+                                                          color="error"
+                                                          onClick={() => handleExcluirLancamento(item.id, item.nome, item.valor)}
+                                                          disabled={acaoExcluirId === item.id}
+                                                        >
+                                                          {acaoExcluirId === item.id ? (
+                                                            <CircularProgress size={18} color="inherit" />
+                                                          ) : (
+                                                            <IconTrash size={18} />
+                                                          )}
+                                                        </IconButton>
+                                                      </Tooltip>
+                                                    </Box>
+                                                  </TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                        </TableContainer>
+
+                                        {/* Lista Inteligente e Responsiva para Mobile */}
+                                        <Box sx={{ display: { xs: "block", md: "none" } }}>
+                                          <Stack spacing={1.5}>
+                                            {auditoria.lancamentosAtrasados.map((item) => (
+                                              <Paper
+                                                key={item.id}
+                                                variant="outlined"
+                                                sx={{
+                                                  p: 2,
+                                                  borderRadius: 2,
+                                                  borderLeft: `5px solid ${item.categoriaCor || "#94a3b8"}`,
+                                                  backgroundColor: alpha(item.categoriaCor || "#94a3b8", 0.02),
+                                                  boxShadow: theme.shadows[1],
+                                                }}
+                                              >
+                                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                                  <Typography fontWeight="600" variant="body2" sx={{ maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                    {item.nome}
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="caption"
+                                                    fontWeight="bold"
+                                                    sx={{
+                                                      color:
+                                                        item.tipo === "RECEITA"
+                                                          ? "success.main"
+                                                          : item.tipo === "DESPESA"
+                                                          ? "error.main"
+                                                          : "info.main",
+                                                    }}
+                                                  >
+                                                    {item.tipo}
+                                                  </Typography>
+                                                </Box>
+                                                <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mt: 1.5 }}>
+                                                  <Box>
+                                                    <Typography variant="body2" fontWeight="bold">
+                                                      {formatCurrency(item.valor)}
+                                                    </Typography>
+                                                    <Box display="flex" alignItems="center" gap={0.5} color="error.main" sx={{ mt: 0.2 }}>
+                                                      <IconClock size={12} />
+                                                      <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                                                        {new Date(item.data).toLocaleDateString("pt-BR")}
+                                                      </Typography>
+                                                    </Box>
+                                                  </Box>
+                                                  <Box display="flex" gap={1}>
+                                                    <IconButton
+                                                      size="small"
+                                                      color="success"
+                                                      onClick={() => handlePagarLancamento(item.id, item.nome, item.valor)}
+                                                      disabled={acaoPagarId === item.id}
+                                                      sx={{ backgroundColor: alpha(theme.palette.success.main, 0.08), p: 0.8 }}
+                                                    >
+                                                      {acaoPagarId === item.id ? (
+                                                        <CircularProgress size={16} color="inherit" />
+                                                      ) : (
+                                                        <IconCheck size={16} />
+                                                      )}
+                                                    </IconButton>
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={() => handleExcluirLancamento(item.id, item.nome, item.valor)}
+                                                      disabled={acaoExcluirId === item.id}
+                                                      sx={{ backgroundColor: alpha(theme.palette.error.main, 0.08), p: 0.8 }}
+                                                    >
+                                                      {acaoExcluirId === item.id ? (
+                                                        <CircularProgress size={16} color="inherit" />
+                                                      ) : (
+                                                        <IconTrash size={16} />
+                                                      )}
+                                                    </IconButton>
+                                                  </Box>
+                                                </Box>
+                                              </Paper>
+                                            ))}
+                                          </Stack>
+                                        </Box>
+                                      </>
+                                    )}
+                                  </Box>
+                                )}
                               </Box>
                             </Collapse>
                           </Paper>
@@ -407,126 +635,12 @@ export default function DivergenciasPage() {
               </Card>
             </Grid>
 
-            {/* 4. Lançamentos Atrasados Vencidos */}
-            <Grid item xs={12}>
-              <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], border: `1px solid ${theme.palette.divider}` }}>
-                <CardHeader
-                  title="Lançamentos Planejados Atrasados"
-                  subheader="Transações agendadas no passado que necessitam de quitação ou exclusão imediata"
-                  titleTypographyProps={{ fontWeight: "bold", variant: "h6" }}
-                  action={
-                    <IconButton onClick={() => refetch()} color="primary">
-                      <IconReload />
-                    </IconButton>
-                  }
-                />
-                <CardContent sx={{ pt: 0 }}>
-                  {auditoria?.lancamentosAtrasados && auditoria.lancamentosAtrasados.length === 0 ? (
-                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ py: 6 }}>
-                      <IconCheck size={48} color={theme.palette.success.main} />
-                      <Typography variant="h6" fontWeight="bold" sx={{ mt: 2 }}>Nenhum lançamento atrasado!</Typography>
-                      <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-                        Todos os seus lançamentos agendados no passado já foram devidamente pagos ou excluídos.
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-                      <Table>
-                        <TableHead sx={{ backgroundColor: theme.palette.action.hover }}>
-                          <TableRow>
-                            <TableCell><Typography fontWeight="600">Descrição / Categoria</Typography></TableCell>
-                            <TableCell><Typography fontWeight="600">Tipo</Typography></TableCell>
-                            <TableCell><Typography fontWeight="600">Valor</Typography></TableCell>
-                            <TableCell><Typography fontWeight="600">Data Esperada</Typography></TableCell>
-                            <TableCell align="right"><Typography fontWeight="600">Ações Rápidas</Typography></TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {auditoria?.lancamentosAtrasados.map((item) => (
-                            <TableRow key={item.id} hover>
-                              <TableCell>
-                                <Box display="flex" alignItems="center" gap={2}>
-                                  <Box
-                                    sx={{
-                                      width: 12,
-                                      height: 12,
-                                      borderRadius: "50%",
-                                      backgroundColor: item.categoriaCor,
-                                    }}
-                                  />
-                                  <Typography fontWeight="500">{item.nome}</Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>
-                                <Typography
-                                  variant="body2"
-                                  fontWeight="600"
-                                  sx={{
-                                    color:
-                                      item.tipo === "RECEITA"
-                                        ? "success.main"
-                                        : item.tipo === "DESPESA"
-                                        ? "error.main"
-                                        : "info.main",
-                                  }}
-                                >
-                                  {item.tipo}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography fontWeight="bold">{formatCurrency(item.valor)}</Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Box display="flex" alignItems="center" gap={1} color="error.main">
-                                  <IconClock size={16} />
-                                  <Typography variant="body2">
-                                    {new Date(item.data).toLocaleDateString("pt-BR")}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Box display="flex" justifyContent="flex-end" gap={1}>
-                                  <Tooltip title="Marcar como Pago">
-                                    <IconButton
-                                      color="success"
-                                      onClick={() => handlePagarLancamento(item.id, item.nome, item.valor)}
-                                      disabled={acaoPagarId === item.id}
-                                    >
-                                      {acaoPagarId === item.id ? (
-                                        <CircularProgress size={20} color="inherit" />
-                                      ) : (
-                                        <IconCheck size={20} />
-                                      )}
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Excluir Lançamento">
-                                    <IconButton
-                                      color="error"
-                                      onClick={() => handleExcluirLancamento(item.id, item.nome, item.valor)}
-                                      disabled={acaoExcluirId === item.id}
-                                    >
-                                      {acaoExcluirId === item.id ? (
-                                        <CircularProgress size={20} color="inherit" />
-                                      ) : (
-                                        <IconTrash size={20} />
-                                      )}
-                                    </IconButton>
-                                  </Tooltip>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
             {/* 5. Histórico de Reconciliações e Ajustes de Saldo */}
             <Grid item xs={12}>
-              <Card sx={{ borderRadius: 3, boxShadow: theme.shadows[2], border: `1px solid ${theme.palette.divider}` }}>
+              <Card
+                ref={tourRefs.historicoRef}
+                sx={{ borderRadius: 3, boxShadow: theme.shadows[2], border: `1px solid ${theme.palette.divider}` }}
+              >
                 <CardHeader
                   avatar={<IconHistory size={24} color={theme.palette.primary.main} />}
                   title="Histórico de Reconciliações e Ajustes de Saldo"
@@ -655,7 +769,7 @@ export default function DivergenciasPage() {
                 A data do lançamento será programada para o último dia do respectivo mês para neutralizar a diferença orçamentária acumulada.
               </Typography>
               <Typography component="li" variant="body2" color="text.secondary">
-                Isso zerará o deficit daquele período no seu fluxo e restaurará a integridade do seu score MagicBox.
+                O processo zerará o deficit daquele período no seu fluxo e restaurará a integridade do seu score MagicBox.
               </Typography>
             </Stack>
           </Box>
@@ -679,6 +793,27 @@ export default function DivergenciasPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Renderização do Tour de Onboarding */}
+      <ProductTour
+        isOpen={tour.isOpen}
+        step={tour.step}
+        currentStep={tour.currentStep}
+        totalSteps={tour.totalSteps}
+        isFirstStep={tour.isFirstStep}
+        isLastStep={tour.isLastStep}
+        onNext={tour.next}
+        onPrev={tour.prev}
+        onSkip={tour.skip}
+      />
     </PageContainer>
+  );
+}
+
+export default function DivergenciasPage() {
+  return (
+    <DivergenciasTourProvider>
+      <DivergenciasPageContent />
+    </DivergenciasTourProvider>
   );
 }

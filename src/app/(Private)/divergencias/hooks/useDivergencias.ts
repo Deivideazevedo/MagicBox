@@ -8,7 +8,9 @@ import {
 import {
   useUpdateLancamentoMutation,
   useDeleteLancamentoMutation,
+  useCreateLancamentoMutation,
 } from "@/services/endpoints/lancamentosApi";
+import { useDeleteDespesaMutation } from "@/services/endpoints/despesasApi";
 import toast from "react-hot-toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
 import { IconAlertTriangle, IconCheck } from "@tabler/icons-react";
@@ -40,11 +42,13 @@ export function useDivergencias() {
 
   const [reconciliar, { isLoading: reconciliando }] = useReconciliarMutation();
   const [ajustarFuro, { isLoading: ajustandoFuro }] = useAjustarFuroMutation();
-  const [updateLancamento, { isLoading: pagando }] = useUpdateLancamentoMutation();
-  const [deleteLancamento, { isLoading: excluindo }] = useDeleteLancamentoMutation();
+  const [updateLancamento] = useUpdateLancamentoMutation();
+  const [deleteLancamento] = useDeleteLancamentoMutation();
+  const [createLancamento] = useCreateLancamentoMutation();
+  const [deleteDespesa] = useDeleteDespesaMutation();
 
-  const [acaoPagarId, setAcaoPagarId] = useState<number | null>(null);
-  const [acaoExcluirId, setAcaoExcluirId] = useState<number | null>(null);
+  const [acaoPagarId, setAcaoPagarId] = useState<number | string | null>(null);
+  const [acaoExcluirId, setAcaoExcluirId] = useState<number | string | null>(null);
 
   // Manipulador de calcular discrepância
   const onSubmitCalcular = useCallback((values: ReconciliacaoFormValues) => {
@@ -97,7 +101,7 @@ export function useDivergencias() {
   }, [ajustarFuro]);
 
   // Marcar lançamento planejado vencido como Pago
-  const handlePagarLancamento = useCallback(async (id: number, nome: string, valor: number) => {
+  const handlePagarLancamento = useCallback(async (id: number | string, nome: string, valor: number) => {
     confirm.show({
       title: "Confirmar Pagamento",
       description: `Deseja marcar o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)} como pago?`,
@@ -108,36 +112,64 @@ export function useDivergencias() {
       onConfirm: async () => {
         try {
           setAcaoPagarId(id);
-          await updateLancamento({
-            id: String(id),
-            data: { tipo: "pagamento" } as any,
-          }).unwrap();
+          if (typeof id === "string" && id.startsWith("virtual-fix-")) {
+            const parts = id.split("-");
+            const despesaId = Number(parts[2]);
+            const mes = parts[3];
+            const ano = parts[4];
+            await createLancamento({
+              tipo: "pagamento",
+              valor,
+              data: new Date().toISOString().split("T")[0], // Paga hoje
+              despesaId,
+              observacaoAutomatica: `Pagamento de despesa fixa referente a ${mes}/${ano}`,
+            }).unwrap();
+          } else {
+            await updateLancamento({
+              id: String(id),
+              data: { tipo: "pagamento" } as any,
+            }).unwrap();
+          }
           toast.success("Lançamento confirmado como pago com sucesso!");
+        } catch (err) {
+          toast.error("Erro ao realizar pagamento do lançamento");
         } finally {
           setAcaoPagarId(null);
         }
       }
     });
-  }, [updateLancamento, confirm]);
+  }, [updateLancamento, createLancamento, confirm]);
 
   // Excluir lançamento
-  const handleExcluirLancamento = useCallback(async (id: number, nome: string, valor: number) => {
+  const handleExcluirLancamento = useCallback(async (id: number | string, nome: string, valor: number) => {
+    const isVirtual = typeof id === "string" && id.startsWith("virtual-fix-");
     confirm.delete({
-      title: "Excluir Lançamento?",
-      description: `Deseja realmente excluir permanentemente o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)}?`,
+      title: isVirtual ? "Excluir Despesa Fixa?" : "Excluir Lançamento?",
+      description: isVirtual
+        ? `Esta despesa é uma recorrência virtual. Deseja excluir permanentemente a despesa fixa "${nome.split(" (Ref:")[0]}" para evitar novas cobranças futuras?`
+        : `Deseja realmente excluir permanentemente o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)}?`,
       confirmText: "Excluir",
       cancelText: "Cancelar",
       onConfirm: async () => {
         try {
           setAcaoExcluirId(id);
-          await deleteLancamento(String(id)).unwrap();
-          toast.success("Ajuste de conciliação removido!");
+          if (isVirtual) {
+            const parts = String(id).split("-");
+            const despesaId = Number(parts[2]);
+            await deleteDespesa(despesaId).unwrap();
+            toast.success("Despesa fixa excluída com sucesso!");
+          } else {
+            await deleteLancamento(String(id)).unwrap();
+            toast.success("Ajuste de conciliação removido!");
+          }
+        } catch (err) {
+          toast.error("Erro ao excluir registro");
         } finally {
           setAcaoExcluirId(null);
         }
       }
     });
-  }, [deleteLancamento, confirm]);
+  }, [deleteLancamento, deleteDespesa, confirm]);
 
   return {
     auditoria,
@@ -145,8 +177,6 @@ export function useDivergencias() {
     control,
     reconciliando,
     ajustandoFuro,
-    pagando,
-    excluindo,
     acaoPagarId,
     acaoExcluirId,
     saldoRealPesquisa: saldoRealFilter,
