@@ -61,6 +61,7 @@ import { AVAILABLE_ICONS } from "@/app/components/forms/hooksForm/HookIconPicker
 
 // Tabela Filha
 import { CustomTableChild } from "../customTableChild";
+import { useModalUrl } from "@/hooks/useModalUrl";
 
 // ==================== COLUNAS DINÂMICAS ====================
 
@@ -208,7 +209,11 @@ export function CustomTable({
   const theme = useTheme();
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [resetToggle, setResetToggle] = useState(0);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { isOpen: drawerOpen, openModal: openDrawer, closeModal: closeDrawer } = useModalUrl("filtrosMobile");
+  const setDrawerOpen = (open: boolean) => {
+    if (open) openDrawer();
+    else closeDrawer();
+  };
 
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 

@@ -20,6 +20,14 @@ export const usuariosApi = api.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: "Users" as const, id }],
     }),
 
+    getAcessosUsuario: builder.query<any[], { id: number; limit?: number }>({
+      query: ({ id, limit = 10 }) => ({
+        url: `/usuarios/${id}/acessos`,
+        params: { limit },
+      }),
+      providesTags: (_result, _error, { id }) => [{ type: "Users" as const, id: `Acessos-${id}` }],
+    }),
+
     updateUsuario: builder.mutation<User, { id: number; data: UpdateUserDTO }>({
       query: ({ id, data }) => ({
         url: `/usuarios/${id}`,
@@ -44,6 +52,7 @@ export const {
   useGetUsuariosQuery,
   useLazyGetUsuariosQuery,
   useGetUsuarioQuery,
+  useGetAcessosUsuarioQuery,
   useUpdateUsuarioMutation,
   useBulkDeleteUsuariosMutation,
 } = usuariosApi;

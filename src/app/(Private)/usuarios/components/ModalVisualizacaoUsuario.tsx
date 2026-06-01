@@ -17,6 +17,7 @@ import {
   Collapse,
   Button,
   useTheme,
+  Skeleton,
 } from "@mui/material";
 import CustomAvatar from "@/components/shared/CustomAvatar";
 import {
@@ -39,9 +40,13 @@ import {
   IconArrowBackUp,
   IconShieldLock,
   IconAlertTriangle,
+  IconBrandGoogle,
+  IconBrandGithub,
+  IconMapPin,
+  IconCompass,
 } from "@tabler/icons-react";
 import { UpdateUserDTO } from "@/core/users/user.dto";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LoadingButton } from "@mui/lab";
 import { User } from "next-auth";
@@ -51,6 +56,7 @@ import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
+import { useAcessosUsuario } from "../hooks/useAcessosUsuario";
 
 interface ModalVisualizacaoUsuarioProps {
   user: User | null;
@@ -68,6 +74,18 @@ export default function ModalVisualizacaoUsuario({
   const [editMode, setEditMode] = useState(false);
   const theme = useTheme();
   const confirm = useConfirm();
+
+  const {
+    acessos,
+    isLoadingAcessos,
+    todosAcessos,
+    isLoadingTodosAcessos,
+    todosAcessosOpen,
+    setTodosAcessosOpen,
+    getProviderIcon,
+    getProviderColor,
+    getLocationString,
+  } = useAcessosUsuario(user?.id);
 
   const {
     control,
@@ -414,52 +432,302 @@ export default function ModalVisualizacaoUsuario({
                          </Grid>
                        </Grid>
                      </Collapse>
-                   </Box>
- 
-                   <Box>
-                     <Stack direction="row" spacing={1} alignItems="center" mb={2}>
-                       <IconHistory size={20} color={alpha("#000", 0.6)} />
-                       <Typography variant="subtitle2" fontWeight={700} color="textSecondary">Últimos Acessos</Typography>
-                       <Tooltip title="Em breve: Lista de sessões ativas com geolocalização e revogação de acesso">
-                         <Box sx={{ cursor: "help", display: "flex" }}>
-                           <IconExternalLink size={14} color={alpha("#000", 0.4)} />
-                         </Box>
-                       </Tooltip>
-                     </Stack>
- 
-                     <Stack spacing={1.5}>
-                       {[1, 2].map((_, i) => (
-                         <Box key={i} sx={{
-                           p: 1.5,
-                           borderRadius: 2,
-                           border: "1px solid",
-                           borderColor: alpha("#000", 0.05),
-                           display: "flex",
-                           justifyContent: "space-between",
-                           alignItems: "center",
-                           opacity: 0.6
-                         }}>
-                           <Stack direction="row" spacing={1.5} alignItems="center">
-                             <IconDeviceDesktop size={20} />
-                             <Box>
-                               <Typography variant="caption" fontWeight={700} display="block">Chrome no Windows</Typography>
-                               <Typography variant="caption" color="textSecondary">São Paulo, Brasil • 192.168.1.{i}</Typography>
-                             </Box>
-                           </Stack>
-                           <Typography variant="caption">Há {i + 1}h</Typography>
-                         </Box>
-                       ))}
-                       <Button variant="text" fullWidth sx={{ mt: 1, fontSize: "0.7rem", color: "text.secondary" }}>
-                         Ver todos os acessos
-                       </Button>
-                     </Stack>
-                   </Box>
-                 </Stack>
-               </Grid>
-             </Grid>
-           </form>
-         </DialogContent>
-       </Dialog>
-     </>
-   );
- }
+                    </Box>
+
+                    <Box>
+                      <Stack direction="row" spacing={1} alignItems="center" mb={2.5}>
+                        <IconHistory size={20} color={alpha(theme.palette.text.secondary, 0.8)} />
+                        <Typography variant="subtitle2" fontWeight={700} color="textSecondary">Histórico de Acessos Recentes</Typography>
+                      </Stack>
+
+                      {isLoadingAcessos ? (
+                        <Stack spacing={1.5}>
+                          {[1, 2, 3].map((i) => (
+                            <Skeleton
+                              key={i}
+                              variant="rounded"
+                              height={60}
+                              sx={{ borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.action.hover, 0.4) }}
+                            />
+                          ))}
+                        </Stack>
+                      ) : !acessos || acessos.length === 0 ? (
+                        <Box sx={{
+                          p: 3,
+                          borderRadius: 3,
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          textAlign: "center",
+                          bgcolor: (theme) => alpha(theme.palette.background.paper, 0.2),
+                        }}>
+                          <Typography variant="caption" color="textSecondary" fontWeight={600}>
+                            Nenhum registro de acesso encontrado para este usuário.
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Stack spacing={2} sx={{ mt: 1, pl: 0.5 }}>
+                          {acessos.map((acesso: any, index: number) => (
+                            <Stack direction="row" spacing={2} key={acesso.id} sx={{ position: "relative" }}>
+                              {index < acessos.length - 1 && (
+                                <Box sx={{
+                                  position: "absolute",
+                                  left: 17,
+                                  top: 36,
+                                  bottom: -20,
+                                  width: 2,
+                                  bgcolor: (theme) => alpha(theme.palette.divider, 0.6),
+                                  zIndex: 0,
+                                }} />
+                              )}
+                              
+                              <Box sx={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                zIndex: 1,
+                                border: "1px solid",
+                                borderColor: (theme) => alpha(theme.palette.divider, 0.8),
+                                bgcolor: (theme) => alpha(theme.palette.background.paper, 0.8),
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                                position: "relative",
+                              }}>
+                                {index === 0 && (
+                                  <Box sx={{
+                                    position: "absolute",
+                                    top: -1,
+                                    right: -1,
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    bgcolor: "success.main",
+                                    border: "2px solid",
+                                    borderColor: "background.paper",
+                                    animation: "pulse 2s infinite ease-in-out",
+                                    "@keyframes pulse": {
+                                      "0%": { transform: "scale(0.95)", boxShadow: "0 0 0 0 rgba(46, 125, 50, 0.7)" },
+                                      "70%": { transform: "scale(1)", boxShadow: "0 0 0 4px rgba(46, 125, 50, 0)" },
+                                      "100%": { transform: "scale(0.95)", boxShadow: "0 0 0 0 rgba(46, 125, 50, 0)" }
+                                    }
+                                  }} />
+                                )}
+                                {getProviderIcon(acesso.provider)}
+                              </Box>
+
+                              <Box sx={{
+                                flexGrow: 1,
+                                p: 1.5,
+                                borderRadius: 2,
+                                border: "1px solid",
+                                borderColor: (theme) => alpha(theme.palette.divider, 0.4),
+                                bgcolor: (theme) => alpha(theme.palette.background.paper, 0.4),
+                                backdropFilter: "blur(4px)",
+                                transition: "all 0.2s ease-in-out",
+                                "&:hover": {
+                                  transform: "translateX(4px)",
+                                  borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
+                                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.02),
+                                  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.05)}`,
+                                }
+                              }}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                                  <Box>
+                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
+                                      <Typography variant="caption" fontWeight={750} color="text.primary">
+                                        IP: {acesso.ip}
+                                      </Typography>
+                                      <Chip
+                                        label={acesso.provider.toUpperCase()}
+                                        size="small"
+                                        sx={{
+                                          height: 16,
+                                          fontSize: "0.55rem",
+                                          fontWeight: 800,
+                                          px: 0.5,
+                                          bgcolor: getProviderColor(acesso.provider),
+                                          color: "white",
+                                          border: "none",
+                                        }}
+                                      />
+                                    </Stack>
+                                    <Typography variant="caption" color="textSecondary" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                      {getLocationString(acesso)}
+                                      {acesso.latitude && acesso.longitude && (
+                                        <Tooltip title="Ver localização no Google Maps" arrow placement="top">
+                                          <a
+                                            href={`https://www.google.com/maps/search/?api=1&query=${acesso.latitude},${acesso.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ display: "inline-flex", color: theme.palette.primary.main }}
+                                          >
+                                            <IconExternalLink size={12} style={{ marginLeft: 2 }} />
+                                          </a>
+                                        </Tooltip>
+                                      )}
+                                    </Typography>
+                                  </Box>
+                                  <Typography variant="caption" color="textSecondary" fontWeight={600} sx={{ whiteSpace: "nowrap" }}>
+                                    {formatDistanceToNow(new Date(acesso.createdAt), { addSuffix: true, locale: ptBR })}
+                                  </Typography>
+                                </Stack>
+                              </Box>
+                            </Stack>
+                          ))}
+                          
+                          {acessos.length >= 5 && (
+                            <Button
+                              variant="text"
+                              fullWidth
+                              onClick={() => setTodosAcessosOpen(true)}
+                              sx={{
+                                mt: 1.5,
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                color: "primary.main",
+                                textTransform: "none",
+                                gap: 0.5,
+                                "&:hover": {
+                                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                                }
+                              }}
+                            >
+                              Ver todos os acessos <IconExternalLink size={14} />
+                            </Button>
+                          )}
+                        </Stack>
+                      )}
+                    </Box>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Secundário: Histórico Completo de Acessos */}
+        <Dialog
+          open={todosAcessosOpen}
+          onClose={() => setTodosAcessosOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 4, p: 1 }
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, pb: 1 }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box sx={{ p: 1, borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), color: "primary.main", display: "flex" }}>
+                <IconHistory size={22} />
+              </Box>
+              <Box>
+                <Typography variant="h6" fontWeight={850}>Histórico Completo de Acessos</Typography>
+                <Typography variant="caption" color="textSecondary">Auditoria detalhada para {user?.name}</Typography>
+              </Box>
+            </Stack>
+            <IconButton onClick={() => setTodosAcessosOpen(false)} size="small">
+              <IconX size={20} />
+            </IconButton>
+          </Box>
+          
+          <Divider sx={{ my: 1 }} />
+          
+          <DialogContent sx={{ p: 2, maxHeight: "60vh", overflowY: "auto" }}>
+            {isLoadingTodosAcessos ? (
+              <Stack spacing={1.5}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton
+                    key={i}
+                    variant="rounded"
+                    height={60}
+                    sx={{ borderRadius: 2, bgcolor: (theme) => alpha(theme.palette.action.hover, 0.4) }}
+                  />
+                ))}
+              </Stack>
+            ) : !todosAcessos || todosAcessos.length === 0 ? (
+              <Typography variant="body2" color="textSecondary" align="center" sx={{ py: 4 }}>
+                Nenhum registro de acesso encontrado.
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {todosAcessos.map((acesso: any) => (
+                  <Box
+                    key={acesso.id}
+                    sx={{
+                      p: 2,
+                      borderRadius: 3,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: (theme) => alpha(theme.palette.background.paper, 0.5),
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.01),
+                      },
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    <Grid container spacing={1} alignItems="center">
+                      <Grid item xs={1.5} sx={{ display: "flex", justifyContent: "center" }}>
+                        <Box sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          border: "1px solid",
+                          borderColor: "divider",
+                          bgcolor: "background.paper",
+                        }}>
+                          {getProviderIcon(acesso.provider)}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" fontWeight={750}>
+                          IP: {acesso.ip}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          {getLocationString(acesso)}
+                          {acesso.latitude && acesso.longitude && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${acesso.latitude},${acesso.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ display: "inline-flex", color: theme.palette.primary.main, verticalAlign: "middle" }}
+                            >
+                              <IconExternalLink size={12} style={{ marginLeft: 4 }} />
+                            </a>
+                          )}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={4.5} sx={{ textAlign: "right" }}>
+                        <Chip
+                          label={acesso.provider.toUpperCase()}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: "0.55rem",
+                            fontWeight: 800,
+                            mb: 0.5,
+                            bgcolor: getProviderColor(acesso.provider),
+                            color: "white",
+                            border: "none",
+                          }}
+                        />
+                        <Typography variant="caption" color="textSecondary" display="block" sx={{ fontSize: "0.68rem", fontWeight: 600 }}>
+                          {format(new Date(acesso.createdAt), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }

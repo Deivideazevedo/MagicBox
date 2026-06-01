@@ -101,6 +101,12 @@ export const bulkDeleteSchema = z.object({
   ids: z.array(z.number().int().positive()),
 });
 
+// Schema para buscar logs de acessos
+export const acessosFiltroSchema = z.object({
+  userId: z.coerce.number().int().positive("ID inválido"),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+});
+
 // Types exportados
 export type UserDTO = z.infer<typeof userSchema>;
 export type RegisterUserDTO = z.infer<typeof registerUserSchema>;
@@ -110,3 +116,4 @@ export type BulkDeleteDTO = z.infer<typeof bulkDeleteSchema>;
 export type UserIdDTO = z.infer<typeof userIdSchema>;
 export type PublicUser = z.infer<typeof publicUserSchema>;
 export type ListUsersDTO = z.infer<typeof listUsersSchema>;
+export type AcessosFiltroDTO = z.infer<typeof acessosFiltroSchema>;

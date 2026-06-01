@@ -10,6 +10,7 @@ import {
   RegisterUserDTO,
   UpdateUserDTO,
   LoginUserDTO,
+  AcessosFiltroDTO,
 } from "./user.dto";
 import { PaginatedResult } from "../types/global";
 import bcrypt from "bcryptjs";
@@ -344,5 +345,14 @@ export const authService = {
       city,
       country,
     });
+  },
+
+  async listarAcessosUsuario(filtros: AcessosFiltroDTO, requisitante: { id: number; role: string }) {
+    // Validação de acesso centralizada no Service: admin pode ver tudo, usuário comum só pode ver os próprios logs
+    if (requisitante.id !== filtros.userId && requisitante.role !== "admin") {
+      throw new ForbiddenError("Acesso negado: você não possui permissão para visualizar estes logs de acesso.");
+    }
+
+    return await repositorio.listarAcessosUsuario(filtros);
   },
 };

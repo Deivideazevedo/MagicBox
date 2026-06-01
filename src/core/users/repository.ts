@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma, User as PrismaUser } from "@prisma/client";
 import { PaginatedResult } from "../types/global";
-import { ListUsersDTO, RegisterUserDTO, UpdateUserDTO } from "./user.dto";
+import { ListUsersDTO, RegisterUserDTO, UpdateUserDTO, AcessosFiltroDTO } from "./user.dto";
 import { User } from "next-auth";
 
 export const authRepository = {
@@ -152,6 +152,15 @@ export const authRepository = {
   }): Promise<void> {
     await prisma.accessLog.create({
       data: dados,
+    });
+  },
+
+  async listarAcessosUsuario(filtros: AcessosFiltroDTO) {
+    const { userId, limit = 10 } = filtros;
+    return await prisma.accessLog.findMany({
+      where: { userId },
+      take: limit,
+      orderBy: { createdAt: "desc" },
     });
   },
 };
