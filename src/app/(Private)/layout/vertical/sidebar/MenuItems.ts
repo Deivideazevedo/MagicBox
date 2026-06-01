@@ -24,7 +24,8 @@ import {
   IconSettings,
   IconUser,
   IconTarget,
-  IconCreditCard
+  IconCreditCard,
+  IconDatabase
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -87,6 +88,13 @@ const Menuitems: MenuitemsType[] = [
     title: "Usuários",
     icon: IconUser,
     href: "/usuarios",
+    permissions: ["admin"],
+  },
+  {
+    id: uniqueId(),
+    title: "Sistema",
+    icon: IconDatabase,
+    href: "/sistema",
     permissions: ["admin"],
   },
   {
