@@ -2,7 +2,10 @@ import { HookAutocomplete } from "@/app/components/forms/hooksForm/HookAutocompl
 import { HookDatePicker } from "@/app/components/forms/hooksForm/HookDatePicker";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { IconColorMenuPicker } from "@/app/components/forms/hooksForm/IconColorMenuPicker";
-import { HookCurrencyField, HookDecimalField } from "@/app/components/forms/hooksForm/masks";
+import {
+  HookCurrencyField,
+  HookDecimalField,
+} from "@/app/components/forms/hooksForm/masks";
 import { DividaFormData } from "../../hooks/useDividas";
 import { Divida } from "@/core/dividas/types";
 import { LoadingButton } from "@mui/lab";
@@ -23,7 +26,7 @@ import {
   IconArrowLeft,
   IconDeviceFloppy,
   IconX,
-  IconCreditCard
+  IconCreditCard,
 } from "@tabler/icons-react";
 import { Control, useWatch } from "react-hook-form";
 import { useGetCategoriasQuery } from "@/services/endpoints/categoriasApi";
@@ -104,7 +107,10 @@ export const Formulario = (formProps: FormProps) => {
             onClick={handleCancelEdit}
             sx={{
               color: "text.secondary",
-              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.1), color: "primary.main" }
+              "&:hover": {
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: "primary.main",
+              },
             }}
           >
             <IconArrowLeft size={20} />
@@ -135,7 +141,9 @@ export const Formulario = (formProps: FormProps) => {
                 {isEditing ? "Editando Dívida:" : "Nova Dívida Única"}
               </Typography>
               <Typography variant="body2" color="primary.main">
-                {isEditing ? targetDivida?.nome : (watchNome || "Registre um novo parcelamento")}
+                {isEditing
+                  ? targetDivida?.nome
+                  : watchNome || "Registre um novo parcelamento"}
               </Typography>
             </Box>
           </Box>
@@ -179,7 +187,7 @@ export const Formulario = (formProps: FormProps) => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                   <HookCurrencyField
+                  <HookCurrencyField
                     name="valorTotal"
                     control={control}
                     label="Valor Total da Dívida"
@@ -188,7 +196,7 @@ export const Formulario = (formProps: FormProps) => {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                   <HookDecimalField
+                  <HookDecimalField
                     name="totalParcelas"
                     control={control}
                     label="Quantidade de Parcelas"
@@ -198,24 +206,31 @@ export const Formulario = (formProps: FormProps) => {
                 </Grid>
 
                 <Grid item xs={12}>
-                    <Collapse in={valorParcelaCalculado > 0}>
-                        <Box
-                          p={1.5}
-                          sx={{
-                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                            borderRadius: 2,
-                            border: '1px dashed',
-                            borderColor: alpha(theme.palette.primary.main, 0.3)
-                          }}
-                        >
-                          <Typography variant="caption" color="text.secondary">
-                             Cálculo do Resultado:
-                          </Typography>
-                          <Typography variant="body2" fontWeight={700} color="primary.main">
-                             {formatCurrency(valorParcelaCalculado)} / mês
-                          </Typography>
-                        </Box>
-                    </Collapse>
+                  <Collapse in={valorParcelaCalculado > 0}>
+                    <Box
+                      p={1.5}
+                      sx={{
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.08,
+                        ),
+                        borderRadius: 2,
+                        border: "1px dashed",
+                        borderColor: alpha(theme.palette.primary.main, 0.3),
+                      }}
+                    >
+                      <Typography variant="caption" color="text.secondary">
+                        Cálculo do Resultado:
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        color="primary.main"
+                      >
+                        {formatCurrency(valorParcelaCalculado)} / mês
+                      </Typography>
+                    </Box>
+                  </Collapse>
                 </Grid>
               </>
             )}
@@ -257,11 +272,11 @@ export const Formulario = (formProps: FormProps) => {
                     py: 1.5,
                     fontWeight: 700,
                     boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.2)}`,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`
-                    }
+                    transition: "all 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 12px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                    },
                   }}
                 >
                   {getButtonText()}
@@ -277,12 +292,12 @@ export const Formulario = (formProps: FormProps) => {
                       py: 1.5,
                       fontWeight: 600,
                       borderColor: alpha(theme.palette.divider, 0.2),
-                      color: 'text.secondary',
-                      '&:hover': {
+                      color: "text.secondary",
+                      "&:hover": {
                         borderColor: theme.palette.primary.main,
                         bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        color: 'primary.main'
-                      }
+                        color: "primary.main",
+                      },
                     }}
                   >
                     Cancelar

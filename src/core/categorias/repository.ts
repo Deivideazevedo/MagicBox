@@ -79,5 +79,62 @@ export const categoriaRepository = {
   async atualizar(id: number, data: UpdateCategoriaDTO & { deletedAt?: Date | null }): Promise<Categoria> {
     // Se a categoria está sendo reativada (deletedAt definido como null)
     if (data.deletedAt === null) {
+      const categoriaAtual = await prisma.categoria.findUnique({
+        where: { id },
+      });
+
+      if (!categoriaAtual || !categoriaAtual.deletedAt) {
+        return await prisma.categoria.update({
+          where: { id },
+          data: {
+            nome: data.nome,
+            icone: data.icone,
+            cor: data.cor,
+          },
+        });
+      }
+
+      const dataDelecao = categoriaAtual.deletedAt;
+
       const [categoriaReativada] = await prisma.$transaction([
         // 1. Reativa a categoria
+        prisma.categoria.update({
+          where: { id },
+          data: {
+            nome: data.nome,
+            icone: data.icone,
+            cor: data.cor,
+            deletedAt: null,
+          },
+        }),
+        // 2. Reativa as despesas que foram deletadas no mesmo momento
+        prisma.despesa.updateMany({
+          where: { categoriaId: id, deletedAt: dataDelecao },
+          data: { deletedAt: null },
+        }),
+        // 3. Reativa as receitas que foram deletadas no mesmo momento
+        prisma.receita.updateMany({
+          where: { categoriaId: id, deletedAt: dataDelecao },
+          data: { deletedAt: null },
+        }),
+        // 4. Reativa os objetivos que foram deletados no mesmo momento
+        prisma.objetivo.updateMany({
+          where: { categoriaId: id, deletedAt: dataDelecao },
+          data: { deletedAt: null },
+        }),
+      ]);
+
+      return categoriaReativada;
+    }
+
+    return await prisma.categoria.update({
+      where: { id },
+      data: {
+        nome: data.nome,
+        icone: data.icone,
+        cor: data.cor,
+      },
+    });
+  },
+};
+
