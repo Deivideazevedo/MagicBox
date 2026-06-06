@@ -70,6 +70,7 @@ export interface DividaFixa extends DividaBase {
   valorPago: number;
   valorRestante: number;
   concluida: boolean;
+  temAjusteQuitacao?: boolean;
 }
 
 export type Divida = DividaUnica | DividaVolatil | DividaFixa;

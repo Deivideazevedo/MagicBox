@@ -11,6 +11,8 @@ import {
   useGetDividasQuery,
   useUpdateDividaMutation,
   useProcessarAporteMutation,
+  useQuitarDividaMutation,
+  useDesquitarDividaMutation,
 } from "@/services/endpoints/dividasApi";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
@@ -131,6 +133,10 @@ export function useDividas() {
   const [deleteDivida, { isLoading: isDeleting }] = useDeleteDividaMutation();
   const [processarAporte, { isLoading: isAportando }] =
     useProcessarAporteMutation();
+  const [desquitarDivida, { isLoading: isDesquitando }] =
+    useDesquitarDividaMutation();
+  const [quitarDivida, { isLoading: isQuitando }] =
+    useQuitarDividaMutation();
 
   const {
     handleSubmit: handleSubmitForm,
@@ -436,6 +442,46 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     [updateDivida, confirm],
   );
 
+  const handleQuitarRestante = useCallback(
+    async (divida: Divida) => {
+      confirm.show({
+        title: "Marcar despesa como quitada?",
+        description: `Deseja marcar esta despesa como quitada para o mês atual? O último pagamento registrado receberá a marcação de quitação.`,
+        confirmText: "Sim, quitar",
+        color: "success",
+        onConfirm: async () => {
+          try {
+            await quitarDivida(Number(divida.id)).unwrap();
+            toast.success("Despesa marcada como quitada!");
+          } catch (error) {
+            // Tratado globalmente
+          }
+        },
+      });
+    },
+    [confirm, quitarDivida],
+  );
+
+  const handleDesquitarRestante = useCallback(
+    async (divida: Divida) => {
+      confirm.show({
+        title: "Cancelar quitação da despesa?",
+        description: `Deseja reabrir esta despesa removendo o status de quitada para o mês atual?`,
+        confirmText: "Sim, reabrir",
+        color: "warning",
+        onConfirm: async () => {
+          try {
+            await desquitarDivida(Number(divida.id)).unwrap();
+            toast.success("Despesa reaberta com sucesso!");
+          } catch (error) {
+            // Tratado globalmente
+          }
+        },
+      });
+    },
+    [confirm, desquitarDivida],
+  );
+
   const isEditing = Boolean(watch("id"));
   const handleSubmit = handleSubmitForm(onSubmit);
 
@@ -447,6 +493,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     isUpdating,
     isDeleting,
     isAportando,
+    isDesquitando,
     isEditing,
     isAporte,
     targetDivida,
@@ -456,6 +503,8 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     handleAporte,
     handleDelete,
     handleToggleStatus,
+    handleQuitarRestante,
+    handleDesquitarRestante,
     valorParcelaCalculado,
     handleCancelEdit: () => {
       setIsAporte(false);

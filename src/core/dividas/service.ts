@@ -459,8 +459,8 @@ export const dividasService = {
           tipo: "pagamento",
           valor: valorAporte,
           data: dataAporte,
-          observacao: `Aporte - Despesa Fixa`,
-          observacaoAutomatica: "Aporte Automático",
+          observacao: dados.observacao || `Aporte - Despesa Fixa`,
+          observacaoAutomatica: dados.observacaoAutomatica || "Aporte Automático",
         },
       });
 
@@ -597,5 +597,86 @@ export const dividasService = {
       mesesPagos,
       excedenteReal,
     };
+  },
+
+  async quitarDespesa(id: number, userId: number) {
+    const dividaId = Number(id);
+    const hoje = new Date();
+    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    // Buscar o último pagamento do mês atual para esta despesa
+    const ultimoPagamento = await prisma.lancamento.findFirst({
+      where: {
+        userId,
+        despesaId: dividaId,
+        tipo: "pagamento",
+        data: {
+          gte: dataInicioMes,
+          lte: dataFimMes,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!ultimoPagamento) {
+      throw new NotFoundError("Nenhum pagamento encontrado no mês atual para quitar.");
+    }
+
+    // Atualizar o lançamento existente adicionando a tag [QUITAÇÃO]
+    const obsAutomaticaAtual = ultimoPagamento.observacaoAutomatica || "";
+    const novaObsAutomatica = obsAutomaticaAtual.includes("[QUITAÇÃO]")
+      ? obsAutomaticaAtual
+      : `${obsAutomaticaAtual} [QUITAÇÃO]`.trim();
+
+    await prisma.lancamento.update({
+      where: { id: ultimoPagamento.id },
+      data: {
+        observacaoAutomatica: novaObsAutomatica,
+      },
+    });
+
+    return { success: true };
+  },
+
+  async desquitarAporte(id: number, userId: number) {
+    const dividaId = Number(id);
+    const hoje = new Date();
+    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    // Buscar o lançamento com a tag [QUITAÇÃO] no mês atual
+    const lancamentoQuitado = await prisma.lancamento.findFirst({
+      where: {
+        userId,
+        despesaId: dividaId,
+        tipo: "pagamento",
+        data: {
+          gte: dataInicioMes,
+          lte: dataFimMes,
+        },
+        observacaoAutomatica: {
+          contains: "[QUITAÇÃO]",
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!lancamentoQuitado) {
+      throw new NotFoundError("Nenhum lançamento de quitação encontrado no mês atual.");
+    }
+
+    // Remover a tag [QUITAÇÃO] da observação automática
+    const obsAtual = lancamentoQuitado.observacaoAutomatica || "";
+    const novaObs = obsAtual.replace(/\s*\[QUITAÇÃO\]\s*/g, " ").trim();
+
+    await prisma.lancamento.update({
+      where: { id: lancamentoQuitado.id },
+      data: {
+        observacaoAutomatica: novaObs || null,
+      },
+    });
+
+    return { success: true, count: 1 };
   },
 };

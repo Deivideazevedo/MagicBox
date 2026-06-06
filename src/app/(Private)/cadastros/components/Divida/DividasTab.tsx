@@ -59,6 +59,8 @@ const DividasTabContent = () => {
     handleAporte,
     handleDelete,
     handleToggleStatus,
+    handleQuitarRestante,
+    handleDesquitarRestante,
     handleCancelEdit,
     valorParcelaCalculado,
   } = useDividas();
@@ -255,6 +257,8 @@ const DividasTabContent = () => {
                 onDelete={handleDelete}
                 onAporte={handleOpenAporte}
                 onToggleStatus={handleToggleStatus}
+                onQuitarRestante={handleQuitarRestante}
+                onDesquitarRestante={handleDesquitarRestante}
                 isFormOpen={exibirFormulario}
               />
             ) : (
@@ -268,6 +272,8 @@ const DividasTabContent = () => {
                       onDelete={handleDelete}
                       onAporte={handleOpenAporte}
                       onToggleStatus={handleToggleStatus}
+                      onQuitarRestante={handleQuitarRestante}
+                      onDesquitarRestante={handleDesquitarRestante}
                       isFormOpen={exibirFormulario}
                     />
                   </Box>
@@ -289,6 +295,8 @@ const DividasTabContent = () => {
                       onDelete={handleDelete}
                       onAporte={handleOpenAporte}
                       onToggleStatus={handleToggleStatus}
+                      onQuitarRestante={handleQuitarRestante}
+                      onDesquitarRestante={handleDesquitarRestante}
                       isFormOpen={exibirFormulario}
                     />
                   </Box>

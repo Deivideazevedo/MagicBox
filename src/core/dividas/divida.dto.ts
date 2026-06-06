@@ -29,8 +29,10 @@ export const updateDividaSchema = z.object({
 });
 
 export const processAporteSchema = z.object({
-  valor: z.number().positive("Valor do aporte deve ser positivo"),
+  valor: z.number().nonnegative("Valor do aporte deve ser maior ou igual a zero"),
   data: z.coerce.date().optional().default(() => new Date()),
+  observacao: z.string().optional(),
+  observacaoAutomatica: z.string().optional(),
 });
 
 export type CreateDividaDTO = z.infer<typeof createDividaSchema>;

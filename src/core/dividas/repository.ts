@@ -241,8 +241,13 @@ export const dividasRepository = {
       const valorEstimado = Number(d.valorEstimado || 0);
       const lancamentos = d.lancamentos || [];
       const valorPago = lancamentos.reduce((acc, l) => acc + Number(l.valor), 0);
-      const valorRestante = Math.max(0, valorEstimado - valorPago);
-      const concluida = valorPago >= valorEstimado - 0.01;
+      
+      const temAjusteQuitacao = lancamentos.some(
+        (l) => l.observacaoAutomatica?.includes("[QUITAÇÃO]")
+      );
+
+      const concluida = temAjusteQuitacao || (valorPago >= valorEstimado - 0.01);
+      const valorRestante = concluida ? 0 : Math.max(0, valorEstimado - valorPago);
 
       // Próximo vencimento no mês atual
       const diaVencimento = d.diaVencimento || 1;
@@ -262,6 +267,7 @@ export const dividasRepository = {
         valorPago,
         valorRestante,
         concluida,
+        temAjusteQuitacao,
         proximoVencimento: dataVencimento.toISOString().split("T")[0],
         diasParaVencer: differenceInCalendarDays(dataVencimento, hoje),
         categoriaNome: d.categoria?.nome,

@@ -194,8 +194,15 @@ export const resumoRepository = {
     `;
 
     return response.map((item) => {
+      const detalhes = (item.detalhes as any[]) || [];
+      const temAjusteQuitacao = detalhes.some(
+        (d) => 
+          (d.observacao && String(d.observacao).includes("[QUITAÇÃO]")) ||
+          (d.observacaoAutomatica && String(d.observacaoAutomatica).includes("[QUITAÇÃO]"))
+      );
+
       const valorPago = Number(item.valorPago);
-      const valorPrevisto = Number(item.valorPrevisto);
+      const valorPrevisto = temAjusteQuitacao ? valorPago : Number(item.valorPrevisto);
       const mes = Number(item.mes);
       const ano = Number(item.ano);
 

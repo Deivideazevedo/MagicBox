@@ -46,6 +46,8 @@ interface ListagemProps {
   onDelete: (divida: Divida) => void;
   onAporte: (divida: Divida) => void;
   onToggleStatus: (divida: Divida) => void;
+  onQuitarRestante: (divida: Divida) => void;
+  onDesquitarRestante: (divida: Divida) => void;
   isFormOpen?: boolean;
 }
 
@@ -56,6 +58,8 @@ export const Listagem = ({
   onDelete,
   onAporte,
   onToggleStatus,
+  onQuitarRestante,
+  onDesquitarRestante,
   isFormOpen = false,
 }: ListagemProps) => {
   const theme = useTheme();
@@ -150,6 +154,22 @@ export const Listagem = ({
       maximumFractionDigits: 2,
     });
 
+  const isConcluidaDaSelecionada = selectedDivida
+    ? selectedDivida.tipo === "UNICA"
+      ? (selectedDivida as DividaUnica).concluida
+      : selectedDivida.tipo === "FIXA"
+        ? (selectedDivida as any).concluida
+        : false
+    : false;
+
+  const valorRestanteDaSelecionada = selectedDivida
+    ? selectedDivida.tipo === "UNICA"
+      ? (selectedDivida as DividaUnica).valorRestante
+      : selectedDivida.tipo === "FIXA"
+        ? (selectedDivida as any).valorRestante
+        : (selectedDivida as DividaVolatil).valorRestante
+    : 0;
+
   return (
     <Box
       sx={{
@@ -179,13 +199,17 @@ export const Listagem = ({
           ? (divida as DividaUnica).valorPago
           : isFixa
             ? (divida as any).valorPago
-            : 0;
+            : (divida as DividaVolatil).valorPago || 0;
         const valorRestante = isUnica
           ? (divida as DividaUnica).valorRestante
           : isFixa
             ? (divida as any).valorRestante
-            : (divida as DividaVolatil).valorTotalAgendado;
-        const progresso = isUnica ? (divida as DividaUnica).progresso : 0;
+            : (divida as DividaVolatil).valorRestante;
+        const progresso = isUnica
+          ? (divida as DividaUnica).progresso
+          : valorPrincipal > 0
+            ? (valorPago / valorPrincipal) * 100
+            : 0;
         const parcelasInfo = isUnica
           ? `Parcelas: ${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas}`
           : isFixa
@@ -207,6 +231,15 @@ export const Listagem = ({
           (divida.tipo === "VOLATIL" && (divida as DividaVolatil).atrasada);
 
         const temParcelaPendente = !!divida.proximoVencimento;
+
+        // Verificar se há opções de menu disponíveis para este card
+        const temOpcoesMenu = (() => {
+          if (divida.tipo !== "FIXA") return true; // UNICA e VOLATIL sempre têm opções
+          const isAtiva = divida.status === "A";
+          if (isAtiva && !isConcluida) return true; // Tem "Novo Pagamento" e/ou "Marcar como Quitada"
+          if (isAtiva && isConcluida && divida.temAjusteQuitacao) return true; // Tem "Desquitar"
+          return false;
+        })();
 
         const getVencimentoStatusLabel = () => {
           if (isConcluida || !temParcelaPendente) return "Concluído";
@@ -271,32 +304,15 @@ export const Listagem = ({
                   flexGrow: 1,
                 }}
               >
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    zIndex: 10,
-                  }}
-                >
-                  {isFixa ? (
-                    !isConcluida && (
-                      <Tooltip title="Fazer Pagamento" arrow>
-                        <IconButton
-                          size="small"
-                          onClick={() => onAporte(divida)}
-                          sx={{
-                            color: "success.main",
-                            "&:hover": {
-                              bgcolor: alpha(theme.palette.success.main, 0.1),
-                            },
-                          }}
-                        >
-                          <IconCoin size={20} />
-                        </IconButton>
-                      </Tooltip>
-                    )
-                  ) : (
+                {temOpcoesMenu && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 12,
+                      right: 12,
+                      zIndex: 10,
+                    }}
+                  >
                     <IconButton
                       ref={
                         index === 0
@@ -314,8 +330,8 @@ export const Listagem = ({
                     >
                       <IconDotsVertical size={18} />
                     </IconButton>
-                  )}
-                </Box>
+                  </Box>
+                )}
 
                 <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2.5 }}>
                   <Box
@@ -449,8 +465,8 @@ export const Listagem = ({
                   )}
                 </Box>
 
-                {/* Barra de Progresso com Porcentagem ao final (SÓ PARA ÚNICAS) */}
-                {isUnica ? (
+                {/* Barra de Progresso com Porcentagem ao final (Única ou Fixa) */}
+                {isUnica || isFixa ? (
                   <Box
                     ref={
                       index === 0
@@ -527,78 +543,11 @@ export const Listagem = ({
                         >
                           {isConcluida
                             ? "Quitada! 🎉"
-                            : `Faltam: ${formatCurrency(valorRestante)}`}
+                            : `Falta${isUnica ? "m" : ""}: ${formatCurrency(valorRestante)}`}
                         </Typography>
                       </Box>
                     </Stack>
                   </Box>
-                ) : isFixa ? (
-                  <>
-                    <Box
-                      sx={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          height: "2px",
-                          width: "100%",
-                          backgroundImage: `repeating-linear-gradient(90deg, ${alpha(theme.palette.text.secondary, 0.8)}, ${alpha(theme.palette.text.secondary, 0.8)} 6px, transparent 6px, transparent 11px)`,
-                          my: 2,
-                        }}
-                      />
-                    </Box>
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Box gap={0} display="flex" flexDirection="column">
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          fontWeight={600}
-                          display="block"
-                        >
-                          SITUAÇÃO
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={800}
-                          color={isConcluida ? "success.main" : isAtrasada ? "error.main" : "warning.main"}
-                        >
-                          {isConcluida
-                            ? "Quitada! 🎉"
-                            : `Falta: ${formatCurrency(valorRestante)}`}
-                        </Typography>
-                      </Box>
-                      <Box
-                        gap={0}
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="flex-end"
-                        textAlign="right"
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          fontWeight={600}
-                          display="block"
-                        >
-                          MENSALIDADE
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={800}
-                          color="text.primary"
-                        >
-                          {formatCurrency(valorPrincipal)}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </>
                 ) : (
                   <>
                     <Box
@@ -668,37 +617,55 @@ export const Listagem = ({
                 )}
 
                 {/* Badge de conclusão rápida */}
-                {isConcluida && !isArquivada && !isFixa && (
-                  <Tooltip title="Quitada! Clique para arquivar" arrow>
-                    <IconButton
-                      onClick={() => onToggleStatus(divida)}
-                      sx={{
-                        position: "absolute",
-                        bottom: -18,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        width: 36,
-                        height: 36,
-                        p: 0,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        boxShadow: `0 2px 7px ${alpha(theme.palette.success.main, 0.5)}`,
-                        border: "3px solid",
-                        borderColor: "background.paper",
-                        bgcolor: "success.main",
-                        color: "white",
-                        zIndex: 2,
-                        transition: "all 0.2s",
-                        "&:hover": {
-                          bgcolor: "success.dark",
-                          transform: "translateX(-50%) scale(1.1)",
-                        },
-                      }}
-                    >
-                      <IconCircleCheck size={24} stroke={2.5} />
-                    </IconButton>
+                {isConcluida && !isArquivada && (
+                  <Tooltip
+                    title={
+                      isFixa
+                        ? "Quitada neste mês! 🎉"
+                        : "Quitada! Clique para arquivar"
+                    }
+                    arrow
+                  >
+                    <Box sx={{ display: "flex" }}>
+                      <IconButton
+                        disabled={isFixa}
+                        onClick={
+                          !isFixa ? () => onToggleStatus(divida) : undefined
+                        }
+                        sx={{
+                          position: "absolute",
+                          bottom: -18,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          width: 36,
+                          height: 36,
+                          p: 0,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: `0 2px 7px ${alpha(theme.palette.success.main, 0.5)}`,
+                          border: "3px solid",
+                          borderColor: "background.paper",
+                          bgcolor: "success.main",
+                          color: "white",
+                          zIndex: 2,
+                          transition: "all 0.2s",
+                          "&.Mui-disabled": {
+                            bgcolor: "success.main",
+                            color: "white",
+                          },
+                          "&:hover": {
+                            bgcolor: !isFixa ? "success.dark" : "success.main",
+                            transform: !isFixa
+                              ? "translateX(-50%) scale(1.1)"
+                              : "translateX(-50%)",
+                          },
+                        }}
+                      >
+                        <IconCircleCheck size={24} stroke={2.5} />
+                      </IconButton>
+                    </Box>
                   </Tooltip>
                 )}
               </CardContent>
@@ -738,27 +705,62 @@ export const Listagem = ({
           </MenuItem>
         )}
 
+        {selectedDivida?.status === "A" && !isConcluidaDaSelecionada && (
+          <MenuItem
+            onClick={() => {
+              onAporte(selectedDivida!);
+              handleCloseMenu();
+            }}
+          >
+            <ListItemIcon>
+              <IconCoin size={18} color={theme.palette.success.main} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Novo Pagamento"
+              primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+            />
+          </MenuItem>
+        )}
+
         {selectedDivida?.status === "A" &&
-          !(selectedDivida.tipo === "UNICA" && selectedDivida.concluida) &&
-          !(selectedDivida.tipo === "FIXA" && (selectedDivida as any).concluida) && (
+          !isConcluidaDaSelecionada &&
+          valorRestanteDaSelecionada > 0 && (
             <MenuItem
               onClick={() => {
-                onAporte(selectedDivida);
+                onQuitarRestante(selectedDivida!);
                 handleCloseMenu();
               }}
-              sx={{ color: theme.palette.success.main }}
             >
               <ListItemIcon>
-                <IconCoin size={18} color={theme.palette.success.main} />
+                <IconCircleCheck size={18} color={theme.palette.primary.main} />
               </ListItemIcon>
               <ListItemText
-                primary="Novo Pagamento"
+                primary="Marcar como Quitada"
                 primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
               />
             </MenuItem>
           )}
 
-        <Divider sx={{ my: 1 }} />
+        {selectedDivida?.status === "A" &&
+          isConcluidaDaSelecionada &&
+          (selectedDivida as any).temAjusteQuitacao && (
+            <MenuItem
+              onClick={() => {
+                onDesquitarRestante(selectedDivida!);
+                handleCloseMenu();
+              }}
+            >
+              <ListItemIcon>
+                <IconHistory size={18} color={theme.palette.warning.main} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Desquitar Despesa"
+                primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+              />
+            </MenuItem>
+          )}
+
+        {selectedDivida?.tipo === "UNICA" && <Divider sx={{ my: 1 }} />}
 
         {selectedDivida?.tipo === "UNICA" && (
           <MenuItem
@@ -777,7 +779,6 @@ export const Listagem = ({
           </MenuItem>
         )}
 
-        {/* Somente UNICA pode ser concluída/reativada manualmente. Volátil some ao pagar. */}
         {selectedDivida?.tipo === "UNICA" && (
           <MenuItem
             onClick={() => {
@@ -809,7 +810,6 @@ export const Listagem = ({
               onDelete(selectedDivida!);
               handleCloseMenu();
             }}
-            sx={{ color: theme.palette.error.main }}
           >
             <ListItemIcon>
               <IconTrash size={18} color={theme.palette.error.main} />

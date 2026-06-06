@@ -77,6 +77,8 @@ function DividasPageContent() {
     handleAporte,
     handleDelete,
     handleToggleStatus,
+    handleQuitarRestante,
+    handleDesquitarRestante,
     handleCancelEdit,
     valorParcelaCalculado,
   } = useDividas();
@@ -280,6 +282,8 @@ function DividasPageContent() {
                   onDelete={handleDelete}
                   onAporte={handleOpenAporte}
                   onToggleStatus={handleToggleStatus}
+                  onQuitarRestante={handleQuitarRestante}
+                  onDesquitarRestante={handleDesquitarRestante}
                   isFormOpen={exibirFormulario}
                 />
               ) : (
@@ -293,6 +297,8 @@ function DividasPageContent() {
                         onDelete={handleDelete}
                         onAporte={handleOpenAporte}
                         onToggleStatus={handleToggleStatus}
+                        onQuitarRestante={handleQuitarRestante}
+                        onDesquitarRestante={handleDesquitarRestante}
                         isFormOpen={exibirFormulario}
                       />
                     </Box>
@@ -314,6 +320,8 @@ function DividasPageContent() {
                         onDelete={handleDelete}
                         onAporte={handleOpenAporte}
                         onToggleStatus={handleToggleStatus}
+                        onQuitarRestante={handleQuitarRestante}
+                        onDesquitarRestante={handleDesquitarRestante}
                         isFormOpen={exibirFormulario}
                       />
                     </Box>

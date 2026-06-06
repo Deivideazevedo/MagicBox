@@ -69,7 +69,7 @@ export const dividasApi = api.injectEndpoints({
     }),
     processarAporte: builder.mutation<
       { mesesPagos: string[]; excedenteReal?: number },
-      { id: string | number; data: { valor: number; data: Date } }
+      { id: string | number; data: { valor: number; data: Date; observacao?: string; observacaoAutomatica?: string } }
     >({
       query: ({ id, data }) => ({
         url: `/dividas/${id}/aporte`,
@@ -77,6 +77,38 @@ export const dividasApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: (result, error, { id }) => [
+        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
+          type: tag,
+          id: "LIST" as const,
+        })),
+        { type: "Dividas" as const, id: String(id) },
+      ],
+    }),
+    quitarDivida: builder.mutation<
+      { success: boolean },
+      string | number
+    >({
+      query: (id) => ({
+        url: `/dividas/${id}/aporte`,
+        method: "PUT",
+      }),
+      invalidatesTags: (result, error, id) => [
+        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
+          type: tag,
+          id: "LIST" as const,
+        })),
+        { type: "Dividas" as const, id: String(id) },
+      ],
+    }),
+    desquitarDivida: builder.mutation<
+      { success: boolean; count: number },
+      string | number
+    >({
+      query: (id) => ({
+        url: `/dividas/${id}/aporte`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, id) => [
         ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
           type: tag,
           id: "LIST" as const,
@@ -94,4 +126,6 @@ export const {
   useUpdateDividaMutation,
   useDeleteDividaMutation,
   useProcessarAporteMutation,
+  useQuitarDividaMutation,
+  useDesquitarDividaMutation,
 } = dividasApi;
