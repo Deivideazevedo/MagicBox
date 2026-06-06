@@ -66,7 +66,7 @@ export const Formulario = (formProps: FormProps) => {
   const watchNome = useWatch({ control, name: "nome" });
 
   const getTitle = () => {
-    if (isAporte) return "Fazer Aporte / Amortização";
+    if (isAporte) return "Fazer Pagamento / Amortização";
     return isEditing ? "Editar Dívida" : "Nova Dívida Única";
   };
 

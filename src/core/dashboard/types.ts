@@ -15,12 +15,14 @@ export interface TransacaoRecente {
   id: number;
   descricao: string;
   valor: number;
-  tipo: "receita" | "despesa";
+  tipo: "receita" | "despesa" | "objetivo";
   data: string;
   icone: string | null;
   cor: string | null;
   fonteRendaId?: number | null;
   despesaId?: number | null;
+  receitaId?: number | null;
+  objetivoId?: number | null;
 }
 
 export interface UpcomingBillItem {

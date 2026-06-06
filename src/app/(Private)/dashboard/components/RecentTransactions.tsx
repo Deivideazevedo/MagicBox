@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Skeleton,
   Alert,
+  useTheme,
 } from "@mui/material";
 import { IconArrowRight } from "@tabler/icons-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -26,12 +27,16 @@ import { RecentTransactionsSkeleton } from "./DashboardSkeletons";
 import Link from "next/link";
 
 const RecentTransactions = ({ date }: { date?: Date }) => {
+  const theme = useTheme();
   const { recentTransactionsRef } = useDashboardTourRefs();
   const baseDate = date || new Date();
   const dataInicio = format(startOfMonth(baseDate), "yyyy-MM-dd");
   const dataFim = format(endOfMonth(baseDate), "yyyy-MM-dd");
 
-  const { data: dashboard, isLoading } = useGetDashboardQuery({ dataInicio, dataFim });
+  const { data: dashboard, isLoading } = useGetDashboardQuery({
+    dataInicio,
+    dataFim,
+  });
   const transactions = dashboard?.transacoesRecentes || [];
 
   if (isLoading) {
@@ -48,7 +53,9 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     // Adjusting for timezone to avoid showing previous day
-    const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    const adjustedDate = new Date(
+      date.getTime() + date.getTimezoneOffset() * 60000,
+    );
     return adjustedDate.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
@@ -65,7 +72,12 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Typography variant="h6" fontWeight={600}>
             Transações Recentes
           </Typography>
@@ -91,10 +103,25 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
             <List disablePadding>
               {transactions.map((transaction, index) => {
                 const isReceita = transaction.tipo === "receita";
+                const isObjetivo = transaction.tipo === "objetivo";
+                const isAporte = isObjetivo && transaction.valor > 0;
+                const isRetirada = isObjetivo && transaction.valor < 0;
                 const title = transaction.descricao || "Transação";
                 const iconName = transaction.icone;
-                const color = transaction.cor || (isReceita ? "#13DEB9" : "#FA896B");
-                const categoryName = isReceita ? "Receita" : "Despesa";
+                const color =
+                  transaction.cor ||
+                  (isReceita
+                    ? theme.palette.success.main
+                    : isAporte
+                      ? theme.palette.primary.main
+                      : theme.palette.error.main);
+                const categoryName = isReceita
+                  ? "Receita"
+                  : isAporte
+                    ? "Aporte"
+                    : isRetirada
+                      ? "Retirada"
+                      : "Despesa";
 
                 return (
                   <ListItem
@@ -102,7 +129,10 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
                     sx={{
                       px: 0,
                       py: 1.5,
-                      borderBottom: index < transactions.length - 1 ? "1px solid #f0f0f0" : "none",
+                      borderBottom:
+                        index < transactions.length - 1
+                          ? "1px solid #f0f0f0"
+                          : "none",
                     }}
                   >
                     <ListItemIcon sx={{ minWidth: 48 }}>
@@ -114,29 +144,65 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
                           color: color,
                         }}
                       >
-                        <DynamicIcon name={iconName} size={20} fallbackIcon={isReceita ? "IconArrowUp" : "IconArrowDown"} color={color} />
+                        <DynamicIcon
+                          name={iconName}
+                          size={20}
+                          fallbackIcon={
+                            isObjetivo
+                              ? "IconTarget"
+                              : isReceita
+                                ? "IconArrowUp"
+                                : "IconArrowDown"
+                          }
+                          color={color}
+                        />
                       </Avatar>
                     </ListItemIcon>
-                    
+
                     <ListItemText
                       primaryTypographyProps={{ component: "div" }}
                       secondaryTypographyProps={{ component: "div" }}
                       primary={
-                        <Box display="flex" justifyContent="space-between" alignItems="center">
-                          <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                        >
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                            sx={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "60%",
+                            }}
+                          >
                             {title}
                           </Typography>
                           <Typography
                             variant="body1"
                             fontWeight={600}
-                            color={isReceita ? "#13DEB9" : "#FA896B"}
+                            color={
+                              isReceita
+                                ? "success.main"
+                                : isAporte
+                                  ? "primary.main"
+                                  : "error.main"
+                            }
                           >
-                            {isReceita ? "+" : "-"}{formatCurrency(transaction.valor)}
+                            {isReceita || isAporte ? "+" : "-"}
+                            {formatCurrency(transaction.valor)}
                           </Typography>
                         </Box>
                       }
                       secondary={
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          mt={0.5}
+                        >
                           <Chip
                             label={categoryName}
                             size="small"

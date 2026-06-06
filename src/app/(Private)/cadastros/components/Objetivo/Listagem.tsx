@@ -317,8 +317,11 @@ export const Listagem = ({
                           height: 20,
                           fontSize: "10px",
                           fontWeight: 700,
-                          bgcolor: alpha(cor, 0.1),
-                          color: cor,
+                          bgcolor: alpha(
+                            isReserva ? theme.palette.success.main : cor,
+                            0.1,
+                          ),
+                          color: isReserva ? theme.palette.success.main : cor,
                         }}
                       />
                       {objetivo.status === "I" && (
@@ -473,14 +476,14 @@ export const Listagem = ({
                         flex: 1,
                         display: "flex",
                         alignItems: "center",
-                        py: 2.5,
                       }}
                     >
                       <Box
                         sx={{
-                          borderTop: "1px dashed",
-                          borderColor: alpha(theme.palette.divider, 0.8),
+                          height: "2px",
                           width: "100%",
+                          backgroundImage: `repeating-linear-gradient(90deg, ${alpha(theme.palette.text.secondary, 0.8)}, ${alpha(theme.palette.text.secondary, 0.8)} 6px, transparent 6px, transparent 11px)`,
+                          my: 2,
                         }}
                       />
                     </Box>

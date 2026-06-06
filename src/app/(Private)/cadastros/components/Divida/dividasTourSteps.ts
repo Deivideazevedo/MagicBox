@@ -70,7 +70,7 @@ Olhe aqui sempre que abrir a página para saber como anda a situação.`,
 
 💎 ÚNICA → Parcelamentos com valor fixo e prazo definido.
 Exemplo: comprei um celular de R$ 3.000 em 12x de R$ 250.
-Você sabe exatamente quanto deve e quando termina. Tem barra de progresso e aceita aportes para quitar antecipado.
+Você sabe exatamente quanto deve e quando termina. Tem barra de progresso e aceita pagamentos para quitar antecipado.
 
 🔄 VARIÁVEL → Contas recorrentes com valor que muda todo mês.
 Exemplo: fatura do cartão de crédito, conta de luz.
@@ -89,7 +89,7 @@ Não tem valor total fixo — os lançamentos vão sendo adicionados conforme ch
 • Abaixo: quantas parcelas já pagou (ex: 5/12) e o valor que falta
 • Quando atingir 100%, a dívida exibe o selo de quitada 🎉
 
-💡 Dica: use a opção "Novo Aporte" no menu para registrar pagamentos extras e acelerar o progresso!`,
+💡 Dica: use a opção "Novo Pagamento" no menu para registrar pagamentos extras e acelerar o progresso!`,
     placement: "top",
   },
 
@@ -101,7 +101,7 @@ Não tem valor total fixo — os lançamentos vão sendo adicionados conforme ch
       `Esse botão (⋮) abre as ações disponíveis:
 
 • 👁 Ver detalhes → painel completo com histórico de cada parcela
-• 💰 Novo Aporte → registrar um pagamento (só Única ativa)
+• 💰 Novo Pagamento → registrar um pagamento (só Única ativa)
 • ✏️ Editar → alterar nome, valor ou parcelas (só Única)
 • ✅ Concluir / Arquivar → marcar como quitada
 • 🗑️ Excluir → remover permanentemente
@@ -119,7 +119,7 @@ Cada tipo de dívida mostra opções diferentes. Explore!`,
 • Use "Única" para parcelamentos com valor e prazo fixos
 • Use "Variável" para contas que mudam de valor todo mês
 • Fique de olho nos cards vermelhos (atrasadas) e amarelos (vence em breve)
-• Registre aportes para quitar antes do prazo
+• Registre pagamentos para quitar antes do prazo
 
 Se precisar rever este tour, clique no ícone de brilho (✨) no topo da página a qualquer momento. 😉`,
     placement: "right",

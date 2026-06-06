@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { DividaUnica, DividaVolatil, StatusDivida, SituacaoParcela, StatusSituacaoParcela } from "./types";
+import { DividaUnica, DividaVolatil, DividaFixa, StatusDivida, SituacaoParcela, StatusSituacaoParcela } from "./types";
 import { CreateDividaDTO, UpdateDividaDTO } from "./divida.dto";
 import { differenceInCalendarDays, isSameMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -203,6 +203,71 @@ export const dividasRepository = {
     }
 
     return volateis;
+  },
+
+  async listarFixas(userId: number): Promise<DividaFixa[]> {
+    const hoje = new Date();
+    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const despesas = await prisma.despesa.findMany({
+      where: {
+        userId,
+        tipo: "FIXA",
+        status: "A",
+        deletedAt: null,
+        lancamentos: {
+          none: {
+            tipo: "agendamento",
+          },
+        },
+      },
+      include: {
+        categoria: true,
+        lancamentos: {
+          where: {
+            tipo: "pagamento",
+            data: {
+              gte: dataInicioMes,
+              lte: dataFimMes,
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return despesas.map((d) => {
+      const valorEstimado = Number(d.valorEstimado || 0);
+      const lancamentos = d.lancamentos || [];
+      const valorPago = lancamentos.reduce((acc, l) => acc + Number(l.valor), 0);
+      const valorRestante = Math.max(0, valorEstimado - valorPago);
+      const concluida = valorPago >= valorEstimado - 0.01;
+
+      // Próximo vencimento no mês atual
+      const diaVencimento = d.diaVencimento || 1;
+      const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+      const diaVencimentoTratado = Math.min(diaVencimento, ultimoDiaMes);
+      const dataVencimento = new Date(hoje.getFullYear(), hoje.getMonth(), diaVencimentoTratado);
+
+      return {
+        id: d.id,
+        nome: d.nome,
+        icone: d.icone,
+        cor: d.cor,
+        status: d.status as StatusDivida,
+        tipo: "FIXA",
+        valorEstimado,
+        diaVencimento,
+        valorPago,
+        valorRestante,
+        concluida,
+        proximoVencimento: dataVencimento.toISOString().split("T")[0],
+        diasParaVencer: differenceInCalendarDays(dataVencimento, hoje),
+        categoriaNome: d.categoria?.nome,
+        userId: d.userId,
+      };
+    });
   },
 
   async buscarVolatilPorDespesaId(despesaId: number, userId: number): Promise<DividaVolatil | null> {

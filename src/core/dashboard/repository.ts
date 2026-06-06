@@ -29,23 +29,34 @@ export const dashboardRepository = {
         receita: {
           select: { nome: true, icone: true, cor: true },
         },
+        objetivo: {
+          select: { nome: true, icone: true, cor: true },
+        },
       },
     });
 
     const transacoesRecentes: TransacaoRecente[] = recentLancamentos.map((l) => {
-      const icone = l.despesa?.icone || l.receita?.icone || null;
-      const cor = l.despesa?.cor || l.receita?.cor || null;
+      const icone = l.despesa?.icone || l.receita?.icone || l.objetivo?.icone || null;
+      const cor = l.despesa?.cor || l.receita?.cor || l.objetivo?.cor || null;
+
+      let tipo: "receita" | "despesa" | "objetivo" = "despesa";
+      if (l.receitaId != null) {
+        tipo = "receita";
+      } else if (l.objetivoId != null) {
+        tipo = "objetivo";
+      }
 
       return {
         id: l.id,
-        descricao: l.despesa?.nome || l.receita?.nome || l.observacao || l.observacaoAutomatica || "Transação",
+        descricao: l.despesa?.nome || l.receita?.nome || l.objetivo?.nome || l.observacao || l.observacaoAutomatica || "Transação",
         valor: Number(l.valor),
-        tipo: l.receitaId != null ? "receita" : "despesa",
+        tipo,
         data: l.data.toISOString(),
         icone,
         cor,
         receitaId: l.receitaId,
         despesaId: l.despesaId,
+        objetivoId: l.objetivoId,
       };
     });
 

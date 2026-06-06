@@ -164,7 +164,7 @@ export function useDividas() {
         Math.max(0, valorAporte - valorRestante).toFixed(2),
       );
       return await confirm.show({
-        title: "Confirmar Aporte Excedente?",
+        title: "Confirmar Pagamento Excedente?",
         description: (
           <Box sx={{ mt: 1.5, textAlign: "left" }}>
             <Typography
@@ -172,7 +172,7 @@ export function useDividas() {
               color="text.secondary"
               sx={{ mb: 2, lineHeight: 1.5 }}
             >
-              Você está realizando um aporte que supera o valor restante da
+              Você está realizando um pagamento que supera o valor restante da
               dívida. Confira o detalhamento abaixo:
             </Typography>
             <Box
@@ -192,7 +192,7 @@ export function useDividas() {
                 })}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                • <strong>Valor do Aporte:</strong> R${" "}
+                • <strong>Valor do Pagamento:</strong> R${" "}
                 {valorAporte.toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                 })}
@@ -244,7 +244,7 @@ export function useDividas() {
     ) => {
       if (resultado.excedenteReal && resultado.excedenteReal > 0) {
         toast.success(
-          `Aporte de R$ ${valorAporte.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado com sucesso!
+          `Pagamento de R$ ${valorAporte.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} realizado com sucesso!
 
 Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} aplicados para quitação total e R$ ${resultado.excedenteReal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} lançados como excedente para o próximo mês.`,
           { duration: 6000 },
@@ -260,7 +260,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
           );
         }
       } else {
-        toast.success("Aporte realizado com sucesso!");
+        toast.success("Pagamento realizado com sucesso!");
       }
     },
     [],
@@ -378,9 +378,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
     const valorPadrao =
       divida.tipo === "UNICA"
         ? (divida as DividaUnica).valorParcela
-        : (divida as DividaVolatil).situacaoParcelas?.find(
-            (p: SituacaoParcela) => p.status !== "pago",
-          )?.valorAgendado || "";
+        : divida.valorProximaParcela || "";
 
     reset({
       id: undefined,
@@ -400,9 +398,7 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
           "Esta ação removerá a despesa e seus agendamentos vinculados.",
         confirmText: "Sim, excluir",
         onConfirm: async () => {
-          if (divida.tipo === "UNICA") {
-            await deleteDivida(Number(divida.id)).unwrap();
-          }
+          await deleteDivida(Number(divida.id)).unwrap();
           toast.success("Dívida removida!");
         },
       });

@@ -1,6 +1,6 @@
 /**
  * COMANDO PARA EXECUTAR ESTE TESTE:
- * npx tsx src/core/dividas/tests/processarAporte.test.ts
+ * npx tsx src/core/dividas/tests/processarAporteUnica.test.ts
  */
 import * as dotenv from "dotenv";
 import path from "path";
@@ -16,7 +16,7 @@ async function test() {
   const userId = 1;
   let dividaCriadaId: number | null = null;
 
-  console.log("🚀 Testando [processarAporte] em Divida...");
+  console.log("🚀 Testando [processarAporte] em Divida Única...");
   console.log(`👤 Usuário de teste: ${userId}\n`);
 
   try {

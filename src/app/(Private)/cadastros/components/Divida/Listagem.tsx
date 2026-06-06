@@ -165,37 +165,51 @@ export const Listagem = ({
     >
       {dividas.map((divida, index) => {
         const isUnica = divida.tipo === "UNICA";
+        const isFixa = divida.tipo === "FIXA";
         const cor = divida.cor || theme.palette.primary.main;
+        const chipCor = isFixa ? theme.palette.secondary.main : cor;
 
         // Dados específicos por tipo
         const valorPrincipal = isUnica
           ? (divida as DividaUnica).valorTotal
-          : (divida as DividaVolatil).valorTotalAgendado;
-        const valorPago = isUnica ? (divida as DividaUnica).valorPago : 0;
+          : isFixa
+            ? (divida as any).valorEstimado
+            : (divida as DividaVolatil).valorTotalAgendado;
+        const valorPago = isUnica
+          ? (divida as DividaUnica).valorPago
+          : isFixa
+            ? (divida as any).valorPago
+            : 0;
         const valorRestante = isUnica
           ? (divida as DividaUnica).valorRestante
-          : (divida as DividaVolatil).valorTotalAgendado;
+          : isFixa
+            ? (divida as any).valorRestante
+            : (divida as DividaVolatil).valorTotalAgendado;
         const progresso = isUnica ? (divida as DividaUnica).progresso : 0;
         const parcelasInfo = isUnica
           ? `Parcelas: ${(divida as DividaUnica).parcelasPagas}/${(divida as DividaUnica).totalParcelas}`
-          : `Parcelas: ${(divida as DividaVolatil).quantidadeParcelas}`;
+          : isFixa
+            ? "Mensalidade Fixa"
+            : `Parcelas: ${(divida as DividaVolatil).quantidadeParcelas}`;
 
-        const isConcluida = isUnica && (divida as DividaUnica).concluida;
+        const isConcluida =
+          (isUnica && (divida as DividaUnica).concluida) ||
+          (isFixa && (divida as any).concluida);
         const isArquivada = divida.status === "I";
         const isAtrasada =
           (isUnica &&
             (divida as DividaUnica).diasParaVencer !== null &&
             (divida as DividaUnica).diasParaVencer! < 0) ||
-          (!isUnica && (divida as DividaVolatil).atrasada);
+          (isFixa &&
+            (divida as any).diasParaVencer !== null &&
+            (divida as any).diasParaVencer! < 0 &&
+            !(divida as any).concluida) ||
+          (divida.tipo === "VOLATIL" && (divida as DividaVolatil).atrasada);
 
-        const situacaoParcelas =
-          (divida as DividaUnica | DividaVolatil).situacaoParcelas || [];
-        const proximaParcelaPendente = situacaoParcelas.find(
-          (p) => p.status !== "pago",
-        );
+        const temParcelaPendente = !!divida.proximoVencimento;
 
         const getVencimentoStatusLabel = () => {
-          if (isConcluida || !proximaParcelaPendente) return "Concluído";
+          if (isConcluida || !temParcelaPendente) return "Concluído";
 
           let statusText = "Em dia";
           if (isAtrasada) {
@@ -258,25 +272,49 @@ export const Listagem = ({
                 }}
               >
                 <Box
-                  sx={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+                  sx={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    zIndex: 10,
+                  }}
                 >
-                  <IconButton
-                    ref={
-                      index === 0
-                        ? (tourRefs.menuRef as React.Ref<HTMLButtonElement>)
-                        : undefined
-                    }
-                    size="small"
-                    onClick={(e) => handleOpenMenu(e, divida)}
-                    sx={{
-                      color: "text.secondary",
-                      "&:hover": {
-                        bgcolor: alpha(theme.palette.action.active, 0.05),
-                      },
-                    }}
-                  >
-                    <IconDotsVertical size={18} />
-                  </IconButton>
+                  {isFixa ? (
+                    !isConcluida && (
+                      <Tooltip title="Fazer Pagamento" arrow>
+                        <IconButton
+                          size="small"
+                          onClick={() => onAporte(divida)}
+                          sx={{
+                            color: "success.main",
+                            "&:hover": {
+                              bgcolor: alpha(theme.palette.success.main, 0.1),
+                            },
+                          }}
+                        >
+                          <IconCoin size={20} />
+                        </IconButton>
+                      </Tooltip>
+                    )
+                  ) : (
+                    <IconButton
+                      ref={
+                        index === 0
+                          ? (tourRefs.menuRef as React.Ref<HTMLButtonElement>)
+                          : undefined
+                      }
+                      size="small"
+                      onClick={(e) => handleOpenMenu(e, divida)}
+                      sx={{
+                        color: "text.secondary",
+                        "&:hover": {
+                          bgcolor: alpha(theme.palette.action.active, 0.05),
+                        },
+                      }}
+                    >
+                      <IconDotsVertical size={18} />
+                    </IconButton>
+                  )}
                 </Box>
 
                 <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2.5 }}>
@@ -321,14 +359,14 @@ export const Listagem = ({
                             ? (tourRefs.chipTipoRef as React.Ref<HTMLDivElement>)
                             : undefined
                         }
-                        label={isUnica ? "Única" : "Variável"}
+                        label={isUnica ? "Única" : isFixa ? "Fixa" : "Variável"}
                         size="small"
                         sx={{
                           height: 20,
                           fontSize: "10px",
                           fontWeight: 700,
-                          bgcolor: alpha(cor, 0.1),
-                          color: cor,
+                          bgcolor: alpha(chipCor, 0.1),
+                          color: chipCor,
                         }}
                       />
                     </Stack>
@@ -369,7 +407,7 @@ export const Listagem = ({
 
                 {/* Info de Valores */}
                 <Box sx={{ mb: 0 }}>
-                  {proximaParcelaPendente ? (
+                  {temParcelaPendente && !isConcluida ? (
                     <Box>
                       <Typography
                         variant="caption"
@@ -382,16 +420,13 @@ export const Listagem = ({
                         }}
                       >
                         PRÓXIMO VENCIMENTO:{" "}
-                        {fnFormatNaiveDate(
-                          proximaParcelaPendente.dataVencimento,
-                          "dd/MM",
-                        )}
+                        {fnFormatNaiveDate(divida.proximoVencimento!, "dd/MM")}
                       </Typography>
                       <Typography
                         variant="h5"
                         fontWeight={800}
                         color={
-                          proximaParcelaPendente.status === "atrasada"
+                          isAtrasada
                             ? "error.main"
                             : divida.diasParaVencer !== null &&
                                 (divida.diasParaVencer as number) <= 7
@@ -399,7 +434,7 @@ export const Listagem = ({
                               : "success.main"
                         }
                       >
-                        {formatCurrency(proximaParcelaPendente.valorAgendado)}
+                        {formatCurrency(divida.valorProximaParcela || 0)}
                       </Typography>
                     </Box>
                   ) : (
@@ -497,6 +532,73 @@ export const Listagem = ({
                       </Box>
                     </Stack>
                   </Box>
+                ) : isFixa ? (
+                  <>
+                    <Box
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          height: "2px",
+                          width: "100%",
+                          backgroundImage: `repeating-linear-gradient(90deg, ${alpha(theme.palette.text.secondary, 0.8)}, ${alpha(theme.palette.text.secondary, 0.8)} 6px, transparent 6px, transparent 11px)`,
+                          my: 2,
+                        }}
+                      />
+                    </Box>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box gap={0} display="flex" flexDirection="column">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
+                          SITUAÇÃO
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color={isConcluida ? "success.main" : isAtrasada ? "error.main" : "warning.main"}
+                        >
+                          {isConcluida
+                            ? "Quitada! 🎉"
+                            : `Falta: ${formatCurrency(valorRestante)}`}
+                        </Typography>
+                      </Box>
+                      <Box
+                        gap={0}
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="flex-end"
+                        textAlign="right"
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          fontWeight={600}
+                          display="block"
+                        >
+                          MENSALIDADE
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          fontWeight={800}
+                          color="text.primary"
+                        >
+                          {formatCurrency(valorPrincipal)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </>
                 ) : (
                   <>
                     <Box
@@ -508,9 +610,10 @@ export const Listagem = ({
                     >
                       <Box
                         sx={{
-                          borderTop: "1px dashed",
-                          borderColor: alpha(theme.palette.divider, 0.8),
+                          height: "2px",
                           width: "100%",
+                          backgroundImage: `repeating-linear-gradient(90deg, ${alpha(theme.palette.text.secondary, 0.8)}, ${alpha(theme.palette.text.secondary, 0.8)} 6px, transparent 6px, transparent 11px)`,
+                          my: 2,
                         }}
                       />
                     </Box>
@@ -565,7 +668,7 @@ export const Listagem = ({
                 )}
 
                 {/* Badge de conclusão rápida */}
-                {isConcluida && !isArquivada && (
+                {isConcluida && !isArquivada && !isFixa && (
                   <Tooltip title="Quitada! Clique para arquivar" arrow>
                     <IconButton
                       onClick={() => onToggleStatus(divida)}
@@ -623,18 +726,21 @@ export const Listagem = ({
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <MenuItem onClick={() => handleOpenDetalhes(selectedDivida!.id)}>
-          <ListItemIcon>
-            <IconEye size={18} />
-          </ListItemIcon>
-          <ListItemText
-            primary="Ver detalhes"
-            primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
-          />
-        </MenuItem>
+        {selectedDivida?.tipo !== "FIXA" && (
+          <MenuItem onClick={() => handleOpenDetalhes(selectedDivida!.id)}>
+            <ListItemIcon>
+              <IconEye size={18} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Ver detalhes"
+              primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+            />
+          </MenuItem>
+        )}
 
         {selectedDivida?.status === "A" &&
-          !(selectedDivida.tipo === "UNICA" && selectedDivida.concluida) && (
+          !(selectedDivida.tipo === "UNICA" && selectedDivida.concluida) &&
+          !(selectedDivida.tipo === "FIXA" && (selectedDivida as any).concluida) && (
             <MenuItem
               onClick={() => {
                 onAporte(selectedDivida);
@@ -646,7 +752,7 @@ export const Listagem = ({
                 <IconCoin size={18} color={theme.palette.success.main} />
               </ListItemIcon>
               <ListItemText
-                primary="Novo Aporte"
+                primary="Novo Pagamento"
                 primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
               />
             </MenuItem>
@@ -697,21 +803,23 @@ export const Listagem = ({
           </MenuItem>
         )}
 
-        <MenuItem
-          onClick={() => {
-            onDelete(selectedDivida!);
-            handleCloseMenu();
-          }}
-          sx={{ color: theme.palette.error.main }}
-        >
-          <ListItemIcon>
-            <IconTrash size={18} color={theme.palette.error.main} />
-          </ListItemIcon>
-          <ListItemText
-            primary="Excluir"
-            primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
-          />
-        </MenuItem>
+        {selectedDivida?.tipo !== "FIXA" && (
+          <MenuItem
+            onClick={() => {
+              onDelete(selectedDivida!);
+              handleCloseMenu();
+            }}
+            sx={{ color: theme.palette.error.main }}
+          >
+            <ListItemIcon>
+              <IconTrash size={18} color={theme.palette.error.main} />
+            </ListItemIcon>
+            <ListItemText
+              primary="Excluir"
+              primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
+            />
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Modal de Detalhes */}

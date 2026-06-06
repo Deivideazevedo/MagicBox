@@ -229,7 +229,7 @@ export function useObjetivos() {
       id: undefined,
       nome: objetivo.nome,
       tipo: objetivo.tipo,
-      valorObjetivo: null,
+      valorObjetivo: objetivo.previsaoDesteMes ?? null,
       dataAlvo: getHojeLocal(),
       isAporte: true,
       valorRestante: restante,

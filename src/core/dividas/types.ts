@@ -19,12 +19,14 @@ export interface DividaBase {
   icone?: string | null;
   cor?: string | null;
   status: StatusDivida;
-  tipo: "UNICA" | "VOLATIL";
+  tipo: "UNICA" | "VOLATIL" | "FIXA";
   lancamentos?: Lancamento[];
   proximoVencimento?: string | null;
   diasParaVencer?: number | null;
   categoriaNome?: string;
   userId: number;
+  valorProximaParcela?: number | null;
+  atrasada?: boolean;
 }
 
 export interface DividaUnica extends DividaBase {
@@ -59,7 +61,18 @@ export interface DividaVolatil extends DividaBase {
   situacaoParcelas?: SituacaoParcela[];
 }
 
-export type Divida = DividaUnica | DividaVolatil;
+export interface DividaFixa extends DividaBase {
+  tipo: "FIXA";
+  valorEstimado: number;
+  diaVencimento: number;
+  
+  // Metadados calculados para o mês atual
+  valorPago: number;
+  valorRestante: number;
+  concluida: boolean;
+}
+
+export type Divida = DividaUnica | DividaVolatil | DividaFixa;
 
 export interface ResumoDividas {
   totalDevidoUnicas: number;

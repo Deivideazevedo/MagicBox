@@ -12,6 +12,8 @@ import {
   DialogContent,
   useMediaQuery,
   alpha,
+  Stack,
+  Typography,
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import {
@@ -125,9 +127,18 @@ function DividasPageContent() {
     setExibirFormulario(false);
   };
 
-  const dividasFiltradas = mostrarConcluidas
-    ? dividas
-    : dividas.filter((d: Divida) => d.status === "A");
+  const { dividasPrazo, despesasFixas } = useMemo(() => {
+    const filtradas = mostrarConcluidas
+      ? dividas
+      : dividas.filter((d: Divida) => d.status === "A");
+
+    return {
+      dividasPrazo: filtradas.filter((d) => d.tipo !== "FIXA"),
+      despesasFixas: filtradas.filter((d) => d.tipo === "FIXA"),
+    };
+  }, [dividas, mostrarConcluidas]);
+
+  const temDados = dividasPrazo.length > 0 || despesasFixas.length > 0;
 
   return (
     <PageContainer
@@ -261,15 +272,54 @@ function DividasPageContent() {
                 }),
               }}
             >
-              <Listagem
-                dividas={dividasFiltradas}
-                isLoading={isLoading}
-                onEdit={handleEditarDivida}
-                onDelete={handleDelete}
-                onAporte={handleOpenAporte}
-                onToggleStatus={handleToggleStatus}
-                isFormOpen={exibirFormulario}
-              />
+              {!temDados ? (
+                <Listagem
+                  dividas={[]}
+                  isLoading={isLoading}
+                  onEdit={handleEditarDivida}
+                  onDelete={handleDelete}
+                  onAporte={handleOpenAporte}
+                  onToggleStatus={handleToggleStatus}
+                  isFormOpen={exibirFormulario}
+                />
+              ) : (
+                <Stack spacing={4}>
+                  {dividasPrazo.length > 0 && (
+                    <Box>
+                      <Listagem
+                        dividas={dividasPrazo}
+                        isLoading={isLoading}
+                        onEdit={handleEditarDivida}
+                        onDelete={handleDelete}
+                        onAporte={handleOpenAporte}
+                        onToggleStatus={handleToggleStatus}
+                        isFormOpen={exibirFormulario}
+                      />
+                    </Box>
+                  )}
+
+                  {despesasFixas.length > 0 && (
+                    <Box>
+                      <Typography
+                        variant="h5"
+                        fontWeight={800}
+                        sx={{ mb: 2.5, letterSpacing: "-0.5px", color: "text.primary" }}
+                      >
+                        Despesas Fixas do Mês
+                      </Typography>
+                      <Listagem
+                        dividas={despesasFixas}
+                        isLoading={isLoading}
+                        onEdit={handleEditarDivida}
+                        onDelete={handleDelete}
+                        onAporte={handleOpenAporte}
+                        onToggleStatus={handleToggleStatus}
+                        isFormOpen={exibirFormulario}
+                      />
+                    </Box>
+                  )}
+                </Stack>
+              )}
             </Grid>
           </Grid>
         </DividasDashboard>

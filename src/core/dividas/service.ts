@@ -9,18 +9,41 @@ import {
   UpdateDividaDTO,
 } from "./divida.dto";
 import { dividasRepository as repositorio } from "./repository";
-import { ListagemDividasResponse } from "./types";
+import { ListagemDividasResponse, DividaVolatil } from "./types";
 
 export const dividasService = {
   async listarPorUsuario(userId: number): Promise<ListagemDividasResponse> {
     const unicas = await repositorio.listarUnicas(userId);
     const volateis = await repositorio.listarVolateis(userId);
+    const fixas = await repositorio.listarFixas(userId);
 
-    const dividas = [...unicas, ...volateis];
+    const dividas = [...unicas, ...volateis, ...fixas];
+
+    // Otimização de Payload: Remover chaves pesadas da listagem geral e injetar agregados simples
+    const dividasOtimizadas = dividas.map((d) => {
+      const { lancamentos, ...rest } = d as any;
+      // Para evitar que situacaoParcelas seja enviada desnecessariamente, mas mantendo compatibilidade
+      const { situacaoParcelas, ...restSemParcelas } = rest;
+      return {
+        ...restSemParcelas,
+        valorProximaParcela: d.tipo === "UNICA"
+          ? (d.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0)
+          : d.tipo === "FIXA"
+            ? (d.valorRestante || 0)
+            : (d.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0),
+        atrasada: d.tipo === "UNICA"
+          ? (d.diasParaVencer !== undefined && d.diasParaVencer !== null && d.diasParaVencer < 0)
+          : d.tipo === "FIXA"
+            ? (d.diasParaVencer !== undefined && d.diasParaVencer !== null && d.diasParaVencer < 0 && !d.concluida)
+            : (d as DividaVolatil).atrasada,
+      };
+    });
 
     const resumo = {
-      totalDevidoUnicas: unicas.reduce((acc, d) => acc + d.valorRestante, 0),
-      totalPagoUnicas: unicas.reduce((acc, d) => acc + d.valorPago, 0),
+      totalDevidoUnicas: unicas.reduce((acc, d) => acc + d.valorRestante, 0) +
+                         fixas.reduce((acc, d) => acc + d.valorRestante, 0),
+      totalPagoUnicas: unicas.reduce((acc, d) => acc + d.valorPago, 0) +
+                       fixas.reduce((acc, d) => acc + d.valorPago, 0),
       totalAgendadoVolateis: volateis.reduce(
         (acc, d) => acc + d.valorTotalAgendado,
         0,
@@ -28,7 +51,11 @@ export const dividasService = {
       quantidadeTotalParcelas: dividas.reduce(
         (acc, d) =>
           acc +
-          (d.tipo === "UNICA" ? d.parcelasRestantes : d.quantidadeParcelas),
+          (d.tipo === "UNICA"
+            ? d.parcelasRestantes
+            : d.tipo === "VOLATIL"
+              ? d.quantidadeParcelas
+              : (d.concluida ? 0 : 1)),
         0,
       ),
       dividasAtrasadas: dividas.filter(
@@ -36,17 +63,20 @@ export const dividasService = {
           (d.tipo === "UNICA" &&
             d.diasParaVencer != null &&
             d.diasParaVencer < 0) ||
-          (d.tipo === "VOLATIL" && d.atrasada),
+          (d.tipo === "VOLATIL" && d.atrasada) ||
+          (d.tipo === "FIXA" && !d.concluida && d.diasParaVencer != null && d.diasParaVencer < 0)
       ).length,
       proximosVencimentos: dividas.filter(
         (d) =>
           d.diasParaVencer != null &&
           d.diasParaVencer >= 0 &&
-          d.diasParaVencer <= 7,
+          d.diasParaVencer <= 7 &&
+          !(d.tipo === "FIXA" && d.concluida) &&
+          !(d.tipo === "UNICA" && d.concluida)
       ).length,
     };
 
-    return { resumo, dividas };
+    return { resumo, dividas: dividasOtimizadas as any[] };
   },
 
   async buscarPorId(id: number, userId: number) {
@@ -59,15 +89,41 @@ export const dividasService = {
       throw new NotFoundError("Dívida não encontrada");
     }
 
-    if (despesaBase.tipo === "VARIAVEL" || despesaBase.tipo === "FIXA") {
-      const divida = await repositorio.buscarVolatilPorDespesaId(Number(id), userId);
+    let divida;
+    if (despesaBase.tipo === "VARIAVEL") {
+      divida = await repositorio.buscarVolatilPorDespesaId(Number(id), userId);
       if (!divida) throw new NotFoundError("Dívida volátil não encontrada");
-      return divida;
+    } else if (despesaBase.tipo === "FIXA") {
+      const temAgendamentos = await prisma.lancamento.count({
+        where: { despesaId: Number(id), tipo: "agendamento" }
+      }) > 0;
+
+      if (temAgendamentos) {
+        divida = await repositorio.buscarVolatilPorDespesaId(Number(id), userId);
+      } else {
+        const listaFixas = await repositorio.listarFixas(userId);
+        divida = listaFixas.find(f => f.id === Number(id));
+      }
+      if (!divida) throw new NotFoundError("Dívida fixa não encontrada");
+    } else {
+      divida = await repositorio.buscarPorId(Number(id));
+      if (!divida) throw new NotFoundError("Dívida não encontrada");
     }
 
-    const divida = await repositorio.buscarPorId(Number(id));
-    if (!divida) throw new NotFoundError("Dívida não encontrada");
-    return divida;
+    // Injetar os campos agregados no detalhe também por consistência e tipagem
+    return {
+      ...divida,
+      valorProximaParcela: divida.tipo === "UNICA"
+        ? (divida.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0)
+        : divida.tipo === "FIXA"
+          ? (divida.valorRestante || 0)
+          : (divida.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0),
+      atrasada: divida.tipo === "UNICA"
+        ? (divida.diasParaVencer !== undefined && divida.diasParaVencer !== null && divida.diasParaVencer < 0)
+        : divida.tipo === "FIXA"
+          ? (divida.diasParaVencer !== undefined && divida.diasParaVencer !== null && divida.diasParaVencer < 0 && !divida.concluida)
+          : (divida as DividaVolatil).atrasada,
+    };
   },
 
   async criar(dados: CreateDividaDTO & { userId: number }) {
@@ -320,10 +376,66 @@ export const dividasService = {
   },
 
   async remover(id: number) {
-    const hasDivida = await repositorio.buscarPorId(Number(id));
-    if (!hasDivida) throw new NotFoundError("Dívida não encontrada");
+    const despesa = await prisma.despesa.findUnique({
+      where: { id: Number(id) },
+      select: { id: true, deletedAt: true, tipo: true }
+    });
 
-    return await repositorio.remover(Number(id));
+    if (!despesa || despesa.deletedAt) {
+      throw new NotFoundError("Dívida não encontrada");
+    }
+
+    // 1. Buscar todos os lançamentos vinculados para identificar agendamentos pendentes
+    const lancamentos = await prisma.lancamento.findMany({
+      where: { despesaId: Number(id) },
+    });
+
+    const agendamentos = lancamentos.filter(l => l.tipo === "agendamento");
+    const pagamentos = lancamentos.filter(l => l.tipo === "pagamento");
+
+    // Agrupar pagamentos por mês/ano (MM-YYYY)
+    const pagamentosPorMes = new Map<string, number>();
+    pagamentos.forEach(p => {
+      const date = new Date(p.data);
+      const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+      pagamentosPorMes.set(key, (pagamentosPorMes.get(key) || 0) + Number(p.valor));
+    });
+
+    // Agrupar agendamentos por mês/ano (MM-YYYY) para calcular o total agendado
+    const agendamentosPorMes = new Map<string, number>();
+    agendamentos.forEach(a => {
+      const date = new Date(a.data);
+      const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+      agendamentosPorMes.set(key, (agendamentosPorMes.get(key) || 0) + Number(a.valor));
+    });
+
+    // Identificar IDs dos agendamentos pendentes (valor pago < valor agendado)
+    const idsParaDeletar: number[] = [];
+    agendamentos.forEach(a => {
+      const date = new Date(a.data);
+      const key = `${date.getUTCMonth()}-${date.getUTCFullYear()}`;
+      const valorAgendado = agendamentosPorMes.get(key) || 0;
+      const valorPago = pagamentosPorMes.get(key) || 0;
+
+      if (valorPago < valorAgendado - 0.01) {
+        idsParaDeletar.push(a.id);
+      }
+    });
+
+    // Deletar os agendamentos pendentes
+    if (idsParaDeletar.length > 0) {
+      await prisma.lancamento.deleteMany({
+        where: { id: { in: idsParaDeletar } },
+      });
+    }
+
+    // 2. Soft-delete na despesa apenas se for do tipo DIVIDA (dívida única).
+    // Para despesas do tipo VARIAVEL/FIXA (dívida volátil), a despesa de origem é mantida ativa.
+    if (despesa.tipo === "DIVIDA") {
+      return await repositorio.remover(Number(id));
+    }
+
+    return despesa;
   },
 
   async processarAporte(
@@ -332,9 +444,31 @@ export const dividasService = {
     userId: number,
   ) {
     const dividaId = Number(id);
-    const divida = await repositorio.buscarPorId(dividaId);
+    const divida = await this.buscarPorId(dividaId, userId);
     if (!divida || divida.userId !== userId)
       throw new NotFoundError("Dívida não encontrada");
+
+    if (divida.tipo === "FIXA") {
+      const valorAporte = Number(Number(dados.valor).toFixed(2));
+      const dataAporte = dados.data || new Date();
+
+      await prisma.lancamento.create({
+        data: {
+          userId,
+          despesaId: dividaId,
+          tipo: "pagamento",
+          valor: valorAporte,
+          data: dataAporte,
+          observacao: `Aporte - Despesa Fixa`,
+          observacaoAutomatica: "Aporte Automático",
+        },
+      });
+
+      return {
+        mesesPagos: [],
+        excedenteReal: 0,
+      };
+    }
 
     // 1. Limpar e arredondar imediatamente a entrada de dados para duas casas decimais
     const valorRestanteLimpo = Number(Number(divida.valorRestante).toFixed(2));
@@ -413,7 +547,7 @@ export const dividasService = {
           Date.UTC(
             vencimentoUltimaDate.getUTCFullYear(),
             vencimentoUltimaDate.getUTCMonth() + 1, // Mês após a última parcela
-            divida.diaVencimento || vencimentoUltimaDate.getUTCDate(),
+            (divida.tipo === "UNICA" ? divida.diaVencimento : undefined) || vencimentoUltimaDate.getUTCDate(),
           ),
         );
       }
@@ -444,8 +578,8 @@ export const dividasService = {
       );
     }
 
-    // Se a dívida foi quitada com o aporte, inativa na mesma transação atômica
-    if (foiQuitada && divida.status === "A") {
+    // Se a dívida foi quitada com o aporte, inativa na mesma transação atômica (apenas se for dívida única)
+    if (foiQuitada && divida.status === "A" && divida.tipo === "UNICA") {
       operacoes.push(
         prisma.despesa.update({
           where: { id: dividaId },

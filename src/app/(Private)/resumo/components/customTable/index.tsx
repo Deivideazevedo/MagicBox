@@ -129,12 +129,22 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
         return <Typography variant="body2">-</Typography>;
       }
 
-      // 2. Condição para valores presentes
+      // 2. Cor semântica baseada no status e origem
+      let cor = "text.primary";
+      if (row.status === "Pago") {
+        cor = "text.secondary"; // Cinza discreto para itens já liquidados
+      } else if (isDespesa) {
+        cor = row.atrasado ? "error.main" : "warning.main"; // Vermelho se atrasado, Laranja se pendente a vencer
+      } else {
+        cor = "success.main"; // Verde para receitas pendentes
+      }
+
+      // 3. Condição para valores presentes
       return (
         <Typography
           variant="body2"
           fontWeight={600}
-          color={isDespesa ? "error.main" : "success.main"}
+          color={cor}
         >
           {isDespesa ? "- " : "+ "}
           {formatarValor(valorNum)}
@@ -156,12 +166,24 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
         return <Typography variant="body2">-</Typography>;
       }
 
-      // 2. Condição para valores presentes
+      // 2. Cor semântica baseada no status e origem
+      let cor = "text.primary";
+      if (row.status === "Pago") {
+        // Se já está pago, neutralizamos a despesa (cor padrão de texto) e usamos verde para receita
+        cor = isDespesa ? "text.primary" : "success.main";
+      } else if (row.status === "Parcial") {
+        // Se pago parcialmente, mostramos o valor pago em tom padrão ou verde (receita)
+        cor = isDespesa ? "text.primary" : "success.main";
+      } else {
+        cor = isDespesa ? "error.main" : "success.main";
+      }
+
+      // 3. Condição para valores presentes
       return (
         <Typography
           variant="body2"
           fontWeight={600}
-          color={isDespesa ? "error.main" : "success.main"}
+          color={cor}
         >
           {isDespesa ? "- " : "+ "}
           {formatarValor(valorNum)}
