@@ -13,6 +13,7 @@ import {
   ListItemSecondaryAction,
   ListItemText,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -22,12 +23,13 @@ import { useState } from "react";
 
 interface ListProps {
   categorias: Categoria[];
-  handleOpenDialog: (categoria: Categoria) => void;
+  handleExcluirCategoria: (categoria: Categoria) => void;
   handleEdit: (categoria: Categoria) => void;
+  handleToggleStatus: (categoria: Categoria, checked: boolean) => void;
 }
 
 export const Listagem = (formProps: ListProps) => {
-  const { categorias, handleOpenDialog, handleEdit } = formProps;
+  const { categorias, handleExcluirCategoria, handleEdit, handleToggleStatus } = formProps;
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredCategorias = categorias.filter((c) =>
@@ -104,9 +106,10 @@ export const Listagem = (formProps: ListProps) => {
             {filteredCategorias.map((categoria: any, index: number) => {
               const bg = categoria.cor ? alpha(categoria.cor, 0.15) : "primary.light";
               const fg = categoria.cor || "primary.main";
+              const isAtiva = categoria.status === "A";
 
               return (
-                <Box key={categoria.id}>
+                <Box key={categoria.id} sx={{ opacity: isAtiva ? 1 : 0.55 }}>
                   <ListItem
                     sx={{
                       py: 2,
@@ -134,9 +137,12 @@ export const Listagem = (formProps: ListProps) => {
 
                     <ListItemText
                       primary={categoria.nome}
-                      secondary={`Criada em ${new Date(
-                        categoria.createdAt
-                      ).toLocaleDateString("pt-BR")}`}
+                      secondary={
+                        <Typography variant="caption" color="text.secondary">
+                          Criada em {new Date(categoria.createdAt).toLocaleDateString("pt-BR")}
+                          {!isAtiva && " • Inativa"}
+                        </Typography>
+                      }
                       primaryTypographyProps={{
                         fontWeight: 500,
                         color: "text.primary",
@@ -144,7 +150,19 @@ export const Listagem = (formProps: ListProps) => {
                     />
 
                     <ListItemSecondaryAction>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Tooltip
+                          title={isAtiva ? "Desativar Categoria" : "Ativar Categoria"}
+                          placement="top"
+                        >
+                          <Switch
+                            size="small"
+                            checked={isAtiva}
+                            onChange={(e) => handleToggleStatus(categoria, e.target.checked)}
+                            color="primary"
+                          />
+                        </Tooltip>
+
                         <Tooltip title="Editar Categoria" placement="top">
                           <IconButton
                             size="small"
@@ -158,7 +176,7 @@ export const Listagem = (formProps: ListProps) => {
                         <Tooltip title="Excluir Categoria" placement="top">
                           <IconButton
                             size="small"
-                            onClick={() => handleOpenDialog(categoria)}
+                            onClick={() => handleExcluirCategoria(categoria)}
                             color="error"
                           >
                             <IconTrash size={18} />

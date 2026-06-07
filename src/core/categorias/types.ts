@@ -4,6 +4,7 @@ export interface Categoria { // Representação no DB/Frontend completa
   nome: string;
   icone: string | null;
   cor: string | null;
+  status: string;
   createdAt: string | Date;
   updatedAt: string | Date;
   deletedAt: string | Date | null;
@@ -15,5 +16,7 @@ export interface CategoriaPayload {
   nome: string;
   icone?: string | null;
   cor?: string | null;
+  status?: string;
   userId?: number;
+  deletedAt?: string | Date | null;
 }

@@ -27,7 +27,16 @@ export const categoriasApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: ["Categorias"],
+      invalidatesTags: [
+        "Categorias",
+        "Despesas",
+        "Receita",
+        "Objetivos",
+        "Lancamentos",
+        "Resumo",
+        "Dashboard",
+        "Relatorios",
+      ],
     }),
 
     deleteCategoria: builder.mutation<{ success: boolean }, string>({
@@ -35,7 +44,16 @@ export const categoriasApi = api.injectEndpoints({
         url: `/categorias/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Categorias"],
+      invalidatesTags: [
+        "Categorias",
+        "Despesas",
+        "Receita",
+        "Objetivos",
+        "Lancamentos",
+        "Resumo",
+        "Dashboard",
+        "Relatorios",
+      ],
     }),
   }),
 });

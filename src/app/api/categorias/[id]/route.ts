@@ -33,13 +33,17 @@ async function atualizar(
   const corpo = await requisicao.json();
   const dados = updateCategoriaSchema.parse(corpo);
   
-  // A autenticação já nos provê o userId efetivo (dono ou via admin override)
-  const { userId } = await getAuthUser(requisicao, dados.userId);
+  // A autenticação já nos provê o userId efetivo (dono ou via admin override) e o role
+  const { userId, role } = await getAuthUser(requisicao, dados.userId);
 
-  const categoriaAtualizada = await servico.atualizar(id, {
-    ...dados,
-    userId,
-  });
+  const categoriaAtualizada = await servico.atualizar(
+    id,
+    {
+      ...dados,
+      userId,
+    },
+    role || undefined
+  );
 
   return NextResponse.json(categoriaAtualizada);
 }

@@ -1,6 +1,6 @@
 /**
  * Tags invalidadas por qualquer mutação de Lançamento.
- * Garante refetch unificado de: lista de lançamentos, resumo, dashboard e objetivos.
+ * Garante refetch unificado de: lista de lançamentos, resumo, dashboard, objetivos e relatórios.
  */
 export const LANCAMENTO_INVALIDATION_TAGS = [
   "Lancamentos",
@@ -8,45 +8,48 @@ export const LANCAMENTO_INVALIDATION_TAGS = [
   "Dashboard",
   "Objetivos",
   "Dividas",
+  "Relatorios",
 ] as const;
 
 /**
  * Tags invalidadas por qualquer mutação de Despesa.
- * Uma mudança em despesa afeta: resumo projetado, dashboard e lançamentos vinculados.
+ * Uma mudança em despesa afeta: resumo projetado, dashboard, lançamentos vinculados e relatórios.
  */
 export const DESPESA_INVALIDATION_TAGS = [
   "Despesas",
   "Resumo",
   "Dashboard",
   "Lancamentos",
+  "Relatorios",
 ] as const;
 
 /**
  * Tags invalidadas por qualquer mutação de Receita (Fonte de Renda).
- * Uma mudança em receita afeta: resumo projetado, dashboard e lançamentos vinculados.
+ * Uma mudança em receita afeta: resumo projetado, dashboard, lançamentos vinculados e relatórios.
  */
 export const RECEITA_INVALIDATION_TAGS = [
   "Receita",
-  "FonteRenda",
   "Resumo",
   "Dashboard",
   "Lancamentos",
+  "Relatorios",
 ] as const;
 
 /**
  * Tags invalidadas por qualquer mutação de Objetivo.
- * Uma mudança em objetivo afeta: saldo bloqueado no resumo, dashboard e lançamentos de aporte.
+ * Uma mudança em objetivo afeta: saldo bloqueado no resumo, dashboard, lançamentos de aporte e relatórios.
  */
 export const OBJETIVO_INVALIDATION_TAGS = [
   "Objetivos",
   "Resumo",
   "Dashboard",
   "Lancamentos",
+  "Relatorios",
 ] as const;
 
 /**
  * Tags invalidadas por qualquer mutação de Dívida.
- * Uma mudança em dívida afeta: resumo projetado, dashboard, lançamentos, despesas e objetivos.
+ * Uma mudança em dívida afeta: resumo projetado, dashboard, lançamentos, despesas, objetivos e relatórios.
  */
 export const DIVIDA_INVALIDATION_TAGS = [
   "Dividas",
@@ -55,4 +58,5 @@ export const DIVIDA_INVALIDATION_TAGS = [
   "Lancamentos",
   "Objetivos",
   "Despesas",
+  "Relatorios",
 ] as const;

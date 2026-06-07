@@ -10,6 +10,7 @@ export const createCategoriaSchema = z
       .trim(),
     icone: z.string().optional().nullable(),
     cor: z.string().optional().nullable(),
+    status: z.string().optional().default("A"),
     userId: z.number().int().positive().optional().nullable(),
   })
   .strict();
@@ -21,10 +22,13 @@ export const updateCategoriaSchema = z
       .string()
       .min(1)
       .max(100, "O nome deve ter no máximo 100 caracteres")
-      .trim(),
+      .trim()
+      .optional(),
     icone: z.string().optional().nullable(),
     cor: z.string().optional().nullable(),
+    status: z.string().optional(),
     userId: z.number().int().positive().optional(),
+    deletedAt: z.coerce.date().nullable().optional(),
   });
 
 // Schema para buscar por ID
