@@ -5,10 +5,14 @@ import { styled, useTheme } from "@mui/material/styles";
 import React, { useState } from "react";
 import Header from "./layout/vertical/header/Header";
 import Sidebar from "./layout/vertical/sidebar/Sidebar";
-import Customizer from "./layout/shared/customizer/Customizer";
+import dynamic from "next/dynamic";
 import GlobalLancamentoButton from "./layout/shared/GlobalLancamentoButton";
 
 import GlobalChatFab from "./layout/shared/GlobalChat/GlobalChatFab";
+
+const Customizer = dynamic(() => import("./layout/shared/customizer/Customizer"), {
+  ssr: false,
+});
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 
@@ -97,7 +101,7 @@ export default function RootLayout({
             {/* End Page */}
             {/* ------------------------------------------- */}
           </Container>
-          <Customizer />
+          {customizer.isCustomizerOpen && <Customizer />}
           <GlobalLancamentoButton />
           <GlobalChatFab />
         </PageWrapper>

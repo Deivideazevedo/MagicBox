@@ -24,21 +24,6 @@ const nextConfig = {
 
   },
 
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Reduz o tamanho do bundle em dev
-    if (dev) {
-      config.optimization = {
-        ...config.optimization,
-        removeAvailableModules: false,
-        removeEmptyChunks: false,
-        splitChunks: false,
-      };
-    }
-
-    return config;
-  },
-
   // Compressão
   compress: true,
 

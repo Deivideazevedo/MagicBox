@@ -5,8 +5,12 @@ import Button from "@mui/material/Button";
 import { IconRobot } from "@tabler/icons-react";
 import { styled } from "@mui/material/styles";
 import { alpha } from "@mui/material";
-import ChatDrawer from "./ChatDrawer";
+import dynamic from "next/dynamic";
 import { useModalUrl } from "@/hooks/useModalUrl";
+
+const ChatDrawer = dynamic(() => import("./ChatDrawer"), {
+  ssr: false,
+});
 
 const ExtensibleFab = styled(Button)(({ theme }) => ({
   position: "fixed",
@@ -62,7 +66,7 @@ const GlobalChatFab = () => {
         <span className="label">Assistente MagicBox (IA)</span>
       </ExtensibleFab>
 
-      <ChatDrawer open={isOpen} onClose={closeModal} />
+      {isOpen && <ChatDrawer open={isOpen} onClose={closeModal} />}
     </>
   );
 };

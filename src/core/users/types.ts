@@ -6,6 +6,7 @@ export interface CoreUser {
   hasPassword?: boolean; // ✅ Indica se a conta permite login via credenciais
   name: string | null;
   image: string | null;
+  phone?: string | null;
   role: string | null;
   status: string; // "A" ou "I"
   origem: string; // "credenciais", "google", "github", etc.

@@ -18,6 +18,10 @@ model User {
   receitas    Receita[]
   accessLogs  AccessLog[]
   aiUsageLogs AiUsageLog[]
+  phone       String?
+  disparoEnvios          DisparoEnvio[]
+  notificacoes           Notificacao[]
+  preferenciaNotificacao PreferenciaNotificacao?
 
   @@index([username])
   @@index([email])

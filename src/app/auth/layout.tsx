@@ -1,5 +1,6 @@
 "use client";
 import GuestGuard from "@/app/components/auth/GuestGuard";
+import RecaptchaProvider from "@/app/components/shared/RecaptchaProvider";
 import React from "react";
 
 export default function AuthLayout({
@@ -7,5 +8,9 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <GuestGuard>{children}</GuestGuard>;
+  return (
+    <GuestGuard>
+      <RecaptchaProvider>{children}</RecaptchaProvider>
+    </GuestGuard>
+  );
 }

@@ -22,6 +22,13 @@ export const PROTECTED_API_ROUTES = [
   "/api/auth/oauth-token",
 ];
 
+// Rotas de API que se AUTENTICAM SOZINHAS (segredo próprio) e por isso não passam
+// pela autenticação por sessão/Bearer do middleware:
+//  - /api/telegram/webhook → valida o header x-telegram-bot-api-secret-token
+//  - /api/cron/disparos     → valida Authorization: Bearer ${CRON_SECRET}
+// (Chamadas externas — Telegram e Vercel Cron — não têm sessão de usuário.)
+const PUBLIC_API_ROUTES = ["/api/telegram/webhook", "/api/cron/disparos"];
+
 // Rotas administrativas (requerem role admin)
 const ADMIN_ROUTES = ["/usuarios", "/sistema"];
 
@@ -32,6 +39,9 @@ const ADMIN_API_PATTERNS = ["/api/usuarios", "/api/cron/cleanup"];
 const isPublicRoute = (path: string) => PUBLIC_ROUTES.includes(path);
 const isAuthRoute = (path: string) => path.startsWith(AUTH_ROUTES[0]);
 const isApiRoute = (path: string) => path.startsWith("/api");
+
+const isPublicApiRoute = (path: string) =>
+  PUBLIC_API_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
 
 const isAdminPageRoute = (path: string) =>
   ADMIN_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
@@ -67,6 +77,7 @@ export {
   isProtectedApiRoute,
   isPublicNextAuthRoute,
   isApiRoute,
+  isPublicApiRoute,
   isAdminPageRoute,
   isAdminApiRoute,
 };

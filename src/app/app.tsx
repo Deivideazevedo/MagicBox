@@ -17,7 +17,7 @@ import { ConfirmDialogProvider } from "@/components/shared/ConfirmDialog";
 import PwaInstallPrompt from "@/components/shared/PwaInstallPrompt";
 import { AppState } from "@/store/store";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
-import RecaptchaProvider from "@/app/components/shared/RecaptchaProvider";
+
 
 // Toaster configurado com as cores do tema
 const ThemeToaster = () => {
@@ -84,27 +84,25 @@ const MyApp = ({
   return (
     <>
       <SessionProvider session={session}>
-        <RecaptchaProvider>
-          <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-            <ThemeProvider theme={theme}>
-              <LocalizationProvider
-                dateAdapter={AdapterDateFns}
-                adapterLocale={ptBR}
-                localeText={
-                  muiPtBR.components.MuiLocalizationProvider.defaultProps
-                    .localeText
-                }
-              >
-                <ConfirmDialogProvider>
-                  <CssBaseline />
-                  {children}
-                  <ThemeToaster />
-                  <PwaInstallPrompt />
-                </ConfirmDialogProvider>
-              </LocalizationProvider>
-            </ThemeProvider>
-          </AppRouterCacheProvider>
-        </RecaptchaProvider>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <ThemeProvider theme={theme}>
+            <LocalizationProvider
+              dateAdapter={AdapterDateFns}
+              adapterLocale={ptBR}
+              localeText={
+                muiPtBR.components.MuiLocalizationProvider.defaultProps
+                  .localeText
+              }
+            >
+              <ConfirmDialogProvider>
+                <CssBaseline />
+                {children}
+                <ThemeToaster />
+                <PwaInstallPrompt />
+              </ConfirmDialogProvider>
+            </LocalizationProvider>
+          </ThemeProvider>
+        </AppRouterCacheProvider>
       </SessionProvider>
     </>
   );

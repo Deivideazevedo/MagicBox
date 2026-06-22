@@ -1,0 +1,34 @@
+// Domínio de Notificações do usuário: central in-app (o sino) + preferências de canais.
+
+model PreferenciaNotificacao {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailAtivo           Boolean  @default(true)
+  smsAtivo             Boolean  @default(false)
+  whatsappAtivo        Boolean  @default(false)
+  telegramAtivo        Boolean  @default(false)
+  inAppAtivo           Boolean  @default(true)
+  telegramChatId       String?
+  telegramTokenVinculo String?  @unique // token temporário do fluxo de vínculo do Telegram
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("preferencia_notificacao")
+}
+
+model Notificacao {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo      String    // "DIVIDA", "OBJETIVO", "PROMOCAO", "DICA", "SUGESTAO", "SISTEMA"
+  titulo    String
+  mensagem  String    @db.Text
+  link      String?   // rota interna ao clicar (opcional)
+  lida      Boolean   @default(false)
+  lidaEm    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, lida])
+  @@map("notificacao")
+}

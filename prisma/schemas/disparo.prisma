@@ -1,0 +1,34 @@
+// Motor de disparos (envio genérico e multicanal): dívidas, objetivos, promoções, etc.
+// "Disparo" = um lote de envio (manual ou cron). "DisparoEnvio" = um envio individual (usuário x canal).
+
+model Disparo {
+  id           Int            @id @default(autoincrement())
+  origem       String         @default("MANUAL") // "MANUAL", "CRON"
+  contexto     String         @default("DIVIDA") // "DIVIDA", "OBJETIVO", "PROMOCAO", ...
+  status       String         // "PENDENTE", "ENVIADO", "FALHOU"
+  previstos    Int            // Total de envios previstos (usuários x canais)
+  enviados     Int            // Total de envios realizados
+  mensagemErro String?        @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  envios       DisparoEnvio[]
+
+  @@index([status])
+  @@map("disparo")
+}
+
+model DisparoEnvio {
+  id           Int      @id @default(autoincrement())
+  disparoId    Int
+  userId       Int
+  canal        String   // "EMAIL", "SMS", "WHATSAPP", "TELEGRAM", "IN_APP"
+  status       String   // "ENVIADO", "FALHOU", "BARRADO"
+  mensagemErro String?  @db.Text
+  disparo      Disparo  @relation(fields: [disparoId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([disparoId])
+  @@index([userId])
+  @@index([status])
+  @@map("disparo_envio")
+}

@@ -27,10 +27,16 @@ export const dividasService = {
       return {
         ...restSemParcelas,
         valorProximaParcela: d.tipo === "UNICA"
-          ? (d.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0)
+          ? (() => {
+              const prox = d.situacaoParcelas?.find((p) => p.status !== "pago");
+              return prox ? Math.max(0, Number((prox.valorAgendado - prox.valorPago).toFixed(2))) : 0;
+            })()
           : d.tipo === "FIXA"
             ? (d.valorRestante || 0)
-            : (d.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0),
+            : (() => {
+                const prox = d.situacaoParcelas?.find((p) => p.status !== "pago");
+                return prox ? Math.max(0, Number((prox.valorAgendado - prox.valorPago).toFixed(2))) : 0;
+              })(),
         atrasada: d.tipo === "UNICA"
           ? (d.diasParaVencer !== undefined && d.diasParaVencer !== null && d.diasParaVencer < 0)
           : d.tipo === "FIXA"
@@ -114,10 +120,16 @@ export const dividasService = {
     return {
       ...divida,
       valorProximaParcela: divida.tipo === "UNICA"
-        ? (divida.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0)
+        ? (() => {
+            const prox = divida.situacaoParcelas?.find((p) => p.status !== "pago");
+            return prox ? Math.max(0, Number((prox.valorAgendado - prox.valorPago).toFixed(2))) : 0;
+          })()
         : divida.tipo === "FIXA"
           ? (divida.valorRestante || 0)
-          : (divida.situacaoParcelas?.find((p) => p.status !== "pago")?.valorAgendado || 0),
+          : (() => {
+              const prox = divida.situacaoParcelas?.find((p) => p.status !== "pago");
+              return prox ? Math.max(0, Number((prox.valorAgendado - prox.valorPago).toFixed(2))) : 0;
+            })(),
       atrasada: divida.tipo === "UNICA"
         ? (divida.diasParaVencer !== undefined && divida.diasParaVencer !== null && divida.diasParaVencer < 0)
         : divida.tipo === "FIXA"

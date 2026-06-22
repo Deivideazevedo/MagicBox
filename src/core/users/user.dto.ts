@@ -71,6 +71,7 @@ export const updateUserSchema = z.object({
   password: z.string().min(6).max(100).optional().nullable(),
   name: z.string().max(100).trim().nullable().optional(),
   image: z.string().url().nullable().optional(),
+  phone: z.string().max(20).trim().nullable().optional(),
   role: z.string().max(50).optional(),
   status: z.string().optional(),
 });

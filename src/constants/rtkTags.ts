@@ -60,3 +60,10 @@ export const DIVIDA_INVALIDATION_TAGS = [
   "Despesas",
   "Relatorios",
 ] as const;
+
+/**
+ * Tags invalidadas por qualquer mutação de Notificação.
+ */
+export const DISPARO_INVALIDATION_TAGS = [
+  "Disparos",
+] as const;

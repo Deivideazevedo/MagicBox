@@ -25,7 +25,8 @@ import {
   IconUser,
   IconTarget,
   IconCreditCard,
-  IconDatabase
+  IconDatabase,
+  IconBell
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -95,6 +96,13 @@ const Menuitems: MenuitemsType[] = [
     title: "Sistema",
     icon: IconDatabase,
     href: "/sistema",
+    permissions: ["admin"],
+  },
+  {
+    id: uniqueId(),
+    title: "Disparos",
+    icon: IconBell,
+    href: "/sistema/disparos",
     permissions: ["admin"],
   },
   {

@@ -3,6 +3,7 @@ import {
   handleAuthError,
   isApiRoute,
   isAuthRoute,
+  isPublicApiRoute,
   isPublicNextAuthRoute,
   isPublicRoute,
   redirectToDashboard,
@@ -42,6 +43,15 @@ export async function middleware(request: NextRequest) {
   //    ❌ Demais privadas (PRIVATE)
   // ============================================================
   if (isPublicNextAuthRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // ============================================================
+  // 1.1 ROTAS DE API COM AUTENTICAÇÃO PRÓPRIA (Liberação Imediata)
+  //     /api/telegram/webhook (secret do Telegram) e /api/cron/disparos
+  //     (Bearer CRON_SECRET) — chamadas externas, sem sessão de usuário.
+  // ============================================================
+  if (isPublicApiRoute(pathname)) {
     return NextResponse.next();
   }
 

@@ -11,21 +11,20 @@ interface RecaptchaProviderProps {
 export default function RecaptchaProvider({
   children,
 }: RecaptchaProviderProps) {
-  const { status, data: session } = useSession();
+  const { status } = useSession();
   const isAuthenticated = status === "authenticated";
 
-  // Cria uma key única baseada no estado de autenticação
-  // Quando o usuário faz logout ou login, o componente remonta para limpar o token anterior
-  const remountKey = isAuthenticated
-    ? `auth-${session?.user?.id || "unknown"}`
-    : "guest";
+  // Evita montar/desmontar o reCAPTCHA enquanto a sessão está carregando (evita bugs de F5)
+  if (status === "loading" || isAuthenticated) {
+    return <Fragment>{children}</Fragment>;
+  }
 
-  // Usa a chave pública do ambiente ou a chave pública oficial de teste do Google reCAPTCHA v3 como fallback
-  // para evitar o erro "Missing required parameters: sitekey" no console em caso de carregamento lento do .env.
-  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+  // Limpa aspas simples/duplas e espaços extras da variável do .env.local/env
+  const rawKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+  const siteKey = rawKey.trim().replace(/['"]/g, "") || "6Ldf478UAAAAAN247olh7rU2v1Pn1D4K3V3z258y";
 
   return (
-    <Fragment key={remountKey}>
+    <Fragment key="guest">
       <GoogleReCaptchaProvider
         reCaptchaKey={siteKey}
         scriptProps={{
