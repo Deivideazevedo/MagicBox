@@ -35,6 +35,7 @@ import {
   IconUnlink,
   IconHistory,
   IconMapPin,
+  IconShieldLock,
 } from "@tabler/icons-react";
 import { format as formatarData, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -45,7 +46,11 @@ import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookPhoneField } from "@/app/components/forms/hooksForm/masks/input-mask";
 import { useUpdateUsuarioMutation } from "@/services/endpoints/usuariosApi";
 import type { UpdateUserDTO } from "@/core/users/user.dto";
-import { assinarPush, cancelarPush, pushSuportado } from "@/utils/push/clientePush";
+import {
+  assinarPush,
+  cancelarPush,
+  pushSuportado,
+} from "@/utils/push/clientePush";
 import {
   useGetMinhasPreferenciasQuery,
   useUpdateMinhasPreferenciasMutation,
@@ -66,6 +71,14 @@ const TELEGRAM_BLUE = "#229ED9";
 
 // Sombra suave reutilizada nos cards desta tela.
 const CARD_SHADOW = "0px 7px 30px 0px rgba(90, 114, 123, 0.05)";
+
+// Estilo base compartilhado pelos cards desta tela.
+const cardBaseSx = {
+  borderRadius: 4,
+  border: "1px solid",
+  borderColor: "divider",
+  boxShadow: CARD_SHADOW,
+} as const;
 
 // Máscara de telefone (mesma do HookPhoneField) para formatar o valor inicial,
 // que vem do banco em dígitos crus (ex.: "71989515719" → "(71) 98951-5719").
@@ -133,7 +146,7 @@ export default function PerfilPage() {
   // aqui quebraria o vínculo no próximo login, então o campo fica travado.
   const emailEditavel = session?.user?.origem === "credenciais";
 
-  // Aba ativa: 0 = Dados, 1 = Notificações, 2 = Acessos.
+  // Sub-aba ativa abaixo do hero: 0 = Dados, 1 = Segurança, 2 = Acessos.
   const [aba, setAba] = useState(0);
 
   // Histórico de acesso (últimos 5) — reaproveita o hook usado no painel admin.
@@ -160,7 +173,13 @@ export default function PerfilPage() {
     useDesvincularTelegramMutation();
 
   const { control, handleSubmit, reset } = useForm<ContaForm>({
-    defaultValues: { name: "", username: "", email: "", phone: "", password: "" },
+    defaultValues: {
+      name: "",
+      username: "",
+      email: "",
+      phone: "",
+      password: "",
+    },
   });
 
   // Nome ao vivo no hero conforme o usuário edita.
@@ -179,7 +198,8 @@ export default function PerfilPage() {
     }
   }, [session, reset]);
 
-  const onSubmitConta = handleSubmit(async (form) => {
+  // Salva os dados do perfil (sem a senha — esta fica na aba Segurança).
+  const onSubmitDados = handleSubmit(async (form) => {
     if (!userId) return;
     const data: UpdateUserDTO = {
       name: form.name || null,
@@ -188,7 +208,6 @@ export default function PerfilPage() {
     };
     // username só é enviado quando preenchido (o schema exige 3+ chars válidos).
     if (form.username) data.username = form.username;
-    if (form.password) data.password = form.password;
     // E-mail só é enviado para contas de credenciais (ver emailEditavel).
     if (emailEditavel && form.email) data.email = form.email;
     try {
@@ -200,6 +219,24 @@ export default function PerfilPage() {
         email: data.email,
       });
       toast.success("Dados atualizados com sucesso!");
+    } catch {
+      /* erro tratado no interceptor global */
+    }
+  });
+
+  // Define/altera a senha (aba Segurança), isolada dos demais dados.
+  const onSubmitSenha = handleSubmit(async (form) => {
+    if (!userId) return;
+    if (!form.password) {
+      toast.error("Informe a nova senha.");
+      return;
+    }
+    try {
+      await updateUsuario({
+        id: userId,
+        data: { password: form.password },
+      }).unwrap();
+      toast.success("Senha atualizada com sucesso!");
       reset({ ...form, password: "" });
     } catch {
       /* erro tratado no interceptor global */
@@ -215,7 +252,9 @@ export default function PerfilPage() {
       if (campo === "inAppAtivo") {
         if (valor) {
           if (!pushSuportado()) {
-            toast("Este dispositivo não suporta notificações push.", { icon: "ℹ️" });
+            toast("Este dispositivo não suporta notificações push.", {
+              icon: "ℹ️",
+            });
           } else {
             const ok = await assinarPush();
             if (ok) {
@@ -261,210 +300,331 @@ export default function PerfilPage() {
   const telegramConectado = !!prefs?.telegramChatId;
   const avatarSrc = session?.user?.image || "/images/profile/user-1.jpg";
 
+  // ----- Aba: Dados (perfil, sem a senha) -----
+  const panelDados = (
+    <Stack spacing={2.5}>
+      <HookTextField
+        control={control}
+        name="name"
+        label="Nome"
+        placeholder="Seu nome"
+        fullWidth
+      />
+      <HookTextField
+        control={control}
+        name="username"
+        label="Nome de usuário (login)"
+        placeholder="ex: apelido123"
+        fullWidth
+      />
+      <HookTextField
+        control={control}
+        name="email"
+        label="E-mail"
+        placeholder="voce@exemplo.com"
+        disabled={!emailEditavel}
+        fullWidth
+        helperText={
+          emailEditavel
+            ? "Usado para login e notificações por e-mail."
+            : "E-mail gerenciado pelo seu login social e não pode ser alterado aqui."
+        }
+      />
+      <HookPhoneField
+        control={control}
+        name="phone"
+        label="Telefone (DDD + número)"
+        fullWidth
+      />
+      <Box display="flex" justifyContent="flex-end" pt={0.5}>
+        <LoadingButton
+          loading={salvandoConta}
+          variant="contained"
+          onClick={onSubmitDados}
+          startIcon={<IconDeviceFloppy size={18} />}
+          sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
+        >
+          Salvar alterações
+        </LoadingButton>
+      </Box>
+    </Stack>
+  );
+
+  // ----- Aba: Segurança (definir/alterar senha) -----
+  const panelSeguranca = (
+    <Stack spacing={2.5}>
+      <Box>
+        <Typography variant="body2" fontWeight={700}>
+          Senha de acesso
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {session?.user?.hasPassword
+            ? "Defina uma nova senha para entrar com e-mail ou usuário."
+            : "Sua conta entra via login social. Defina uma senha para também acessar com e-mail/usuário."}
+        </Typography>
+      </Box>
+      <HookTextField
+        control={control}
+        name="password"
+        label="Nova senha"
+        type="password"
+        placeholder="Mínimo de 6 caracteres"
+        // Evita o autofill/sugestão de senha do navegador e gerenciadores.
+        autoComplete="one-time-code"
+        inputProps={{ name: "field-nova-senha-perfil" }}
+        fullWidth
+        helperText="Use ao menos 6 caracteres."
+      />
+      <Box display="flex" justifyContent="flex-end" pt={0.5}>
+        <LoadingButton
+          loading={salvandoConta}
+          variant="contained"
+          onClick={onSubmitSenha}
+          startIcon={<IconShieldLock size={18} />}
+          sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
+        >
+          {session?.user?.hasPassword ? "Alterar senha" : "Definir senha"}
+        </LoadingButton>
+      </Box>
+    </Stack>
+  );
+
+  // ----- Aba: Acessos (histórico) -----
+  const panelAcessos = (
+    <>
+      <Typography variant="caption" color="text.secondary">
+        Seus últimos acessos. Algo estranho? Troque sua senha na aba Segurança.
+      </Typography>
+      <Box mt={2}>
+        {isLoadingAcessos ? (
+          <Stack spacing={1.25}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={64}
+                sx={{ borderRadius: 3 }}
+              />
+            ))}
+          </Stack>
+        ) : !acessos?.length ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            textAlign="center"
+            py={4}
+          >
+            Nenhum acesso registrado ainda.
+          </Typography>
+        ) : (
+          <Stack spacing={1.25}>
+            {acessos.map((acesso: any) => {
+              const cor = getProviderColor(acesso.provider);
+              return (
+                <Box
+                  key={acesso.id}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    p: 1.5,
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 1,
+                      borderRadius: 2,
+                      display: "flex",
+                      flexShrink: 0,
+                      bgcolor: alpha(cor, 0.12),
+                    }}
+                  >
+                    {getProviderIcon(acesso.provider)}
+                  </Box>
+                  <Box flexGrow={1} minWidth={0}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={700}
+                      sx={{ textTransform: "capitalize" }}
+                    >
+                      {acesso.provider}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="flex"
+                      alignItems="center"
+                      gap={0.5}
+                      sx={{ flexWrap: "wrap" }}
+                    >
+                      <IconMapPin size={13} stroke={1.5} />
+                      {getLocationString(acesso)}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      {formatDistanceToNow(new Date(acesso.createdAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      })}
+                      {" · "}
+                      {formatarData(new Date(acesso.createdAt), "dd/MM HH:mm", {
+                        locale: ptBR,
+                      })}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Stack>
+        )}
+      </Box>
+    </>
+  );
+
   return (
     <Box>
-      {/* ============ Hero de identidade ============ */}
-      <Card
-        elevation={0}
-        sx={{
-          borderRadius: 4,
-          border: "1px solid",
-          borderColor: "divider",
-          mb: 3,
-          overflow: "hidden",
-          boxShadow: CARD_SHADOW,
-        }}
-      >
-        <Box
-          sx={{
-            p: { xs: 3, sm: 4 },
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: "center",
-            gap: { xs: 2, sm: 3 },
-            textAlign: { xs: "center", sm: "left" },
-            background: `linear-gradient(120deg, ${alpha(
-              theme.palette.primary.main,
-              0.1,
-            )} 0%, ${alpha(theme.palette.primary.main, 0)} 60%)`,
-          }}
-        >
-          <Avatar
-            src={avatarSrc}
-            alt={nomeAtual || "Avatar"}
-            sx={{
-              width: 96,
-              height: 96,
-              flexShrink: 0,
-              border: "4px solid",
-              borderColor: "background.paper",
-              boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
-            }}
-          />
-          <Box minWidth={0}>
-            <Typography
-              variant="overline"
-              color="text.secondary"
-              sx={{ fontWeight: 700, letterSpacing: 1 }}
-            >
-              Meu Perfil
-            </Typography>
-            <Typography
-              variant="h4"
-              fontWeight={800}
-              sx={{ letterSpacing: "-0.5px", lineHeight: 1.1 }}
-            >
-              {nomeAtual || session?.user?.name || "Sem nome"}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5, wordBreak: "break-word" }}
-            >
-              {session?.user?.email}
-            </Typography>
-            {role && (
-              <Chip
-                label={role === "admin" ? "Administrador" : "Usuário"}
-                size="small"
-                color={role === "admin" ? "primary" : "default"}
-                sx={{ mt: 1.5, fontWeight: 700 }}
-              />
-            )}
-          </Box>
-        </Box>
-      </Card>
-
-      {/* ============ Abas ============ */}
-      <Card
-        elevation={0}
-        sx={{
-          borderRadius: 4,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden",
-          boxShadow: CARD_SHADOW,
-        }}
-      >
-        <Tabs
-          value={aba}
-          onChange={(_, v) => setAba(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          allowScrollButtonsMobile
-          sx={{
-            px: { xs: 1, sm: 2 },
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            "& .MuiTab-root": {
-              fontWeight: 700,
-              textTransform: "none",
-              minHeight: 56,
-            },
-          }}
-        >
-          <Tab
-            icon={<IconUser size={18} stroke={1.5} />}
-            iconPosition="start"
-            label="Dados"
-          />
-          <Tab
-            icon={<IconBell size={18} stroke={1.5} />}
-            iconPosition="start"
-            label="Notificações"
-          />
-          <Tab
-            icon={<IconHistory size={18} stroke={1.5} />}
-            iconPosition="start"
-            label="Acessos"
-          />
-        </Tabs>
-
-        <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
-          {/* -------- Aba: Dados -------- */}
-          {aba === 0 && (
-            <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
-                <HookTextField
-                  control={control}
-                  name="name"
-                  label="Nome"
-                  placeholder="Seu nome"
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <HookTextField
-                  control={control}
-                  name="username"
-                  label="Nome de usuário (login)"
-                  placeholder="ex: apelido123"
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <HookTextField
-                  control={control}
-                  name="email"
-                  label="E-mail"
-                  placeholder="voce@exemplo.com"
-                  disabled={!emailEditavel}
-                  fullWidth
-                  helperText={
-                    emailEditavel
-                      ? "Usado para login e notificações por e-mail."
-                      : "E-mail gerenciado pelo seu login social e não pode ser alterado aqui."
-                  }
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <HookPhoneField
-                  control={control}
-                  name="phone"
-                  label="Telefone (DDD + número)"
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <HookTextField
-                  control={control}
-                  name="password"
-                  label="Nova senha"
-                  type="password"
-                  placeholder="Deixe em branco para manter"
-                  // Evita o autofill/sugestão de senha do navegador e gerenciadores.
-                  autoComplete="one-time-code"
-                  inputProps={{ name: "field-nova-senha-perfil" }}
-                  fullWidth
-                  helperText="Mínimo de 6 caracteres. Deixe em branco para não alterar."
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="flex-end" pt={0.5}>
-                  <LoadingButton
-                    loading={salvandoConta}
-                    variant="contained"
-                    onClick={onSubmitConta}
-                    startIcon={<IconDeviceFloppy size={18} />}
-                    sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
-                  >
-                    Salvar alterações
-                  </LoadingButton>
-                </Box>
-              </Grid>
-            </Grid>
-          )}
-
-          {/* -------- Aba: Notificações -------- */}
-          {aba === 1 && (
-            <>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2.5 }}
+      <Grid container spacing={3} alignItems="stretch">
+        {/* ============ Esquerda (2/3): Hero + (Dados | Histórico) ============ */}
+        <Grid item xs={12} md={8}>
+          <Stack spacing={3} sx={{ height: "100%" }}>
+            {/* ---- Hero de identidade ---- */}
+            <Card elevation={0} sx={{ ...cardBaseSx, overflow: "hidden" }}>
+              <Box
+                sx={{
+                  p: { xs: 3, sm: 4 },
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: "center",
+                  gap: { xs: 2, sm: 3 },
+                  textAlign: { xs: "center", sm: "left" },
+                  background: `linear-gradient(120deg, ${alpha(
+                    theme.palette.primary.main,
+                    0.1,
+                  )} 0%, ${alpha(theme.palette.primary.main, 0)} 60%)`,
+                }}
               >
+                <Avatar
+                  src={avatarSrc}
+                  alt={nomeAtual || "Avatar"}
+                  sx={{
+                    width: 96,
+                    height: 96,
+                    flexShrink: 0,
+                    border: "4px solid",
+                    borderColor: "background.paper",
+                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
+                  }}
+                />
+                <Box minWidth={0}>
+                  <Typography
+                    variant="overline"
+                    color="text.secondary"
+                    sx={{ fontWeight: 700, letterSpacing: 1 }}
+                  >
+                    Meu Perfil
+                  </Typography>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    sx={{ letterSpacing: "-0.5px", lineHeight: 1.1 }}
+                  >
+                    {nomeAtual || session?.user?.name || "Sem nome"}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 0.5, wordBreak: "break-word" }}
+                  >
+                    {session?.user?.email}
+                  </Typography>
+                  {role && (
+                    <Chip
+                      label={role === "admin" ? "Administrador" : "Premium"}
+                      size="small"
+                      color={role === "admin" ? "primary" : "default"}
+                      sx={{ mt: 1.5, fontWeight: 700 }}
+                    />
+                  )}
+                </Box>
+              </Box>
+            </Card>
+
+            {/* ---- Sub-abas: Dados · Segurança · Acessos ---- */}
+            <Card
+              elevation={0}
+              sx={{
+                ...cardBaseSx,
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <Tabs
+                value={aba}
+                onChange={(_, v) => setAba(v)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{
+                  px: { xs: 1, sm: 2 },
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  "& .MuiTab-root": {
+                    fontWeight: 700,
+                    textTransform: "none",
+                    minHeight: 56,
+                  },
+                }}
+              >
+                <Tab
+                  icon={<IconUser size={18} stroke={1.5} />}
+                  iconPosition="start"
+                  label="Dados"
+                />
+                <Tab
+                  icon={<IconShieldLock size={18} stroke={1.5} />}
+                  iconPosition="start"
+                  label="Segurança"
+                />
+                <Tab
+                  icon={<IconHistory size={18} stroke={1.5} />}
+                  iconPosition="start"
+                  label="Acessos"
+                />
+              </Tabs>
+              <CardContent sx={{ p: { xs: 2.5, sm: 3 }, flexGrow: 1 }}>
+                {aba === 0 && panelDados}
+                {aba === 1 && panelSeguranca}
+                {aba === 2 && panelAcessos}
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+
+        {/* ============ Direita (1/3): Preferências ocupando toda a altura ============ */}
+        <Grid item xs={12} md={4}>
+          <Card elevation={0} sx={{ ...cardBaseSx, height: "100%" }}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+              <Typography
+                variant="h6"
+                fontWeight={700}
+                gutterBottom
+                display="flex"
+                alignItems="center"
+                gap={1}
+              >
+                <IconBell size={20} stroke={1.5} /> Preferências de Notificação
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
                 Escolha por quais canais deseja receber lembretes.
               </Typography>
+              <Divider sx={{ my: 3 }} />
 
               <Stack spacing={1.25}>
                 {CANAIS.map((c) => {
@@ -620,115 +780,10 @@ export default function PerfilPage() {
                   </Button>
                 )}
               </Box>
-            </>
-          )}
-
-          {/* -------- Aba: Acessos -------- */}
-          {aba === 2 && (
-            <>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2.5 }}
-              >
-                Seus últimos acessos à conta. Algo estranho? Troque sua senha.
-              </Typography>
-
-              {isLoadingAcessos ? (
-                <Stack spacing={1.25}>
-                  {[0, 1, 2].map((i) => (
-                    <Skeleton
-                      key={i}
-                      variant="rounded"
-                      height={64}
-                      sx={{ borderRadius: 3 }}
-                    />
-                  ))}
-                </Stack>
-              ) : !acessos?.length ? (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  textAlign="center"
-                  py={4}
-                >
-                  Nenhum acesso registrado ainda.
-                </Typography>
-              ) : (
-                <Stack spacing={1.25}>
-                  {acessos.map((acesso: any) => {
-                    const cor = getProviderColor(acesso.provider);
-                    return (
-                      <Box
-                        key={acesso.id}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          p: 1.5,
-                          borderRadius: 3,
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            p: 1,
-                            borderRadius: 2,
-                            display: "flex",
-                            flexShrink: 0,
-                            bgcolor: alpha(cor, 0.12),
-                          }}
-                        >
-                          {getProviderIcon(acesso.provider)}
-                        </Box>
-                        <Box flexGrow={1} minWidth={0}>
-                          <Typography
-                            variant="body2"
-                            fontWeight={700}
-                            sx={{ textTransform: "capitalize" }}
-                          >
-                            {acesso.provider}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="flex"
-                            alignItems="center"
-                            gap={0.5}
-                          >
-                            <IconMapPin size={13} stroke={1.5} />
-                            {getLocationString(acesso)} · IP {acesso.ip}
-                          </Typography>
-                        </Box>
-                        <Box textAlign="right" flexShrink={0}>
-                          <Typography
-                            variant="caption"
-                            fontWeight={600}
-                            display="block"
-                          >
-                            {formatDistanceToNow(new Date(acesso.createdAt), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatarData(
-                              new Date(acesso.createdAt),
-                              "dd/MM/yyyy HH:mm",
-                              { locale: ptBR },
-                            )}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </Stack>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }

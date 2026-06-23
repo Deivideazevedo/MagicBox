@@ -61,7 +61,7 @@ export interface PendenciaUsuario {
   aVencerCount: number;
   totalVencido: number;
   totalAVencer: number;
-  detalhesVencidas: { nome: string; valor: number }[];
+  detalhesVencidas: { nome: string; valor: number; dias: number }[];
   detalhesAVencer: { nome: string; valor: number; dias: number }[];
   // Canais que o usuário aceita receber (considerando preferências + vínculo Telegram).
   canaisHabilitados: Record<CanalEnvio, boolean>;

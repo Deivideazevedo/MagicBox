@@ -25,8 +25,8 @@ export function buildPreview(
     totalVencido: 471.86,
     totalAVencer: 129.95,
     detalhesVencidas: [
-      { nome: "Tablet + A56", valor: 421.86 },
-      { nome: "Seguro Celular", valor: 50.0 },
+      { nome: "Tablet + A56", valor: 421.86, dias: -3 },
+      { nome: "Seguro Celular", valor: 50.0, dias: -1 },
     ],
     detalhesAVencer: [{ nome: "Mercado Pago", valor: 129.95, dias: 3 }],
     canaisHabilitados: {

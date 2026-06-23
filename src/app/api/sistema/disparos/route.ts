@@ -93,6 +93,7 @@ async function obterResumoEPendencias(
         detalhesVencidas: vencidas.map((v: DespesaPendenteRow) => ({
           nome: v.nome,
           valor: v.valorProximaParcela || v.valorRestante,
+          dias: Number(v.diasParaVencer),
         })),
         detalhesAVencer: aVencer.map((a: DespesaPendenteRow) => ({
           nome: a.nome,

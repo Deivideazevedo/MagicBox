@@ -32,6 +32,7 @@ import {
 import {
   IconBell,
   IconBellRinging,
+  IconBolt,
   IconBrandTelegram,
   IconBrandWhatsapp,
   IconCheck,
@@ -45,12 +46,77 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
+import { estagioDoAlerta } from "@/core/disparos/cadencia";
 import { CustomTable, NotificationLog } from "./components/customTable";
 import { DestinatariosDialog } from "./components/DestinatariosDialog";
 import { buildPreview } from "./components/buildPreview";
 import { useNotificacoes } from "./hooks/useNotificacoes";
 
 type Canal = "EMAIL" | "SMS" | "WHATSAPP" | "TELEGRAM" | "IN_APP";
+
+const STAGE_LABEL: Record<string, string> = {
+  pre_aviso: "Pré-aviso (7d)",
+  lembrete: "Lembrete (3d)",
+  vespera: "Véspera (1d)",
+  vence_hoje: "Vence hoje",
+  atrasou: "Atrasou ontem",
+  cobranca_1: "Cobrança 1",
+  cobranca_2: "Cobrança 2",
+  critico: "Crítico",
+  final: "Aviso Final",
+};
+
+const CADENCIA_DIAS = [7, 3, 1, 0, -1, -3, -7, -15, -30];
+
+function infoCron(dias: number) {
+  if (CADENCIA_DIAS.includes(dias)) {
+    return { disparaHoje: true, stage: estagioDoAlerta(dias)?.stage ?? null, diasParaProximo: 0 };
+  }
+  const proximos = CADENCIA_DIAS.filter((d) => d < dias).sort((a, b) => b - a);
+  if (proximos.length > 0) {
+    return { disparaHoje: false, stage: null, diasParaProximo: dias - proximos[0] };
+  }
+  return { disparaHoje: false, stage: null, diasParaProximo: null };
+}
+
+function BadgeCron({ dias }: { dias: number }) {
+  const info = infoCron(dias);
+  if (info.disparaHoje) {
+    return (
+      <Tooltip title={`Disparo automático hoje — ${STAGE_LABEL[info.stage ?? ""] ?? info.stage}`} arrow>
+        <Chip
+          label="Dispara hoje"
+          size="small"
+          color="success"
+          sx={{ height: 18, fontSize: "10px", fontWeight: 700, cursor: "default" }}
+        />
+      </Tooltip>
+    );
+  }
+  if (info.diasParaProximo !== null) {
+    const label = info.diasParaProximo === 1 ? "Cron amanhã" : `Cron em ${info.diasParaProximo}d`;
+    return (
+      <Tooltip title={`Próximo disparo automático em ${info.diasParaProximo} dia${info.diasParaProximo !== 1 ? "s" : ""}`} arrow>
+        <Chip
+          label={label}
+          size="small"
+          variant="outlined"
+          sx={{ height: 18, fontSize: "10px", fontWeight: 600, cursor: "default", color: "primary.main", borderColor: "primary.light" }}
+        />
+      </Tooltip>
+    );
+  }
+  return (
+    <Tooltip title="Fora da cadência — nenhum disparo automático futuro previsto" arrow>
+      <Chip
+        label="Sem cron"
+        size="small"
+        variant="outlined"
+        sx={{ height: 18, fontSize: "10px", cursor: "default", color: "text.disabled", borderColor: "divider" }}
+      />
+    </Tooltip>
+  );
+}
 
 const CANAL_LABEL: Record<Canal, string> = {
   EMAIL: "E-mail",
@@ -511,6 +577,13 @@ export default function NotificacoesPage() {
                   <Stack spacing={1.5}>
                     {pendencias.map((p) => {
                       const selecionado = selectedUserIds.includes(p.id);
+                      const todasDias = [
+                        ...(p.detalhesVencidas?.map((d) => d.dias) ?? []),
+                        ...(p.detalhesAVencer?.map((d) => d.dias) ?? []),
+                      ];
+                      const disparaHoje = todasDias.some((d) => CADENCIA_DIAS.includes(d));
+                      const stageName = todasDias.map((d) => estagioDoAlerta(d)?.stage).find(Boolean);
+                      const stageLabel = stageName ? (STAGE_LABEL[stageName] ?? stageName) : "";
                       return (
                         <Accordion
                           key={p.id}
@@ -518,9 +591,7 @@ export default function NotificacoesPage() {
                           sx={{
                             borderRadius: "12px !important",
                             border: "1px solid",
-                            borderColor: selecionado
-                              ? "primary.main"
-                              : "divider",
+                            borderColor: selecionado ? "primary.main" : "divider",
                             bgcolor: selecionado
                               ? alpha(theme.palette.primary.main, 0.04)
                               : "background.paper",
@@ -531,142 +602,96 @@ export default function NotificacoesPage() {
                           <AccordionSummary
                             expandIcon={<IconChevronDown size={20} />}
                             sx={{
+                              alignItems: "flex-start",
+                              py: 1.25,
                               bgcolor: "transparent",
-                              "& .MuiAccordionSummary-content": {
-                                minWidth: 0,
-                                overflow: "hidden",
-                              },
+                              "& .MuiAccordionSummary-content": { mt: 0, mb: 0, minWidth: 0 },
+                              "& .MuiAccordionSummary-expandIconWrapper": { mt: 0.75 },
                             }}
                           >
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={1.5}
-                              width="100%"
-                            >
-                              <Checkbox
-                                size="small"
-                                checked={selecionado}
-                                disabled={isBusy}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={() => toggleUser(p.id)}
-                                sx={{ p: 0.5, flexShrink: 0 }}
-                              />
-                              <Box
-                                sx={{
-                                  p: 1,
-                                  borderRadius: 2.5,
-                                  bgcolor: alpha(
-                                    theme.palette.primary.main,
-                                    0.08,
-                                  ),
-                                  color: "primary.main",
-                                  display: { xs: "none", sm: "flex" },
-                                  flexShrink: 0,
-                                }}
-                              >
-                                <IconUser size={20} />
-                              </Box>
-                              <Box flexGrow={1} sx={{ minWidth: 0 }}>
-                                {/* Linha 1: nome/e-mail à esquerda, chips de pendência à direita */}
-                                <Box
-                                  display="flex"
-                                  alignItems="flex-start"
-                                  justifyContent="space-between"
-                                  gap={1}
+                            {/* Checkbox alinhado ao topo */}
+                            <Checkbox
+                              size="small"
+                              checked={selecionado}
+                              disabled={isBusy}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={() => toggleUser(p.id)}
+                              sx={{ p: 0.5, flexShrink: 0, mr: 1, mt: 0.25 }}
+                            />
+
+                            {/* Conteúdo em coluna única — sem coluna de chips separada */}
+                            <Box flexGrow={1} minWidth={0}>
+
+                              {/* Linha 1 — nome + raio (wrapping, nunca trunca) */}
+                              <Box display="flex" flexWrap="wrap" alignItems="center" columnGap={0.75} rowGap={0.25}>
+                                <Typography variant="subtitle2" fontWeight={700} sx={{ lineHeight: 1.4 }}>
+                                  {p.name}
+                                </Typography>
+                                <Tooltip
+                                  title={disparaHoje ? `Disparo automático hoje — ${stageLabel}` : "Sem disparo automático hoje"}
+                                  arrow
                                 >
-                                  <Box sx={{ minWidth: 0 }}>
-                                    <Typography
-                                      variant="subtitle2"
-                                      fontWeight={700}
-                                      noWrap
-                                    >
-                                      {p.name}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      noWrap
-                                      sx={{ display: "block" }}
-                                    >
-                                      {p.email} {p.phone ? `• ${p.phone}` : ""}
-                                    </Typography>
-                                  </Box>
-                                  <Stack
-                                    direction="row"
-                                    spacing={0.75}
+                                  <Box
                                     sx={{
+                                      display: "flex",
                                       flexShrink: 0,
-                                      flexWrap: "wrap",
-                                      justifyContent: "flex-end",
-                                      rowGap: 0.5,
+                                      color: disparaHoje ? "warning.main" : "text.disabled",
+                                      opacity: disparaHoje ? 1 : 0.35,
                                     }}
                                   >
-                                    {p.vencidasCount > 0 && (
-                                      <Chip
-                                        label={`${p.vencidasCount} vencidas`}
-                                        size="small"
-                                        color="error"
-                                        sx={{
-                                          fontWeight: 600,
-                                          height: 20,
-                                          fontSize: "11px",
-                                        }}
-                                      />
-                                    )}
-                                    {p.aVencerCount > 0 && (
-                                      <Chip
-                                        label={`${p.aVencerCount} a vencer`}
-                                        size="small"
-                                        color="warning"
-                                        sx={{
-                                          fontWeight: 600,
-                                          height: 20,
-                                          fontSize: "11px",
-                                        }}
-                                      />
-                                    )}
-                                  </Stack>
-                                </Box>
+                                    <IconBolt size={15} stroke={2.5} />
+                                  </Box>
+                                </Tooltip>
+                              </Box>
 
-                                {/* Linha 2: indicador de canais habilitados (não compete com o nome) */}
-                                <Stack
-                                  direction="row"
-                                  spacing={0.5}
-                                  sx={{
-                                    mt: 0.75,
-                                    flexWrap: "wrap",
-                                    rowGap: 0.5,
-                                  }}
-                                >
-                                  {CANAIS_ORDEM.map((c) => {
-                                    const habilitado =
-                                      p.canaisHabilitados?.[c] ?? false;
-                                    return (
-                                      <Tooltip
-                                        key={c}
-                                        title={`${CANAL_LABEL[c]}: ${
-                                          habilitado
-                                            ? "habilitado"
-                                            : "desativado pelo usuário"
-                                        }`}
-                                        arrow
+                              {/* Linha 2 — e-mail (trunca com ellipsis, não quebra o layout) */}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", mt: 0.25 }}
+                              >
+                                {p.email}{p.phone ? ` • ${p.phone}` : ""}
+                              </Typography>
+
+                              {/* Linha 3 — canais + chips de status (flexWrap natural no mobile) */}
+                              <Box display="flex" flexWrap="wrap" alignItems="center" gap={0.5} mt={0.75}>
+                                {CANAIS_ORDEM.map((c) => {
+                                  const habilitado = p.canaisHabilitados?.[c] ?? false;
+                                  return (
+                                    <Tooltip
+                                      key={c}
+                                      title={`${CANAL_LABEL[c]}: ${habilitado ? "habilitado" : "desativado pelo usuário"}`}
+                                      arrow
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          color: habilitado ? "success.main" : "text.disabled",
+                                          opacity: habilitado ? 1 : 0.45,
+                                        }}
                                       >
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            color: habilitado
-                                              ? "success.main"
-                                              : "text.disabled",
-                                            opacity: habilitado ? 1 : 0.45,
-                                          }}
-                                        >
-                                          {CANAL_ICON[c](16)}
-                                        </Box>
-                                      </Tooltip>
-                                    );
-                                  })}
-                                </Stack>
+                                        {CANAL_ICON[c](14)}
+                                      </Box>
+                                    </Tooltip>
+                                  );
+                                })}
+                                <Box sx={{ width: "1px", height: 10, bgcolor: "divider", flexShrink: 0 }} />
+                                {p.vencidasCount > 0 && (
+                                  <Chip
+                                    label={`${p.vencidasCount} vencidas`}
+                                    size="small"
+                                    color="error"
+                                    sx={{ height: 17, fontSize: "10px", fontWeight: 700 }}
+                                  />
+                                )}
+                                {p.aVencerCount > 0 && (
+                                  <Chip
+                                    label={`${p.aVencerCount} a vencer`}
+                                    size="small"
+                                    color="warning"
+                                    sx={{ height: 17, fontSize: "10px", fontWeight: 700 }}
+                                  />
+                                )}
                               </Box>
                             </Box>
                           </AccordionSummary>
@@ -720,23 +745,29 @@ export default function NotificacoesPage() {
                                       key={i}
                                       display="flex"
                                       justifyContent="space-between"
-                                      alignItems="center"
+                                      alignItems="flex-start"
                                       sx={{
                                         pl: 2,
                                         borderLeft: "2px solid",
-                                        borderColor: "error.light",
+                                        borderColor: infoCron(div.dias).disparaHoje ? "success.main" : "error.light",
                                       }}
                                     >
-                                      <Typography
-                                        variant="body2"
-                                        color="text.primary"
-                                      >
-                                        {div.nome}
-                                      </Typography>
+                                      <Box>
+                                        <Typography variant="body2" color="text.primary">
+                                          {div.nome}
+                                        </Typography>
+                                        <Stack direction="row" spacing={0.75} alignItems="center" mt={0.25}>
+                                          <Typography variant="caption" color="text.secondary">
+                                            Há {Math.abs(div.dias)} dia{Math.abs(div.dias) !== 1 ? "s" : ""}
+                                          </Typography>
+                                          <BadgeCron dias={div.dias} />
+                                        </Stack>
+                                      </Box>
                                       <Typography
                                         variant="body2"
                                         fontWeight={700}
                                         color="error.dark"
+                                        sx={{ flexShrink: 0, ml: 1 }}
                                       >
                                         {formatarMoeda(div.valor)}
                                       </Typography>
@@ -772,11 +803,11 @@ export default function NotificacoesPage() {
                                         key={i}
                                         display="flex"
                                         justifyContent="space-between"
-                                        alignItems="center"
+                                        alignItems="flex-start"
                                         sx={{
                                           pl: 2,
                                           borderLeft: "2px solid",
-                                          borderColor: "warning.light",
+                                          borderColor: infoCron(div.dias).disparaHoje ? "success.main" : "warning.light",
                                         }}
                                       >
                                         <Box>
@@ -786,17 +817,21 @@ export default function NotificacoesPage() {
                                           >
                                             {div.nome}
                                           </Typography>
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                          >
-                                            {textoDia}
-                                          </Typography>
+                                          <Stack direction="row" spacing={0.75} alignItems="center" mt={0.25}>
+                                            <Typography
+                                              variant="caption"
+                                              color="text.secondary"
+                                            >
+                                              {textoDia}
+                                            </Typography>
+                                            <BadgeCron dias={div.dias} />
+                                          </Stack>
                                         </Box>
                                         <Typography
                                           variant="body2"
                                           fontWeight={700}
                                           color="warning.dark"
+                                          sx={{ flexShrink: 0, ml: 1 }}
                                         >
                                           {formatarMoeda(div.valor)}
                                         </Typography>

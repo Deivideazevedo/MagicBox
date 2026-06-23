@@ -11,8 +11,8 @@ async function listarAcessosUsuario(
   { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   const authUser = await getAuthUser(requisicao);
-  const { id: authId, role } = authUser;
-  
+  const { userId: authId, role } = authUser; // userId é sempre number (ao contrário de id que é string no Next-Auth)
+
   const { searchParams } = new URL(requisicao.url);
   const filtroBrutos = Object.fromEntries(searchParams.entries());
 
@@ -29,6 +29,6 @@ async function listarAcessosUsuario(
   });
 
   // A validação de permissão é feita de forma robusta e centralizada dentro do service
-  const acessos = await servico.listarAcessosUsuario(filtros, authUser as { id: number; role: string });
+  const acessos = await servico.listarAcessosUsuario(filtros, { id: authUser.userId, role: authUser.role! });
   return NextResponse.json(acessos);
 }

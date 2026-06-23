@@ -1,7 +1,7 @@
 import { authService as servico } from "@/core/users/service";
 import { updateUserSchema, userIdSchema } from "@/core/users/user.dto";
 import { errorHandler } from "@/lib/error-handler";
-import { NotFoundError } from "@/lib/errors";
+import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { getAuthUser } from "@/lib/server-auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,8 +15,12 @@ async function buscarPorId(
 ): Promise<NextResponse> {
   const { id: targetId } = userIdSchema.parse(params);
 
-  // Valida permissão: dono do perfil ou admin
-  await getAuthUser(requisicao, targetId);
+  const authUser = await getAuthUser(requisicao);
+
+  // Não-admin só pode consultar o próprio perfil
+  if (authUser.role !== "admin" && authUser.userId !== targetId) {
+    throw new UnauthorizedError("Acesso negado: você não pode consultar o perfil de outro usuário");
+  }
 
   const usuario = await servico.findByID(targetId);
 
