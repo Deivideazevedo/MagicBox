@@ -168,8 +168,8 @@ export default function NotificacoesPage() {
   }, [selectedUserIds, pendencias]);
 
   const previewTexto = useMemo(
-    () => buildPreview(previewPendencia, previewCanal),
-    [previewPendencia, previewCanal],
+    () => buildPreview(previewPendencia, previewCanal, dias),
+    [previewPendencia, previewCanal, dias],
   );
 
   const renderCanalCard = (canal: Canal, icon: React.ReactNode) => {

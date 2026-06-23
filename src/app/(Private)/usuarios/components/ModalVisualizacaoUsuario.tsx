@@ -56,7 +56,7 @@ import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookSelect } from "@/app/components/forms/hooksForm/HookSelect";
 import HookPasswordField from "@/app/components/forms/hooksForm/HookPasswordField";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
-import { useAcessosUsuario } from "../hooks/useAcessosUsuario";
+import { useAcessosUsuario } from "@/hooks/user/useAcessosUsuario";
 
 interface ModalVisualizacaoUsuarioProps {
   user: User | null;

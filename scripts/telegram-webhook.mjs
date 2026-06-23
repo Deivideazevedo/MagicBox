@@ -9,21 +9,17 @@
 // Lê TELEGRAM_BOT_TOKEN e TELEGRAM_WEBHOOK_SECRET do .env.local (ou do ambiente).
 // O caminho da rota é sempre /api/telegram/webhook.
 
-import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROUTE = "/api/telegram/webhook";
 
 function loadEnvLocal() {
+  // Usa o parser NATIVO do Node (process.loadEnvFile, estável desde v20.12) —
+  // sem regex manual nem leitura linha a linha. Trata aspas/comentários/multilinha
+  // conforme a doc oficial, e o ambiente tem precedência sobre o arquivo.
+  // Se o .env.local não existir, segue só com as variáveis do ambiente.
   try {
-    const conteudo = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
-    for (const linha of conteudo.split("\n")) {
-      const m = linha.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-      if (!m) continue;
-      const chave = m[1];
-      let valor = m[2].trim().replace(/^["']|["']$/g, "");
-      if (process.env[chave] === undefined) process.env[chave] = valor;
-    }
+    process.loadEnvFile(resolve(process.cwd(), ".env.local"));
   } catch {
     /* sem .env.local: usa só o ambiente */
   }

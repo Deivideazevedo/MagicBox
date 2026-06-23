@@ -113,4 +113,37 @@ export const notificacoesRepository = {
   async excluir(id: number, userId: number) {
     return prisma.notificacao.deleteMany({ where: { id, userId } });
   },
+
+  /** Contagem leve de não lidas (sem carregar as linhas) — usada no badge do push. */
+  async contarNaoLidas(userId: number) {
+    return prisma.notificacao.count({ where: { userId, lida: false } });
+  },
+
+  // ---------- Inscrições de Web Push ----------
+  /** Salva (ou atualiza) a inscrição de push de um dispositivo/navegador. */
+  async salvarInscricao(dados: {
+    userId: number;
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    dispositivo?: string | null;
+  }) {
+    const { endpoint, userId, p256dh, auth, dispositivo } = dados;
+    return prisma.inscricaoPush.upsert({
+      where: { endpoint },
+      create: { userId, endpoint, p256dh, auth, dispositivo },
+      // O mesmo endpoint pode reaparecer em outro usuário (login diferente no
+      // mesmo navegador): reatribui ao usuário atual e atualiza as chaves.
+      update: { userId, p256dh, auth, dispositivo },
+    });
+  },
+
+  /** Remove uma inscrição pelo endpoint (logout, cancelamento ou endpoint morto). */
+  async removerInscricao(endpoint: string) {
+    return prisma.inscricaoPush.deleteMany({ where: { endpoint } });
+  },
+
+  async listarInscricoesDoUsuario(userId: number) {
+    return prisma.inscricaoPush.findMany({ where: { userId } });
+  },
 };

@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { notificacoesRepository } from "./repository";
+import { enviarPushParaUsuario } from "./push";
 import type { CanalEnvio } from "@/core/disparos/types";
 
 /** Preferência padrão quando o usuário ainda não configurou (opt-in conservador). */
@@ -88,7 +89,25 @@ export const notificacoesService = {
     mensagem: string;
     link?: string | null;
   }) {
-    return notificacoesRepository.criarNotificacao(dados);
+    const notificacao = await notificacoesRepository.criarNotificacao(dados);
+
+    // Dispara o Web Push (badge no ícone + bandeja, mesmo com o app fechado)
+    // colado à criação do in-app. É aguardado de propósito: em serverless um
+    // fire-and-forget pode ser congelado antes de enviar. `enviarPushParaUsuario`
+    // é best-effort (nunca lança), então não quebra nem atrasa significativamente.
+    try {
+      const naoLidas = await notificacoesRepository.contarNaoLidas(dados.userId);
+      await enviarPushParaUsuario(dados.userId, {
+        titulo: dados.titulo,
+        mensagem: dados.mensagem,
+        link: dados.link ?? null,
+        naoLidas,
+      });
+    } catch (err) {
+      console.error("[Notificacoes] Falha no push pós-criação:", err);
+    }
+
+    return notificacao;
   },
 
   async marcarLida(id: number, userId: number) {
@@ -101,5 +120,22 @@ export const notificacoesService = {
 
   async excluir(id: number, userId: number) {
     return notificacoesRepository.excluir(id, userId);
+  },
+
+  // ---------- Web Push ----------
+  /** Registra a inscrição de push do dispositivo atual do usuário. */
+  async registrarInscricaoPush(dados: {
+    userId: number;
+    endpoint: string;
+    p256dh: string;
+    auth: string;
+    dispositivo?: string | null;
+  }) {
+    return notificacoesRepository.salvarInscricao(dados);
+  },
+
+  /** Cancela a inscrição de push de um endpoint. */
+  async cancelarInscricaoPush(endpoint: string) {
+    return notificacoesRepository.removerInscricao(endpoint);
   },
 };

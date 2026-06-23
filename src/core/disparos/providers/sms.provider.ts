@@ -20,9 +20,11 @@ export class SmsProvider implements NotificationProvider {
     const sender = process.env.COMTELE_SENDER || "MagicBox";
 
     if (!apiKey) {
-      console.log(`[SMS MOCK/Comtele] Enviando SMS para: ${options.destinatario}`);
-      console.log(`Conteúdo:\n${options.conteudo}`);
-      return { success: true };
+      // Sem credencial: NÃO envia (evita "ENVIADO" falso em produção).
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[SMS MOCK/Comtele] ${options.destinatario}\n${options.conteudo}`);
+      }
+      return { success: false, error: "SMS não configurado (COMTELE_API_KEY ausente)." };
     }
 
     // Número no formato nacional só-dígitos com DDI 55 (ex: 5571989515719)

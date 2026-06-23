@@ -115,11 +115,15 @@ export class EmailProvider implements NotificationProvider {
       }
     }
 
-    // 3. Fallback: Mock (Desenvolvimento sem chaves)
-    console.log(`[Email MOCK] Enviando e-mail para: ${emails.join(", ")}`);
-    console.log(`Assunto: ${options.assunto}`);
-    console.log(`Conteúdo:\n${options.conteudo}`);
-    return { success: true };
+    // 3. Sem SMTP nem Resend: NÃO envia (evita "ENVIADO" falso em produção).
+    //    O mock só é logado fora de produção, para inspeção em testes locais.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[Email MOCK] ${emails.join(", ")} | ${options.assunto}\n${options.conteudo}`);
+    }
+    return {
+      success: false,
+      error: "E-mail não configurado (defina SMTP_* ou RESEND_API_KEY).",
+    };
   }
 }
 

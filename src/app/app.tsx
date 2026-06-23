@@ -15,6 +15,7 @@ import ptBR from "date-fns/locale/pt-BR";
 import "@/app/api/index";
 import { ConfirmDialogProvider } from "@/components/shared/ConfirmDialog";
 import PwaInstallPrompt from "@/components/shared/PwaInstallPrompt";
+import PromptNotificacoesPush from "@/components/shared/PromptNotificacoesPush";
 import { AppState } from "@/store/store";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v14-appRouter";
 
@@ -99,6 +100,7 @@ const MyApp = ({
                 {children}
                 <ThemeToaster />
                 <PwaInstallPrompt />
+                <PromptNotificacoesPush />
               </ConfirmDialogProvider>
             </LocalizationProvider>
           </ThemeProvider>

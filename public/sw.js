@@ -1,4 +1,4 @@
-const CACHE_NAME = "magicbox-cache-v1";
+const CACHE_NAME = "magicbox-cache-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/favicon.ico",
@@ -99,4 +99,63 @@ self.addEventListener("fetch", (event) => {
         })
     );
   }
+});
+
+// 🔔 Web Push: o servidor "acorda" o SW mesmo com o app fechado. Mostramos a
+// notificação na bandeja (obrigatório no Android — userVisibleOnly) e setamos o
+// badge no ícone do app com o total de não lidas.
+self.addEventListener("push", (event) => {
+  let dados = {};
+  try {
+    dados = event.data ? event.data.json() : {};
+  } catch (e) {
+    dados = { titulo: "MagicBox", mensagem: event.data ? event.data.text() : "" };
+  }
+
+  const titulo = dados.titulo || "MagicBox";
+  const naoLidas = typeof dados.naoLidas === "number" ? dados.naoLidas : 0;
+
+  const tarefas = [
+    self.registration.showNotification(titulo, {
+      body: dados.mensagem || "",
+      icon: "/images/logos/logo.png",
+      badge: "/images/logos/logo.png",
+      tag: "magicbox-notificacao",
+      renotify: true,
+      data: { link: dados.link || "/" },
+    }),
+  ];
+
+  // Badge no ícone do app (Badging API). O suporte/visual varia por launcher.
+  if ("setAppBadge" in self.navigator) {
+    tarefas.push(
+      naoLidas > 0
+        ? self.navigator.setAppBadge(naoLidas)
+        : self.navigator.clearAppBadge()
+    );
+  }
+
+  event.waitUntil(Promise.all(tarefas));
+});
+
+// Ao clicar na notificação: foca uma aba aberta do app ou abre o link.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destino = (event.notification.data && event.notification.data.link) || "/";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.navigate(destino).catch(() => {});
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(destino);
+        }
+      })
+  );
 });

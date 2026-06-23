@@ -7,8 +7,9 @@ import {
 } from "@/app/components/shared/ProductTour";
 
 const ProductTour = dynamic(
-  () => import("@/app/components/shared/ProductTour").then((m) => m.ProductTour),
-  { ssr: false }
+  () =>
+    import("@/app/components/shared/ProductTour").then((m) => m.ProductTour),
+  { ssr: false },
 );
 import {
   Box,
@@ -43,15 +44,21 @@ import {
 } from "./components/DashboardSkeletons";
 
 // Importações dinâmicas dos widgets do Dashboard para performance máxima de First Load JS
-const FinancialSummaryCards = dynamic(() => import("./components/FinancialSummaryCards"), {
-  loading: () => <FinancialSummaryCardsSkeleton />,
-  ssr: false,
-});
+const FinancialSummaryCards = dynamic(
+  () => import("./components/FinancialSummaryCards"),
+  {
+    loading: () => <FinancialSummaryCardsSkeleton />,
+    ssr: false,
+  },
+);
 
-const TransactionHeatmap = dynamic(() => import("./components/TransactionHeatmap"), {
-  loading: () => <TransactionHeatmapSkeleton />,
-  ssr: false,
-});
+const TransactionHeatmap = dynamic(
+  () => import("./components/TransactionHeatmap"),
+  {
+    loading: () => <TransactionHeatmapSkeleton />,
+    ssr: false,
+  },
+);
 
 const MonthlyChart = dynamic(() => import("./components/MonthlyChart"), {
   loading: () => <MonthlyChartSkeleton />,
@@ -63,10 +70,13 @@ const GoalsProgress = dynamic(() => import("./components/GoalsProgress"), {
   ssr: false,
 });
 
-const RecentTransactions = dynamic(() => import("./components/RecentTransactions"), {
-  loading: () => <RecentTransactionsSkeleton />,
-  ssr: false,
-});
+const RecentTransactions = dynamic(
+  () => import("./components/RecentTransactions"),
+  {
+    loading: () => <RecentTransactionsSkeleton />,
+    ssr: false,
+  },
+);
 
 const UpcomingBills = dynamic(() => import("./components/UpcomingBills"), {
   loading: () => <UpcomingBillsSkeleton />,
@@ -171,17 +181,17 @@ const DashboardContent = () => {
           {/* Main Content Grid */}
           <Grid container spacing={3} sx={{ mt: 0 }}>
             {/* Recent Transactions */}
-            <Grid item xs={12} lg={7}>
+            <Grid item xs={12} sm={6} md={6} lg={7}>
               <RecentTransactions date={selectedDate} />
             </Grid>
 
             {/* Upcoming Bills */}
-            <Grid item xs={12} lg={5}>
+            <Grid item xs={12} sm={6} md={6} lg={5}>
               <UpcomingBills date={selectedDate} />
             </Grid>
 
             {/* Monthly Chart */}
-            <Grid item xs={12} lg={8}>
+            <Grid item xs={12} lg={7.5}>
               <MonthlyChart
                 selectedDate={selectedDate}
                 onMonthClick={(date: Date) => setSelectedDate(date)}
@@ -189,7 +199,7 @@ const DashboardContent = () => {
             </Grid>
 
             {/* Goals Progress */}
-            <Grid item xs={12} lg={4}>
+            <Grid item xs={12} lg={4.5}>
               <GoalsProgress date={selectedDate} />
             </Grid>
 

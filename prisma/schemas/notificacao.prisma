@@ -32,3 +32,21 @@ model Notificacao {
   @@index([userId, lida])
   @@map("notificacao")
 }
+
+// Inscrição de Web Push (uma por dispositivo/navegador). Guarda os dados da
+// PushSubscription do navegador para o servidor "acordar" o service worker e
+// exibir a notificação + badge mesmo com o app fechado.
+// `endpoint`/`p256dh`/`auth` são termos técnicos da spec PushSubscription.
+model InscricaoPush {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  dispositivo String? // user-agent do navegador, para o usuário identificar
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("inscricao_push")
+}

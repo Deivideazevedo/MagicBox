@@ -22,6 +22,7 @@ model User {
   disparoEnvios          DisparoEnvio[]
   notificacoes           Notificacao[]
   preferenciaNotificacao PreferenciaNotificacao?
+  inscricoesPush         InscricaoPush[]
 
   @@index([username])
   @@index([email])

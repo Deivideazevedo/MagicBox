@@ -11,6 +11,20 @@ import { TelegramProvider } from "./providers/telegram.provider";
 import { notificacoesService } from "@/core/notificacoes/service";
 import { notificacoesRepository } from "@/core/notificacoes/repository";
 import { estagioDoAlerta } from "./cadencia";
+import { montarMensagem } from "./templates";
+import { canalConfigurado } from "./config";
+
+/**
+ * Subconjunto de campos de uma despesa pendente que o formatador de mensagem
+ * consome. Aceita tanto as linhas reais do CTE (`DespesaPendenteRow`) quanto os
+ * objetos parciais usados em testes/simulações.
+ */
+type DespesaFormatavel = {
+  nome: string;
+  valorProximaParcela?: number;
+  valorRestante?: number;
+  diasParaVencer?: number | null;
+};
 
 const emailProvider = new EmailProvider();
 const smsProvider = new SmsProvider();
@@ -73,6 +87,24 @@ export const disparosService = {
         "[NotificationUserLog Error] Falha ao salvar log de usuário no banco:",
         err.message,
       );
+    }
+  },
+
+  /**
+   * Limpa o histórico de disparos antigo (retenção). Remove os lotes `Disparo` com
+   * `createdAt` anterior a `meses` atrás (cascata leva os `DisparoEnvio` junto).
+   * Único DELETE em massa — não estoura o timeout do cron. Nunca lança: em erro,
+   * loga e devolve `removidos: 0` para não derrubar o disparo que já concluiu.
+   */
+  async limparLogsAntigos(meses = 1) {
+    try {
+      const dataLimite = new Date();
+      dataLimite.setMonth(dataLimite.getMonth() - meses);
+      const removidos = await disparosRepository.deletarLogsAntigos(dataLimite);
+      return { removidos, limite: dataLimite };
+    } catch (err: any) {
+      console.error("[Disparos] Falha ao limpar logs antigos:", err.message);
+      return { removidos: 0, erro: err.message };
     }
   },
 
@@ -172,256 +204,32 @@ export const disparosService = {
   },
 
   /**
-   * Monta o conteúdo das mensagens dependendo do canal
+   * Adaptador fino: normaliza as dívidas cruas (campos do banco) para o formato
+   * `DadosMensagem` e delega ao template único em `templates.ts`. NÃO contém
+   * texto de mensagem — essa é a única fonte da verdade compartilhada com a UI.
    */
   formatarMensagem(
     name: string,
-    vencidas: any[],
-    aVencer: any[],
+    vencidas: DespesaFormatavel[],
+    aVencer: DespesaFormatavel[],
     canal: CanalEnvio,
+    diasAVencer = 7,
   ) {
-    const totalVencidas = vencidas.reduce(
-      (acc, d) => acc + Number(d.valorProximaParcela || d.valorRestante || 0),
-      0,
+    const valorDe = (d: DespesaFormatavel) =>
+      Number(d.valorProximaParcela || d.valorRestante || 0);
+    return montarMensagem(
+      {
+        nome: name,
+        vencidas: vencidas.map((d) => ({ nome: d.nome, valor: valorDe(d) })),
+        aVencer: aVencer.map((d) => ({
+          nome: d.nome,
+          valor: valorDe(d),
+          dias: Number(d.diasParaVencer ?? 0),
+        })),
+      },
+      canal,
+      diasAVencer,
     );
-    const totalAVencer = aVencer.reduce(
-      (acc, d) => acc + Number(d.valorProximaParcela || d.valorRestante || 0),
-      0,
-    );
-
-    const formatarMoeda = (valor: number) =>
-      new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }).format(valor);
-
-    if (canal === "IN_APP") {
-      // In-app: o título do sino já identifica "MagicBox", então a mensagem não
-      // repete o prefixo. Pode usar acentuação normalmente.
-      let msg = `Olá, ${name}! `;
-      if (vencidas.length > 0) {
-        msg += `Você tem ${vencidas.length} dívida(s) vencida(s) no total de ${formatarMoeda(totalVencidas)}. `;
-      }
-      if (aVencer.length > 0) {
-        msg += `${aVencer.length} dívida(s) vencendo nos próximos dias (${formatarMoeda(totalAVencer)}). `;
-      }
-      msg += "Acesse a plataforma para conferir e regularizar.";
-      return msg;
-    }
-
-    if (canal === "SMS") {
-      // SMS: texto curto, com remetente e sem acentos (compatibilidade GSM-7).
-      let sms = `MagicBox: Ola, ${name}! `;
-      if (vencidas.length > 0) {
-        sms += `Voce tem ${vencidas.length} divida(s) vencida(s) no total de ${formatarMoeda(totalVencidas)}. `;
-      }
-      if (aVencer.length > 0) {
-        sms += `${aVencer.length} divida(s) vencendo nos proximos dias (${formatarMoeda(totalAVencer)}). `;
-      }
-      sms += "Acesse a plataforma para conferir e regularizar.";
-      return sms;
-    }
-
-    if (canal === "WHATSAPP" || canal === "TELEGRAM") {
-      // WhatsApp/Telegram suportam markdown e mensagens um pouco mais ricas
-      let wa = `*MagicBox Notificações*\n\nOlá, *${name}*!\n\nIdentificamos pendências financeiras na sua conta:\n\n`;
-
-      if (vencidas.length > 0) {
-        wa += `🔴 *Vencidas (Atrasadas):*\n`;
-        vencidas.forEach((d) => {
-          const valor = formatarMoeda(
-            Number(d.valorProximaParcela || d.valorRestante || 0),
-          );
-          wa += `• ${d.nome} - *${valor}*\n`;
-        });
-        wa += `Total atrasado: *${formatarMoeda(totalVencidas)}*\n\n`;
-      }
-
-      if (aVencer.length > 0) {
-        wa += `🟡 *A Vencer (Próximos 7 dias):*\n`;
-        aVencer.forEach((d) => {
-          const valor = formatarMoeda(
-            Number(d.valorProximaParcela || d.valorRestante || 0),
-          );
-          const dias =
-            d.diasParaVencer === 0 ? "hoje" : `em ${d.diasParaVencer} dias`;
-          wa += `• ${d.nome} - *${valor}* (vence ${dias})\n`;
-        });
-        wa += `Total a vencer: *${formatarMoeda(totalAVencer)}*\n\n`;
-      }
-
-      wa += `Acesse seu painel no MagicBox para efetuar os pagamentos ou registrar os aportes de amortização.`;
-      return wa;
-    }
-
-    // EMAIL (HTML)
-    let emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Notificação de Dívidas - MagicBox</title>
-      </head>
-      <body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f6f9; padding: 40px 10px;">
-          <tr>
-            <td align="center">
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #eef2f6;">
-                
-                <!-- Cabeçalho com Degradê Premium -->
-                <tr>
-                  <td style="background: linear-gradient(135deg, #5D87FF 0%, #4977F2 100%); padding: 35px 30px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">MagicBox</h1>
-                    <p style="color: rgba(255, 255, 255, 0.85); margin: 6px 0 0 0; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px;">Gestão Financeira Inteligente</p>
-                  </td>
-                </tr>
-
-                <!-- Conteúdo Principal -->
-                <tr>
-                  <td style="padding: 35px 30px;">
-                    <p style="font-size: 18px; color: #1e293b; margin: 0 0 10px 0; font-weight: 600;">Olá, ${name},</p>
-                    <p style="font-size: 15px; color: #64748b; line-height: 1.6; margin: 0 0 25px 0;">
-                      Identificamos que existem pendências financeiras ativas registradas em sua conta. Confira abaixo o detalhamento dos vencimentos e organize suas finanças:
-                    </p>
-    `;
-
-    if (vencidas.length > 0) {
-      emailHtml += `
-                    <!-- Card de Contas Vencidas -->
-                    <div style="margin-bottom: 25px; border: 1px solid #fee2e2; border-radius: 12px; background-color: #fef2f2; padding: 20px;">
-                      
-                      <!-- Tabela de Alinhamento Horizontal (Badges) -->
-                      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px;">
-                        <tr>
-                          <td width="90" style="vertical-align: middle;">
-                            <span style="display: inline-block; background-color: #ef4444; color: #ffffff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Atrasado</span>
-                          </td>
-                          <td style="vertical-align: middle; padding-left: 8px;">
-                            <h3 style="color: #991b1b; margin: 0; font-size: 16px; font-weight: 700;">Contas Vencidas</h3>
-                          </td>
-                        </tr>
-                      </table>
-                      
-                      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                        <thead>
-                          <tr style="border-bottom: 1.5px solid #fca5a5; text-align: left;">
-                            <th style="padding: 8px 4px; color: #7f1d1d; font-size: 13px; font-weight: 600;">Descrição</th>
-                            <th style="padding: 8px 4px; color: #7f1d1d; font-size: 13px; font-weight: 600; text-align: right;">Valor</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-      `;
-      vencidas.forEach((d) => {
-        emailHtml += `
-                          <tr style="border-bottom: 1px solid #fee2e2;">
-                            <td style="padding: 10px 4px; color: #475569; font-size: 14px; font-weight: 500;">${d.nome}</td>
-                            <td style="padding: 10px 4px; color: #1e293b; font-size: 14px; font-weight: 700; text-align: right;">${formatarMoeda(Number(d.valorProximaParcela || d.valorRestante || 0))}</td>
-                          </tr>
-        `;
-      });
-      emailHtml += `
-                        </tbody>
-                      </table>
-                      
-                      <div style="margin-top: 12px; text-align: right; border-top: 1px solid #fca5a5; padding-top: 8px;">
-                        <span style="font-size: 13px; color: #7f1d1d; font-weight: 500; margin-right: 8px;">Subtotal Atrasado:</span>
-                        <span style="font-size: 18px; color: #991b1b; font-weight: 800;">${formatarMoeda(totalVencidas)}</span>
-                      </div>
-                    </div>
-      `;
-    }
-
-    if (aVencer.length > 0) {
-      emailHtml += `
-                    <!-- Card de Contas A Vencer -->
-                    <div style="margin-bottom: 25px; border: 1px solid #ffedd5; border-radius: 12px; background-color: #fffbeb; padding: 20px;">
-                      
-                      <!-- Tabela de Alinhamento Horizontal (Badges) -->
-                      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 12px;">
-                        <tr>
-                          <td width="90" style="vertical-align: middle;">
-                            <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">A Vencer</span>
-                          </td>
-                          <td style="vertical-align: middle; padding-left: 8px;">
-                            <h3 style="color: #92400e; margin: 0; font-size: 16px; font-weight: 700;">Próximos Vencimentos</h3>
-                          </td>
-                        </tr>
-                      </table>
-                      
-                      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
-                        <thead>
-                          <tr style="border-bottom: 1.5px solid #fcd34d; text-align: left;">
-                            <th style="padding: 8px 4px; color: #78350f; font-size: 13px; font-weight: 600;">Descrição</th>
-                            <th style="padding: 8px 4px; color: #78350f; font-size: 13px; font-weight: 600; text-align: center;">Vencimento</th>
-                            <th style="padding: 8px 4px; color: #78350f; font-size: 13px; font-weight: 600; text-align: right;">Valor</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-      `;
-      aVencer.forEach((d) => {
-        const dias =
-          d.diasParaVencer === 0 ? "Hoje" : `Em ${d.diasParaVencer} dias`;
-        emailHtml += `
-                          <tr style="border-bottom: 1px solid #ffedd5;">
-                            <td style="padding: 10px 4px; color: #475569; font-size: 14px; font-weight: 500;">${d.nome}</td>
-                            <td style="padding: 10px 4px; color: #d97706; font-size: 13px; font-weight: 600; text-align: center;">${dias}</td>
-                            <td style="padding: 10px 4px; color: #1e293b; font-size: 14px; font-weight: 700; text-align: right;">${formatarMoeda(Number(d.valorProximaParcela || d.valorRestante || 0))}</td>
-                          </tr>
-        `;
-      });
-      emailHtml += `
-                        </tbody>
-                      </table>
-                      
-                      <div style="margin-top: 12px; text-align: right; border-top: 1px solid #fcd34d; padding-top: 8px;">
-                        <span style="font-size: 13px; color: #78350f; font-weight: 500; margin-right: 8px;">Subtotal a Vencer:</span>
-                        <span style="font-size: 18px; color: #92400e; font-weight: 800;">${formatarMoeda(totalAVencer)}</span>
-                      </div>
-                    </div>
-      `;
-    }
-
-    emailHtml += `
-                    <!-- Botão de Ação Premium -->
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 20px; margin-bottom: 15px;">
-                      <tr>
-                        <td align="center">
-                          <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}" style="display: inline-block; background-color: #5D87FF; color: #ffffff; padding: 14px 28px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(93, 135, 255, 0.25); text-align: center;">
-                            Acessar Painel Financeiro
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <p style="font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 30px 0 0 0; text-align: center;">
-                      Recomendamos regularizar as pendências diretamente na plataforma para manter seus serviços ativos e suas contas organizadas.
-                    </p>
-                  </td>
-                </tr>
-
-                <!-- Rodapé -->
-                <tr>
-                  <td style="background-color: #f8fafc; padding: 30px; border-top: 1px solid #f1f5f9; text-align: center;">
-                    <p style="margin: 0 0 8px 0; font-size: 12px; color: #94a3b8; font-weight: 500;">
-                      Este é um e-mail transacional automático enviado por <strong>MagicBox</strong>.
-                    </p>
-                    <p style="margin: 0; font-size: 11px; color: #cbd5e1; line-height: 1.4;">
-                      Você está recebendo este alerta de vencimento pois ativou as notificações do sistema.<br>
-                      Caso não deseje mais receber estes avisos, por favor desative nas configurações de sua conta no MagicBox.
-                    </p>
-                  </td>
-                </tr>
-
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-      </html>
-    `;
-
-    return emailHtml;
   },
 
   /**
@@ -518,8 +326,8 @@ export const disparosService = {
         email: string;
         phone: string | null;
       },
-      vencidas: any[],
-      aVencer: any[],
+      vencidas: DespesaFormatavel[],
+      aVencer: DespesaFormatavel[],
       canal: CanalEnvio,
     ) => {
       let status: "ENVIADO" | "FALHOU" | "BARRADO" = "FALHOU";
@@ -535,11 +343,20 @@ export const disparosService = {
           return { canal, status, erro };
         }
 
+        // Canal sem credenciais (.env ausente): ignora (BARRADO) em vez de enviar
+        // mensagem mocada em produção. IN_APP não depende de env e segue normalmente.
+        if (canal !== "IN_APP" && !canalConfigurado(canal)) {
+          status = "BARRADO";
+          erro = `Canal ${canal} não configurado (variáveis de ambiente ausentes).`;
+          return { canal, status, erro };
+        }
+
         const conteudo = this.formatarMensagem(
           user.name || "Usuário",
           vencidas,
           aVencer,
           canal,
+          diasAVencer,
         );
 
         // Canal in-app: cria uma Notificação no sino (não há provedor externo).
@@ -547,7 +364,7 @@ export const disparosService = {
           await notificacoesService.criar({
             userId: user.id,
             tipo: contexto,
-            titulo: "Lembrete de dívidas - MagicBox",
+            titulo: "🎩 A Mágica dos Boletos",
             mensagem: conteudo,
             link: "/cadastros/dividas",
           });

@@ -165,23 +165,29 @@ A mesma função `canalHabilitado` alimenta dois lugares — garantindo coerênc
 
 | Canal | Provedor | Status | Variáveis de ambiente |
 |---|---|---|---|
-| **E-mail** | SMTP (Gmail/Nodemailer) **ou** Resend | ✅ **Funcionando** (com fallback mock) | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` **ou** `RESEND_API_KEY`, `EMAIL_FROM` |
-| **Telegram** | Telegram Bot API (oficial, gratuito) | ✅ **Funcionando** (mock sem token) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` |
+| **E-mail** | SMTP (Gmail/Nodemailer) **ou** Resend | ✅ **Funcionando** (sem env: canal ignorado) | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` **ou** `RESEND_API_KEY`, `EMAIL_FROM` |
+| **Telegram** | Telegram Bot API (oficial, gratuito) | ✅ **Funcionando** (sem token: canal ignorado) | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` |
 | **In-App** | — (grava no banco) | ✅ **Funcionando** (sempre) | nenhuma |
 | **SMS** | Comtele (REST nacional) | ⚠️ **Inerte** | `COMTELE_API_KEY`, `COMTELE_SENDER` |
 | **WhatsApp** | Meta WhatsApp Cloud API | ⚠️ **Inerte** | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TEMPLATE_NAME` |
 
 **Sobre os canais inertes (Comtele/Meta):** o código está pronto, porém a **chamada HTTP real está
 comentada** ([`sms.provider.ts`](../src/core/disparos/providers/sms.provider.ts),
-[`whatsapp.provider.ts`](../src/core/disparos/providers/whatsapp.provider.ts)). Sem as envs, o
-provider apenas loga e retorna sucesso (no-op seguro, não quebra a cadência). Por isso aparecem como
+[`whatsapp.provider.ts`](../src/core/disparos/providers/whatsapp.provider.ts)). Aparecem como
 **"Experimental"** na UI. Para ativar:
 - **SMS (Comtele):** inserir `COMTELE_API_KEY`/`COMTELE_SENDER` e descomentar o bloco marcado com 🔑.
 - **WhatsApp (Meta):** criar/verificar a WABA, número dedicado e **template "utility" aprovado**,
   inserir as 3 envs e descomentar o bloco 🔑. Mensagens proativas exigem template aprovado.
 
-**Sem chaves (desenvolvimento):** E-mail, SMS, WhatsApp e Telegram caem em **modo mock** (logam no
-terminal e retornam sucesso); o In-App sempre grava de verdade.
+**Sem credenciais (canal não configurado):** o canal é **ignorado** — o motor verifica
+`canalConfigurado()` ([`config.ts`](../src/core/disparos/config.ts)) e marca o envio como **`BARRADO`**
+(não conta como `ENVIADO` nem `FALHOU`), em vez de enviar mensagem mocada. Em **produção** os providers
+não logam nem retornam sucesso falso; **fora de produção** logam um `[MOCK]` para inspeção local. O
+In-App não depende de env e sempre grava de verdade.
+
+> 📖 **Telegram (webhook, túnel local, registro em produção):** o setup específico do canal
+> Telegram — incluindo por que o **webhook** precisa de URL pública HTTPS e como registrá-lo na
+> Vercel — está documentado em **[telegram_bot.md](./telegram_bot.md)** (§3).
 
 ---
 
@@ -201,82 +207,18 @@ exatamente esses formatos.
 
 ## 7. Cadência de dívidas — a regra dos 9 ciclos
 
-O **cron** (Seção 2.2) não dispara "para todo mundo todo dia". Ele segue uma **cadência escalonada**
-de 9 estágios (ciclos), definida em [`cadencia.ts`](../src/core/disparos/cadencia.ts) — a **única
-fonte de verdade**. Para ajustar custo/frequência, edita-se **só** esse array.
+📖 **A explicação completa da cadência foi centralizada numa única fonte da verdade** para evitar
+duplicação/desatualização. Veja **[docs/cron_disparos.md](./cron_disparos.md)**, que cobre:
 
-### 7.1. Os 9 ciclos
+- A tabela dos **9 ciclos** e os canais de cada estágio (array `CADENCIA` em
+  [`cadencia.ts`](../src/core/disparos/cadencia.ts)).
+- A mecânica **gatilho × conteúdo** (casamento exato por dívida × snapshot completo na mensagem).
+- A **consolidação por usuário** (1 mensagem por canal) e a janela de busca de 7 dias.
+- **Exemplo cronológico** com duas dívidas em datas diferentes.
+- **Custo:** WhatsApp e SMS disparam **apenas no D0 (vencimento)** — 1×/ciclo (≈1×/mês).
 
-Cada item é `{ dias, stage, canais }`, onde `dias` é o **offset em relação ao vencimento**
-(positivo = antes de vencer, `0` = no dia, negativo = em atraso):
-
-| # | `dias` | Estágio | Canais | Quando dispara |
-|---|---|---|---|---|
-| 1 | `7`  | `pre_aviso`  | EMAIL, TELEGRAM, IN_APP | 7 dias **antes** de vencer |
-| 2 | `3`  | `lembrete`   | EMAIL, TELEGRAM, IN_APP | 3 dias antes |
-| 3 | `1`  | `vespera`    | WHATSAPP, EMAIL, IN_APP | véspera |
-| 4 | `0`  | `vence_hoje` | WHATSAPP, EMAIL, IN_APP | no dia do vencimento |
-| 5 | `-1` | `atrasou`    | EMAIL, TELEGRAM, IN_APP | 1 dia em atraso |
-| 6 | `-3` | `cobranca_1` | EMAIL, TELEGRAM, IN_APP | 3 dias em atraso |
-| 7 | `-7` | `cobranca_2` | EMAIL, TELEGRAM, IN_APP | 7 dias em atraso |
-| 8 | `-15`| `critico`    | EMAIL, TELEGRAM, SMS, IN_APP | 15 dias em atraso |
-| 9 | `-30`| `final`      | EMAIL, TELEGRAM, SMS, IN_APP | 30 dias em atraso |
-
-> Observação de custo embutida na regra: os canais **caros** entram só onde fazem diferença —
-> **WhatsApp** apenas na véspera/vencimento (D-1, D0) e **SMS** apenas nos estágios mais graves
-> (D+15, D+30). E-mail, Telegram e In-App (gratuitos) cobrem todos os ciclos.
-
-### 7.2. Como um ciclo é "disparado" — casamento exato
-
-O cron roda **1×/dia**. Para cada dívida, calcula-se o `diasParaVencer` e chama-se
-`estagioDoAlerta(diasParaVencer)`:
-
-```ts
-export function estagioDoAlerta(diasParaVencer: number) {
-  return CADENCIA.find((c) => c.dias === diasParaVencer) ?? null;
-}
-```
-
-A comparação é por **igualdade exata** (`c.dias === diasParaVencer`). Ou seja, uma dívida só gera
-notificação **nos dias exatos** `7, 3, 1, 0, -1, -3, -7, -15, -30`. Em qualquer outro dia
-(ex.: faltando 5 dias, ou 4 dias em atraso) **não há disparo** para aquela dívida. É isso que
-mantém o volume (e o custo) sob controle: nada de mandar mensagem todo santo dia.
-
-### 7.3. Consolidação por usuário (1 mensagem por canal)
-
-`dispararCadenciaDividas` ([`service.ts`](../src/core/disparos/service.ts)) monta, para cada usuário,
-o **conjunto (set) de canais** somando os estágios que casaram hoje entre **todas** as dívidas dele:
-
-```text
-para cada usuário com pendência:
-    canais = Set()
-    para cada dívida (vencidas + a vencer):
-        estagio = estagioDoAlerta(dívida.diasParaVencer)
-        se estagio: canais.add(...estagio.canais)
-    se canais não vazio: canaisPorUsuario[usuário] = Array(canais)
-```
-
-Assim, se o usuário tem 2 dívidas batendo ciclos diferentes no mesmo dia (uma em `pre_aviso`, outra
-em `critico`), os canais são **unidos** e ele recebe **1 mensagem por canal** (não uma por dívida).
-A mensagem em si lista todas as pendências (vencidas + a vencer) — ver Seção 6.
-
-### 7.4. Onde a janela de 7 dias entra
-
-`dispararCadenciaDividas` lê as pendências com `obterPendenciasGeral(7)`. A janela **7** garante
-cobrir os estágios futuros (D-7 … D0); as dívidas **já vencidas** (dias < 0) sempre vêm todas,
-independentemente da janela. O casamento exato de `estagioDoAlerta` é quem decide, ao final, se cada
-dívida realmente dispara hoje.
-
-### 7.5. Preferências continuam valendo
-
-A cadência define os canais **antes** do filtro de preferências. Depois, no envio
-(`dispararNotificacoes`), cada (usuário × canal) ainda passa por `canalHabilitado` (Seção 3): se o
-usuário desativou aquele canal, o envio vira **`BARRADO`**. Ou seja, a cadência **propõe**, a
-preferência do usuário **dispõe**.
-
-> **Para alterar a regra:** edite o array `CADENCIA` (adicionar/remover ciclos, trocar offsets ou
-> canais). Nenhum outro arquivo precisa mudar — `estagioDoAlerta` e `dispararCadenciaDividas`
-> consomem o array dinamicamente.
+> Resumo do acoplamento: a cadência **propõe** os canais; a **preferência do usuário** (Seção 3) e a
+> **presença de credenciais** (`canalConfigurado`) ainda podem barrar o envio (`BARRADO`).
 
 ---
 

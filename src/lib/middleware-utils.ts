@@ -11,7 +11,7 @@ export interface AuthResult {
 }
 
 // Rotas públicas (não requerem autenticação)
-const PUBLIC_ROUTES = ["/", "/about", "/privacy"];
+const PUBLIC_ROUTES = ["/", "/privacy"];
 
 // Rotas de autenticação (login, registro, erro)
 const AUTH_ROUTES = ["/auth"];
@@ -33,7 +33,7 @@ const PUBLIC_API_ROUTES = ["/api/telegram/webhook", "/api/cron/disparos"];
 const ADMIN_ROUTES = ["/usuarios", "/sistema"];
 
 // Padrões de rotas de API administrativas (requerem role admin)
-const ADMIN_API_PATTERNS = ["/api/usuarios", "/api/cron/cleanup"];
+const ADMIN_API_PATTERNS = ["/api/usuarios", "/api/sistema/limpar"];
 
 // Verificadores de rota
 const isPublicRoute = (path: string) => PUBLIC_ROUTES.includes(path);

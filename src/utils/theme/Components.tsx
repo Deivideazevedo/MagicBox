@@ -345,6 +345,18 @@ const components: any = (theme: Theme) => {
         },
       },
     },
+    MuiSlider: {
+      styleOverrides: {
+        // No modo escuro o valueLabel padrão do MUI fica com fundo e texto claros
+        // (ilegível). Fixa fundo primário + texto branco mantendo o visual do claro.
+        valueLabel: {
+          ...(theme.palette.mode === "dark" && {
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+          }),
+        },
+      },
+    },
     MuiLinearProgress: {
       styleOverrides: {
         root: {

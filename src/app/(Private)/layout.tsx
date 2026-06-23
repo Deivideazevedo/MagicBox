@@ -20,6 +20,10 @@ const MainWrapper = styled("div")(() => ({
   display: "flex",
   minHeight: "100vh",
   width: "100%",
+  // Evita que qualquer conteúdo largo (tabelas, etc.) gere scroll horizontal e
+  // exponha o fundo do body à direita em telas menores.
+  maxWidth: "100vw",
+  overflowX: "hidden",
 }));
 
 const PageWrapper = styled("div")(({ theme }) => ({
@@ -28,6 +32,9 @@ const PageWrapper = styled("div")(({ theme }) => ({
   flexDirection: "column",
   zIndex: 1,
   width: "100%",
+  // `min-width: 0` permite que este flex item encolha abaixo da largura
+  // intrínseca do conteúdo (padrão flex é `auto`), em vez de empurrar o layout.
+  minWidth: 0,
   // backgroundColor: 'transparent',
   background: theme.palette.grey[100],
 }));

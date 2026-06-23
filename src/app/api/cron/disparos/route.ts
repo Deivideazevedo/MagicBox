@@ -15,9 +15,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Dispara a cadência escalonada de dívidas (canais por estágio × preferências do usuário).
-  // A regra está em src/core/disparos/cadencia.ts (única fonte de verdade, editável).
-  const resumo = await disparosService.dispararCadenciaDividas("CRON");
+  // Disparo e retenção são independentes (a limpeza só apaga lotes com +1 mês; o
+  // disparo só cria novos), então rodam EM PARALELO para reduzir o tempo total e o
+  // risco de timeout. A cadência está em src/core/disparos/cadencia.ts (fonte de
+  // verdade). limparLogsAntigos trata o próprio erro, então nunca rejeita o Promise.all.
+  const [resumo, limpeza] = await Promise.all([
+    disparosService.dispararCadenciaDividas("CRON"),
+    disparosService.limparLogsAntigos(1),
+  ]);
 
-  return NextResponse.json({ success: true, resumo });
+  return NextResponse.json({ success: true, resumo, limpeza });
 }

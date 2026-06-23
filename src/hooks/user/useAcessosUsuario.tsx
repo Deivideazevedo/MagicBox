@@ -11,7 +11,7 @@ import { useModalUrl } from "@/hooks/useModalUrl";
 
 export function useAcessosUsuario(userId: number | undefined) {
   const theme = useTheme();
-  
+
   const { isOpen: todosAcessosOpen, openModal, closeModal } = useModalUrl("acessos");
   const setTodosAcessosOpen = (open: boolean) => {
     if (open) openModal();

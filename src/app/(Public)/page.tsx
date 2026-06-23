@@ -37,7 +37,6 @@ import {
   IconReport,
   IconCalendar,
   IconCoin,
-  IconTrendingUp,
   IconShieldCheck,
   IconMail,
   IconMessage,
@@ -47,15 +46,17 @@ import {
   IconCheck,
   IconSparkles,
   IconBrandWhatsapp,
+  IconBrandTelegram,
+  IconBell,
   IconWallet,
   IconReceiptOff,
   IconAdjustmentsHorizontal,
 } from "@tabler/icons-react";
 import {
   ThemedHeroSection,
-  ThemedFeatureCard,
   useCustomTheme,
 } from "@/components/shared/ThemedComponents";
+import LandingDemo from "@/components/shared/LandingDemo";
 
 // ─── Animations ───────────────────────────────────────────────────────────────
 
@@ -305,7 +306,11 @@ const notifChannels = [
     title: "Alertas via SMS",
     description:
       "Notificações instantâneas por SMS para os momentos mais críticos do seu controle financeiro.",
-    items: ["Alertas urgentes", "Confirmações de pagamento", "Lembretes de conta"],
+    items: [
+      "Alertas urgentes",
+      "Confirmações de pagamento",
+      "Lembretes de conta",
+    ],
   },
   {
     icon: IconBrandWhatsapp,
@@ -313,8 +318,26 @@ const notifChannels = [
     label: "WhatsApp",
     title: "Mensagens no WhatsApp",
     description:
-      "Receba notificações onde você já está. Integração com WhatsApp via Twilio para maior comodidade.",
+      "Receba notificações onde você já está, direto nas suas conversas do WhatsApp.",
     items: ["Notificações ricas", "Fácil interação", "Alta taxa de leitura"],
+  },
+  {
+    icon: IconBrandTelegram,
+    color: "#229ED9",
+    label: "Telegram",
+    title: "Alertas no Telegram",
+    description:
+      "Receba seus alertas direto no Telegram, de forma rápida e gratuita.",
+    items: ["Conexão em 1 clique", "Alertas na hora", "Sem custo"],
+  },
+  {
+    icon: IconBell,
+    color: "#7C4DFF",
+    label: "No app",
+    title: "Notificações no app",
+    description:
+      "Avisos que aparecem no seu aparelho mesmo com o MagicBox fechado.",
+    items: ["Aviso na tela", "Direto no celular", "Sempre em dia"],
   },
 ];
 
@@ -324,7 +347,6 @@ export default function LandingPage() {
   const { theme, isDarkMode } = useCustomTheme();
   const { data: session } = useSession();
   const [animateIn, setAnimateIn] = useState(false);
-  const [demoData, setDemoData] = useState({ receita: 5000, despesa: 3200 });
   const [activeFlowTab, setActiveFlowTab] = useState(0);
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
@@ -332,9 +354,6 @@ export default function LandingPage() {
     const t = setTimeout(() => setAnimateIn(true), 400);
     return () => clearTimeout(t);
   }, []);
-
-  const saldo = demoData.receita - demoData.despesa;
-  const saldoPositivo = saldo >= 0;
 
   const particles = Array.from({ length: 18 }, (_, i) => ({
     id: i,
@@ -348,7 +367,6 @@ export default function LandingPage() {
 
   return (
     <Box>
-
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
       <ThemedHeroSection
         sx={{
@@ -372,8 +390,8 @@ export default function LandingPage() {
             animation: "driftDots 22s linear infinite",
           },
           "@keyframes driftDots": {
-            "0%":   { backgroundPosition: "0 0, 55px 25px" },
-            "50%":  { backgroundPosition: "80px 50px, 10px 75px" },
+            "0%": { backgroundPosition: "0 0, 55px 25px" },
+            "50%": { backgroundPosition: "80px 50px, 10px 75px" },
             "100%": { backgroundPosition: "0 0, 55px 25px" },
           },
         }}
@@ -429,7 +447,7 @@ export default function LandingPage() {
                 tudo em um só lugar.
               </Typography>
               <Stack
-                direction={{ xs: "column", sm: "row" }}
+                direction="row"
                 spacing={2}
                 justifyContent="center"
                 alignItems="center"
@@ -459,33 +477,11 @@ export default function LandingPage() {
                 >
                   {session ? "Acessar MagicBox" : "Começar Gratuitamente"}
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  component={Link}
-                  href="/about"
-                  sx={{
-                    py: 1.8,
-                    px: 4,
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    color: "#fff",
-                    borderColor: alpha("#fff", 0.5),
-                    borderRadius: 3,
-                    "&:hover": {
-                      borderColor: "#fff",
-                      bgcolor: alpha("#fff", 0.1),
-                    },
-                  }}
-                >
-                  Saiba mais
-                </Button>
               </Stack>
             </Box>
           </Fade>
         </Container>
       </ThemedHeroSection>
-
 
       {/* ── STATS BAR ───────────────────────────────────────────────────────── */}
       <Box
@@ -499,9 +495,9 @@ export default function LandingPage() {
           <Grid container spacing={3} justifyContent="center">
             {[
               { value: "8+", label: "Módulos financeiros" },
-              { value: "3",  label: "Canais de notificação" },
-              { value: "4",  label: "Providers de autenticação" },
-              { value: "3",  label: "Modelos de IA integrados" },
+              { value: "5", label: "Canais de notificação" },
+              { value: "4", label: "Providers de autenticação" },
+              { value: "3", label: "Modelos de IA integrados" },
             ].map((stat) => (
               <Grid item xs={6} sm={3} key={stat.label}>
                 <StatCard>
@@ -509,11 +505,19 @@ export default function LandingPage() {
                     variant="h3"
                     fontWeight={900}
                     color="primary"
-                    sx={{ lineHeight: 1, mb: 0.5, fontSize: { xs: "2rem", md: "2.6rem" } }}
+                    sx={{
+                      lineHeight: 1,
+                      mb: 0.5,
+                      fontSize: { xs: "2rem", md: "2.6rem" },
+                    }}
                   >
                     {stat.value}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    fontWeight={500}
+                  >
                     {stat.label}
                   </Typography>
                 </StatCard>
@@ -522,7 +526,6 @@ export default function LandingPage() {
           </Grid>
         </Container>
       </Box>
-
 
       {/* ── FEATURES GRID ───────────────────────────────────────────────────── */}
       <Box
@@ -557,23 +560,37 @@ export default function LandingPage() {
         }}
       >
         <Container maxWidth="lg">
-          <Box textAlign="center" mb={7} sx={{ position: "relative", zIndex: 1 }}>
+          <Box
+            textAlign="center"
+            mb={7}
+            sx={{ position: "relative", zIndex: 1 }}
+          >
             <GlowBadge label="Funcionalidades" sx={{ mb: 2 }} />
             <Typography
               variant="h3"
               fontWeight={900}
               color="text.primary"
-              sx={{ fontSize: { xs: "2rem", md: "2.8rem" }, mb: 2, lineHeight: 1.2 }}
+              sx={{
+                fontSize: { xs: "2rem", md: "2.8rem" },
+                mb: 2,
+                lineHeight: 1.2,
+              }}
             >
               Tudo para dominar suas finanças
             </Typography>
             <Typography
               variant="h6"
               color="text.secondary"
-              sx={{ maxWidth: 660, mx: "auto", lineHeight: 1.7, fontWeight: 400 }}
+              sx={{
+                maxWidth: 660,
+                mx: "auto",
+                lineHeight: 1.7,
+                fontWeight: 400,
+              }}
             >
               Cada módulo foi pensado para dar clareza, controle e autonomia
-              sobre o seu dinheiro — da organização ao planejamento de longo prazo.
+              sobre o seu dinheiro — da organização ao planejamento de longo
+              prazo.
             </Typography>
           </Box>
 
@@ -590,36 +607,60 @@ export default function LandingPage() {
               };
               const color = colorMap[feat.color];
               return (
-                <Grid item xs={12} sm={6} lg={3} key={i}>
+                <Grid item xs={12} sm={4} lg={3} key={i}>
                   <Slide direction="up" in={animateIn} timeout={700 + i * 100}>
-                    <ThemedFeatureCard
-                      sx={{
-                        borderRadius: 4,
-                        border: `1px solid ${alpha(color, 0.14)}`,
-                        height: "100%",
-                      }}
-                    >
-                      <Box
+                    {/* Box externo = alvo da animação do Slide (recebe transform inline);
+                        o hover de subida fica no Paper interno para não ser sobrescrito. */}
+                    <Box sx={{ height: "100%" }}>
+                      <Paper
+                        elevation={0}
                         sx={{
-                          mb: 2.5,
-                          width: 56,
-                          height: 56,
-                          borderRadius: 3,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          bgcolor: alpha(color, 0.1),
+                          p: 3,
+                          height: "100%",
+                          borderRadius: 4,
+                          textAlign: "center",
+                          border: `1px solid ${alpha(color, 0.14)}`,
+                          background: theme.palette.background.paper,
+                          transition: "all 0.3s ease",
+                          "&:hover": {
+                            borderColor: alpha(color, 0.4),
+                            boxShadow: `0 16px 40px ${alpha(color, 0.1)}`,
+                            transform: "translateY(-6px)",
+                          },
                         }}
                       >
-                        <Icon size={28} color={color} />
-                      </Box>
-                      <Typography variant="h6" fontWeight={700} color="text.primary" gutterBottom>
-                        {feat.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" lineHeight={1.65}>
-                        {feat.description}
-                      </Typography>
-                    </ThemedFeatureCard>
+                        <Box
+                          sx={{
+                            mx: "auto",
+                            mb: 2.5,
+                            width: 56,
+                            height: 56,
+                            borderRadius: 3,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            bgcolor: alpha(color, 0.1),
+                          }}
+                        >
+                          <Icon size={28} color={color} />
+                        </Box>
+                        <Typography
+                          variant="h6"
+                          fontWeight={700}
+                          color="text.primary"
+                          gutterBottom
+                        >
+                          {feat.title}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          lineHeight={1.65}
+                        >
+                          {feat.description}
+                        </Typography>
+                      </Paper>
+                    </Box>
                   </Slide>
                 </Grid>
               );
@@ -627,7 +668,6 @@ export default function LandingPage() {
           </Grid>
         </Container>
       </Box>
-
 
       {/* ── AI ASSISTANT ────────────────────────────────────────────────────── */}
       <Box
@@ -644,17 +684,26 @@ export default function LandingPage() {
                 variant="h3"
                 fontWeight={900}
                 color="text.primary"
-                sx={{ fontSize: { xs: "1.9rem", md: "2.5rem" }, mb: 2.5, lineHeight: 1.2 }}
+                sx={{
+                  fontSize: { xs: "1.9rem", md: "2.5rem" },
+                  mb: 2.5,
+                  lineHeight: 1.2,
+                }}
               >
                 Seu consultor
                 <br />
                 financeiro com IA
               </Typography>
-              <Typography variant="body1" color="text.secondary" lineHeight={1.75} sx={{ mb: 3 }}>
-                Converse com nosso assistente financeiro alimentado por múltiplos
-                modelos de IA (OpenAI, Google Gemini e Groq) com fallback automático.
-                Pergunte sobre seus gastos, peça análises e obtenha recomendações
-                personalizadas em segundos.
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                lineHeight={1.75}
+                sx={{ mb: 3 }}
+              >
+                Converse com nosso assistente financeiro alimentado por
+                múltiplos modelos de IA (OpenAI, Google Gemini e Groq) com
+                fallback automático. Pergunte sobre seus gastos, peça análises e
+                obtenha recomendações personalizadas em segundos.
               </Typography>
               <Stack spacing={1.5}>
                 {[
@@ -705,8 +754,12 @@ export default function LandingPage() {
                       <IconBrain size={22} color={theme.palette.primary.main} />
                     </Box>
                     <Box>
-                      <Typography variant="subtitle2" fontWeight={700}>MagicBox IA</Typography>
-                      <Typography variant="caption" color="text.secondary">Assistente financeiro • Online</Typography>
+                      <Typography variant="subtitle2" fontWeight={700}>
+                        MagicBox IA
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Assistente financeiro • Online
+                      </Typography>
                     </Box>
                   </Box>
 
@@ -734,7 +787,8 @@ export default function LandingPage() {
                       key={i}
                       sx={{
                         display: "flex",
-                        justifyContent: msg.from === "user" ? "flex-end" : "flex-start",
+                        justifyContent:
+                          msg.from === "user" ? "flex-end" : "flex-start",
                       }}
                     >
                       <Box
@@ -742,21 +796,25 @@ export default function LandingPage() {
                           maxWidth: "82%",
                           px: 2,
                           py: 1.2,
-                          borderRadius: msg.from === "user"
-                            ? "16px 16px 4px 16px"
-                            : "16px 16px 16px 4px",
-                          bgcolor: msg.from === "user"
-                            ? theme.palette.primary.main
-                            : alpha(theme.palette.background.default, 0.8),
-                          border: msg.from === "ai"
-                            ? `1px solid ${theme.palette.divider}`
-                            : "none",
+                          borderRadius:
+                            msg.from === "user"
+                              ? "16px 16px 4px 16px"
+                              : "16px 16px 16px 4px",
+                          bgcolor:
+                            msg.from === "user"
+                              ? theme.palette.primary.main
+                              : alpha(theme.palette.background.default, 0.8),
+                          border:
+                            msg.from === "ai"
+                              ? `1px solid ${theme.palette.divider}`
+                              : "none",
                         }}
                       >
                         <Typography
                           variant="body2"
                           sx={{
-                            color: msg.from === "user" ? "#fff" : "text.primary",
+                            color:
+                              msg.from === "user" ? "#fff" : "text.primary",
                             lineHeight: 1.55,
                           }}
                         >
@@ -771,7 +829,6 @@ export default function LandingPage() {
           </Grid>
         </Container>
       </Box>
-
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────────────── */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
@@ -797,7 +854,12 @@ export default function LandingPage() {
         <Grid container spacing={4}>
           <Grid item xs={12} md={3.5}>
             <Box sx={{ position: { md: "sticky" }, top: 100 }}>
-              <Typography variant="overline" color="text.secondary" fontWeight={700} sx={{ px: 1, mb: 2, display: "block" }}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                fontWeight={700}
+                sx={{ px: 1, mb: 2, display: "block" }}
+              >
                 Etapas
               </Typography>
               <Tabs
@@ -807,10 +869,19 @@ export default function LandingPage() {
                 value={activeFlowTab}
                 onChange={(_, v) => setActiveFlowTab(v)}
                 sx={{
-                  borderLeft: isMdUp ? `2px solid ${theme.palette.divider}` : "none",
-                  borderBottom: isMdUp ? "none" : `1px solid ${theme.palette.divider}`,
+                  borderLeft: isMdUp
+                    ? `2px solid ${theme.palette.divider}`
+                    : "none",
+                  borderBottom: isMdUp
+                    ? "none"
+                    : `1px solid ${theme.palette.divider}`,
                   "& .MuiTabs-indicator": isMdUp
-                    ? { left: 0, right: "auto", width: 3, borderRadius: "0 3px 3px 0" }
+                    ? {
+                        left: 0,
+                        right: "auto",
+                        width: 3,
+                        borderRadius: "0 3px 3px 0",
+                      }
                     : undefined,
                   "& .MuiTab-root": {
                     display: "flex",
@@ -830,13 +901,20 @@ export default function LandingPage() {
                       color: "primary.main",
                       bgcolor: alpha(theme.palette.primary.main, 0.07),
                     },
-                    "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                    },
                     "& svg": { marginRight: "10px !important" },
                   },
                 }}
               >
                 {workflowSteps.map((step) => (
-                  <Tab key={step.id} label={step.title} icon={step.icon} iconPosition="start" />
+                  <Tab
+                    key={step.id}
+                    label={step.title}
+                    icon={step.icon}
+                    iconPosition="start"
+                  />
                 ))}
               </Tabs>
             </Box>
@@ -853,7 +931,7 @@ export default function LandingPage() {
                 minHeight: 320,
                 animation: "slideIn 0.4s ease",
                 "@keyframes slideIn": {
-                  "0%":   { opacity: 0, transform: "translateX(-20px)" },
+                  "0%": { opacity: 0, transform: "translateX(-20px)" },
                   "100%": { opacity: 1, transform: "translateX(0)" },
                 },
               }}
@@ -864,7 +942,12 @@ export default function LandingPage() {
                   role="tabpanel"
                   sx={{ display: activeFlowTab === step.id ? "block" : "none" }}
                 >
-                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 3 }}
+                  >
                     <Avatar
                       sx={{
                         bgcolor: alpha(theme.palette.primary.main, 0.1),
@@ -876,16 +959,28 @@ export default function LandingPage() {
                       {step.icon}
                     </Avatar>
                     <Box>
-                      <Typography variant="overline" color="text.secondary" fontWeight={700}>
+                      <Typography
+                        variant="overline"
+                        color="text.secondary"
+                        fontWeight={700}
+                      >
                         Etapa {step.id + 1} de {workflowSteps.length}
                       </Typography>
-                      <Typography variant="h4" fontWeight={800} lineHeight={1.2}>
+                      <Typography
+                        variant="h4"
+                        fontWeight={800}
+                        lineHeight={1.2}
+                      >
                         {step.title}
                       </Typography>
                     </Box>
                   </Stack>
 
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.75 }}>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mb: 4, lineHeight: 1.75 }}
+                  >
                     {step.description}
                   </Typography>
 
@@ -893,13 +988,22 @@ export default function LandingPage() {
 
                   <Stack spacing={1.5}>
                     {step.bullets.map((item) => (
-                      <Box key={item} display="flex" gap={1.5} alignItems="flex-start">
+                      <Box
+                        key={item}
+                        display="flex"
+                        gap={1.5}
+                        alignItems="flex-start"
+                      >
                         <IconShieldCheck
                           size={17}
                           color={theme.palette.success.main}
                           style={{ marginTop: 3, flexShrink: 0 }}
                         />
-                        <Typography variant="body2" color="text.secondary" lineHeight={1.6}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          lineHeight={1.6}
+                        >
                           {item}
                         </Typography>
                       </Box>
@@ -911,7 +1015,6 @@ export default function LandingPage() {
           </Grid>
         </Grid>
       </Container>
-
 
       {/* ── NOTIFICATIONS ───────────────────────────────────────────────────── */}
       <Box
@@ -925,8 +1028,8 @@ export default function LandingPage() {
             <GlowBadge
               label="Notificações"
               sx={{
-                mb: 2,
-                bgcolor: alpha(theme.palette.success.main, 0.12),
+                mb: 2.5,
+                bgcolor: alpha(theme.palette.success.light, 0.12),
                 color: theme.palette.success.main,
                 border: `1px solid ${alpha(theme.palette.success.main, 0.25)}`,
               }}
@@ -934,7 +1037,11 @@ export default function LandingPage() {
             <Typography
               variant="h3"
               fontWeight={900}
-              sx={{ fontSize: { xs: "1.9rem", md: "2.7rem" }, mb: 2 }}
+              sx={{
+                fontSize: { xs: "1.9rem", md: "2.7rem" },
+                lineHeight: 1.25,
+                mb: 2.5,
+              }}
             >
               Notificações que chegam
               <br />
@@ -943,18 +1050,24 @@ export default function LandingPage() {
             <Typography
               variant="h6"
               color="text.secondary"
-              sx={{ maxWidth: 600, mx: "auto", lineHeight: 1.7, fontWeight: 400 }}
+              sx={{
+                maxWidth: 600,
+                mx: "auto",
+                lineHeight: 1.7,
+                fontWeight: 400,
+              }}
             >
-              Nunca mais perca um vencimento. Receba alertas por e-mail,
-              SMS ou WhatsApp com total controle de preferências.
+              Nunca mais perca um vencimento. Receba alertas por e-mail, SMS,
+              WhatsApp, Telegram ou direto no app, com total controle de
+              preferências.
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
+          <Grid container spacing={3} justifyContent="center">
             {notifChannels.map((ch) => {
               const Icon = ch.icon;
               return (
-                <Grid item xs={12} md={4} key={ch.label}>
+                <Grid item xs={12} sm={6} md={4} key={ch.label}>
                   <NotifCard>
                     <Box
                       sx={{
@@ -984,12 +1097,22 @@ export default function LandingPage() {
                     <Typography variant="h6" fontWeight={700} gutterBottom>
                       {ch.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" lineHeight={1.65} sx={{ mb: 2.5 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      lineHeight={1.65}
+                      sx={{ mb: 2.5 }}
+                    >
                       {ch.description}
                     </Typography>
                     <Stack spacing={1}>
                       {ch.items.map((item) => (
-                        <Box key={item} display="flex" alignItems="center" gap={1}>
+                        <Box
+                          key={item}
+                          display="flex"
+                          alignItems="center"
+                          gap={1}
+                        >
                           <Box
                             sx={{
                               width: 6,
@@ -1013,7 +1136,6 @@ export default function LandingPage() {
         </Container>
       </Box>
 
-
       {/* ── SECURITY ────────────────────────────────────────────────────────── */}
       <Container maxWidth="lg" sx={{ py: 10 }}>
         <Grid container spacing={6} alignItems="center">
@@ -1030,23 +1152,44 @@ export default function LandingPage() {
             <Typography
               variant="h3"
               fontWeight={900}
-              sx={{ fontSize: { xs: "1.9rem", md: "2.5rem" }, mb: 2.5, lineHeight: 1.2 }}
+              sx={{
+                fontSize: { xs: "1.9rem", md: "2.5rem" },
+                mb: 2.5,
+                lineHeight: 1.2,
+              }}
             >
               Seus dados protegidos
               <br />
               com múltiplas camadas
             </Typography>
-            <Typography variant="body1" color="text.secondary" lineHeight={1.75} sx={{ mb: 3 }}>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              lineHeight={1.75}
+              sx={{ mb: 3 }}
+            >
               Autenticação com múltiplos provedores OAuth, bcrypt nas senhas,
-              reCAPTCHA v3 contra bots, sessões JWT de curta duração e log completo
-              de acessos com geolocalização.
+              reCAPTCHA v3 contra bots, sessões JWT de curta duração e log
+              completo de acessos com geolocalização.
             </Typography>
             <Stack spacing={2}>
               {[
-                { icon: IconLogin,   label: "Login com Google, GitHub e Azure AD" },
-                { icon: IconShieldLock, label: "Senhas com bcrypt + reCAPTCHA v3" },
-                { icon: IconHistory, label: "Log de acesso com IP e geolocalização" },
-                { icon: IconAdjustmentsHorizontal, label: "Dados isolados por usuário" },
+                {
+                  icon: IconLogin,
+                  label: "Login com Google, GitHub e Azure AD",
+                },
+                {
+                  icon: IconShieldLock,
+                  label: "Senhas com bcrypt + reCAPTCHA v3",
+                },
+                {
+                  icon: IconHistory,
+                  label: "Log de acesso com IP e geolocalização",
+                },
+                {
+                  icon: IconAdjustmentsHorizontal,
+                  label: "Dados isolados por usuário",
+                },
               ].map(({ icon: Icon, label }) => (
                 <Box key={label} display="flex" alignItems="center" gap={2}>
                   <Box
@@ -1063,7 +1206,11 @@ export default function LandingPage() {
                   >
                     <Icon size={18} color={theme.palette.warning.dark} />
                   </Box>
-                  <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    fontWeight={500}
+                  >
                     {label}
                   </Typography>
                 </Box>
@@ -1081,15 +1228,40 @@ export default function LandingPage() {
                 background: alpha(theme.palette.warning.main, 0.03),
               }}
             >
-              <Typography variant="subtitle2" fontWeight={700} color="text.secondary" mb={2}>
+              <Typography
+                variant="subtitle2"
+                fontWeight={700}
+                color="text.secondary"
+                mb={2}
+              >
                 Histórico de acessos recentes
               </Typography>
               <Stack spacing={1.5}>
                 {[
-                  { provider: "Google", city: "São Paulo, BR", time: "Agora", status: "success" },
-                  { provider: "GitHub", city: "Rio de Janeiro, BR", time: "2h atrás", status: "success" },
-                  { provider: "Credentials", city: "Curitiba, BR", time: "1 dia", status: "success" },
-                  { provider: "Azure AD", city: "Belo Horizonte, BR", time: "3 dias", status: "success" },
+                  {
+                    provider: "Google",
+                    city: "São Paulo, BR",
+                    time: "Agora",
+                    status: "success",
+                  },
+                  {
+                    provider: "GitHub",
+                    city: "Rio de Janeiro, BR",
+                    time: "2h atrás",
+                    status: "success",
+                  },
+                  {
+                    provider: "Credentials",
+                    city: "Curitiba, BR",
+                    time: "1 dia",
+                    status: "success",
+                  },
+                  {
+                    provider: "Azure AD",
+                    city: "Belo Horizonte, BR",
+                    time: "3 dias",
+                    status: "success",
+                  },
                 ].map((log, i) => (
                   <Box
                     key={i}
@@ -1114,11 +1286,17 @@ export default function LandingPage() {
                         }}
                       />
                       <Box>
-                        <Typography variant="body2" fontWeight={600}>{log.provider}</Typography>
-                        <Typography variant="caption" color="text.secondary">{log.city}</Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {log.provider}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {log.city}
+                        </Typography>
                       </Box>
                     </Box>
-                    <Typography variant="caption" color="text.secondary">{log.time}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {log.time}
+                    </Typography>
                   </Box>
                 ))}
               </Stack>
@@ -1127,7 +1305,6 @@ export default function LandingPage() {
         </Grid>
       </Container>
 
-
       {/* ── INTERACTIVE DEMO ────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -1135,92 +1312,25 @@ export default function LandingPage() {
           background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.04)} 0%, transparent 100%)`,
         }}
       >
-        <Container maxWidth="sm">
+        <Container maxWidth="md">
           <Box textAlign="center" mb={5}>
             <GlowBadge label="Demo interativo" sx={{ mb: 2 }} />
-            <Typography variant="h3" fontWeight={900} sx={{ fontSize: { xs: "1.9rem", md: "2.5rem" }, mb: 1.5 }}>
+            <Typography
+              variant="h3"
+              fontWeight={900}
+              sx={{ fontSize: { xs: "1.9rem", md: "2.5rem" }, mb: 1.5 }}
+            >
               Veja a mágica em ação
             </Typography>
             <Typography variant="body1" color="text.secondary" lineHeight={1.7}>
-              Simule entradas e saídas e veja o impacto imediato no seu saldo.
+              Ajuste sua receita e suas despesas e veja o dashboard reagir em
+              tempo real — saldo, taxa de economia e para onde vai o dinheiro.
             </Typography>
           </Box>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: 4,
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-            }}
-          >
-            <Stack direction="row" spacing={1.5} justifyContent="center" sx={{ mb: 3 }}>
-              <Chip
-                label={`Receitas: R$ ${demoData.receita.toLocaleString("pt-BR")}`}
-                color="success"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-              <Chip
-                label={`Despesas: R$ ${demoData.despesa.toLocaleString("pt-BR")}`}
-                color="warning"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
-            </Stack>
-
-            <Stack spacing={2}>
-              <Button
-                variant="outlined"
-                color="success"
-                fullWidth
-                size="large"
-                onClick={() => setDemoData((p) => ({ ...p, receita: p.receita + 500 }))}
-                startIcon={<IconTrendingUp size={18} />}
-                sx={{ py: 1.5, fontWeight: 700, borderRadius: 2 }}
-              >
-                + R$ 500 em Receita
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                fullWidth
-                size="large"
-                onClick={() => setDemoData((p) => ({ ...p, despesa: p.despesa + 300 }))}
-                startIcon={<IconCoin size={18} />}
-                sx={{ py: 1.5, fontWeight: 700, borderRadius: 2 }}
-              >
-                + R$ 300 em Despesa
-              </Button>
-
-              <Box
-                sx={{
-                  mt: 1,
-                  p: 3,
-                  borderRadius: 3,
-                  bgcolor: saldoPositivo ? theme.palette.primary.main : theme.palette.error.main,
-                  color: "#fff",
-                  transition: "all 0.4s ease",
-                  textAlign: "center",
-                }}
-              >
-                <Typography variant="overline" sx={{ opacity: 0.8 }}>
-                  Saldo {saldoPositivo ? "positivo" : "negativo"}
-                </Typography>
-                <Typography variant="h3" fontWeight={900} sx={{ lineHeight: 1.2 }}>
-                  R$ {saldo.toLocaleString("pt-BR")}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                  {saldo > 0
-                    ? `Você está R$ ${saldo.toLocaleString("pt-BR")} no positivo`
-                    : `Atenção: gastos acima da receita`}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
+          <LandingDemo />
         </Container>
       </Box>
-
 
       {/* ── CTA FINAL ───────────────────────────────────────────────────────── */}
       <Box
@@ -1290,12 +1400,24 @@ export default function LandingPage() {
           </Typography>
           <Typography
             variant="h6"
-            sx={{ mb: 5, opacity: 0.9, maxWidth: 520, mx: "auto", lineHeight: 1.65, fontWeight: 400 }}
+            sx={{
+              mb: 5,
+              opacity: 0.9,
+              maxWidth: 520,
+              mx: "auto",
+              lineHeight: 1.65,
+              fontWeight: 400,
+            }}
           >
-            Junte-se a quem já descobriu a mágica do controle financeiro consciente
-            e comece a tomar decisões mais inteligentes com seu dinheiro.
+            Junte-se a quem já descobriu a mágica do controle financeiro
+            consciente e comece a tomar decisões mais inteligentes com seu
+            dinheiro.
           </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="center"
+          >
             <Button
               variant="contained"
               size="large"
@@ -1345,7 +1467,6 @@ export default function LandingPage() {
           </Stack>
         </Container>
       </Box>
-
     </Box>
   );
 }

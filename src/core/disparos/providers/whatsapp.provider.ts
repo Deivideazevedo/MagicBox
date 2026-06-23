@@ -22,9 +22,11 @@ export class WhatsAppProvider implements NotificationProvider {
     const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
 
     if (!token || !phoneNumberId || !templateName) {
-      console.log(`[WhatsApp MOCK/Cloud] Enviando para: ${options.destinatario}`);
-      console.log(`Conteúdo:\n${options.conteudo}`);
-      return { success: true };
+      // Sem credencial: NÃO envia (evita "ENVIADO" falso em produção).
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[WhatsApp MOCK/Cloud] ${options.destinatario}\n${options.conteudo}`);
+      }
+      return { success: false, error: "WhatsApp não configurado (WHATSAPP_TOKEN/PHONE_NUMBER_ID/TEMPLATE_NAME ausentes)." };
     }
 
     const to = this.formatarNumero(options.destinatario);

@@ -515,6 +515,18 @@ export const disparosRepository = {
     });
   },
 
+  /**
+   * Remove em massa os lotes de disparo (e, por FK Cascade, seus DisparoEnvio)
+   * criados antes de `dataLimite`. É um único DELETE em massa — rápido e seguro
+   * para o timeout do cron. Retorna a quantidade de lotes removidos.
+   */
+  async deletarLogsAntigos(dataLimite: Date) {
+    const { count } = await prisma.disparo.deleteMany({
+      where: { createdAt: { lt: dataLimite } },
+    });
+    return count;
+  },
+
   async salvarLogUsuario(disparoId: number, userId: number, canal: any, status: any, mensagemErro?: string | null) {
     return await prisma.disparoEnvio.create({
       data: {

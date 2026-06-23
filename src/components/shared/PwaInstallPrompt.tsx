@@ -69,10 +69,26 @@ export default function PwaInstallPrompt() {
     }
   }, [canInstallPwa]);
 
+  // 1. Captura o evento beforeinstallprompt globalmente no mount inicial do cliente
   useEffect(() => {
-    if (!canInstallPwa) return;
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
 
-    // 2. Detecção e escuta dos eventos do PWA
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  // 2. Controla a exibição do prompt com base no evento, autenticação e localStorage
+  useEffect(() => {
+    if (!canInstallPwa) {
+      setShowPrompt(false);
+      return;
+    }
 
     // Verifica se já está instalado (standalone)
     const isStandalone = 
@@ -80,24 +96,22 @@ export default function PwaInstallPrompt() {
       (navigator as any).standalone === true;
 
     if (isStandalone) {
+      setShowPrompt(false);
       return;
     }
 
     // Verifica se o prompt foi rejeitado recentemente nas últimas 24 horas (1 dia)
     const dismissedTime = localStorage.getItem("pwa-prompt-dismissed");
     if (dismissedTime) {
-      const diffDays = (Date.now() - parseInt(dismissedTime, 10)) / (1000 * 60 * 60 * 24);
-      if (diffDays < 1) {
-        return; // Ignora o prompt por 1 dia
+      const parsedTime = parseInt(dismissedTime, 10);
+      if (!isNaN(parsedTime)) {
+        const diffDays = (Date.now() - parsedTime) / (1000 * 60 * 60 * 24);
+        if (diffDays < 1) {
+          setShowPrompt(false);
+          return; // Ignora o prompt por 1 dia
+        }
       }
     }
-
-    // Escuta pelo evento de instalação nativa do Android/Chrome
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowPrompt(true);
-    };
 
     // Detecta se é iOS Safari
     const detectIOS = () => {
@@ -115,8 +129,12 @@ export default function PwaInstallPrompt() {
       }
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    detectIOS();
+    const cleanupIOS = detectIOS();
+
+    // Se o evento foi capturado, exibe o prompt
+    if (deferredPrompt) {
+      setShowPrompt(true);
+    }
 
     // Escuta pelo evento de instalação concluída
     const handleAppInstalled = () => {
@@ -129,10 +147,10 @@ export default function PwaInstallPrompt() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
+      if (cleanupIOS) cleanupIOS();
     };
-  }, [canInstallPwa]);
+  }, [canInstallPwa, deferredPrompt]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;

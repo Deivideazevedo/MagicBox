@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
 
 interface AuthGuardProps {
@@ -15,11 +15,15 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      // Codifica a URL atual para redirecionar de volta após o login
-      const callbackUrl = encodeURIComponent(pathname);
+      // Codifica a rota atual (caminho + query string) para voltar exatamente
+      // para onde o usuário estava — preservando filtros como ?ano=2026.
+      const queryString = searchParams.toString();
+      const destino = queryString ? `${pathname}?${queryString}` : pathname;
+      const callbackUrl = encodeURIComponent(destino);
       router.replace(`/auth/login?callbackUrl=${callbackUrl}`);
     } else if (status === "authenticated" && session?.isNewUser) {
       if (pathname !== "/cadastros") {
@@ -29,7 +33,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         update({ isNewUser: false });
       }
     }
-  }, [status, session, router, pathname, update]);
+  }, [status, session, router, pathname, searchParams, update]);
 
   // Apenas verifica o status da sessão e redireciona no frontend.
   // A middleware já faz o bloqueio de rotas no backend/servidor.

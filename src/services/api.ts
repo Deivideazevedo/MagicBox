@@ -15,6 +15,26 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+// Evita múltiplos redirects quando várias queries falham com 401 ao mesmo tempo.
+let encerrandoSessao = false;
+
+/**
+ * Sessão inválida/expirada detectada numa chamada de API: apenas INVALIDA a
+ * sessão do NextAuth (limpa o cookie) sem navegar. Ao virar "unauthenticated",
+ * o AuthGuard assume o redirect para o login com o callbackUrl correto — assim
+ * existe um único dono da navegação e nenhuma corrida entre as camadas.
+ * Roda apenas no cliente e é idempotente dentro do mesmo ciclo de página.
+ */
+async function encerrarSessaoExpirada() {
+  if (encerrandoSessao || typeof window === "undefined") return;
+  // Já estamos no fluxo de login? Não faz nada para evitar trabalho redundante.
+  if (window.location.pathname.startsWith("/auth/login")) return;
+
+  encerrandoSessao = true;
+  const { signOut } = await import("next-auth/react");
+  await signOut({ redirect: false });
+}
+
 // Interceptor
 const baseQueryInterceptor: BaseQueryFn<
   string | FetchArgs,
@@ -46,8 +66,7 @@ const baseQueryInterceptor: BaseQueryFn<
     if (message === "Ocorreu um erro na requisição.") {
       switch (result.error.status) {
         case 401:
-          message = "Usuário não autenticado. Redirecionando para login...";
-          // api.dispatch(logout());
+          message = "Sua sessão expirou. Redirecionando para o login...";
           break;
         case 403:
           message = "Acesso negado. Você não tem permissão para esta ação.";
@@ -69,6 +88,14 @@ const baseQueryInterceptor: BaseQueryFn<
           message = "Tempo limite excedido. Tente novamente.";
           break;
       }
+    }
+
+    // Sessão inválida/expirada: independente da mensagem do backend, encerra a
+    // sessão e manda para o login (fecha o estado "zumbi" de página logada com
+    // API negando acesso).
+    if (result.error.status === 401) {
+      message = "Sua sessão expirou. Redirecionando para o login...";
+      void encerrarSessaoExpirada();
     }
 
     // Mostrar notificação para o usuário
