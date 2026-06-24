@@ -54,7 +54,7 @@ export const resumoRepository = {
       ),
       itens_recorrentes_base AS (
         -- DESPESAS FIXAS
-        SELECT 
+        SELECT
           d.id as "origemId",
           'despesa' as "origem",
           d.nome,
@@ -62,21 +62,22 @@ export const resumoRepository = {
           d."diaVencimento" as "diaVencido",
           d.icone,
           d.cor,
+          d.status as "statusAtivo",
           EXTRACT(MONTH FROM m.mes_referencia) as "mes",
           EXTRACT(YEAR FROM m.mes_referencia) as "ano",
           (date_trunc('month', m.mes_referencia) + (LEAST(d."diaVencimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
         FROM despesa d
         CROSS JOIN meses_do_periodo m
-        WHERE d."userId" = ${userId} 
-          AND d.status = 'A' 
-          AND d.tipo = 'FIXA' 
+        WHERE d."userId" = ${userId}
+          AND d.status = 'A'
+          AND d.tipo = 'FIXA'
           AND d."deletedAt" IS NULL
           AND m.mes_referencia >= date_trunc('month', d."createdAt")
         
         UNION ALL
         
         -- DÍVIDAS (Amortizadas)
-        SELECT 
+        SELECT
           d.id as "origemId",
           'despesa' as "origem",
           d.nome,
@@ -84,15 +85,16 @@ export const resumoRepository = {
           d."diaVencimento" as "diaVencido",
           d.icone,
           d.cor,
+          d.status as "statusAtivo",
           EXTRACT(MONTH FROM m.mes_referencia) as "mes",
           EXTRACT(YEAR FROM m.mes_referencia) as "ano",
           (date_trunc('month', m.mes_referencia) + (LEAST(d."diaVencimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
         FROM despesa d
         LEFT JOIN saldos_devedores s ON s."despesaId" = d.id
         CROSS JOIN meses_do_periodo m
-        WHERE d."userId" = ${userId} 
-          AND d.status = 'A' 
-          AND d.tipo = 'DIVIDA' 
+        WHERE d."userId" = ${userId}
+          AND d.status = 'A'
+          AND d.tipo = 'DIVIDA'
           AND d."deletedAt" IS NULL
           AND m.mes_referencia >= date_trunc('month', COALESCE(d."dataInicio", d."createdAt"))
           -- Só projeta se ainda houver saldo devedor
@@ -101,7 +103,7 @@ export const resumoRepository = {
         UNION ALL
         
         -- RENDAS MENSAIS (RECEITAS)
-        SELECT 
+        SELECT
           f.id as "origemId",
           'receita' as "origem",
           f.nome,
@@ -109,14 +111,15 @@ export const resumoRepository = {
           f."diaRecebimento" as "diaVencido",
           f.icone,
           f.cor,
+          f.status as "statusAtivo",
           EXTRACT(MONTH FROM m.mes_referencia) as "mes",
           EXTRACT(YEAR FROM m.mes_referencia) as "ano",
           (date_trunc('month', m.mes_referencia) + (LEAST(f."diaRecebimento", m.ultimo_dia_mes) - 1) * interval '1 day')::date as "data_referencia"
         FROM receita f
         CROSS JOIN meses_do_periodo m
-        WHERE f."userId" = ${userId} 
-          AND f.status = 'A' 
-          AND f.tipo = 'FIXA' 
+        WHERE f."userId" = ${userId}
+          AND f.status = 'A'
+          AND f.tipo = 'FIXA'
           AND f."deletedAt" IS NULL
           AND m.mes_referencia >= date_trunc('month', f."createdAt")
       ),
@@ -157,15 +160,24 @@ export const resumoRepository = {
             )
           GROUP BY 1, 2, 3, 4
       ),
+      ultimo_lancamento_despesa AS (
+        SELECT DISTINCT ON (l."despesaId", DATE_TRUNC('month', l.data)::date)
+          l."despesaId",
+          DATE_TRUNC('month', l.data)::date as mes_ref,
+          l."observacaoAutomatica"
+        FROM lancamento l
+        WHERE l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL
+        ORDER BY l."despesaId", DATE_TRUNC('month', l.data)::date, l."createdAt" DESC
+      ),
       uniao_de_dados AS (
-          SELECT 
+          SELECT
               COALESCE(real."origemId", rec."origemId") as "origemId",
               COALESCE(real."origem", rec."origem") as "origem",
               COALESCE(real."mes", rec."mes") as "mes",
               COALESCE(real."ano", rec."ano") as "ano",
               COALESCE(rec."valorPrevisto", real."valorPrevisto") as "valorPrevisto",
               COALESCE(real."valorPago", 0) as "valorPago",
-              COALESCE(real."detalhes", 
+              COALESCE(real."detalhes",
                 JSON_BUILD_ARRAY(
                   JSON_BUILD_OBJECT(
                     'id', rec."origem" || '-' || rec."origemId",
@@ -180,31 +192,36 @@ export const resumoRepository = {
               COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento", real."diaReferencia") as "diaVencido",
               COALESCE(rec.icone, d.icone, f.icone, m.icone) as "icone",
               COALESCE(rec.cor, d.cor, f.cor, m.cor) as "cor",
-              CASE WHEN real."origemId" IS NULL THEN true ELSE false END as "isProjetado"
+              CASE WHEN real."origemId" IS NULL THEN true ELSE false END as "isProjetado",
+              COALESCE(rec."statusAtivo", d.status, f.status, m.status) as "statusAtivo",
+              COALESCE(ult."observacaoAutomatica", '') as "observacaoQuitacao"
           -- União de dados: Cruza o planejado (recorrências) com o realizado (lançamentos)
           FROM itens_recorrentes_base rec
-          FULL OUTER JOIN lancamentos_reais_agrupados real 
-            ON rec."origemId" = real."origemId" AND rec."origem" = real."origem" 
+          FULL OUTER JOIN lancamentos_reais_agrupados real
+            ON rec."origemId" = real."origemId" AND rec."origem" = real."origem"
             AND rec."mes" = real."mes" AND rec."ano" = real."ano"
           LEFT JOIN despesa d ON real."origemId" = d.id AND real."origem" = 'despesa'
           LEFT JOIN receita f ON real."origemId" = f.id AND real."origem" = 'receita'
           LEFT JOIN objetivo m ON real."origemId" = m.id AND real."origem" = 'meta'
+          LEFT JOIN ultimo_lancamento_despesa ult
+            ON COALESCE(real."origemId", rec."origemId") = ult."despesaId"
+            AND DATE_TRUNC('month', (COALESCE(real."ano", rec."ano")::text || '-' || LPAD(COALESCE(real."mes", rec."mes")::text, 2, '0') || '-01')::date)::date = ult.mes_ref
       )
       SELECT * FROM uniao_de_dados ORDER BY "ano", "mes", "nome";
     `;
 
     return response.map((item) => {
-      const detalhes = (item.detalhes as any[]) || [];
-      const temAjusteQuitacao = detalhes.some(
-        (d) => 
-          (d.observacao && String(d.observacao).includes("[QUITAÇÃO]")) ||
-          (d.observacaoAutomatica && String(d.observacaoAutomatica).includes("[QUITAÇÃO]"))
-      );
-
       const valorPago = Number(item.valorPago);
-      const valorPrevisto = temAjusteQuitacao ? valorPago : Number(item.valorPrevisto);
       const mes = Number(item.mes);
       const ano = Number(item.ano);
+
+      // Verificar quitação apenas para o mês corrente
+      const temQuitacao =
+        (item.observacaoQuitacao ?? "").includes("[QUITAÇÃO]");
+
+      const valorPrevisto = temQuitacao
+        ? valorPago
+        : Number(item.valorPrevisto);
 
       const { label, isAtrasado } = calcularStatus(
         valorPago,
@@ -222,6 +239,8 @@ export const resumoRepository = {
         ano,
         id: `${item.origem}-${item.origemId}-${mes}-${ano}`,
         status: label,
+        statusAtivo: (item.statusAtivo ?? null) as "A" | "I" | null,
+        temQuitacao,
         atrasado: isAtrasado,
         isProjetado: item.isProjetado,
         detalhes: item.detalhes,

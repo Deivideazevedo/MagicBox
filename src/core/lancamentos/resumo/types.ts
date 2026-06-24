@@ -32,14 +32,17 @@ export interface ResumoResposta {
   mes: number;
   ano: number;
   status: string;
+  statusAtivo: "A" | "I" | null;
+  temQuitacao: boolean;
   atrasado: boolean;
   icone: string | null;
   cor: string | null;
   isProjetado: boolean;
   detalhes: DetalheResumo[];
+  observacaoQuitacao?: string;
 }
 
-type DetalheResumo = {
+export type DetalheResumo = {
   id: number;
   tipo: TipoLancamento;
   data: string;

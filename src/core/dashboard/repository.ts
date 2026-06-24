@@ -64,15 +64,22 @@ export const dashboardRepository = {
     const projecoes = await resumoRepository.obterResumo({ userId, dataInicio, dataFim });
 
     const upcomingBills: UpcomingBillItem[] = projecoes
-      .filter((p) => p.origem === "despesa" && p.valorPago < p.valorPrevisto)
+      .filter((p) =>
+        p.origem === "despesa" &&
+        p.valorPago < p.valorPrevisto &&
+        p.statusAtivo === "A" &&
+        !p.temQuitacao
+      )
       .map((p) => {
         // categoriaId vem de despesa.categoriaId (campo da tabela despesa, não do lancamento)
         const lancDespesa = recentLancamentos.find((r) => r.despesaId === p.origemId)?.despesa;
+        // Calcula o valor restante a pagar (não o valor total agendado)
+        const valorRestante = Math.max(0, p.valorPrevisto - p.valorPago);
         return {
           id: p.id,
           despesaId: p.origemId,
           nome: p.nome,
-          valorPrevisto: p.valorPrevisto,
+          valorPrevisto: valorRestante,
           diaVencido: p.diaVencido,
           mes: p.mes,
           ano: p.ano,
