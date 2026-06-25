@@ -14,7 +14,6 @@ import {
   Grid,
   Skeleton,
   Stack,
-  Switch,
   Tab,
   Tabs,
   Typography,
@@ -36,12 +35,19 @@ import {
   IconHistory,
   IconMapPin,
   IconShieldLock,
+  IconCrown,
+  IconCircleCheckFilled,
+  IconCircle,
 } from "@tabler/icons-react";
 import { format as formatarData, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "@react-input/mask";
 import { useAcessosUsuario } from "@/hooks/user/useAcessosUsuario";
+import {
+  HeroGradientLanding,
+  HeroGradientLandingNew,
+} from "@/components/shared/ThemedComponents";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { HookPhoneField } from "@/app/components/forms/hooksForm/masks/input-mask";
 import { useUpdateUsuarioMutation } from "@/services/endpoints/usuariosApi";
@@ -146,7 +152,7 @@ export default function PerfilPage() {
   // aqui quebraria o vínculo no próximo login, então o campo fica travado.
   const emailEditavel = session?.user?.origem === "credenciais";
 
-  // Sub-aba ativa abaixo do hero: 0 = Dados, 1 = Segurança, 2 = Acessos.
+  // Sub-aba ativa abaixo do hero: 0 = Perfil (dados + senha), 1 = Acessos.
   const [aba, setAba] = useState(0);
 
   // Histórico de acesso (últimos 5) — reaproveita o hook usado no painel admin.
@@ -198,8 +204,8 @@ export default function PerfilPage() {
     }
   }, [session, reset]);
 
-  // Salva os dados do perfil (sem a senha — esta fica na aba Segurança).
-  const onSubmitDados = handleSubmit(async (form) => {
+  // Salva o perfil inteiro num único submit: dados + senha (quando informada).
+  const onSubmitPerfil = handleSubmit(async (form) => {
     if (!userId) return;
     const data: UpdateUserDTO = {
       name: form.name || null,
@@ -210,6 +216,8 @@ export default function PerfilPage() {
     if (form.username) data.username = form.username;
     // E-mail só é enviado para contas de credenciais (ver emailEditavel).
     if (emailEditavel && form.email) data.email = form.email;
+    // Senha é opcional — só vai junto quando o usuário preenche o campo.
+    if (form.password) data.password = form.password;
     try {
       await updateUsuario({ id: userId, data }).unwrap();
       // Reflete nome/username/e-mail no header e no restante da sessão sem re-login.
@@ -218,26 +226,9 @@ export default function PerfilPage() {
         username: data.username,
         email: data.email,
       });
-      toast.success("Dados atualizados com sucesso!");
-    } catch {
-      /* erro tratado no interceptor global */
-    }
-  });
-
-  // Define/altera a senha (aba Segurança), isolada dos demais dados.
-  const onSubmitSenha = handleSubmit(async (form) => {
-    if (!userId) return;
-    if (!form.password) {
-      toast.error("Informe a nova senha.");
-      return;
-    }
-    try {
-      await updateUsuario({
-        id: userId,
-        data: { password: form.password },
-      }).unwrap();
-      toast.success("Senha atualizada com sucesso!");
-      reset({ ...form, password: "" });
+      toast.success("Perfil atualizado com sucesso!");
+      // Limpa apenas o campo de senha, preservando o restante do formulário.
+      if (form.password) reset({ ...form, password: "" });
     } catch {
       /* erro tratado no interceptor global */
     }
@@ -300,8 +291,8 @@ export default function PerfilPage() {
   const telegramConectado = !!prefs?.telegramChatId;
   const avatarSrc = session?.user?.image || "/images/profile/user-1.jpg";
 
-  // ----- Aba: Dados (perfil, sem a senha) -----
-  const panelDados = (
+  // ----- Aba: Perfil (dados + senha, separadas por um divider) -----
+  const panelPerfil = (
     <Stack spacing={2.5}>
       <HookTextField
         control={control}
@@ -336,32 +327,21 @@ export default function PerfilPage() {
         label="Telefone (DDD + número)"
         fullWidth
       />
-      <Box display="flex" justifyContent="flex-end" pt={0.5}>
-        <LoadingButton
-          loading={salvandoConta}
-          variant="contained"
-          onClick={onSubmitDados}
-          startIcon={<IconDeviceFloppy size={18} />}
-          sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
-        >
-          Salvar alterações
-        </LoadingButton>
-      </Box>
-    </Stack>
-  );
+      <Divider sx={{ my: 1 }} />
 
-  // ----- Aba: Segurança (definir/alterar senha) -----
-  const panelSeguranca = (
-    <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="body2" fontWeight={700}>
-          Senha de acesso
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {session?.user?.hasPassword
-            ? "Defina uma nova senha para entrar com e-mail ou usuário."
-            : "Sua conta entra via login social. Defina uma senha para também acessar com e-mail/usuário."}
-        </Typography>
+      {/* Seção de senha — opcional; salva junto com os dados no mesmo submit. */}
+      <Box display="flex" alignItems="center" gap={1}>
+        <IconShieldLock size={18} stroke={1.5} />
+        <Box>
+          <Typography variant="body2" fontWeight={700}>
+            Senha de acesso
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {session?.user?.hasPassword
+              ? "Defina uma nova senha para entrar com e-mail ou usuário."
+              : "Sua conta entra via login social. Defina uma senha para também acessar com e-mail/usuário."}
+          </Typography>
+        </Box>
       </Box>
       <HookTextField
         control={control}
@@ -379,11 +359,11 @@ export default function PerfilPage() {
         <LoadingButton
           loading={salvandoConta}
           variant="contained"
-          onClick={onSubmitSenha}
-          startIcon={<IconShieldLock size={18} />}
+          onClick={onSubmitPerfil}
+          startIcon={<IconDeviceFloppy size={18} />}
           sx={{ borderRadius: 2, fontWeight: 700, px: 3 }}
         >
-          {session?.user?.hasPassword ? "Alterar senha" : "Definir senha"}
+          Salvar alterações
         </LoadingButton>
       </Box>
     </Stack>
@@ -393,7 +373,7 @@ export default function PerfilPage() {
   const panelAcessos = (
     <>
       <Typography variant="caption" color="text.secondary">
-        Seus últimos acessos. Algo estranho? Troque sua senha na aba Segurança.
+        Seus últimos acessos. Algo estranho? Troque sua senha na aba Perfil.
       </Typography>
       <Box mt={2}>
         {isLoadingAcessos ? (
@@ -487,6 +467,110 @@ export default function PerfilPage() {
     </>
   );
 
+  // Layout do hero (padding, flex e o mesmo borderRadius do card). O gradiente
+  // e a decoração ficam por conta do componente de fundo escolhido abaixo.
+  const heroBoxSx = {
+    borderRadius: 2.5,
+    p: { xs: 3, sm: 4 },
+    display: "flex",
+    flexDirection: { xs: "column", sm: "row" } as const,
+    alignItems: "center",
+    gap: { xs: 2, sm: 3 },
+    textAlign: { xs: "center", sm: "left" } as const,
+  };
+
+  // Conteúdo do hero (avatar + identidade), compartilhado entre as duas opções
+  // de fundo. O componente de fundo eleva estes filhos acima da decoração.
+  const heroConteudo = (
+    <>
+      <Box sx={{ position: "relative", flexShrink: 0 }}>
+        {/* Coroa flutuante (mesmo efeito da sidebar) — só para premium/admin.
+            Branca com drop-shadow para destacar do gradiente azul sem poluir. */}
+        {role && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: -6,
+              left: 0,
+              color: "#fff",
+              display: "flex",
+              filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.35))",
+              animation: "crownFloat 3s ease-in-out infinite",
+              "@keyframes crownFloat": {
+                "0%, 100%": { transform: "translateY(0) rotate(-40deg)" },
+                "50%": { transform: "translateY(-3px) rotate(-40deg)" },
+              },
+              zIndex: 2,
+            }}
+          >
+            <IconCrown size={18} fill="currentColor" />
+          </Box>
+        )}
+        <Avatar
+          src={avatarSrc}
+          alt={nomeAtual || "Avatar"}
+          sx={{
+            width: 96,
+            height: 96,
+            border: "4px solid",
+            borderColor: "background.paper",
+            boxShadow: `0 0 0 3px ${alpha("#fff", 0.35)}`,
+          }}
+        />
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          variant="overline"
+          sx={{ fontWeight: 700, letterSpacing: 1, color: alpha("#fff", 0.85) }}
+        >
+          Meu Perfil
+        </Typography>
+        <Typography
+          variant="h4"
+          fontWeight={800}
+          sx={{
+            letterSpacing: "-0.5px",
+            lineHeight: 1.1,
+            color: "#fff",
+            textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+          }}
+        >
+          {nomeAtual || session?.user?.name || "Sem nome"}
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ mt: 0.5, wordBreak: "break-word", color: alpha("#fff", 0.9) }}
+        >
+          {session?.user?.email}
+        </Typography>
+        {role && (
+          <Chip
+            icon={
+              role === "admin" ? (
+                <IconShieldLock size={14} />
+              ) : (
+                <IconCrown size={14} fill="currentColor" />
+              )
+            }
+            label={role === "admin" ? "Administrador" : "Premium"}
+            size="small"
+            sx={{
+              mt: 1.5,
+              fontWeight: 800,
+              letterSpacing: 0.3,
+              color: "#fff",
+              bgcolor: alpha("#fff", 0.22),
+              border: `1px solid ${alpha("#fff", 0.45)}`,
+              backdropFilter: "blur(8px)",
+              boxShadow: `0 0 16px ${alpha("#fff", 0.1)}`,
+              "& .MuiChip-icon": { color: "#fff" },
+            }}
+          />
+        )}
+      </Box>
+    </>
+  );
+
   return (
     <Box>
       <Grid container spacing={3} alignItems="stretch">
@@ -495,64 +579,19 @@ export default function PerfilPage() {
           <Stack spacing={3} sx={{ height: "100%" }}>
             {/* ---- Hero de identidade ---- */}
             <Card elevation={0} sx={{ ...cardBaseSx, overflow: "hidden" }}>
-              <Box
-                sx={{
-                  p: { xs: 3, sm: 4 },
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: "center",
-                  gap: { xs: 2, sm: 3 },
-                  textAlign: { xs: "center", sm: "left" },
-                  background: `linear-gradient(120deg, ${alpha(
-                    theme.palette.primary.main,
-                    0.1,
-                  )} 0%, ${alpha(theme.palette.primary.main, 0)} 60%)`,
-                }}
-              >
-                <Avatar
-                  src={avatarSrc}
-                  alt={nomeAtual || "Avatar"}
-                  sx={{
-                    width: 96,
-                    height: 96,
-                    flexShrink: 0,
-                    border: "4px solid",
-                    borderColor: "background.paper",
-                    boxShadow: `0 0 0 3px ${alpha(theme.palette.primary.main, 0.35)}`,
-                  }}
-                />
-                <Box minWidth={0}>
-                  <Typography
-                    variant="overline"
-                    color="text.secondary"
-                    sx={{ fontWeight: 700, letterSpacing: 1 }}
-                  >
-                    Meu Perfil
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    fontWeight={800}
-                    sx={{ letterSpacing: "-0.5px", lineHeight: 1.1 }}
-                  >
-                    {nomeAtual || session?.user?.name || "Sem nome"}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5, wordBreak: "break-word" }}
-                  >
-                    {session?.user?.email}
-                  </Typography>
-                  {role && (
-                    <Chip
-                      label={role === "admin" ? "Administrador" : "Premium"}
-                      size="small"
-                      color={role === "admin" ? "primary" : "default"}
-                      sx={{ mt: 1.5, fontWeight: 700 }}
-                    />
-                  )}
-                </Box>
-              </Box>
+              {/* ===== Opção A: fundo do hero da landing ('/') —
+                  gradiente de 3 paradas + bolinhas animadas.
+                  Para comparar, descomente abaixo e comente a Opção B. ===== */}
+              {/* <HeroGradientLanding sx={heroBoxSx}>
+                {heroConteudo}
+              </HeroGradientLanding> */}
+
+              {/* ===== Opção B (EM USO): HeroGradientLandingNew — mesmas
+                  bolinhas radiais animadas do HeroGradientLanding, mas com o
+                  gradiente de 2 paradas (primary.main → primary.dark). ===== */}
+              <HeroGradientLandingNew sx={heroBoxSx}>
+                {heroConteudo}
+              </HeroGradientLandingNew>
             </Card>
 
             {/* ---- Sub-abas: Dados · Segurança · Acessos ---- */}
@@ -585,12 +624,7 @@ export default function PerfilPage() {
                 <Tab
                   icon={<IconUser size={18} stroke={1.5} />}
                   iconPosition="start"
-                  label="Dados"
-                />
-                <Tab
-                  icon={<IconShieldLock size={18} stroke={1.5} />}
-                  iconPosition="start"
-                  label="Segurança"
+                  label="Perfil"
                 />
                 <Tab
                   icon={<IconHistory size={18} stroke={1.5} />}
@@ -599,9 +633,8 @@ export default function PerfilPage() {
                 />
               </Tabs>
               <CardContent sx={{ p: { xs: 2.5, sm: 3 }, flexGrow: 1 }}>
-                {aba === 0 && panelDados}
-                {aba === 1 && panelSeguranca}
-                {aba === 2 && panelAcessos}
+                {aba === 0 && panelPerfil}
+                {aba === 1 && panelAcessos}
               </CardContent>
             </Card>
           </Stack>
@@ -622,7 +655,7 @@ export default function PerfilPage() {
                 <IconBell size={20} stroke={1.5} /> Preferências de Notificação
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Escolha por quais canais deseja receber lembretes.
+                Toque em um canal para ativar ou desativar os lembretes.
               </Typography>
               <Divider sx={{ my: 3 }} />
 
@@ -630,9 +663,24 @@ export default function PerfilPage() {
                 {CANAIS.map((c) => {
                   // Canal indisponível nunca aparece como ativo nem permite toggle.
                   const ativo = !c.indisponivel && !!prefs?.[c.campo];
+                  const interagivel =
+                    !c.indisponivel && !salvandoPref && !!prefs;
+                  const alternar = () => {
+                    if (interagivel) togglePref(c.campo, !ativo);
+                  };
                   return (
                     <Box
                       key={c.campo}
+                      role="button"
+                      tabIndex={interagivel ? 0 : -1}
+                      aria-pressed={ativo}
+                      onClick={alternar}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          alternar();
+                        }
+                      }}
                       sx={{
                         display: "flex",
                         alignItems: "center",
@@ -647,7 +695,27 @@ export default function PerfilPage() {
                           ? alpha(theme.palette.primary.main, 0.04)
                           : "transparent",
                         opacity: c.indisponivel ? 0.6 : 1,
+                        cursor: interagivel ? "pointer" : "default",
                         transition: "all 0.2s ease-in-out",
+                        outline: "none",
+                        "&:hover": interagivel
+                          ? {
+                              borderColor: alpha(
+                                theme.palette.primary.main,
+                                0.45,
+                              ),
+                              bgcolor: alpha(theme.palette.primary.main, 0.06),
+                            }
+                          : undefined,
+                        "&:focus-visible": interagivel
+                          ? {
+                              borderColor: theme.palette.primary.main,
+                              boxShadow: `0 0 0 2px ${alpha(
+                                theme.palette.primary.main,
+                                0.25,
+                              )}`,
+                            }
+                          : undefined,
                       }}
                     >
                       <Box
@@ -681,11 +749,24 @@ export default function PerfilPage() {
                           {c.ajuda}
                         </Typography>
                       </Box>
-                      <Switch
-                        checked={ativo}
-                        disabled={c.indisponivel || salvandoPref || !prefs}
-                        onChange={(e) => togglePref(c.campo, e.target.checked)}
-                      />
+                      {/* Indicador de estado (substitui o Switch); canal
+                          indisponível mostra só o chip "Em breve". */}
+                      {!c.indisponivel && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexShrink: 0,
+                            color: ativo ? "primary.main" : "text.disabled",
+                            transition: "color 0.2s ease-in-out",
+                          }}
+                        >
+                          {ativo ? (
+                            <IconCircleCheckFilled size={24} />
+                          ) : (
+                            <IconCircle size={24} stroke={1.5} />
+                          )}
+                        </Box>
+                      )}
                     </Box>
                   );
                 })}

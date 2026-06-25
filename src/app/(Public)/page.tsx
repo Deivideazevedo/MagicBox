@@ -53,7 +53,7 @@ import {
   IconAdjustmentsHorizontal,
 } from "@tabler/icons-react";
 import {
-  ThemedHeroSection,
+  HeroGradientLanding,
   useCustomTheme,
 } from "@/components/shared/ThemedComponents";
 import LandingDemo from "@/components/shared/LandingDemo";
@@ -368,32 +368,11 @@ export default function LandingPage() {
   return (
     <Box>
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <ThemedHeroSection
+      <HeroGradientLanding
         sx={{
           mt: 3,
           py: { xs: 8, md: 11 },
           textAlign: "center",
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 60%, ${alpha(theme.palette.secondary.dark, 0.9)} 100%)`,
-          position: "relative",
-          overflow: "hidden",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            backgroundImage: `
-              radial-gradient(circle, ${alpha("#fff", 0.22)} 2px, transparent 2.5px),
-              radial-gradient(circle, ${alpha("#fff", 0.12)} 1.5px, transparent 2px)
-            `,
-            backgroundSize: "130px 130px, 190px 190px",
-            backgroundPosition: "0 0, 55px 25px",
-            animation: "driftDots 22s linear infinite",
-          },
-          "@keyframes driftDots": {
-            "0%": { backgroundPosition: "0 0, 55px 25px" },
-            "50%": { backgroundPosition: "80px 50px, 10px 75px" },
-            "100%": { backgroundPosition: "0 0, 55px 25px" },
-          },
         }}
       >
         <Container maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
@@ -481,7 +460,7 @@ export default function LandingPage() {
             </Box>
           </Fade>
         </Container>
-      </ThemedHeroSection>
+      </HeroGradientLanding>
 
       {/* ── STATS BAR ───────────────────────────────────────────────────────── */}
       <Box

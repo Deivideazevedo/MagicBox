@@ -1,10 +1,10 @@
 "use client";
 
 import { useTheme } from "@mui/material/styles";
-import { Box, BoxProps, styled } from "@mui/material";
+import { Box, BoxProps, styled, keyframes } from "@mui/material";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
-import { alpha, height } from "@mui/system";
+import { alpha } from "@mui/system";
 
 // Componente estilizado que responde ao tema
 interface ThemedHeroSectionProps extends BoxProps {
@@ -52,20 +52,68 @@ export const ThemedHeroSection = styled(Box)(({ theme }) => {
     color: theme.palette.primary.contrastText,
     borderRadius: 0,
     textAlign: "center",
-    py: { xs: 8, md: 12 },
     position: "relative",
     overflow: "hidden",
+    // Eleva o conteúdo acima da decoração de bolinhas, sem precisar de wrapper.
+    "& > *": { position: "relative", zIndex: 1 },
     "&::before": {
       content: '""',
       position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      inset: 0,
+      // Decoração não captura cliques.
+      pointerEvents: "none",
       backgroundImage: `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${circles}</svg>')`,
     },
   };
 });
+
+// Animação das bolinhas flutuantes do hero da landing ('/').
+const driftDots = keyframes`
+  0%   { background-position: 0 0, 55px 25px; }
+  50%  { background-position: 80px 50px, 10px 75px; }
+  100% { background-position: 0 0, 55px 25px; }
+`;
+
+/**
+ * Fundo do hero usado na landing ('/'): gradiente de 3 paradas
+ * (primary.main → primary.dark → secondary.dark) + padrão de bolinhas
+ * animadas. Aceita children — eles são elevados automaticamente acima da
+ * decoração (`& > *` recebe z-index), então o consumidor não precisa se
+ * preocupar com empilhamento. Layout (padding, flex, borderRadius) fica a
+ * cargo do `sx` passado.
+ */
+export const HeroGradientLanding = styled(Box)(({ theme }) => ({
+  position: "relative",
+  overflow: "hidden",
+  color: theme.palette.primary.contrastText,
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 60%, ${alpha(
+    theme.palette.secondary.dark,
+    0.9,
+  )} 100%)`,
+  "& > *": { position: "relative", zIndex: 1 },
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    backgroundImage: `
+      radial-gradient(circle, ${alpha("#fff", 0.22)} 2px, transparent 2.5px),
+      radial-gradient(circle, ${alpha("#fff", 0.12)} 1.5px, transparent 2px)
+    `,
+    backgroundSize: "130px 130px, 190px 190px",
+    backgroundPosition: "0 0, 55px 25px",
+    animation: `${driftDots} 22s linear infinite`,
+  },
+}));
+
+/**
+ * Fork do HeroGradientLanding: herda tudo (bolinhas animadas, z-index dos
+ * children, etc.) e só troca o gradiente para o de 2 paradas do
+ * ThemedHeroSection (primary.main → primary.dark).
+ */
+export const HeroGradientLandingNew = styled(HeroGradientLanding)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+}));
 
 export const ThemedCard = styled(Box)(({ theme }) => ({
   background: theme.palette.background.paper,

@@ -26,7 +26,8 @@ import {
   IconTarget,
   IconCreditCard,
   IconDatabase,
-  IconBell
+  IconBell,
+  IconArrowsDiff,
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -52,8 +53,6 @@ const Menuitems: MenuitemsType[] = [
     title: "Lançamentos",
     icon: IconPlus,
     href: "/lancamentos",
-    chip: "Novo",
-    chipColor: "success",
   },
   {
     id: uniqueId(),
@@ -78,6 +77,14 @@ const Menuitems: MenuitemsType[] = [
     title: "Relatórios",
     icon: IconReportAnalytics,
     href: "/relatorios",
+  },
+  {
+    id: uniqueId(),
+    title: "Divergências",
+    icon: IconArrowsDiff,
+    href: "/divergencias",
+    chip: "Novo",
+    chipColor: "success",
   },
 
   {

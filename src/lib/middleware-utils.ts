@@ -33,7 +33,7 @@ const PUBLIC_API_ROUTES = ["/api/telegram/webhook", "/api/cron/disparos"];
 const ADMIN_ROUTES = ["/usuarios", "/sistema"];
 
 // Padrões de rotas de API administrativas (requerem role admin)
-const ADMIN_API_PATTERNS = ["/api/usuarios", "/api/sistema/limpar"];
+const ADMIN_API_PATTERNS = ["/api/sistema/limpar"];
 
 // Verificadores de rota
 const isPublicRoute = (path: string) => PUBLIC_ROUTES.includes(path);

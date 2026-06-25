@@ -28,7 +28,13 @@ interface RecaptchaResult {
 export const authService = {
   async listarTodos(
     filtros: ListUsersDTO,
+    requisitante: { role: string },
   ): Promise<PaginatedResult<User & { hasPassword: boolean }>> {
+    if (requisitante.role !== "admin") {
+      throw new ForbiddenError(
+        "Acesso negado: apenas administradores podem realizar esta operação",
+      );
+    }
     const resultado = await repositorio.listarTodos(filtros);
 
     // Remove as senhas de todos os usuários retornados por segurança
@@ -44,11 +50,31 @@ export const authService = {
     };
   },
 
-  async findByID(userId: number): Promise<User | null> {
+  async findByID(
+    userId: number,
+    requisitante: { id: number; role: string },
+  ): Promise<User | null> {
+    if (requisitante.role !== "admin" && requisitante.id !== userId) {
+      throw new ForbiddenError(
+        "Acesso negado: você não possui permissão para consultar o perfil de outro usuário",
+      );
+    }
     return await repositorio.buscarPorId(userId);
   },
 
-  async criar(dados: RegisterUserDTO): Promise<User> {
+  async criar(
+    dados: RegisterUserDTO,
+    requisitante?: { role: string },
+  ): Promise<User> {
+    if (requisitante) {
+      if (requisitante.role !== "admin") {
+        throw new ForbiddenError(
+          "Acesso negado: apenas administradores podem criar novos usuários",
+        );
+      }
+    } else {
+      dados.role = "user";
+    }
     // Verifica especificamente o email
     const userByEmail = await repositorio.findByUsernameOrEmail({
       email: dados.email,
@@ -78,17 +104,34 @@ export const authService = {
       role: dados.role ?? "user",
       status: dados.status ?? "A",
       origem: dados.origem ?? "credenciais",
-    } as any);
+    });
   },
 
-  async remover(userId: number): Promise<boolean> {
+  async remover(
+    userId: number,
+    requisitante: { id: number; role: string },
+  ): Promise<boolean> {
+    if (requisitante.role !== "admin" && requisitante.id !== userId) {
+      throw new ForbiddenError(
+        "Acesso negado: você não possui permissão para remover a conta de outro usuário",
+      );
+    }
     const usuario = await repositorio.buscarPorId(userId);
     if (!usuario) throw new NotFoundError("Usuário não encontrado");
 
     return await repositorio.remover(userId);
   },
 
-  async atualizar(userId: number, usuario: UpdateUserDTO): Promise<User> {
+  async atualizar(
+    userId: number,
+    usuario: UpdateUserDTO,
+    requisitante: { id: number; role: string },
+  ): Promise<User> {
+    if (requisitante.role !== "admin" && requisitante.id !== userId) {
+      throw new ForbiddenError(
+        "Acesso negado: você não possui permissão para atualizar os dados de outro usuário",
+      );
+    }
     const hasUser = await repositorio.buscarPorId(userId);
     if (!hasUser) throw new NotFoundError("Usuário não encontrado");
 
@@ -278,7 +321,15 @@ export const authService = {
     };
   },
 
-  async bulkExcluir(ids: number[]): Promise<void> {
+  async bulkExcluir(
+    ids: number[],
+    requisitante: { role: string },
+  ): Promise<void> {
+    if (requisitante.role !== "admin") {
+      throw new ForbiddenError(
+        "Acesso negado: apenas administradores podem realizar esta operação",
+      );
+    }
     return await repositorio.bulkExcluir(ids);
   },
 
@@ -347,10 +398,15 @@ export const authService = {
     });
   },
 
-  async listarAcessosUsuario(filtros: AcessosFiltroDTO, requisitante: { id: number; role: string }) {
+  async listarAcessosUsuario(
+    filtros: AcessosFiltroDTO,
+    requisitante: { id: number; role: string },
+  ) {
     // Validação de acesso centralizada no Service: admin pode ver tudo, usuário comum só pode ver os próprios logs
     if (requisitante.id !== filtros.userId && requisitante.role !== "admin") {
-      throw new ForbiddenError("Acesso negado: você não possui permissão para visualizar estes logs de acesso.");
+      throw new ForbiddenError(
+        "Acesso negado: você não possui permissão para visualizar estes logs de acesso.",
+      );
     }
 
     return await repositorio.listarAcessosUsuario(filtros);

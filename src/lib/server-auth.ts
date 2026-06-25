@@ -42,7 +42,6 @@ export async function getAuthUser(req?: NextRequest, requestedId?: number | null
 
   if (session?.user?.id) {
     user = session.user;
-
   } else {
     // 2. Tenta autenticar via Bearer Token (API externa)
     const headersList = headers();
@@ -51,7 +50,9 @@ export async function getAuthUser(req?: NextRequest, requestedId?: number | null
 
     if (bearerToken) {
       const payload = await verifyAccessToken(bearerToken);
-      if (payload?.user?.id) user = payload.user;
+      if (payload?.user?.id) {
+        user = payload.user;
+      }
     }
   }
 

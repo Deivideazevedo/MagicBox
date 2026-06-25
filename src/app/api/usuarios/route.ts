@@ -11,29 +11,19 @@ export const POST = errorHandler(criar);
 async function listarTodos(requisicao: NextRequest): Promise<NextResponse> {
   const authUser = await getAuthUser(requisicao);
 
-  // Apenas administradores podem listar todos os usuários
-  if (authUser.role !== "admin") {
-    throw new ForbiddenError("Acesso negado: apenas administradores podem realizar esta operação");
-  }
-
   const { searchParams } = new URL(requisicao.url);
   const filtros = listUsersSchema.parse(Object.fromEntries(searchParams.entries()));
 
-  const resultado = await servico.listarTodos(filtros);
+  const resultado = await servico.listarTodos(filtros, { role: authUser.role! });
   return NextResponse.json(resultado);
 }
 
 async function criar(requisicao: NextRequest): Promise<NextResponse> {
   const authUser = await getAuthUser(requisicao);
 
-  // Apenas administradores podem criar usuários manualmente via API de usuários
-  if (authUser.role !== "admin") {
-    throw new ForbiddenError("Acesso negado: apenas administradores podem criar novos usuários");
-  }
-
   const corpo = await requisicao.json();
   const dados = registerUserSchema.parse(corpo);
 
-  const novoUsuario = await servico.criar(dados);
+  const novoUsuario = await servico.criar(dados, { role: authUser.role! });
   return NextResponse.json(novoUsuario, { status: 201 });
 }

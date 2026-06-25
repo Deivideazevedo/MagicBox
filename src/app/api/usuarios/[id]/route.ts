@@ -17,12 +17,10 @@ async function buscarPorId(
 
   const authUser = await getAuthUser(requisicao);
 
-  // Não-admin só pode consultar o próprio perfil
-  if (authUser.role !== "admin" && authUser.userId !== targetId) {
-    throw new UnauthorizedError("Acesso negado: você não pode consultar o perfil de outro usuário");
-  }
-
-  const usuario = await servico.findByID(targetId);
+  const usuario = await servico.findByID(targetId, {
+    id: authUser.userId,
+    role: authUser.role!
+  });
 
   if (!usuario) {
     throw new NotFoundError("Usuário não encontrado");
@@ -46,10 +44,12 @@ async function atualizar(
   // Validação dos dados
   const dadosValidados = updateUserSchema.parse(corpo);
 
-  // Valida permissão: dono do perfil ou admin
-  const { userId } = await getAuthUser(requisicao, targetId);
+  const authUser = await getAuthUser(requisicao);
 
-  const usuarioAtualizado = await servico.atualizar(userId, dadosValidados);
+  const usuarioAtualizado = await servico.atualizar(targetId, dadosValidados, {
+    id: authUser.userId,
+    role: authUser.role!
+  });
 
   const { password, ...usuarioSemSenha } = usuarioAtualizado;
 
@@ -65,9 +65,11 @@ async function remover(
 ): Promise<NextResponse> {
   const { id: targetId } = userIdSchema.parse(params);
 
-  // Valida permissão: dono da conta ou admin
-  const { userId } = await getAuthUser(requisicao, targetId);
+  const authUser = await getAuthUser(requisicao);
 
-  const sucesso = await servico.remover(userId);
+  const sucesso = await servico.remover(targetId, {
+    id: authUser.userId,
+    role: authUser.role!
+  });
   return NextResponse.json({ success: sucesso });
 }
