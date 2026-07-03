@@ -133,7 +133,6 @@ export function CustomTableUsuarios({
     if (!lastActive) return "Nunca acessou";
     try {
       const data = new Date(lastActive);
-      if (data.getTime() < 10000000000) return "Offline";
       
       const distancia = formatDistanceToNow(data, {
         locale: ptBRDate,

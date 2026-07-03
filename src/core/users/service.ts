@@ -438,8 +438,8 @@ export const authService = {
       country: string | null;
     }
   ): Promise<void> {
-    // 1. Zera a atividade (lastActive = null)
-    await repositorio.atualizarUltimoAcesso(userId, null);
+    // Apenas insere log de logout no accessLog. Não atualizamos mais o lastActive para
+    // manter o horário real do último acesso (para o recurso "Visto por último")
     
     // 2. Insere log de logout no accessLog
     await repositorio.registrarLogAcesso({

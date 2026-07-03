@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useDispatch } from "@/store/hooks";
 import { api } from "@/services/api";
@@ -17,30 +18,34 @@ export const useAuth = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
+  // A MÁGICA AQUI: Limpa o cache sempre que a aplicação estiver em estado "deslogado".
+  // Evita o 401 ao sair, pois só limpa DEPOIS que já saiu, e protege contra vazamento de dados.
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      dispatch(api.util.resetApiState());
+      persistor.flush(); // Salva o vazio no disco sem apagar o customizer
+    }
+  }, [status, dispatch]);
+
   const logout = async () => {
     try {
       // Registra a auditoria de logout no Neon DB em segundo plano antes do signOut
-      await registrarLogout().unwrap().catch((err: Error) =>
-        console.error("Erro ao registrar auditoria de logout:", err)
-      );
+      await registrarLogout()
+        .unwrap()
+        .catch((err: Error) =>
+          console.error("Erro ao registrar auditoria de logout:", err),
+        );
     } finally {
       // Desloga o usuário limpando a sessão no cliente e redirecionando
       signOut({ callbackUrl: "/" });
     }
-
-    setTimeout(() => {
-      dispatch(api.util.resetApiState());
-      persistor.flush();
-    }, 100);
   };
-
 
   return {
     session,
     status,
     logout,
     isAuthenticated: status === "authenticated",
-    isLoading: status === "loading"
+    isLoading: status === "loading",
   };
 };
-
