@@ -163,4 +163,11 @@ export const authRepository = {
       orderBy: { createdAt: "desc" },
     });
   },
+
+  async atualizarUltimoAcesso(userId: number, data: Date | null): Promise<void> {
+    await prisma.user.updateMany({
+      where: { id: userId },
+      data: { lastActive: data },
+    });
+  },
 };

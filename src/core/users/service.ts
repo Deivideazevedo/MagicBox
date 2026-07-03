@@ -13,6 +13,7 @@ import {
   AcessosFiltroDTO,
 } from "./user.dto";
 import { PaginatedResult } from "../types/global";
+import { CoreUser, UserWithLogs, UserListDTOOutput } from "./types";
 import bcrypt from "bcryptjs";
 import { User } from "next-auth";
 
@@ -29,7 +30,7 @@ export const authService = {
   async listarTodos(
     filtros: ListUsersDTO,
     requisitante: { role: string },
-  ): Promise<PaginatedResult<User & { hasPassword: boolean }>> {
+  ): Promise<PaginatedResult<UserListDTOOutput>> {
     if (requisitante.role !== "admin") {
       throw new ForbiddenError(
         "Acesso negado: apenas administradores podem realizar esta operação",
@@ -37,17 +38,31 @@ export const authService = {
     }
     const resultado = await repositorio.listarTodos(filtros);
 
-    // Remove as senhas de todos os usuários retornados por segurança
+    const LIMITE_ONLINE_MS = 6.5 * 60 * 1000; // 6 minutos e 30 segundos
+    const agora = Date.now();
+
+    const dbUsers = resultado.data as unknown as CoreUser[];
+
+    // Remove as senhas de todos os usuários retornados por segurança e calcula isOnline
     return {
       ...resultado,
-      data: resultado.data.map((u: any) => {
+      data: dbUsers.map((u: CoreUser) => {
         const { password, ...userWithoutPassword } = u;
+        const isOnline = u.lastActive
+          ? agora - new Date(u.lastActive).getTime() <= LIMITE_ONLINE_MS
+          : false;
+
         return {
           ...userWithoutPassword,
           hasPassword: !!password,
-        };
+          isOnline,
+        } as UserListDTOOutput;
       }),
     };
+  },
+
+  async atualizarAtividadeUsuario(userId: number): Promise<void> {
+    await repositorio.atualizarUltimoAcesso(userId, new Date());
   },
 
   async findByID(
@@ -410,5 +425,32 @@ export const authService = {
     }
 
     return await repositorio.listarAcessosUsuario(filtros);
+  },
+
+  async registrarLogoutUsuario(
+    userId: number,
+    dadosAcesso: {
+      email: string;
+      ip: string;
+      latitude: string | null;
+      longitude: string | null;
+      city: string | null;
+      country: string | null;
+    }
+  ): Promise<void> {
+    // 1. Zera a atividade (lastActive = null)
+    await repositorio.atualizarUltimoAcesso(userId, null);
+    
+    // 2. Insere log de logout no accessLog
+    await repositorio.registrarLogAcesso({
+      userId,
+      email: dadosAcesso.email,
+      ip: dadosAcesso.ip,
+      latitude: dadosAcesso.latitude,
+      longitude: dadosAcesso.longitude,
+      city: dadosAcesso.city,
+      country: dadosAcesso.country,
+      provider: "logout",
+    });
   },
 };

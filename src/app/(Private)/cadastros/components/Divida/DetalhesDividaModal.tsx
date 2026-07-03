@@ -17,6 +17,7 @@ import {
   Paper,
   LinearProgress,
   Collapse,
+  Tooltip,
 } from "@mui/material";
 import {
   IconX,
@@ -28,9 +29,13 @@ import {
   IconCoin,
   IconCalendarEvent,
   IconEye,
+  IconChevronDown,
   IconAlertCircle,
 } from "@tabler/icons-react";
 import { format, parseISO } from "date-fns";
+import { useSelector } from "@/store/hooks";
+import { AppState } from "@/store/store";
+import { combinedHighlight } from "@/components/shared/PulsingIconButton";
 import { useGetDividaByIdQuery } from "@/services/endpoints/dividasApi";
 import { fnFormatDateInTimeZone } from "@/utils/functions/fnFormatDateInTimeZone";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
@@ -54,6 +59,9 @@ const DetalhesDividaModal = ({
 }: DetalhesDividaModalProps) => {
   const theme = useTheme();
   const { abrirDrawer: abrirLancamentoDrawer } = useLancamentoDrawer();
+  const isPulseEnabled = useSelector(
+    (state: AppState) => state.customizer.isPulseEnabled ?? true,
+  );
 
   const {
     data: divida,
@@ -371,154 +379,251 @@ const DetalhesDividaModal = ({
                           >
                             <Stack
                               direction="row"
-                              spacing={1.5}
+                              spacing={1}
                               alignItems="center"
+                              justifyContent="space-between"
                             >
-                              <Box
-                                sx={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: 1.2,
-                                  bgcolor: alpha(corItem, 0.1),
-                                  color: corItem,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  flexShrink: 0,
-                                }}
+                              {/* Bloco 1: Ícone + Referência & Vencimento */}
+                              <Stack
+                                direction="row"
+                                spacing={1.5}
+                                alignItems="center"
+                                sx={{ minWidth: 0, flex: 1 }}
                               >
-                                {config.icon}
-                              </Box>
-                              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                                <Stack
-                                  direction="row"
-                                  justifyContent="space-between"
-                                  alignItems="center"
+                                <Tooltip
+                                  title={
+                                    p.status === "parcial"
+                                      ? `Pagar ${formatCurrency(p.valorAgendado - p.valorPago)} restantes`
+                                      : p.status !== "pago"
+                                        ? "Pagar esta parcela"
+                                        : ""
+                                  }
+                                  arrow
+                                  placement="top"
+                                  disableHoverListener={p.status === "pago"}
                                 >
-                                  <Box sx={{ minWidth: 0 }}>
+                                  <Box
+                                    onClick={(e) => {
+                                      if (p.status !== "pago") {
+                                        e.stopPropagation();
+                                        abrirLancamentoDrawer("pagar", {
+                                          origem: "despesa",
+                                          origemId: Number(
+                                            (divida as DividaVolatil)
+                                              .despesaId || divida.id,
+                                          ),
+                                          valorPrevisto: Number(
+                                            (
+                                              p.valorAgendado - p.valorPago
+                                            ).toFixed(2),
+                                          ),
+                                          nome: divida.nome,
+                                          data: p.dataVencimento,
+                                        });
+                                      }
+                                    }}
+                                    sx={{
+                                      width: 38,
+                                      height: 38,
+                                      borderRadius: 1.5,
+                                      bgcolor:
+                                        p.status !== "pago" && isExpanded
+                                          ? theme.palette.success.main
+                                          : alpha(corItem, 0.1),
+                                      color:
+                                        p.status !== "pago" && isExpanded
+                                          ? "white"
+                                          : corItem,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexShrink: 0,
+                                      position: "relative",
+                                      cursor:
+                                        p.status !== "pago"
+                                          ? "pointer"
+                                          : "inherit",
+                                      transition: "all 0.2s",
+                                      animation:
+                                        p.status !== "pago" && isPulseEnabled
+                                          ? `${combinedHighlight} 6s ease-in-out infinite`
+                                          : "none",
+                                      "&:hover":
+                                        p.status !== "pago"
+                                          ? {
+                                              bgcolor:
+                                                theme.palette.success.main,
+                                              color: "white",
+                                              "& .icon-original": {
+                                                opacity: 0,
+                                                transform: "scale(0.5)",
+                                              },
+                                              "& .icon-hover": {
+                                                opacity: 1,
+                                                transform: "scale(1)",
+                                              },
+                                            }
+                                          : {},
+                                    }}
+                                  >
+                                    <Box
+                                      className="icon-original"
+                                      sx={{
+                                        display: "flex",
+                                        transition: "all 0.2s",
+                                        position: "absolute",
+                                        opacity:
+                                          p.status !== "pago" && isExpanded
+                                            ? 0
+                                            : 1,
+                                        transform:
+                                          p.status !== "pago" && isExpanded
+                                            ? "scale(0.5)"
+                                            : "scale(1)",
+                                      }}
+                                    >
+                                      {config.icon}
+                                    </Box>
+                                    {p.status !== "pago" && (
+                                      <Box
+                                        className="icon-hover"
+                                        sx={{
+                                          display: "flex",
+                                          transition: "all 0.2s",
+                                          position: "absolute",
+                                          opacity: isExpanded ? 1 : 0,
+                                          transform: isExpanded
+                                            ? "scale(1)"
+                                            : "scale(0.5)",
+                                        }}
+                                      >
+                                        <IconCoin size={20} stroke={2.5} />
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Tooltip>
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Stack
+                                    direction={{ xs: "column-reverse", sm: "row" }}
+                                    spacing={{ xs: 0.5, sm: 1 }}
+                                    alignItems={{ xs: "flex-start", sm: "center" }}
+                                  >
                                     <Typography
                                       variant="body2"
                                       fontWeight={800}
-                                      lineHeight={1.1}
-                                      sx={{
-                                        mb: -0.3,
-                                        mt: 0.5,
-                                        fontSize: {
-                                          xs: "0.78rem",
-                                          sm: "0.85rem",
-                                        },
-                                      }}
+                                      color="text.primary"
+                                      noWrap
+                                      sx={{ fontSize: "0.9rem" }}
                                     >
-                                      {p.label ||
-                                        `Parcela ${String(p.numero).padStart(2, "0")}/${String((divida as DividaUnica).totalParcelas).padStart(2, "0")}`}
+                                      {p.label
+                                        ? p.label.replace("Referência: ", "")
+                                        : `Parcela ${String(p.numero).padStart(2, "0")}/${String((divida as DividaUnica).totalParcelas).padStart(2, "0")}`}
                                     </Typography>
+                                    <Chip
+                                      label={config.label}
+                                      size="small"
+                                      sx={{
+                                        height: 18,
+                                        fontSize: "0.6rem",
+                                        fontWeight: 800,
+                                        textTransform: "uppercase",
+                                        bgcolor: alpha(corItem, 0.1),
+                                        color: corItem,
+                                        border: `1px solid ${alpha(corItem, 0.2)}`,
+                                      }}
+                                    />
+                                  </Stack>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    fontWeight={600}
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 0.5,
+                                      mt: 0.2,
+                                    }}
+                                  >
+                                    <IconCalendarEvent size={12} stroke={2} />
+                                    {fnFormatNaiveDate(
+                                      p.dataVencimento,
+                                      "dd MMM yy",
+                                    )}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              {/* Bloco 2: Valores e Ações */}
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{
+                                  flexShrink: 0,
+                                  minWidth: { xs: "auto", sm: 150 },
+                                  justifyContent: "flex-end",
+                                }}
+                              >
+                                <Stack alignItems="flex-end" spacing={0}>
+                                  <Typography
+                                    variant="subtitle2"
+                                    fontWeight={800}
+                                    color="text.primary"
+                                    sx={{
+                                      fontSize: "0.95rem",
+                                      lineHeight: 1.2,
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    {p.status === "parcial"
+                                      ? formatCurrency(p.valorPago)
+                                      : formatCurrency(
+                                          p.status === "pago"
+                                            ? p.valorPago
+                                            : p.valorAgendado,
+                                        )}
+                                  </Typography>
+                                  {p.status === "parcial" && (
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
-                                      fontWeight={600}
+                                      fontWeight={700}
                                       sx={{
-                                        fontSize: {
-                                          xs: "0.58rem",
-                                          sm: "0.65rem",
-                                        },
-                                        opacity: 0.8,
+                                        fontSize: "0.65rem",
+                                        display: "block",
                                       }}
                                     >
-                                      Vencimento:{" "}
-                                      {fnFormatNaiveDate(
-                                        p.dataVencimento,
-                                        "dd MMM yy",
-                                      )}
+                                      de {formatCurrency(p.valorAgendado)}
                                     </Typography>
-                                  </Box>
-
-                                  <Stack
-                                    direction="row"
-                                    spacing={2}
-                                    alignItems="center"
-                                  >
-                                    <Stack spacing={0} alignItems="flex-end">
-                                      <Typography
-                                        variant="caption"
-                                        color={corItem}
-                                        fontWeight={900}
-                                        sx={{
-                                          fontSize: { xs: 8, sm: 10 },
-                                          textTransform: "uppercase",
-                                          mb: -0.2,
-                                          letterSpacing: "0.04em",
-                                        }}
-                                      >
-                                        {config.label}
-                                      </Typography>
-                                      <Typography
-                                        variant="body2"
-                                        fontWeight={900}
-                                        color={corItem}
-                                        sx={{
-                                          lineHeight: 1,
-                                          fontSize: {
-                                            xs: "0.78rem",
-                                            sm: "0.85rem",
-                                          },
-                                        }}
-                                      >
-                                        {p.status === "parcial"
-                                          ? `${formatCurrency(p.valorPago)} / ${formatCurrency(p.valorAgendado)}`
-                                          : formatCurrency(
-                                              p.status === "pago"
-                                                ? p.valorPago
-                                                : p.valorAgendado,
-                                            )}
-                                      </Typography>
-                                    </Stack>
-                                    {p.status !== "pago" && (
-                                      <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          abrirLancamentoDrawer("pagar", {
-                                            origem: "despesa",
-                                            origemId: Number(
-                                              (divida as DividaVolatil)
-                                                .despesaId || divida.id,
-                                            ),
-                                            valorPrevisto: Number(
-                                              (
-                                                p.valorAgendado - p.valorPago
-                                              ).toFixed(2),
-                                            ),
-                                            nome: divida.nome,
-                                            data: p.dataVencimento,
-                                          });
-                                        }}
-                                        sx={{
-                                          color: theme.palette.success.main,
-                                          mr: 0.5,
-                                          "&:hover": {
-                                            bgcolor: alpha(
-                                              theme.palette.success.main,
-                                              0.1,
-                                            ),
-                                          },
-                                        }}
-                                        title="Pagar esta parcela"
-                                      >
-                                        <IconCoin size={16} />
-                                      </IconButton>
-                                    )}
-                                    <IconButton
-                                      size="small"
-                                      sx={{ color: alpha(corItem, 0.5) }}
-                                    >
-                                      <IconEye
-                                        size={16}
-                                        stroke={isExpanded ? 3 : 1.5}
-                                      />
-                                    </IconButton>
-                                  </Stack>
+                                  )}
                                 </Stack>
-                              </Box>
+
+                                <Stack direction="row" spacing={0.5}>
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      width: 32,
+                                      height: 32,
+                                      color: alpha(corItem, 0.7),
+                                      bgcolor: isExpanded
+                                        ? alpha(corItem, 0.1)
+                                        : "transparent",
+                                      transform: isExpanded
+                                        ? "rotate(180deg)"
+                                        : "none",
+                                      transition:
+                                        "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                                      "&:hover": {
+                                        bgcolor: alpha(corItem, 0.1),
+                                        color: corItem,
+                                      },
+                                    }}
+                                  >
+                                    <IconChevronDown size={20} stroke={2} />
+                                  </IconButton>
+                                </Stack>
+                              </Stack>
                             </Stack>
                           </Paper>
 
@@ -684,6 +789,7 @@ const DetalhesDividaModal = ({
                                               display: "flex",
                                               alignItems: "center",
                                               justifyContent: "space-between",
+                                              gap: 3,
                                               transition: "all 0.2s ease",
                                               borderRadius: "12px",
                                               bgcolor: alpha(
@@ -693,7 +799,13 @@ const DetalhesDividaModal = ({
                                               border: `1px solid ${theme.palette.divider}`,
                                             }}
                                           >
-                                            <Box>
+                                            <Box
+                                              sx={{
+                                                flex: 1,
+                                                minWidth: 0,
+                                                maxWidth: 200,
+                                              }}
+                                            >
                                               <Typography
                                                 variant="body2"
                                                 fontWeight={700}
@@ -701,7 +813,9 @@ const DetalhesDividaModal = ({
                                                   fontSize: "0.85rem",
                                                   color:
                                                     theme.palette.text.primary,
-                                                  lineHeight: 1.2,
+                                                  lineHeight: 1.3,
+                                                  wordBreak: "break-word",
+                                                  whiteSpace: "normal",
                                                 }}
                                               >
                                                 {l.observacaoAutomatica ||
@@ -733,6 +847,7 @@ const DetalhesDividaModal = ({
                                               variant="subtitle2"
                                               fontWeight={900}
                                               sx={{
+                                                flexShrink: 0,
                                                 transition: "all 0.2s ease",
                                                 color:
                                                   theme.palette.text.primary,

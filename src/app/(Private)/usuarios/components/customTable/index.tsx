@@ -4,6 +4,7 @@ import {
   Alert,
   alpha,
   Avatar,
+  Badge,
   Box,
   Checkbox,
   Chip,
@@ -23,10 +24,10 @@ import {
   Typography,
 } from "@mui/material";
 import CustomAvatar from "@/components/shared/CustomAvatar";
-import { IconMail, IconTrash, IconUser } from "@tabler/icons-react";
-import { format } from "date-fns";
+import { IconMail, IconTrash, IconUser, IconCopy } from "@tabler/icons-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR as ptBRDate } from "date-fns/locale";
-import { memo, ReactNode, useMemo } from "react";
+import { memo, ReactNode, useMemo, useState } from "react";
 
 // Types
 import { User } from "next-auth";
@@ -40,8 +41,52 @@ import { useMultiSort } from "./hooks/useMultiSort";
 import { useTableFilter } from "./hooks/useTableFilter";
 import { createRenderColumn, IColumnProps } from "./utils/renderColumn";
 
+function CopyEmailAction({ email }: { email?: string | null }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (email) {
+      await navigator.clipboard.writeText(email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  if (!email) return null;
+  return (
+    <Tooltip title={copied ? "E-mail copiado!" : "Copiar e-mail"} arrow placement="top">
+      <Box
+        onClick={handleCopy}
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 24,
+          height: 24,
+          borderRadius: "6px",
+          backgroundColor: "action.hover",
+          border: "1px solid",
+          borderColor: "divider",
+          cursor: "pointer",
+          transition: "all 0.2s",
+          "&:hover": {
+            backgroundColor: "action.selected",
+            transform: "translateY(-1px)",
+          },
+          color: "primary.main",
+        }}
+      >
+        <IconCopy size={14} />
+      </Box>
+    </Tooltip>
+  );
+}
+
 // Extensão do tipo User para incluir campos virtuais se necessário
-type UserRow = User & { hasPassword?: boolean };
+type UserRow = User & { 
+  hasPassword?: boolean;
+  isOnline?: boolean;
+  lastActive?: string | Date | null;
+};
 
 interface IActionConfig {
   icon?: ReactNode;
@@ -84,6 +129,22 @@ export function CustomTableUsuarios({
   onStatusClick,
   onReset,
 }: CustomTableUsuariosProps) {
+  const formatLastActive = (lastActive: string | Date | null | undefined) => {
+    if (!lastActive) return "Nunca acessou";
+    try {
+      const data = new Date(lastActive);
+      if (data.getTime() < 10000000000) return "Offline";
+      
+      const distancia = formatDistanceToNow(data, {
+        locale: ptBRDate,
+        addSuffix: true,
+      });
+      return `Visto por último ${distancia}`;
+    } catch {
+      return "-";
+    }
+  };
+
   const TABLE_COLUMNS: IColumnProps<UserRow>[] = [
     {
       key: "name",
@@ -92,64 +153,79 @@ export function CustomTableUsuarios({
       sortValue: (row) => row.name || "",
       render: (row) => (
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <CustomAvatar
-            src={row.image || undefined}
-            sx={{ width: 32, height: 32 }}
-          />
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            variant="dot"
+            sx={{
+              '& .MuiBadge-badge': {
+                backgroundColor: row.isOnline ? '#4caf50' : '#9e9e9e',
+                color: row.isOnline ? '#4caf50' : '#9e9e9e',
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.background.paper}`,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                ...(row.isOnline && {
+                  '&::after': {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '50%',
+                    animation: 'ripple 1.2s infinite ease-in-out',
+                    border: '1px solid currentColor',
+                    content: '""',
+                  },
+                }),
+              },
+              '@keyframes ripple': {
+                '0%': { transform: 'scale(.8)', opacity: 1 },
+                '100%': { transform: 'scale(2.4)', opacity: 0 },
+              },
+            }}
+          >
+            <CustomAvatar
+              src={row.image || undefined}
+              sx={{ width: 38, height: 38 }}
+            />
+          </Badge>
           <Box>
             <Typography variant="body2" fontWeight={600} noWrap>
               {row.name || "Sem nome"}
             </Typography>
-            <Typography variant="caption" color="textSecondary" display="block">
-              ID: {row.id}
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1} mt={0.5}>
+              <CopyEmailAction email={row.email} />
+              <Typography variant="caption" color="textSecondary">
+                {row.isOnline ? (
+                  <Box component="span" sx={{ color: "success.main", fontWeight: 700 }}>Online</Box>
+                ) : (
+                  formatLastActive(row.lastActive)
+                )}
+              </Typography>
+            </Stack>
           </Box>
         </Stack>
       ),
-      filterValue: (row) => row.name || "",
-    },
-    {
-      key: "email",
-      label: "Email",
-      align: "left",
-      sortValue: (row) => row.email || "",
-      render: (row) => (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <IconMail size={16} color="#777" />
-          <Typography variant="body2" noWrap>
-            {row.email || "-"}
-          </Typography>
-        </Stack>
-      ),
-      filterValue: (row) => row.email || "",
-    },
-    {
-      key: "username",
-      label: "Username",
-      align: "left",
-      sortValue: (row) => row.username || "",
-      render: (row) => (
-        <Typography variant="body2" color="textSecondary">
-          @{row.username || "-"}
-        </Typography>
-      ),
-      filterValue: (row) => row.username || "",
+      filterValue: (row) => `${row.name || ""} ${row.email || ""} ${row.username || ""}`,
     },
     {
       key: "role",
-      label: "Role",
+      label: "Perfil",
       align: "center",
+      hideOnMobile: true,
       sortValue: (row) => row.role || "",
       render: (row) => (
         <Chip
-          label={row.role || "usuario"}
+          label={row.role === "admin" ? "Administrador" : "Usuário"}
           size="small"
           color={row.role === "admin" ? "primary" : "default"}
           variant="outlined"
           sx={{
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: "0.7rem",
             textTransform: "uppercase",
+            borderRadius: 2,
           }}
         />
       ),
@@ -167,27 +243,11 @@ export function CustomTableUsuarios({
             size="small"
             color={row.status === "A" ? "success" : "error"}
             onClick={() => onStatusClick(row)}
-            sx={{ fontWeight: 700, px: 1, cursor: "pointer" }}
+            sx={{ fontWeight: 700, px: 1, cursor: "pointer", borderRadius: 2 }}
           />
         </Tooltip>
       ),
       filterValue: (row) => (row.status === "A" ? "Ativo" : "Inativo"),
-    },
-    {
-      key: "createdAt",
-      label: "Criado em",
-      align: "right",
-      sortValue: (row) => new Date(row.createdAt).getTime(),
-      render: (row) => {
-        try {
-          return format(new Date(row.createdAt), "dd/MM/yyyy HH:mm", {
-            locale: ptBRDate,
-          });
-        } catch {
-          return "-";
-        }
-      },
-      filterValue: (row) => row.createdAt.toString(),
     },
   ];
 
@@ -270,7 +330,7 @@ export function CustomTableUsuarios({
                 />
               </TableCell>
 
-              {TABLE_COLUMNS.map(({ key, label, align = "left" }) => (
+              {TABLE_COLUMNS.map(({ key, label, align = "left", hideOnMobile }) => (
                 <TableCell
                   key={String(key)}
                   align={align}
@@ -279,6 +339,7 @@ export function CustomTableUsuarios({
                     cursor: "pointer",
                     userSelect: "none",
                     minWidth: 100,
+                    ...(hideOnMobile && { display: { xs: 'none', sm: 'table-cell' } }),
                     "&:hover .sort-icon": {
                       opacity: getSortIcon(key) ? 1 : 0.4,
                     },
@@ -430,10 +491,11 @@ const CustomRow = memo(
           <Checkbox checked={isSelected} onChange={() => onSelect(row.id)} />
         </TableCell>
 
-        {columns.map(({ key }) => (
+        {columns.map(({ key, hideOnMobile }) => (
           <TableCell
             key={String(key)}
             align={(alignsMap.get(key) as any) || "left"}
+            sx={{ ...(hideOnMobile && { display: { xs: 'none', sm: 'table-cell' } }) }}
           >
             {renderColumn(key)}
           </TableCell>
@@ -446,5 +508,8 @@ const CustomRow = memo(
     );
   },
   (prev, next) =>
-    prev.row.id === next.row.id && prev.isSelected === next.isSelected,
+    prev.row.id === next.row.id &&
+    prev.isSelected === next.isSelected &&
+    prev.row.isOnline === next.row.isOnline &&
+    prev.row.lastActive === next.row.lastActive,
 );

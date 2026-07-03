@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
+import { useUserHeartbeat } from "@/hooks/user/useUserHeartbeat";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -13,6 +14,9 @@ interface AuthGuardProps {
  */
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { data: session, status, update } = useSession();
+
+  // Roda o hook de atividade econômica no escopo autenticado
+  useUserHeartbeat();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

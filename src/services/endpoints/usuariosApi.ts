@@ -45,6 +45,20 @@ export const usuariosApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Users"],
     }),
+
+    registrarAtividade: builder.mutation<void, void>({
+      query: () => ({
+        url: "/usuarios/atividade",
+        method: "POST",
+      }),
+    }),
+
+    registrarLogout: builder.mutation<void, void>({
+      query: () => ({
+        url: "/usuarios/logout-log",
+        method: "POST",
+      }),
+    }),
   }),
 });
 
@@ -55,4 +69,6 @@ export const {
   useGetAcessosUsuarioQuery,
   useUpdateUsuarioMutation,
   useBulkDeleteUsuariosMutation,
+  useRegistrarAtividadeMutation,
+  useRegistrarLogoutMutation,
 } = usuariosApi;

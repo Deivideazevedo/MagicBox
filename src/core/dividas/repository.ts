@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { DividaUnica, DividaVolatil, DividaFixa, StatusDivida, SituacaoParcela, StatusSituacaoParcela } from "./types";
 import { CreateDividaDTO, UpdateDividaDTO } from "./divida.dto";
-import { differenceInCalendarDays, isSameMonth, format } from "date-fns";
+import { differenceInCalendarDays, isSameMonth, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Prisma, Lancamento, Despesa, Categoria } from "@prisma/client";
+import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
 
 type DespesaComCategoria = Despesa & {
   categoria: Categoria;
@@ -193,7 +195,7 @@ export const dividasRepository = {
         valorRestante: Math.max(0, valorTotalPendentes - valorPagoPendentes),
         quantidadeParcelas: situacaoParcelas.length,
         proximoVencimento: proximo?.dataVencimento || null,
-        diasParaVencer: proximo ? differenceInCalendarDays(new Date(proximo.dataVencimento), hoje) : null,
+        diasParaVencer: proximo ? differenceInCalendarDays(parseISO(fnFormatNaiveDate(proximo.dataVencimento, 'yyyy-MM-dd') + "T00:00:00"), parseISO(fnGetTodayISO() + "T00:00:00")) : null,
         atrasada: situacaoParcelas.some(p => p.status === 'atrasada'),
         categoriaNome: primeiraRow.categoriaNome || undefined,
         userId: primeiraRow.userId,
@@ -269,7 +271,7 @@ export const dividasRepository = {
         concluida,
         temAjusteQuitacao,
         proximoVencimento: dataVencimento.toISOString().split("T")[0],
-        diasParaVencer: differenceInCalendarDays(dataVencimento, hoje),
+        diasParaVencer: differenceInCalendarDays(parseISO(fnFormatNaiveDate(dataVencimento, 'yyyy-MM-dd') + "T00:00:00"), parseISO(fnGetTodayISO() + "T00:00:00")),
         categoriaNome: d.categoria?.nome,
         userId: d.userId,
       };
@@ -461,7 +463,7 @@ export const dividasRepository = {
       progresso,
       concluida,
       proximoVencimento: proximoAgendamento?.dataVencimento || null,
-      diasParaVencer: proximoAgendamento ? differenceInCalendarDays(new Date(proximoAgendamento.dataVencimento), hoje) : null,
+      diasParaVencer: proximoAgendamento ? differenceInCalendarDays(parseISO(fnFormatNaiveDate(proximoAgendamento.dataVencimento, 'yyyy-MM-dd') + "T00:00:00"), parseISO(fnGetTodayISO() + "T00:00:00")) : null,
       lancamentos: d.lancamentos,
       situacaoParcelas,
       categoriaId: d.categoriaId,

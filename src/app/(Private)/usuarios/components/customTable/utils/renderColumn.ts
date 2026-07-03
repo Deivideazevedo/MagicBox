@@ -11,6 +11,7 @@ export type IColumnProps<T> = {
   sortValue?: (row: T) => any;
   render?: (row: T) => ReactNode;
   filterValue?: (row: T) => string | number;
+  hideOnMobile?: boolean;
 };
 
 /**

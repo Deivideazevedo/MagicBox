@@ -13,6 +13,7 @@ export interface CoreUser {
   createdAt: string | Date;
   updatedAt: string | Date;
   deletedAt?: string | Date | null;
+  lastActive?: string | Date | null;
 }
 
 export interface UserPayload {
@@ -32,4 +33,21 @@ export interface AuthPayload {
   password: string;
 }
 
+export interface UserWithLogs extends CoreUser {
+  accessLogs: {
+    id: number;
+    userId: number;
+    email: string;
+    ip: string;
+    latitude: string | null;
+    longitude: string | null;
+    city: string | null;
+    country: string | null;
+    provider: string;
+    createdAt: Date;
+  }[];
+}
 
+export interface UserListDTOOutput extends CoreUser {
+  isOnline: boolean;
+}

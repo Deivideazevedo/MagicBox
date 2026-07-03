@@ -632,7 +632,19 @@ export const dividasService = {
     });
 
     if (!ultimoPagamento) {
-      throw new NotFoundError("Nenhum pagamento encontrado no mês atual para quitar.");
+      await prisma.lancamento.create({
+        data: {
+          userId,
+          despesaId: dividaId,
+          tipo: "pagamento",
+          valor: 0,
+          data: hoje,
+          observacao: "Quitação - Despesa Fixa",
+          observacaoAutomatica: "Aporte Automático [QUITAÇÃO]",
+        },
+      });
+
+      return { success: true };
     }
 
     // Atualizar o lançamento existente adicionando a tag [QUITAÇÃO]
@@ -679,15 +691,21 @@ export const dividasService = {
     }
 
     // Remover a tag [QUITAÇÃO] da observação automática
-    const obsAtual = lancamentoQuitado.observacaoAutomatica || "";
-    const novaObs = obsAtual.replace(/\s*\[QUITAÇÃO\]\s*/g, " ").trim();
+    if (Number(lancamentoQuitado.valor) === 0) {
+      await prisma.lancamento.delete({
+        where: { id: lancamentoQuitado.id },
+      });
+    } else {
+      const obsAtual = lancamentoQuitado.observacaoAutomatica || "";
+      const novaObs = obsAtual.replace(/\s*\[QUITAÇÃO\]\s*/g, " ").trim();
 
-    await prisma.lancamento.update({
-      where: { id: lancamentoQuitado.id },
-      data: {
-        observacaoAutomatica: novaObs || null,
-      },
-    });
+      await prisma.lancamento.update({
+        where: { id: lancamentoQuitado.id },
+        data: {
+          observacaoAutomatica: novaObs || null,
+        },
+      });
+    }
 
     return { success: true, count: 1 };
   },

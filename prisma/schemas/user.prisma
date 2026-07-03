@@ -23,6 +23,7 @@ model User {
   notificacoes           Notificacao[]
   preferenciaNotificacao PreferenciaNotificacao?
   inscricoesPush         InscricaoPush[]
+  lastActive             DateTime?
 
   @@index([username])
   @@index([email])

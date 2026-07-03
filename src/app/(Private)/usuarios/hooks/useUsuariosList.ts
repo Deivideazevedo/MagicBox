@@ -21,13 +21,21 @@ export function useUsuariosList() {
     isLoading,
     isFetching,
     refetch,
-  } = useGetUsuariosQuery(filtros, { refetchOnMountOrArgChange: true });
+  } = useGetUsuariosQuery(filtros, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    pollingInterval: 5 * 60 * 2000, // Busca a cada 5 minutos
+  });
 
   const [updateUsuario, { isLoading: isUpdating }] = useUpdateUsuarioMutation();
-  const [bulkDelete, { isLoading: isDeletingBulk }] = useBulkDeleteUsuariosMutation();
+  const [bulkDelete, { isLoading: isDeletingBulk }] =
+    useBulkDeleteUsuariosMutation();
 
   const usuarios = useMemo(() => responseData?.data || [], [responseData]);
-  const meta = useMemo(() => responseData?.meta || { total: 0, page: 0, lastPage: 0, limit: 10 }, [responseData]);
+  const meta = useMemo(
+    () => responseData?.meta || { total: 0, page: 0, lastPage: 0, limit: 10 },
+    [responseData],
+  );
 
   const [userVisualizar, setUserVisualizar] = useState<User | null>(null);
 
@@ -45,7 +53,7 @@ export function useUsuariosList() {
         return { ...prev, ...novosFiltros };
       });
     },
-    []
+    [],
   );
 
   const modalHandlers = useMemo(
@@ -58,7 +66,7 @@ export function useUsuariosList() {
         fechar: () => modalVisualizar.closeModal(),
       },
     }),
-    [modalVisualizar]
+    [modalVisualizar],
   );
 
   const handleToggleStatus = async (user: User) => {
@@ -81,11 +89,13 @@ export function useUsuariosList() {
             setUserVisualizar(updated);
           }
 
-          toast.success(`Usuário ${isActivating ? "ativado" : "inativado"} com sucesso`);
+          toast.success(
+            `Usuário ${isActivating ? "ativado" : "inativado"} com sucesso`,
+          );
         } catch (error) {
           toast.error("Erro ao atualizar status do usuário");
         }
-      }
+      },
     });
   };
 
@@ -122,7 +132,7 @@ export function useUsuariosList() {
           toast.error("Erro ao remover usuários");
           throw error;
         }
-      }
+      },
     });
 
     return confirmed;
@@ -137,7 +147,7 @@ export function useUsuariosList() {
         setFiltros((prev) => ({ ...prev, limit: newPageSize, page: 0 }));
       },
     }),
-    []
+    [],
   );
 
   const handleReset = useCallback(() => {
