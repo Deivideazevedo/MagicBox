@@ -16,12 +16,9 @@ import {
   Typography,
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
-import {
-  IconHelp,
-} from "@tabler/icons-react";
+import { IconHelp } from "@tabler/icons-react";
 import dynamic from "next/dynamic";
 import { CircularProgress } from "@mui/material";
-import { Formulario } from "../components/Divida/Formulario";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -32,23 +29,48 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
+const Formulario = dynamic(
+  () => import("../components/Divida/Formulario").then((m) => m.Formulario),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  },
+);
+
 // Importações dinâmicas de componentes pesados para reduzir bundle size
-const Listagem = dynamic(() => import("../components/Divida/Listagem").then((m) => m.Listagem), {
-  loading: () => (
-    <Box display="flex" justifyContent="center" p={4}>
-      <CircularProgress />
-    </Box>
-  ),
-  ssr: false,
-});
+const Listagem = dynamic(
+  () => import("../components/Divida/Listagem").then((m) => m.Listagem),
+  {
+    loading: () => (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    ),
+    ssr: false,
+  },
+);
 
-const DividasDashboard = dynamic(() => import("../components/Divida/DividasDashboard").then((m) => m.DividasDashboard), {
-  ssr: false,
-});
+const DividasDashboard = dynamic(
+  () =>
+    import("../components/Divida/DividasDashboard").then(
+      (m) => m.DividasDashboard,
+    ),
+  {
+    ssr: false,
+  },
+);
 
-const ProductTour = dynamic(() => import("@/app/components/shared/ProductTour").then((m) => m.ProductTour), {
-  ssr: false,
-});
+const ProductTour = dynamic(
+  () =>
+    import("@/app/components/shared/ProductTour").then((m) => m.ProductTour),
+  {
+    ssr: false,
+  },
+);
 
 import { useDividas } from "../hooks/useDividas";
 import { useTour } from "@/app/components/shared/ProductTour";
@@ -90,9 +112,12 @@ function DividasPageContent() {
   // Fechar formulário após criação/edição/aporte com sucesso
   const prevLoading = useRef({ isCreating, isUpdating, isAportando });
   useEffect(() => {
-    const wasLoading = prevLoading.current.isCreating || prevLoading.current.isUpdating || prevLoading.current.isAportando;
+    const wasLoading =
+      prevLoading.current.isCreating ||
+      prevLoading.current.isUpdating ||
+      prevLoading.current.isAportando;
     const isNowLoading = isCreating || isUpdating || isAportando;
-    
+
     if (wasLoading && !isNowLoading) {
       setExibirFormulario(false);
     }
@@ -107,7 +132,6 @@ function DividasPageContent() {
     steps: tourSteps,
     autoStart: dividas.length > 0,
   });
-
 
   const handleOpenAporte = (divida: Divida) => {
     handleAporte(divida);
@@ -142,24 +166,33 @@ function DividasPageContent() {
 
   const temDados = dividasPrazo.length > 0 || despesasFixas.length > 0;
 
+  const qtdPendentes = useMemo(() => {
+    return dividas.filter((d: Divida) => {
+      if (d.status !== "A") return false;
+      if (d.tipo === "UNICA" && d.concluida) return false;
+      if (d.tipo === "FIXA" && d.concluida) return false;
+      return true;
+    }).length;
+  }, [dividas]);
+
   return (
     <PageContainer
       title="Dívidas com Prazo"
       description="Gerencie a evolução e o encerramento de suas dívidas"
     >
-
       <Box mb={4}>
         <DividasDashboard
-          resumo={
-            resumo || {
+          resumo={{
+            ...(resumo || {
               totalDevidoUnicas: 0,
               totalPagoUnicas: 0,
               totalAgendadoVolateis: 0,
               quantidadeTotalParcelas: 0,
               dividasAtrasadas: 0,
               proximosVencimentos: 0,
-            }
-          }
+            }),
+            quantidadeTotalParcelas: qtdPendentes,
+          }}
           onNew={handleNovaDivida}
           mostrarConcluidas={mostrarConcluidas}
           onToggleConcluidas={setMostrarConcluidas}
@@ -220,7 +253,7 @@ function DividasPageContent() {
                   },
                   "& .MuiCardContent-root": {
                     p: { xs: 2.5, sm: 3 },
-                  }
+                  },
                 }}
                 PaperProps={{
                   sx: {
@@ -263,14 +296,12 @@ function DividasPageContent() {
                 transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                 width: "100%",
                 ...(!isMobile && {
-                  flexBasis:
-                    exibirFormulario
-                      ? "66.66% !important"
-                      : "100% !important",
-                  maxWidth:
-                    exibirFormulario
-                      ? "66.66% !important"
-                      : "100% !important",
+                  flexBasis: exibirFormulario
+                    ? "66.66% !important"
+                    : "100% !important",
+                  maxWidth: exibirFormulario
+                    ? "66.66% !important"
+                    : "100% !important",
                 }),
               }}
             >
@@ -309,7 +340,11 @@ function DividasPageContent() {
                       <Typography
                         variant="h5"
                         fontWeight={800}
-                        sx={{ mb: 2.5, letterSpacing: "-0.5px", color: "text.primary" }}
+                        sx={{
+                          mb: 2.5,
+                          letterSpacing: "-0.5px",
+                          color: "text.primary",
+                        }}
                       >
                         Despesas Fixas do Mês
                       </Typography>

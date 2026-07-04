@@ -122,7 +122,7 @@ const DashboardContent = () => {
       description="Visão geral das suas finanças"
     >
       <Fade in={isPageVisible} timeout={350}>
-        <Box sx={{ maxWidth: "xl", mx: "auto", width: "100%" }}>
+        <Box>
           {/* Welcome Section */}
           <Box sx={{ mb: 4 }} ref={tourRefs.welcomeRef}>
             <Stack

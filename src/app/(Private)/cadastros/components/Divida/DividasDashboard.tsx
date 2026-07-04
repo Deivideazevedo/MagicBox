@@ -40,13 +40,16 @@ const SummaryCard = ({
   <Card
     elevation={1}
     sx={{
-      p: 2.5,
-      borderRadius: 4,
+      p: { xs: 1.5, sm: 2.5 },
+      borderRadius: 3,
       border: "1px solid",
       borderColor: alpha(color, 0.2),
       background: `background.paper`,
       position: "relative",
       overflow: "hidden",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
     }}
   >
     <Box
@@ -60,11 +63,15 @@ const SummaryCard = ({
     >
       <Icon size={80} stroke={1.5} color={color} />
     </Box>
-    <Stack spacing={1}>
-      <Stack direction="row" spacing={1.5} alignItems="center">
+    <Stack spacing={1} sx={{ flexGrow: 1, justifyContent: "space-between" }}>
+      <Stack
+        direction="row"
+        spacing={{ xs: 1, sm: 1.5 }}
+        alignItems="flex-start"
+      >
         <Box
           sx={{
-            p: 1,
+            p: { xs: 0.5, sm: 1 },
             borderRadius: 2,
             bgcolor: alpha(color, 0.1),
             color: color,
@@ -73,15 +80,37 @@ const SummaryCard = ({
         >
           <Icon size={20} />
         </Box>
-        <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
+        <Typography
+          variant="subtitle2"
+          color="text.secondary"
+          fontWeight={600}
+          sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+        >
           {title}
         </Typography>
       </Stack>
-      <Box>
-        <Typography variant="h5" fontWeight={800} color="text.primary">
+      <Box mt={1}>
+        <Typography
+          variant="h5"
+          fontWeight={800}
+          color="text.primary"
+          sx={{
+            fontSize: { xs: "1.1rem", sm: "1.5rem" },
+            wordBreak: "break-word",
+          }}
+        >
           {value}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            fontSize: { xs: "0.65rem", sm: "0.75rem" },
+            lineHeight: 1.2,
+            display: "block",
+            mt: 0.5,
+          }}
+        >
           {subtitle}
         </Typography>
       </Box>
@@ -126,20 +155,23 @@ export const DividasDashboard = ({
   return (
     <Box>
       {/* Totalizadores */}
-      <Box ref={tourRefs.resumoRef as React.Ref<HTMLDivElement>} sx={{ mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
+      <Box
+        ref={tourRefs.resumoRef as React.Ref<HTMLDivElement>}
+        sx={{ mb: { xs: 3, sm: 4 } }}
+      >
+        <Grid container spacing={{ xs: 1.5, sm: 3 }}>
+          <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Total em Dívidas"
               value={formatCurrency(
                 safeResumo.totalDevidoUnicas + safeResumo.totalAgendadoVolateis,
               )}
-              subtitle={`${safeResumo.quantidadeTotalParcelas} parcelas restantes`}
+              subtitle={`${safeResumo.quantidadeTotalParcelas} dívidas pendentes`}
               icon={IconCreditCard}
               color={theme.palette.primary.main}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Total Pago"
               value={formatCurrency(safeResumo.totalPagoUnicas)}
@@ -148,7 +180,7 @@ export const DividasDashboard = ({
               color={theme.palette.success.main}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Atrasadas"
               value={safeResumo.dividasAtrasadas}
@@ -157,7 +189,7 @@ export const DividasDashboard = ({
               color={theme.palette.error.main}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Próximos 7 dias"
               value={safeResumo.proximosVencimentos}
@@ -209,7 +241,7 @@ export const DividasDashboard = ({
           alignItems="center"
           sx={{
             p: 0.8,
-            pl: 2.5,
+            pl: { xs: 1.5, sm: 2.5 },
             bgcolor:
               theme.palette.mode === "dark"
                 ? alpha(theme.palette.background.paper, 0.8)
@@ -237,12 +269,13 @@ export const DividasDashboard = ({
                   textTransform: "uppercase",
                   ml: 0,
                   letterSpacing: "0.5px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 Concluídas
               </Typography>
             }
-            sx={{ m: 0, mx: 1 }}
+            sx={{ m: 0, mx: { xs: 0, sm: 1 } }}
           />
 
           <Box
@@ -264,6 +297,8 @@ export const DividasDashboard = ({
               px: 3,
               fontWeight: 700,
               textTransform: "none",
+              whiteSpace: "nowrap",
+              fontSize: { xs: "12px", sm: "14px" },
               boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.25)}`,
               "&:hover": {
                 boxShadow: `0 12px 30px ${alpha(theme.palette.primary.main, 0.35)}`,

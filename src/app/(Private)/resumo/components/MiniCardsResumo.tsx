@@ -142,26 +142,21 @@ export default function MiniCardsResumo(params: {
         </Button>
       </Box> */}
 
-      <Grid container spacing={2}>
+      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
         {miniCards.map((card, index) => {
           const Icon = card.icon;
           return (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item xs={6} sm={6} md={3} key={index}>
               <Card
                 onClick={() => setDetalhesExpandidos((prev) => !prev)}
                 sx={{
                   borderRadius: 3,
                   bgcolor: "background.paper",
                   backgroundImage: "none",
-                  border: "1px solid",
-                  borderColor: alpha(card.iconColor, 0.25),
                   position: "relative",
                   overflow: "hidden",
                   transition: "all 0.2s ease-in-out",
                   cursor: "auto",
-                  pt: 2,
-                  pb: 1.5,
-                  // pb: 1,
                   "&:hover": {
                     cursor: "pointer",
                     transform: "translateY(-4px)",
@@ -195,12 +190,13 @@ export default function MiniCardsResumo(params: {
 
                 <CardContent
                   sx={{
-                    p: 2,
-                    pt: "10px !important",
-                    pb: "0px !important",
+                    p: { xs: 1.5, sm: 2 },
+                    // px: { xs: 0 },
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
+                    gap: 1.5,
+                    "&:last-child": { pb: { xs: 0 } },
                   }}
                 >
                   <Box
@@ -216,7 +212,7 @@ export default function MiniCardsResumo(params: {
                         textTransform: "uppercase",
                         letterSpacing: 0.5,
                         fontSize: "0.75rem",
-                        mt: 0.5,
+                        // mt: 0.5,
                       }}
                     >
                       {card.label}
@@ -234,95 +230,122 @@ export default function MiniCardsResumo(params: {
                     </Box>
                   </Box>
 
-                  <Box mb={detalhesExpandidos ? 1 : 0}>
-                    {carregando ? (
-                      <Skeleton
-                        variant="text"
-                        width="78%"
-                        height={38}
-                        sx={{ transform: "none" }}
-                      />
-                    ) : (
-                      <Typography
-                        variant="h5"
-                        fontWeight={700}
-                        color="text.primary"
-                      >
-                        {card.value}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Collapse in={detalhesExpandidos} timeout={220}>
-                    <Box
-                      sx={{
-                        mt: "auto",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 0,
-                      }}
-                    >
-                      {card.subItems.map((item, i) => (
-                        <Box
-                          key={i}
-                          display="flex"
-                          justifyContent="space-between"
-                          alignItems="center"
+                  <Box>
+                    <Box mb={detalhesExpandidos ? 1 : 0}>
+                      {carregando ? (
+                        <Skeleton
+                          variant="text"
+                          width="78%"
+                          height={38}
+                          sx={{ transform: "none" }}
+                        />
+                      ) : (
+                        <Typography
+                          variant="h5"
+                          fontWeight={700}
+                          color="text.primary"
+                          sx={{
+                            fontSize: {
+                              xs: "1rem",
+                              sm: "1.15rem",
+                              lg: "1.25rem",
+                            },
+                          }}
                         >
-                          <Box display="flex" alignItems="center" gap={1}>
-                            {carregando ? (
-                              <Skeleton
-                                variant="circular"
-                                width={6}
-                                height={6}
-                              />
-                            ) : (
-                              <Box
-                                sx={{
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: "50%",
-                                  bgcolor: item.dotColor,
-                                }}
-                              />
-                            )}
+                          {card.value}
+                        </Typography>
+                      )}
+                    </Box>
+
+                    <Collapse in={detalhesExpandidos} timeout={220}>
+                      <Box
+                        sx={{
+                          mt: "auto",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0,
+                        }}
+                      >
+                        {card.subItems.map((item, i) => (
+                          <Box
+                            key={i}
+                            display="flex"
+                            flexDirection={{ xs: "column", sm: "row" }}
+                            justifyContent={{
+                              xs: "flex-start",
+                              sm: "space-between",
+                            }}
+                            alignItems={{ xs: "flex-start", sm: "center" }}
+                            gap={{ xs: 0, sm: 1 }}
+                            sx={{
+                              mb: { xs: 1 },
+                              ":last-child": { mb: 0 },
+                            }}
+                          >
+                            <Box
+                              display="flex"
+                              alignItems="center"
+                              gap={1}
+                              sx={{ whiteSpace: "nowrap" }}
+                            >
+                              {carregando ? (
+                                <Skeleton
+                                  variant="circular"
+                                  width={6}
+                                  height={6}
+                                />
+                              ) : (
+                                <Box
+                                  sx={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: "50%",
+                                    bgcolor: item.dotColor,
+                                  }}
+                                />
+                              )}
+                              {carregando ? (
+                                <Skeleton
+                                  variant="text"
+                                  width={90}
+                                  sx={{ transform: "none" }}
+                                />
+                              ) : (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ fontSize: "0.75rem" }}
+                                >
+                                  {item.label}
+                                </Typography>
+                              )}
+                            </Box>
+
                             {carregando ? (
                               <Skeleton
                                 variant="text"
-                                width={90}
+                                width={70}
                                 sx={{ transform: "none" }}
                               />
                             ) : (
                               <Typography
                                 variant="caption"
-                                color="text.secondary"
-                                sx={{ fontSize: "0.75rem" }}
+                                color="text.primary"
+                                fontWeight={600}
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  ml: { xs: 1.8, sm: 0 },
+                                  mt: { xs: -0.5 },
+                                }}
                               >
-                                {item.label}
+                                {item.value}
                               </Typography>
                             )}
                           </Box>
-
-                          {carregando ? (
-                            <Skeleton
-                              variant="text"
-                              width={70}
-                              sx={{ transform: "none" }}
-                            />
-                          ) : (
-                            <Typography
-                              variant="caption"
-                              color="text.primary"
-                              fontWeight={600}
-                              sx={{ fontSize: "0.75rem" }}
-                            >
-                              {item.value}
-                            </Typography>
-                          )}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Collapse>
+                        ))}
+                      </Box>
+                    </Collapse>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>

@@ -35,7 +35,7 @@ export const Listagem = (formProps: ListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredDespesas = despesas.filter((d) =>
-    d.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    d.nome.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -44,7 +44,7 @@ export const Listagem = (formProps: ListProps) => {
       sx={{
         borderRadius: 3,
         border: "1px solid",
-        borderColor: (theme) => alpha(theme.palette.divider, 1),
+        borderColor: (theme) => alpha(theme.palette.error.main, 0.2),
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -78,7 +78,14 @@ export const Listagem = (formProps: ListProps) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
-              startAdornment: <IconSearch size={20} stroke={1.5} color="gray" style={{ marginRight: 8 }} />,
+              startAdornment: (
+                <IconSearch
+                  size={20}
+                  stroke={1.5}
+                  color="gray"
+                  style={{ marginRight: 8 }}
+                />
+              ),
             }}
           />
         </Box>
@@ -105,13 +112,17 @@ export const Listagem = (formProps: ListProps) => {
               const isActive = despesa.status === "A";
               const isFixa = despesa.tipo === "FIXA";
               const isDivida = despesa.tipo === "DIVIDA";
-              
-              const bg = despesa.cor 
-                ? alpha(despesa.cor, 0.15) 
-                : (isActive ? "primary.light" : "grey.300");
-              const fg = despesa.cor 
-                ? despesa.cor 
-                : (isActive ? "primary.main" : "grey.600");
+
+              const bg = despesa.cor
+                ? alpha(despesa.cor, 0.15)
+                : isActive
+                  ? "primary.light"
+                  : "grey.300";
+              const fg = despesa.cor
+                ? despesa.cor
+                : isActive
+                  ? "primary.main"
+                  : "grey.600";
 
               return (
                 <Box key={despesa.id}>
@@ -122,7 +133,7 @@ export const Listagem = (formProps: ListProps) => {
                       "&:hover": {
                         backgroundColor: "action.hover",
                       },
-                      opacity: isActive ? 1 : 0.6
+                      opacity: isActive ? 1 : 0.6,
                     }}
                   >
                     <Box
@@ -138,10 +149,16 @@ export const Listagem = (formProps: ListProps) => {
                         mr: 2,
                       }}
                     >
-                      <DynamicIcon 
-                        name={despesa.icone || "IconCreditCard"} 
-                        size={20} 
-                        fallbackIcon={isFixa ? "IconRepeat" : isDivida ? "IconReceipt" : "IconCreditCard"} 
+                      <DynamicIcon
+                        name={despesa.icone || "IconCreditCard"}
+                        size={20}
+                        fallbackIcon={
+                          isFixa
+                            ? "IconRepeat"
+                            : isDivida
+                              ? "IconReceipt"
+                              : "IconCreditCard"
+                        }
                       />
                     </Box>
 
@@ -157,10 +174,20 @@ export const Listagem = (formProps: ListProps) => {
                             {despesa.nome}
                           </Typography>
                           {isFixa && (
-                            <Chip label="Fixa" color="info" size="small" variant="outlined" />
+                            <Chip
+                              label="Fixa"
+                              color="info"
+                              size="small"
+                              variant="outlined"
+                            />
                           )}
                           {isDivida && (
-                            <Chip label="Dívida" color="warning" size="small" variant="outlined" />
+                            <Chip
+                              label="Dívida"
+                              color="warning"
+                              size="small"
+                              variant="outlined"
+                            />
                           )}
                           <Chip
                             label={isActive ? "Ativa" : "Inativa"}
@@ -177,15 +204,22 @@ export const Listagem = (formProps: ListProps) => {
                           </Typography>
                           <Stack direction="row" spacing={2}>
                             {(isFixa || isDivida) && despesa.valorEstimado && (
-                              <Typography variant="caption" color="text.secondary">
-                                Projeção: {new Intl.NumberFormat("pt-BR", {
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Projeção:{" "}
+                                {new Intl.NumberFormat("pt-BR", {
                                   style: "currency",
                                   currency: "BRL",
                                 }).format(despesa.valorEstimado)}
                               </Typography>
                             )}
                             {despesa.diaVencimento && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Dia {despesa.diaVencimento}
                               </Typography>
                             )}

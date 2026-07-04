@@ -60,7 +60,7 @@ type TimestampMap = Record<string, string>;
 // ─── Styled Components ──────────────────────────
 
 const DrawerContainer = styled(Box)(({ theme }) => ({
-  width: 400, // Um pouco mais largo para conforto
+  width: "100%", // Container agora se adapta ao paper do Drawer
   height: "100%",
   display: "flex",
   flexDirection: "column",
@@ -68,9 +68,7 @@ const DrawerContainer = styled(Box)(({ theme }) => ({
     theme.palette.mode === "dark"
       ? theme.palette.background.default
       : theme.palette.grey[100], // Um off-white azulado muito leve
-  [theme.breakpoints.down("sm")]: {
-    width: "100vw",
-  },
+  // Não precisamos redefinir width pra 100vw aqui, pois o DrawerPaper fará isso
   // borderRadius: 10,
 }));
 
@@ -689,7 +687,7 @@ const ChatDrawer = ({ open, onClose }: ChatDrawerProps) => {
       onClose={onClose}
       sx={{
         "& .MuiDrawer-paper": {
-          width: 400,
+          width: { xs: "100%", sm: 400 },
           maxWidth: "100vw",
           border: "none",
           boxShadow: "-10px 0 30px rgba(0,0,0,0.15)",

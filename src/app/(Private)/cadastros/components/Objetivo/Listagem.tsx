@@ -252,7 +252,7 @@ export const Listagem = ({
             >
               <CardContent
                 sx={{
-                  p: "32px",
+                  p: { xs: "24px", sm: "32px" },
                   display: "flex",
                   flexDirection: "column",
                   flexGrow: 1,
@@ -275,10 +275,17 @@ export const Listagem = ({
                   </IconButton>
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: { xs: 1.5, sm: 2 },
+                    minWidth: 0,
+                    mb: { xs: 1.5, sm: 2.5 },
+                  }}
+                >
                   <Box
                     sx={{
-                      p: 1,
+                      p: { xs: 0.6, sm: 1 },
                       borderRadius: 2,
                       bgcolor: alpha(cor, 0.1),
                       color: cor,
@@ -306,6 +313,7 @@ export const Listagem = ({
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          fontSize: { xs: "0.95rem", sm: "1.25rem" },
                         }}
                       >
                         {objetivo.nome}
@@ -379,6 +387,7 @@ export const Listagem = ({
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                           display: "block",
+                          fontSize: { xs: "0.65rem", sm: "0.75rem" },
                         }}
                       >
                         Total acumulado
@@ -387,6 +396,7 @@ export const Listagem = ({
                         variant="h5"
                         fontWeight={800}
                         color="success.main"
+                        sx={{ fontSize: { xs: "1.15rem", sm: "1.5rem" } }}
                       >
                         {formatCurrency(acumulado)}
                       </Typography>
@@ -405,6 +415,7 @@ export const Listagem = ({
                             textTransform: "uppercase",
                             letterSpacing: "0.05em",
                             display: "block",
+                            fontSize: { xs: "0.65rem", sm: "0.75rem" },
                           }}
                         >
                           PARABÉNS!
@@ -427,6 +438,7 @@ export const Listagem = ({
                             textTransform: "uppercase",
                             letterSpacing: "0.05em",
                             display: "block",
+                            fontSize: { xs: "0.65rem", sm: "0.75rem" },
                           }}
                         >
                           PREVISÃO DESTE MÊS
@@ -449,6 +461,7 @@ export const Listagem = ({
                             textTransform: "uppercase",
                             letterSpacing: "0.05em",
                             display: "block",
+                            fontSize: { xs: "0.65rem", sm: "0.75rem" },
                           }}
                         >
                           {aportesDesteMes > 0
@@ -458,6 +471,7 @@ export const Listagem = ({
                         <Typography
                           variant="h5"
                           fontWeight={800}
+                          sx={{ fontSize: { xs: "1.15rem", sm: "1.5rem" } }}
                           color={getPrazoMesesColor(difMeses)}
                         >
                           {formatCurrency(previsaoDesteMes)}
@@ -498,6 +512,7 @@ export const Listagem = ({
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
+                          sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
                         >
                           ÚLTIMO APORTE
                         </Typography>
@@ -505,6 +520,7 @@ export const Listagem = ({
                           variant="body2"
                           fontWeight={800}
                           color="text.primary"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {objetivo.ultimoAporte
                             ? fnFormatNaiveDate(objetivo.ultimoAporte)
@@ -523,6 +539,7 @@ export const Listagem = ({
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
+                          sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
                         >
                           APORTES
                         </Typography>
@@ -530,6 +547,7 @@ export const Listagem = ({
                           variant="body2"
                           fontWeight={800}
                           color="warning.main"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {objetivo.qtdAportes || 0} registros
                         </Typography>
@@ -538,7 +556,7 @@ export const Listagem = ({
                   </>
                 ) : (
                   /* Meta: Barra de Progresso Real e Informações de Progresso/Restantes */
-                  <Box sx={{ mt: -2 }}>
+                  <Box sx={{ mt: { xs: -2.5, sm: -2 } }}>
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
                         <LinearProgress
@@ -585,13 +603,14 @@ export const Listagem = ({
                     <Stack
                       direction="row"
                       justifyContent="space-between"
-                      mt={2}
+                      mt={{ xs: 1, sm: 2 }}
                       gap={2}
                     >
                       <Typography
                         variant="body2"
                         fontWeight={800}
                         color="text.secondary"
+                        sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                       >
                         Término:{" "}
                         {objetivo.dataAlvo
@@ -603,6 +622,7 @@ export const Listagem = ({
                         fontWeight={800}
                         color="text.secondary"
                         align="right"
+                        sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                       >
                         Falta: {formatCurrency(faltante)}
                       </Typography>

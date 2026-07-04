@@ -312,7 +312,7 @@ export default function RelatoriosPage() {
   }
 
   return (
-    <Container maxWidth={"xl"}>
+    <Box>
       {/* Header */}
       <Box
         sx={{
@@ -1353,6 +1353,6 @@ export default function RelatoriosPage() {
           </DragDropContext>
         )}
       </Box>
-    </Container>
+    </Box>
   );
 }

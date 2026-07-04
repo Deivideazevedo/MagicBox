@@ -51,8 +51,7 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       subtitle: "Livre para gastar",
       icon: <IconWallet size={20} stroke={2} />,
       color: "#13DEB9",
-      tooltip:
-        "Saldo geral histórico (Todas as Entradas - Saídas - Metas).",
+      tooltip: "Saldo geral histórico (Todas as Entradas - Saídas - Metas).",
     },
     {
       title: "Receitas do Mês",
@@ -74,8 +73,7 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       subtitle: "Valor reservado",
       icon: <IconLock size={20} stroke={2} />,
       color: "#FFAE1F",
-      tooltip:
-        "Total acumulado histórico em todas as suas metas e objetivos.",
+      tooltip: "Total acumulado histórico em todas as suas metas e objetivos.",
     },
   ];
 
@@ -84,9 +82,9 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
   }
 
   return (
-    <Grid container spacing={3} ref={summaryCardsRef}>
+    <Grid container spacing={{ xs: 2, sm: 3 }} ref={summaryCardsRef}>
       {cards.map((card, index) => (
-        <Grid item xs={12} sm={6} md={3} key={index}>
+        <Grid item xs={6} sm={6} md={3} key={index}>
           <Card
             elevation={0}
             sx={{
@@ -96,6 +94,9 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
               borderColor: alpha(card.color, 0.2),
               position: "relative",
               overflow: "hidden",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               pt: 2,
               "&:hover": {
@@ -117,72 +118,92 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
               }}
             />
 
-            <CardContent sx={{ p: 2.5, pt: 2 }}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="flex-start"
-                mb={1.5}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  fontWeight={700}
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: 0.8,
-                    fontSize: "0.65rem",
-                  }}
-                >
-                  {card.title}
-                </Typography>
+            <CardContent
+              sx={{
+                p: { xs: 0, sm: 2 },
+                px: { xs: 0.5 },
+                display: "flex",
+                flexDirection: "column",
+                flexGrow: 1,
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box>
                 <Box
-                  sx={{
-                    p: 0.8,
-                    borderRadius: 1.5,
-                    bgcolor: alpha(card.color, 0.1),
-                    color: card.color,
-                    display: "flex",
-                  }}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  mb={1.5}
                 >
-                  {card.icon}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    fontWeight={700}
+                    sx={{
+                      textTransform: "uppercase",
+                      letterSpacing: 0.8,
+                      fontSize: "0.65rem",
+                    }}
+                  >
+                    {card.title}
+                  </Typography>
+                  <Box
+                    sx={{
+                      p: 0.8,
+                      borderRadius: 1.5,
+                      bgcolor: alpha(card.color, 0.1),
+                      color: card.color,
+                      display: "flex",
+                    }}
+                  >
+                    {card.icon}
+                  </Box>
+                </Box>
+
+                <Box mt={1}>
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    sx={{
+                      color: "text.primary",
+                      mb: 0.5,
+                      fontSize: { xs: "1.05rem", sm: "1.5rem" },
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {formatCurrency(card.value)}
+                  </Typography>
+
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.5}
+                    sx={{ flexWrap: "wrap", rowGap: 0.5 }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight={500}
+                      color="text.secondary"
+                      sx={{ lineHeight: 1.2 }}
+                    >
+                      {card.subtitle}
+                    </Typography>
+                    {card.tooltip && (
+                      <Tooltip title={card.tooltip} arrow placement="top">
+                        <Box
+                          sx={{
+                            display: "flex",
+                            color: "text.disabled",
+                            cursor: "help",
+                          }}
+                        >
+                          <IconInfoCircle size={14} />
+                        </Box>
+                      </Tooltip>
+                    )}
+                  </Stack>
                 </Box>
               </Box>
-
-              <Typography
-                variant="h4"
-                fontWeight={800}
-                sx={{
-                  color: "text.primary",
-                  mb: 0.5,
-                  fontSize: { xs: "1.25rem", lg: "1.5rem" },
-                }}
-              >
-                {formatCurrency(card.value)}
-              </Typography>
-
-              <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography
-                  variant="caption"
-                  fontWeight={500}
-                  color="text.secondary"
-                >
-                  {card.subtitle}
-                </Typography>
-                {card.tooltip && (
-                  <Tooltip title={card.tooltip} arrow placement="top">
-                    <Box
-                      sx={{
-                        display: "flex",
-                        color: "text.disabled",
-                        cursor: "help",
-                      }}
-                    >
-                      <IconInfoCircle size={14} />
-                    </Box>
-                  </Tooltip>
-                )}
-              </Stack>
             </CardContent>
           </Card>
         </Grid>

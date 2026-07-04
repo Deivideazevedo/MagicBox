@@ -298,7 +298,7 @@ export const Listagem = ({
             >
               <CardContent
                 sx={{
-                  p: "32px",
+                  p: { xs: "24px", sm: "32px" },
                   display: "flex",
                   flexDirection: "column",
                   flexGrow: 1,
@@ -333,10 +333,17 @@ export const Listagem = ({
                   </Box>
                 )}
 
-                <Box sx={{ display: "flex", gap: 2, minWidth: 0, mb: 2.5 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: { xs: 1.5, sm: 2 },
+                    minWidth: 0,
+                    mb: { xs: 1.5, sm: 2.5 },
+                  }}
+                >
                   <Box
                     sx={{
-                      p: 1,
+                      p: { xs: 0.6, sm: 1 },
                       borderRadius: 2,
                       bgcolor: alpha(cor, 0.1),
                       color: cor,
@@ -365,6 +372,7 @@ export const Listagem = ({
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          fontSize: { xs: "0.95rem", sm: "1.25rem" },
                         }}
                       >
                         {divida.nome}
@@ -433,6 +441,7 @@ export const Listagem = ({
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                           display: "block",
+                          fontSize: { xs: "0.65rem", sm: "0.75rem" },
                         }}
                       >
                         PRÓXIMO VENCIMENTO:{" "}
@@ -441,6 +450,7 @@ export const Listagem = ({
                       <Typography
                         variant="h5"
                         fontWeight={800}
+                        sx={{ fontSize: { xs: "1.15rem", sm: "1.5rem" } }}
                         color={
                           isAtrasada
                             ? "error.main"
@@ -473,7 +483,7 @@ export const Listagem = ({
                         ? (tourRefs.progressoRef as React.Ref<HTMLDivElement>)
                         : undefined
                     }
-                    sx={{ mt: 0.5 }}
+                    sx={{ mt: { xs: 0, sm: 0.5 } }}
                   >
                     <Stack direction="row" spacing={1.5} alignItems="center">
                       <Box sx={{ flexGrow: 1 }}>
@@ -524,13 +534,14 @@ export const Listagem = ({
                       justifyContent="space-between"
                       alignItems="flex-start"
                       gap={1}
-                      mt={1.5}
+                      mt={{ xs: 1, sm: 1.5 }}
                     >
                       <Box>
                         <Typography
                           variant="body2"
                           fontWeight={800}
                           color="text.secondary"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {parcelasInfo}
                         </Typography>
@@ -540,6 +551,7 @@ export const Listagem = ({
                           variant="body2"
                           fontWeight={800}
                           color="text.secondary"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {isConcluida
                             ? "Quitada! 🎉"
@@ -577,6 +589,7 @@ export const Listagem = ({
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
+                          sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
                         >
                           EM ABERTO
                         </Typography>
@@ -584,6 +597,7 @@ export const Listagem = ({
                           variant="body2"
                           fontWeight={800}
                           color="warning.main"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {`${(divida as DividaVolatil).quantidadeParcelas} `}{" "}
                           {`parcela${(divida as DividaVolatil).quantidadeParcelas > 1 ? "s" : ""}`}
@@ -601,6 +615,7 @@ export const Listagem = ({
                           color="text.secondary"
                           fontWeight={600}
                           display="block"
+                          sx={{ fontSize: { xs: "0.65rem", sm: "0.75rem" } }}
                         >
                           TOTAL
                         </Typography>
@@ -608,6 +623,7 @@ export const Listagem = ({
                           variant="body2"
                           fontWeight={800}
                           color="text.primary"
+                          sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
                         >
                           {formatCurrency(valorPrincipal)}
                         </Typography>
