@@ -38,31 +38,21 @@ export const divergenciasService = {
     // 2. Buscar lançamentos atrasados reais (agendamentos gravados)
     const vencidosRaw = await divergenciasRepository.obterLancamentosVencidosNaoPagos(userId);
     const lancamentosAtrasadosReais: LancamentoAtrasado[] = vencidosRaw.map((v) => {
-      let tipo: "RECEITA" | "DESPESA" | "META" = "DESPESA";
-      let nome = "Lançamento";
-      let cor = "#94a3b8";
-
-      if (v.receita) {
-        tipo = "RECEITA";
-        nome = v.receita.nome;
-        cor = v.receita.cor ?? "#22c55e";
-      } else if (v.despesa) {
-        tipo = "DESPESA";
-        nome = v.despesa.nome;
-        cor = v.despesa.cor ?? "#ef4444";
-      } else if (v.objetivo) {
-        tipo = "META";
-        nome = v.objetivo.nome;
-        cor = v.objetivo.cor ?? "#3b82f6";
-      }
+      const tipo = v.origem_tipo === "OBJETIVO" ? "META" : v.origem_tipo;
+      const nome = v.nome || "Lançamento";
+      
+      let fallbackCor = "#94a3b8";
+      if (tipo === "RECEITA") fallbackCor = "#22c55e";
+      else if (tipo === "DESPESA") fallbackCor = "#ef4444";
+      else if (tipo === "META") fallbackCor = "#3b82f6";
 
       return {
-        id: v.id,
+        id: v.id, // String gerada pelo DB no formato "itemId-YYYY-MM"
         nome,
         tipo,
         valor: Number(v.valor),
-        data: v.data.toISOString(),
-        categoriaCor: cor,
+        data: new Date(v.data).toISOString(),
+        categoriaCor: v.cor || fallbackCor,
       };
     });
 
@@ -129,10 +119,14 @@ export const divergenciasService = {
             .filter((l) => l.tipo === "pagamento")
             .reduce((sum, l) => sum + Number(l.valor), 0);
 
+          const temQuitacao = lancsDoMes.some(
+            (l) => l.tipo === "pagamento" && l.observacaoAutomatica?.includes("[QUITAÇÃO]")
+          );
+
           const temAgendamento = lancsDoMes.some((l) => l.tipo === "agendamento");
 
           const valorPrevisto = Number(despesa.valorEstimado || 0);
-          if (totalPago < valorPrevisto && !temAgendamento) {
+          if (totalPago < valorPrevisto && !temAgendamento && !temQuitacao) {
             lancamentosAtrasadosVirtuais.push({
               id: `virtual-fix-${despesa.id}-${mesIter}-${anoIter}`,
               nome: `${despesa.nome} (Ref: ${String(mesIter).padStart(2, "0")}/${anoIter})`,

@@ -229,6 +229,7 @@ export const resumoRepository = {
         item.diaVencido,
         mes,
         ano,
+        temQuitacao
       );
 
       return {
@@ -253,173 +254,84 @@ export const resumoRepository = {
     dataInicio,
     dataFim,
   }: ResumoCardFiltros): Promise<ResumoMiniCardsProps> {
-    const res = await prisma.$queryRaw<ResumoCardDB[]>`
-      WITH meses_do_periodo AS (
-        SELECT 
-          mes_referencia::date,
-          EXTRACT(DAY FROM (mes_referencia + interval '1 month - 1 day')) as ultimo_dia_mes
-        FROM generate_series(
-          date_trunc('month', ${dataInicio}::date),
-          date_trunc('month', ${dataFim}::date),
-          '1 month'::interval
-        ) as mes_referencia
-      ),
-      saldos_devedores AS (
-        SELECT "despesaId", SUM(valor) as total_pago FROM lancamento
-        WHERE "userId" = ${userId} AND tipo = 'pagamento' AND "despesaId" IS NOT NULL GROUP BY "despesaId"
-      ),
-      recorrencias_faltantes AS (
-        -- DESPESAS FIXAS E DÍVIDAS
-        SELECT 
-          d.id, d."valorEstimado" as valor, 'despesa' as origem
-        FROM despesa d
-        LEFT JOIN saldos_devedores s ON s."despesaId" = d.id
-        CROSS JOIN meses_do_periodo m
-        WHERE d."userId" = ${userId} 
-          AND d.status = 'A' 
-          AND d."deletedAt" IS NULL
-          AND (
-            (d.tipo = 'FIXA' AND m.mes_referencia >= date_trunc('month', d."createdAt"))
-            OR
-            (d.tipo = 'DIVIDA' AND m.mes_referencia >= date_trunc('month', COALESCE(d."dataInicio", d."createdAt")) AND (COALESCE(d."valorTotal", 0) - COALESCE(s.total_pago, 0)) > 0)
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM lancamento l 
-            WHERE l."despesaId" = d.id 
-            AND l.tipo = 'agendamento'
-            AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
-            AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
-            AND l."userId" = ${userId}
-          )
-        UNION ALL
-        -- RENDAS (RECEITAS)
-        SELECT 
-          f.id, f."valorEstimado" as valor, 'receita' as origem
-        FROM receita f
-        CROSS JOIN meses_do_periodo m
-        WHERE f."userId" = ${userId} AND f.status = 'A' AND f.tipo = 'FIXA' AND f."deletedAt" IS NULL
-        AND m.mes_referencia >= date_trunc('month', f."createdAt")
-        AND NOT EXISTS (
-          SELECT 1 FROM lancamento l 
-          WHERE l."receitaId" = f.id 
-          AND l.tipo = 'agendamento'
-          AND EXTRACT(MONTH FROM l.data) = EXTRACT(MONTH FROM m.mes_referencia)
-          AND EXTRACT(YEAR FROM l.data) = EXTRACT(YEAR FROM m.mes_referencia)
-          AND l."userId" = ${userId}
-        )
-      ),
-      metas_ativas AS (
-        -- Saldo Bloqueado NO PERÍODO: aportes feitos em objetivos ativos no intervalo selecionado
-        SELECT 
-          COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
-        FROM lancamento l
-        INNER JOIN objetivo m ON l."objetivoId" = m.id
-        WHERE m."userId" = ${userId} 
-          AND l."userId" = ${userId}
-          AND m.status = 'A' 
-          AND m."deletedAt" IS NULL
-          AND l.tipo = 'pagamento'
-          AND l.data >= ${dataInicio}::date 
-          AND l.data <= ${dataFim}::date
-      )
-      SELECT
-        real.*,
-        proj.*,
-        metas.saldo_bloqueado::float as "saldoBloqueado"
-      FROM (
-        SELECT
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN 1 ELSE 0 END), 0)::float as "pagoCount",
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN 1 ELSE 0 END), 0)::float as "agendadoCount",
-          -- entradasPagas
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasPagas",
-          -- entradasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."receitaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "entradasAgendadas",
-          -- saidasPagas
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasPagas",
-          -- saidasAgendadas: Valores de lançamentos manuais do tipo agendamento
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."despesaId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "saidasAgendadas",
-          -- Metas (Objetivos)
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' AND l."objetivoId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasPagas",
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' AND l."objetivoId" IS NOT NULL THEN l.valor ELSE 0 END), 0)::float as "metasAgendadas"
-        FROM lancamento l
-        LEFT JOIN despesa d ON l."despesaId" = d.id
-        LEFT JOIN receita r ON l."receitaId" = r.id
-        LEFT JOIN objetivo m ON l."objetivoId" = m.id
-        WHERE l."userId" = ${userId} 
-          AND l.data >= ${dataInicio}::date 
-          AND l.data <= ${dataFim}::date
-          AND (
-            (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
-            (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
-            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL) OR
-            (l."despesaId" IS NULL AND l."receitaId" IS NULL AND l."objetivoId" IS NULL)
-          )
-      ) real,
-      (
-        SELECT
-          COUNT(*)::float as total_projetado,
-          -- entradas_projetadas: Valores estimados das recorrências automáticas faltantes
-          COALESCE(SUM(CASE WHEN origem = 'receita' THEN valor ELSE 0 END), 0)::float as entradas_projetadas,
-          -- saidas_projetadas: Valores estimados das recorrências automáticas faltantes
-          COALESCE(SUM(CASE WHEN origem = 'despesa' THEN valor ELSE 0 END), 0)::float as saidas_projetadas
-        FROM recorrencias_faltantes
-      ) proj,
-      metas_ativas metas;
-    `;
+    // Para garantir consistência matemática com a tela de detalhes e relatórios (incluindo quitação),
+    // utilizamos a função obterResumo que já contém a lógica de encontro de contas e tags correta.
+    const projecoes = await this.obterResumo({ userId, dataInicio, dataFim });
 
-    const resData = res[0] as ResumoCardDB;
+    let totalEntradas = 0;
+    let entradasPagas = 0;
+    let entradasAgendadas = 0;
 
-    // LÓGICA DE CÁLCULO ESTABELECIDA
-    // IMPORTANTÍSSIMO: aportes em metas (objetivos) NÃO são gastos.
-    // Eles são controlados via `saldoBloqueado` e devem impactar o `saldoLivre`, não as saídas.
-    const saidasPagas = Number(resData.saidasPagas);
-    const saidasPrevistas =
-      Number(resData.saidasAgendadas) + Number(resData.saidas_projetadas);
+    let totalSaidas = 0;
+    let saidasPagas = 0;
+    let saidasAgendadas = 0;
 
-    const entradasPagas = Number(resData.entradasPagas);
-    const entradasPrevistas =
-      Number(resData.entradasAgendadas) + Number(resData.entradas_projetadas);
+    let metasPagas = 0;
+    let metasAgendadas = 0;
+
+    let transacoesPagas = 0;
+    let transacoesAgendadas = 0;
+
+    for (const p of projecoes) {
+      const pago = Number(p.valorPago) || 0;
+      const previsto = Number(p.valorPrevisto) || 0;
+      const maior = Math.max(pago, previsto);
+
+      if (p.detalhes && Array.isArray(p.detalhes)) {
+        for (const det of p.detalhes as any[]) {
+          if (det.tipo === "pagamento") transacoesPagas++;
+          if (det.tipo === "agendamento") transacoesAgendadas++;
+        }
+      }
+
+      if (p.origem === "receita") {
+        entradasPagas += pago;
+        entradasAgendadas += previsto;
+        totalEntradas += maior;
+      } else if (p.origem === "meta") {
+        metasPagas += pago;
+        metasAgendadas += previsto;
+      } else {
+        saidasPagas += pago;
+        saidasAgendadas += previsto;
+        totalSaidas += maior;
+      }
+    }
 
     const saldoAtual = entradasPagas - saidasPagas;
-    const saldoProjetado = entradasPrevistas - saidasPrevistas;
-    const saldoBloqueado = Number(resData.saldoBloqueado);
+    const saldoProjetado = entradasAgendadas - saidasAgendadas;
+    const saldoBloqueado = metasPagas;
+    const saldoLivre = saldoAtual - saldoBloqueado;
+
+    const totaisGerais = userId 
+      ? await this.obterTotaisHistoricos(userId) 
+      : { receitasPagas: 0, despesasPagas: 0, metas: 0 };
+    const saldoGlobal = totaisGerais.receitasPagas - totaisGerais.despesasPagas - totaisGerais.metas;
 
     return {
-      // CONTADORES TOTAIS
-      totalTransacoes:
-        Number(resData.pagoCount) +
-        (Number(resData.agendadoCount) + Number(resData.total_projetado)),
-      transacoesPagas: Number(resData.pagoCount),
-      transacoesAgendadas:
-        Number(resData.agendadoCount) + Number(resData.total_projetado),
+      totalTransacoes: transacoesPagas + transacoesAgendadas,
+      transacoesPagas,
+      transacoesAgendadas,
 
-      // ENTRADAS (RECEITAS)
-      totalEntradas:
-        entradasPagas > entradasPrevistas ? entradasPagas : entradasPrevistas,
-      entradasPagas: entradasPagas,
-      entradasAgendadas: entradasPrevistas,
-      diferencaEntradas: entradasPrevistas - entradasPagas,
+      totalEntradas,
+      entradasPagas,
+      entradasAgendadas,
+      diferencaEntradas: Math.max(0, entradasAgendadas - entradasPagas),
 
-      // SAÍDAS (DESPESAS + METAS)
-      totalSaidas:
-        saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas,
-      saidasPagas: saidasPagas,
-      saidasAgendadas: saidasPrevistas,
-      diferencaSaidas: saidasPrevistas - saidasPagas,
+      totalSaidas,
+      saidasPagas,
+      saidasAgendadas,
+      diferencaSaidas: Math.max(0, saidasAgendadas - saidasPagas),
 
-      // SALDOS
-      totalSaldo:
-        (entradasPagas > entradasPrevistas
-          ? entradasPagas
-          : entradasPrevistas) -
-        (saidasPagas > saidasPrevistas ? saidasPagas : saidasPrevistas),
+      totalSaldo: totalEntradas - totalSaidas,
       saldoAtual,
       saldoProjetado,
+      saldoGlobal,
       saldoBloqueado,
-      saldoLivre: saldoAtual - saldoBloqueado,
-      // Campos Adicionais para IA
-      metasPagas: Number(resData.metasPagas),
-      metasAgendadas: Number(resData.metasAgendadas),
+      saldoLivre,
+
+      metasPagas,
+      metasAgendadas,
     };
   },
 

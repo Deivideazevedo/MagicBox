@@ -84,6 +84,7 @@ export interface ResumoMiniCardsProps {
   totalSaldo: number;
   saldoAtual: number;
   saldoProjetado: number;
+  saldoGlobal: number;
   saldoBloqueado: number; // Valor reservado em metas ativas
   saldoLivre: number;     // Saldo Atual - Saldo Bloqueado
   metasPagas?: number;

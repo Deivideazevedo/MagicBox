@@ -95,6 +95,11 @@ export const relatoriosService = {
         mediaMensal = Math.abs(mediaMensal);
       }
 
+      // Se foi quitada, não há pendência restante e o status é concluído
+      if (db.is_quitada) {
+        planejado = realizado;
+      }
+
       // Diferença = Realizado - Planejado (impacto no saldo)
       const restante = realizado - planejado;
       const agendadoSinalizado =
@@ -116,8 +121,9 @@ export const relatoriosService = {
           db.valorAgendado === 0 &&
           db.valorRealizado === 0 &&
           db.valorPlanejado > 0,
-        status:
-          Math.abs(realizado) >= Math.abs(planejado)
+        status: db.is_quitada
+          ? "OK"
+          : Math.abs(realizado) >= Math.abs(planejado)
             ? "OK"
             : Math.abs(realizado) > 0
               ? "PARCIAL"

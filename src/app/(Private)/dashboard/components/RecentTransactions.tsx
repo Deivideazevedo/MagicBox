@@ -71,7 +71,7 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
         height: "100%",
       }}
     >
-      <CardContent sx={{ p: 3 }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Box
           display="flex"
           justifyContent="space-between"
@@ -167,6 +167,7 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
                           display="flex"
                           justifyContent="space-between"
                           alignItems="center"
+                          gap={1}
                         >
                           <Typography
                             variant="body1"
@@ -190,6 +191,7 @@ const RecentTransactions = ({ date }: { date?: Date }) => {
                                   ? "primary.main"
                                   : "error.main"
                             }
+                            sx={{ whiteSpace: "nowrap" }}
                           >
                             {isReceita || isAporte ? "+" : "-"}
                             {formatCurrency(transaction.valor)}

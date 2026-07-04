@@ -81,11 +81,12 @@ export default function RootLayout({
           {/* Header */}
           {/* ------------------------------------------- */}
           <Header />
-          {/* PageContent */}
           <Container
+            disableGutters
             sx={{
               maxWidth:
                 customizer.isLayout === "boxed" ? "lg" : "100%!important",
+              px: { xs: 1.5, sm: 3 }, // Padding horizontal reduzido no mobile
             }}
           >
             {/* ------------------------------------------- */}
@@ -95,8 +96,8 @@ export default function RootLayout({
             <Box
               sx={{
                 minHeight: "calc(100vh - 170px)",
-                paddingTop: 4,
-                paddingBottom: 4,
+                paddingTop: { xs: 2, sm: 4 }, // Padding vertical reduzido no mobile
+                paddingBottom: { xs: 2, sm: 4 },
               }}
             >
               {/* <Outlet /> */}

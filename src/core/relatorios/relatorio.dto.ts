@@ -116,6 +116,7 @@ export interface RawDadosBrutosCategoria {
   origemTipo: string;
   mediaMensal: number;
   itemCreatedAt: Date;
+  is_quitada: boolean;
 }
 
 export interface RawTotaisMetas {

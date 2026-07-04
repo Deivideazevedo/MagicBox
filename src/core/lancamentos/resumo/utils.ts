@@ -10,10 +10,15 @@ export function calcularStatus(
   valorPrevisto: number,
   diaVencimento: number | null,
   mes: number,
-  ano: number
+  ano: number,
+  temQuitacao: boolean = false
 ): StatusFinanceiro {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
+
+  if (temQuitacao) {
+    return { label: "Pago", isAtrasado: false };
+  }
 
   // 1. Regra de Ouro: Já está pago ou parcial
   if (valorPago > 0) {

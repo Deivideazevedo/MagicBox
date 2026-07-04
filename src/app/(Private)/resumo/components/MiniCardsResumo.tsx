@@ -68,7 +68,7 @@ export default function MiniCardsResumo(params: {
     {
       icon: IconTrendingUp,
       label: "Total de Entradas",
-      value: formatCurrency(resumo?.totalEntradas),
+      value: formatCurrency(resumo?.entradasPagas),
       iconColor: theme.palette.success.main,
       subItems: [
         {
@@ -77,7 +77,7 @@ export default function MiniCardsResumo(params: {
           dotColor: theme.palette.success.main,
         },
         {
-          label: "A receber",
+          label: "O esperado",
           value: formatCurrency(resumo?.entradasAgendadas),
           dotColor: theme.palette.warning.main,
         },
@@ -86,7 +86,7 @@ export default function MiniCardsResumo(params: {
     {
       icon: IconTrendingDown,
       label: "Total de Saídas",
-      value: formatCurrency(resumo?.totalSaidas),
+      value: formatCurrency(resumo?.saidasPagas),
       iconColor: theme.palette.error.main,
       subItems: [
         {
@@ -96,7 +96,7 @@ export default function MiniCardsResumo(params: {
         },
         {
           label: "A pagar",
-          value: formatCurrency(resumo?.saidasAgendadas),
+          value: formatCurrency(resumo?.diferencaSaidas),
           dotColor: theme.palette.warning.main,
         },
       ],
@@ -104,17 +104,17 @@ export default function MiniCardsResumo(params: {
     {
       icon: IconScale,
       label: "Saldo do Período",
-      value: formatCurrency(resumo?.totalSaldo),
+      value: formatCurrency(resumo?.saldoAtual),
       iconColor: theme.palette.info.main,
       subItems: [
         {
-          label: "Atual",
+          label: "No período",
           value: formatCurrency(resumo?.saldoAtual),
           dotColor: theme.palette.info.main,
         },
         {
-          label: "Futuro",
-          value: formatCurrency(resumo?.saldoProjetado),
+          label: "Saldo atual",
+          value: formatCurrency(resumo?.saldoGlobal),
           dotColor: alpha(theme.palette.info.main, 0.5),
         },
       ],

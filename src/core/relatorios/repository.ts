@@ -37,7 +37,8 @@ export const relatoriosRepository = {
               LIMIT 12
             ) s
           ), 0)::float as media_mensal,
-          r."createdAt"
+          r."createdAt",
+          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as is_quitada
         FROM receita r
         LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL
@@ -63,7 +64,8 @@ export const relatoriosRepository = {
               LIMIT 12
             ) s
           ), 0)::float as media_mensal,
-          d."createdAt"
+          d."createdAt",
+          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as is_quitada
         FROM despesa d
         LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
         WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL
@@ -82,7 +84,8 @@ export const relatoriosRepository = {
         d.estimado as "valorPlanejado",
         d."origemTipo",
         d.media_mensal as "mediaMensal",
-        d."createdAt" as "itemCreatedAt"
+        d."createdAt" as "itemCreatedAt",
+        d.is_quitada
       FROM categorias_base c
       INNER JOIN detalhes d ON d."categoriaId" = c.id
       ORDER BY c.nome, d.nome;
@@ -198,36 +201,15 @@ export const relatoriosRepository = {
     const dataFim = `${ano}-12-31`;
 
     return await prisma.$queryRaw`
-      WITH reais_detalhado AS (
+      WITH reais_por_item AS (
         SELECT 
           date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
           EXTRACT(YEAR FROM l.data)::int as ano,
-          SUM(
-            CASE 
-              WHEN l.tipo = 'pagamento' THEN 
-                CASE WHEN l."receitaId" IS NOT NULL THEN l.valor ELSE -l.valor END
-              ELSE 0 
-            END
-          )::float as real_pago,
-          SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as real_agendado,
-          -- Alvo com sinal: Receita (+) , Despesa/Meta (-)
-          SUM(
-            CASE 
-              WHEN l."receitaId" IS NOT NULL THEN (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)
-              ELSE -(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)
-            END
-          )::float as alvo_sinalizado,
-          -- Restante como Saldo Pendente:
-          -- Receita: Mostra quanto falta receber (positivo) ou 0 se já recebeu tudo/mais.
-          -- Despesa: Mostra quanto falta pagar (negativo) ou 0 se já pagou tudo/mais.
-          SUM(
-            CASE 
-              WHEN l."receitaId" IS NOT NULL THEN 
-                GREATEST(0, (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END) - (CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END))
-              ELSE 
-                LEAST(0, (CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END) - (CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END))
-            END
-          )::float as restante_sinalizado
+          COALESCE(l."despesaId", l."receitaId", l."objetivoId") as item_id,
+          CASE WHEN l."receitaId" IS NOT NULL THEN 'RECEITA' ELSE 'OUTRO' END as tipo_origem,
+          SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END)::float as pago_item,
+          SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END)::float as agendado_item,
+          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as is_quitada
         FROM lancamento l
         WHERE l."userId" = ${userId}
           AND (
@@ -236,6 +218,23 @@ export const relatoriosRepository = {
             (l."objetivoId" = ANY(${mIds}::int[]))
           )
           AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
+        GROUP BY 1, 2, 3, 4
+      ),
+      reais_detalhado AS (
+        SELECT 
+          mes_ref,
+          ano,
+          SUM(CASE WHEN tipo_origem = 'RECEITA' THEN pago_item ELSE -pago_item END)::float as real_pago,
+          SUM(agendado_item)::float as real_agendado,
+          SUM(CASE WHEN tipo_origem = 'RECEITA' THEN agendado_item ELSE -agendado_item END)::float as alvo_sinalizado,
+          SUM(
+            CASE 
+              WHEN is_quitada THEN 0
+              WHEN tipo_origem = 'RECEITA' THEN GREATEST(0, agendado_item - pago_item)
+              ELSE LEAST(0, pago_item - agendado_item)
+            END
+          )::float as restante_sinalizado
+        FROM reais_por_item
         GROUP BY 1, 2
       ),
       reais_agrupado AS (

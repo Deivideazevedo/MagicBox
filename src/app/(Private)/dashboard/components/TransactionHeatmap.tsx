@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -62,6 +62,22 @@ const TransactionHeatmap = () => {
     dataInicio,
     dataFim,
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => {
+        const todayCell = document.getElementById("today-heatmap-cell");
+        if (todayCell) {
+          todayCell.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   // Estrutura de dados organizada por mês para alinhamento perfeito
   const months = useMemo(() => {
@@ -444,6 +460,7 @@ const TransactionHeatmap = () => {
                                 enterNextDelay={100}
                               >
                                 <Box
+                                  id={isToday ? "today-heatmap-cell" : undefined}
                                   onClick={() => handleDayClick(dateStr)}
                                   sx={{
                                     width: SQUARE_SIZE,
@@ -462,11 +479,28 @@ const TransactionHeatmap = () => {
                                     border: isToday
                                       ? `1.5px solid #13DEB9`
                                       : "none",
+                                    ...(isToday && {
+                                      animation: "pulseToday 2s infinite ease-in-out",
+                                      "@keyframes pulseToday": {
+                                        "0%": {
+                                          transform: "scale(0.95)",
+                                          boxShadow: "0 0 0 0 rgba(19, 222, 185, 0.7)",
+                                        },
+                                        "70%": {
+                                          transform: "scale(1)",
+                                          boxShadow: "0 0 0 6px rgba(19, 222, 185, 0)",
+                                        },
+                                        "100%": {
+                                          transform: "scale(0.95)",
+                                          boxShadow: "0 0 0 0 rgba(19, 222, 185, 0)",
+                                        },
+                                      },
+                                    }),
                                     "&:hover": {
                                       transform:
                                         data.items.length > 0
                                           ? "scale(1.25)"
-                                          : "none",
+                                          : isToday ? "scale(1)" : "none",
                                       boxShadow:
                                         data.items.length > 0
                                           ? theme.shadows[3]

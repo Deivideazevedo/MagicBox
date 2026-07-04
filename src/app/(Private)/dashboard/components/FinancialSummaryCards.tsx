@@ -24,6 +24,13 @@ import { useDashboardTourRefs } from "../components/DashboardTourContext";
 import { alpha } from "@mui/material/styles";
 import { FinancialSummaryCardsSkeleton } from "./DashboardSkeletons";
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
+
 const FinancialSummaryCards = ({ date }: { date?: Date }) => {
   const { summaryCardsRef } = useDashboardTourRefs();
   const baseDate = date || new Date();
@@ -45,19 +52,19 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       icon: <IconWallet size={20} stroke={2} />,
       color: "#13DEB9",
       tooltip:
-        "Saldo do período selecionado menos os aportes em Metas no período.",
+        "Saldo geral histórico (Todas as Entradas - Saídas - Metas).",
     },
     {
       title: "Receitas do Mês",
       value: resumo?.totalEntradas || 0,
-      subtitle: "Total de entradas",
+      subtitle: `Projetado: ${formatCurrency(resumo?.entradasAgendadas || 0)}`,
       icon: <IconTrendingUp size={20} stroke={2} />,
       color: "#5D87FF",
     },
     {
       title: "Despesas do Mês",
       value: resumo?.totalSaidas || 0,
-      subtitle: "Total de saídas",
+      subtitle: `Projetado: ${formatCurrency(resumo?.saidasAgendadas || 0)}`,
       icon: <IconTrendingDown size={20} stroke={2} />,
       color: "#FA896B",
     },
@@ -68,16 +75,9 @@ const FinancialSummaryCards = ({ date }: { date?: Date }) => {
       icon: <IconLock size={20} stroke={2} />,
       color: "#FFAE1F",
       tooltip:
-        "Somatório de aportes pagos em Metas ativas no período selecionado.",
+        "Total acumulado histórico em todas as suas metas e objetivos.",
     },
   ];
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
 
   if (isLoading) {
     return <FinancialSummaryCardsSkeleton />;

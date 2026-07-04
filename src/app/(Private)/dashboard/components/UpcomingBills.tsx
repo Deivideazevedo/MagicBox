@@ -169,7 +169,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
         height: "100%",
       }}
     >
-      <CardContent sx={{ p: 3 }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Box
           display="flex"
           justifyContent="space-between"
@@ -297,6 +297,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                               display="flex"
                               justifyContent="space-between"
                               alignItems="center"
+                              gap={1}
                             >
                               <Typography
                                 variant="body1"
@@ -305,7 +306,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                                   whiteSpace: "nowrap",
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
-                                  maxWidth: "70%",
+                                  maxWidth: "60%",
                                 }}
                               >
                                 {bill.nome}
@@ -340,9 +341,10 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                               display="flex"
                               justifyContent="space-between"
                               alignItems="flex-end"
+                              gap={1}
                               // mt={0.5}
                             >
-                              <Box display="flex" alignItems="center" gap={1}>
+                              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
                                 <Chip
                                   label={getStatusLabel(dueDateString)}
                                   size="small"
@@ -360,6 +362,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
+                                  sx={{ whiteSpace: "nowrap" }}
                                 >
                                   {formatDueDate(dueDateString)}
                                 </Typography>
@@ -369,6 +372,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
                                 variant="body1"
                                 fontWeight={600}
                                 color="text.primary"
+                                sx={{ whiteSpace: "nowrap" }}
                               >
                                 {formatCurrency(bill.valorPrevisto)}
                               </Typography>

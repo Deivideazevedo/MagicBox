@@ -122,7 +122,7 @@ const DashboardContent = () => {
       description="Visão geral das suas finanças"
     >
       <Fade in={isPageVisible} timeout={350}>
-        <Container maxWidth="xl">
+        <Box sx={{ maxWidth: "xl", mx: "auto", width: "100%" }}>
           {/* Welcome Section */}
           <Box sx={{ mb: 4 }} ref={tourRefs.welcomeRef}>
             <Stack
@@ -281,7 +281,7 @@ const DashboardContent = () => {
               </Paper>
             </Grid>
           </Grid>
-        </Container>
+        </Box>
       </Fade>
 
       <ProductTour
