@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { fnApplyDueDay } from "@/utils/functions/fnApplyDueDay";
 
 const despesaSchema = z.object({
   id: z.number().optional(),
@@ -173,6 +174,14 @@ export function useDespesaForm({
           ? Number(formData.valor) / Number(formData.parcelas)
           : Number(formData.valor);
 
+        let finalData = formData.data;
+        if (formData.tipo === "agendamento") {
+          const item = despesasApi.find(d => d.id === formData.itemId);
+          if (item?.diaVencimento && item.diaVencimento > 0) {
+            finalData = fnApplyDueDay(formData.data, item.diaVencimento);
+          }
+        }
+
         // Mapeamento Interno: Form -> Payload
         const payload: LancamentoPayload = {
           userId,
@@ -181,7 +190,7 @@ export function useDespesaForm({
           objetivoId: null,
           tipo: formData.tipo as any,
           valor: finalValor,
-          data: formData.data,
+          data: finalData,
           observacao: formData.observacao || undefined,
           observacaoAutomatica: formData.observacaoAutomatica || undefined,
           parcelas: isMultipleInstallments ? formData.parcelas : null,

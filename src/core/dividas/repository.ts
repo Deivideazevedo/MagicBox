@@ -45,6 +45,7 @@ export const dividasRepository = {
 
     type RowAgregado = {
       despesaId: number;
+      diaVencimento: number | null;
       mes_referencia: Date;
       valorAgendado: number;
       valorPago: number;
@@ -65,6 +66,7 @@ export const dividasRepository = {
       WITH lancamentos_agrupados AS (
         SELECT 
           l."despesaId",
+          d."diaVencimento",
           DATE_TRUNC('month', l.data) as mes_referencia,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as valor_agendado,
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as valor_pago
@@ -77,10 +79,11 @@ export const dividasRepository = {
           AND (${queryFiltroDespesa}::integer IS NULL OR d.id = ${queryFiltroDespesa})
           AND (${queryFiltroDataInicio}::timestamp IS NULL OR l.data >= ${queryFiltroDataInicio}::timestamp)
           AND (${queryFiltroDataFim}::timestamp IS NULL OR l.data <= ${queryFiltroDataFim}::timestamp)
-        GROUP BY l."despesaId", DATE_TRUNC('month', l.data)
+        GROUP BY l."despesaId", d."diaVencimento", DATE_TRUNC('month', l.data)
       )
       SELECT 
         la."despesaId",
+        la."diaVencimento",
         la.mes_referencia,
         la.valor_agendado as "valorAgendado",
         la.valor_pago as "valorPago",
@@ -147,14 +150,43 @@ export const dividasRepository = {
       for (const m of meses) {
         const dateRefTruncated = new Date(m.mes_referencia);
 
-        // Buscar a observação correspondente da primeira transação do mês, se houver
-        const primeiroLancamentoDoMes = lancamentosDespesa.find(
-          l => new Date(l.data).getUTCMonth() === dateRefTruncated.getUTCMonth() && 
-               new Date(l.data).getUTCFullYear() === dateRefTruncated.getUTCFullYear()
-        );
+        let dateRef = dateRefTruncated;
 
-        // Restaura a data original do agendamento (ex: dia 08 em vez de dia 01)
-        const dateRef = primeiroLancamentoDoMes ? new Date(primeiroLancamentoDoMes.data) : dateRefTruncated;
+        const diaVencimento = m.diaVencimento;
+        
+        let primeiroLancamentoDoMes;
+
+        if (diaVencimento && diaVencimento > 0) {
+          const ultimoDiaMes = new Date(dateRefTruncated.getUTCFullYear(), dateRefTruncated.getUTCMonth() + 1, 0).getDate();
+          const diaCorreto = Math.min(diaVencimento, ultimoDiaMes);
+          dateRef = new Date(Date.UTC(dateRefTruncated.getUTCFullYear(), dateRefTruncated.getUTCMonth(), diaCorreto));
+          
+          primeiroLancamentoDoMes = lancamentosDespesa.find(
+            l => l.tipo === 'agendamento' && 
+                 new Date(l.data).getUTCMonth() === dateRefTruncated.getUTCMonth() && 
+                 new Date(l.data).getUTCFullYear() === dateRefTruncated.getUTCFullYear()
+          );
+        } else {
+          // Prioriza encontrar o agendamento do mês para definir a data de vencimento
+          primeiroLancamentoDoMes = lancamentosDespesa.find(
+            l => l.tipo === 'agendamento' && 
+                 new Date(l.data).getUTCMonth() === dateRefTruncated.getUTCMonth() && 
+                 new Date(l.data).getUTCFullYear() === dateRefTruncated.getUTCFullYear()
+          );
+
+          // Fallback: se não tiver agendamento, pega o primeiro lançamento qualquer do mês
+          if (!primeiroLancamentoDoMes) {
+            primeiroLancamentoDoMes = lancamentosDespesa.find(
+              l => new Date(l.data).getUTCMonth() === dateRefTruncated.getUTCMonth() && 
+                   new Date(l.data).getUTCFullYear() === dateRefTruncated.getUTCFullYear()
+            );
+          }
+
+          // Restaura a data original do agendamento (ex: dia 08 em vez de dia 01)
+          if (primeiroLancamentoDoMes) {
+            dateRef = new Date(primeiroLancamentoDoMes.data);
+          }
+        }
 
         const isTotalmentePaga = Math.round(m.valorPago * 100) >= Math.round(m.valorAgendado * 100);
 

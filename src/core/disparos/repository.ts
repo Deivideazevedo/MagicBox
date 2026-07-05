@@ -88,7 +88,11 @@ export const disparosRepository = {
         SELECT 
           l."despesaId",
           DATE_TRUNC('month', l.data) as mes_referencia,
-          MIN(l.data) as data_referencia,
+          (CASE 
+            WHEN d."diaVencimento" IS NOT NULL AND d."diaVencimento" > 0 
+            THEN (DATE_TRUNC('month', l.data) + (LEAST(d."diaVencimento", EXTRACT(DAY FROM (DATE_TRUNC('month', l.data) + INTERVAL '1 month' - INTERVAL '1 day')))::integer - 1) * INTERVAL '1 day')::timestamp
+            ELSE COALESCE(MIN(CASE WHEN l.tipo = 'agendamento' THEN l.data END), MIN(l.data))
+          END) as data_referencia,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as total_agendado,
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago
         FROM lancamento l
@@ -97,7 +101,7 @@ export const disparosRepository = {
           AND d.tipo IN ('VARIAVEL', 'FIXA') 
           AND d.status = 'A'
           AND d."deletedAt" IS NULL
-        GROUP BY l."despesaId", DATE_TRUNC('month', l.data)
+        GROUP BY l."despesaId", DATE_TRUNC('month', l.data), d."diaVencimento"
       ),
       volateis_meses_abertos AS (
         SELECT 
@@ -312,13 +316,17 @@ export const disparosRepository = {
         SELECT 
           l."despesaId",
           DATE_TRUNC('month', l.data) as mes_referencia,
-          MIN(l.data) as data_referencia,
+          (CASE 
+            WHEN d."diaVencimento" IS NOT NULL AND d."diaVencimento" > 0 
+            THEN (DATE_TRUNC('month', l.data) + (LEAST(d."diaVencimento", EXTRACT(DAY FROM (DATE_TRUNC('month', l.data) + INTERVAL '1 month' - INTERVAL '1 day')))::integer - 1) * INTERVAL '1 day')::timestamp
+            ELSE COALESCE(MIN(CASE WHEN l.tipo = 'agendamento' THEN l.data END), MIN(l.data))
+          END) as data_referencia,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as total_agendado,
           COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago
         FROM lancamento l
         INNER JOIN despesas_ativas d ON l."despesaId" = d.id
         WHERE d.tipo IN ('VARIAVEL', 'FIXA')
-        GROUP BY l."despesaId", DATE_TRUNC('month', l.data)
+        GROUP BY l."despesaId", DATE_TRUNC('month', l.data), d."diaVencimento"
       ),
       volateis_meses_abertos AS (
         SELECT 

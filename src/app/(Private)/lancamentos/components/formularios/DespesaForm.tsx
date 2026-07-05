@@ -23,7 +23,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   IconCreditCard,
   IconCoin,
@@ -36,25 +36,13 @@ import { useDespesaForm } from "./hooks/useDespesaForm";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { LancamentoPagamentoDados } from "@/store/apps/lancamentos/LancamentoSlice";
 
+import { fnGetNextMonthDueDate } from "@/utils/functions/fnApplyDueDay";
+
 interface DespesaFormProps {
   lancamentoParaEditar?: LancamentoResposta | null;
   dadosIniciais?: LancamentoPagamentoDados | null;
   onSuccess?: () => void;
 }
-
-const obterDataProximoMes = (dia?: number | null) => {
-  const hoje = new Date();
-  let ano = hoje.getFullYear();
-  let mes = hoje.getMonth() + 1; // Próximo mês
-  if (mes > 11) {
-    mes = 0;
-    ano += 1;
-  }
-  const diaFinal = dia && dia >= 1 && dia <= 31 ? dia : 1;
-  const ultimoDiaDoMes = new Date(ano, mes + 1, 0).getDate();
-  const diaGarantido = Math.min(diaFinal, ultimoDiaDoMes);
-  return new Date(ano, mes, diaGarantido).toLocaleDateString("sv-SE");
-};
 
 export default function DespesaForm({
   lancamentoParaEditar,
@@ -110,10 +98,16 @@ export default function DespesaForm({
 
     if (tipo === "agendamento" && selectedItem) {
       const dia = selectedItem.diaVencimento;
-      const dataProximoMes = obterDataProximoMes(dia);
+      const dataProximoMes = fnGetNextMonthDueDate(dia);
       setValue("data", dataProximoMes);
     }
   }, [tipo, selectedItem, setValue, lancamentoParaEditar]);
+
+  const isAgendamentoWithVencimento = useMemo(() => {
+    return (
+      tipo === "agendamento" && Number(selectedItem?.diaVencimento || 0) > 0
+    );
+  }, [tipo, selectedItem]);
 
   return (
     <Box
@@ -439,11 +433,25 @@ export default function DespesaForm({
               label={
                 tipo === "pagamento"
                   ? "Data do Pagamento"
-                  : "Agendar apartir de"
+                  : isAgendamentoWithVencimento
+                    ? `Mês ref. (Vencimento dia ${selectedItem?.diaVencimento})`
+                    : "Agendar apartir de"
               }
               name="data"
               control={control}
               shrinkLabel={true}
+              openTo={isAgendamentoWithVencimento ? "month" : "day"}
+              views={
+                isAgendamentoWithVencimento
+                  ? ["year", "month"]
+                  : ["year", "month", "day"]
+              }
+              inputFormat={
+                isAgendamentoWithVencimento &&
+                Number(selectedItem?.diaVencimento) > 0
+                  ? "MM/yyyy"
+                  : "dd/MM/yyyy"
+              }
             />
           </Grid>
 
