@@ -31,8 +31,7 @@ const metaSchema = z.object({
   observacaoAutomatica: z.string().optional(),
   
   // Campos exclusivos para Retirada de Meta (Destino)
-
-  destinoOrigem: z.enum(["despesa", "receita"]).optional(),
+  destinoOrigem: z.enum(["despesa", "livre"]).optional(),
   destinoId: z.number().optional(),
 });
 
@@ -42,6 +41,8 @@ interface UseMetaFormProps {
   lancamentoParaEditar?: LancamentoResposta | null;
   onSuccess?: () => void;
 }
+
+const emptyArray: any[] = [];
 
 export function useMetaForm({
   lancamentoParaEditar,
@@ -119,11 +120,11 @@ export function useMetaForm({
   }, [itemId, objetivosApi]);
 
   // Itens para o destino da retirada
-  const itensDestino = destinoOrigem === "despesa" ? despesasApi : receitasApi;
+  const itensDestino = destinoOrigem === "despesa" ? despesasApi : emptyArray;
   const selectedDestino = useMemo(() => {
-    if (!destinoId) return null;
+    if (!destinoId || destinoOrigem !== "despesa") return null;
     return (itensDestino as any[]).find(i => i.id === destinoId) || null;
-  }, [destinoId, itensDestino]);
+  }, [destinoId, itensDestino, destinoOrigem]);
 
   const onSubmit = useCallback(
     async (formData: MetaFormData) => {
@@ -136,37 +137,53 @@ export function useMetaForm({
           const vinculoId = `${Date.now()}-${userId}`;
           const valorNum = Math.abs(Number(formData.valor));
           const objetivoNome = selectedItem?.nome || "Objetivo";
-          const destinoNome = selectedDestino?.nome || "Destino";
-
-          await Promise.all([
-            // 1. Saída do Objetivo
-            createLancamento({
+          
+          if (formData.destinoOrigem === "livre") {
+            // Apenas devolve ao saldo livre (1 registro)
+            await createLancamento({
               userId,
               objetivoId: formData.itemId,
               tipo: "pagamento" as any,
               valor: -valorNum,
               data: formData.data,
-              vinculoId,
-              observacaoAutomatica: `Retirada destinada para: ${destinoNome}`,
-            }).unwrap(),
-
-
-            // 2. Entrada no Destino
-            createLancamento({
-              userId,
-              despesaId: formData.destinoOrigem === "despesa" ? formData.destinoId : null,
-              receitaId: formData.destinoOrigem === "receita" ? formData.destinoId : null,
-              tipo: "pagamento" as any,
-              valor: valorNum,
-              data: formData.data,
-              vinculoId,
               observacao: formData.observacao || undefined,
-              observacaoAutomatica: `Dinheiro realocado do objetivo: ${objetivoNome}`,
-            }).unwrap(),
+              observacaoAutomatica: `Devolução para o Saldo Livre`,
+            }).unwrap();
+            
+            toast.success("Valor devolvido ao saldo livre com sucesso");
+          } else {
+            const destinoNome = selectedDestino?.nome || "Destino";
 
-          ]);
+            await Promise.all([
+              // 1. Saída do Objetivo
+              createLancamento({
+                userId,
+                objetivoId: formData.itemId,
+                tipo: "pagamento" as any,
+                valor: -valorNum,
+                data: formData.data,
+                vinculoId,
+                observacaoAutomatica: `Retirada destinada para: ${destinoNome}`,
+              }).unwrap(),
 
-          toast.success("Retirada e destino lançados com sucesso");
+
+              // 2. Entrada na Despesa
+              createLancamento({
+                userId,
+                despesaId: formData.destinoId,
+                receitaId: null,
+                tipo: "pagamento" as any,
+                valor: valorNum,
+                data: formData.data,
+                vinculoId,
+                observacao: formData.observacao || undefined,
+                observacaoAutomatica: `Dinheiro realocado do objetivo: ${objetivoNome}`,
+              }).unwrap(),
+
+            ]);
+
+            toast.success("Retirada para despesa lançada com sucesso");
+          }
         }
 
         // CASO PADRÃO: Investimento ou Edição de Retirada

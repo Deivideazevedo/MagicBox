@@ -33,7 +33,7 @@ import { Objetivo } from "@/core/objetivos/types";
 import { format } from "date-fns";
 
 const schema = z.object({
-  itemId: z.number().min(1, "Selecione uma despesa ou receita"),
+  itemId: z.number().optional(),
   valor: z.union([z.number(), z.string()]).refine((v) => Number(v) > 0, "Valor obrigatório").nullable(),
   data: z.string().min(1, "Data obrigatória"),
   observacao: z.string().optional(),
@@ -83,14 +83,13 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
   const theme = useTheme();
   const { data: session } = useSession();
   const [step, setStep] = useState<1 | 2>(1);
-  const [origem, setOrigem] = useState<"despesa" | "receita" | null>(null);
+  const [origem, setOrigem] = useState<"despesa" | "livre" | null>(null);
 
   const { data: despesasApi = [] } = useGetDespesasQuery(undefined, { skip: !session });
-  const { data: receitasApi = [] } = useGetReceitasQuery(undefined, { skip: !session });
   const [createLancamento, { isLoading: isCreating }] = useCreateLancamentoMutation();
 
   const isDespesa = origem === "despesa";
-  const itens = isDespesa ? despesasApi : receitasApi;
+  const itens = despesasApi;
 
   const { control, handleSubmit, reset, watch, setFocus } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -105,45 +104,63 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
   const itemId = watch("itemId");
   const selectedItem = useMemo(() => itens.find((i) => i.id === itemId) || null, [itemId, itens]);
 
-  const handleEscolha = (escolha: "despesa" | "receita") => {
+  const handleEscolha = (escolha: "despesa" | "livre") => {
     setOrigem(escolha);
     setStep(2);
-    setTimeout(() => setFocus("itemId"), 150);
+    if (escolha === "despesa") {
+      setTimeout(() => setFocus("itemId"), 150);
+    } else {
+      setTimeout(() => setFocus("valor"), 150);
+    }
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!objetivo || !session?.user?.id || !origem || !selectedItem) return;
+    if (!objetivo || !session?.user?.id || !origem) return;
+    if (origem === "despesa" && !selectedItem) {
+       toast.error("Selecione a despesa de destino");
+       return;
+    }
 
     try {
-      const nomeDestino = selectedItem.nome;
       const userId = Number(session.user.id);
       const vinculoId = `${Date.now()}-${userId}`;
 
-      // Usando Promise.all como requisitado.
-      await Promise.all([
-        // Mutação 1 - Retira do Objetivo sangrando (valor negativo e fixado como 'pagamento')
-        createLancamento({
-          objetivoId: objetivo.id,
-          valor: -Math.abs(Number(data.valor)),
-          tipo: "pagamento",
-          data: data.data,
-          userId,
-          vinculoId,
-          observacao: `Retirada destinada para: ${nomeDestino}`,
-        }).unwrap(),
+      if (origem === "livre") {
+         await createLancamento({
+            userId,
+            objetivoId: objetivo.id,
+            tipo: "pagamento",
+            valor: -Math.abs(Number(data.valor)),
+            data: data.data,
+            observacao: data.observacao || "Devolução para o Saldo Livre",
+         }).unwrap();
+      } else {
+        const nomeDestino = selectedItem!.nome;
+        await Promise.all([
+          // Mutação 1 - Retira do Objetivo
+          createLancamento({
+            userId,
+            objetivoId: objetivo.id,
+            tipo: "pagamento",
+            valor: -Math.abs(Number(data.valor)),
+            data: data.data,
+            vinculoId,
+            observacao: `Retirada destinada para: ${nomeDestino}`,
+          }).unwrap(),
 
-        // Mutação 2 - Lança a Receita/Despesa (valor positivo, pois afeta saldo ou dívida no balanço do mês)
-        createLancamento({
-          despesaId: origem === "despesa" ? data.itemId : null,
-          receitaId: origem === "receita" ? data.itemId : null,
-          valor: Math.abs(Number(data.valor)),
-          tipo: "pagamento", // Fixado, já que é pagamento garantido do que tá retirando
-          data: data.data,
-          userId,
-          vinculoId,
-          observacao: data.observacao || `Dinheiro realocado do objetivo: ${objetivo.nome}`,
-        }).unwrap(),
-      ]);
+          // Mutação 2 - Lança a Despesa
+          createLancamento({
+            despesaId: data.itemId,
+            receitaId: null,
+            valor: Math.abs(Number(data.valor)),
+            tipo: "pagamento", // Fixado, já que é pagamento garantido do que tá retirando
+            data: data.data,
+            userId,
+            vinculoId,
+            observacao: data.observacao || `Dinheiro realocado do objetivo: ${objetivo.nome}`,
+          }).unwrap(),
+        ]);
+      }
 
       toast.success("Retirada realizada com sucesso!");
 
@@ -219,7 +236,7 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
                 onClick={() => handleEscolha("despesa")}
                 sx={{ py: 1.5, borderRadius: 2, justifyContent: "center", px: 3, fontWeight: 700 }}
               >
-                Como Despesa
+                Pagar Despesa
               </Button>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -229,10 +246,10 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
                 fullWidth
                 size="large"
                 startIcon={<IconWallet size={20} />}
-                onClick={() => handleEscolha("receita")}
+                onClick={() => handleEscolha("livre")}
                 sx={{ py: 1.5, borderRadius: 2, justifyContent: "center", px: 3, fontWeight: 700 }}
               >
-                Como Receita
+                Devolver ao Saldo
               </Button>
             </Grid>
           </Grid>
@@ -270,11 +287,11 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    bgcolor: alpha(origem === "receita" ? theme.palette.success.main : theme.palette.error.main, 0.1),
-                    color: origem === "receita" ? "success.main" : "error.main",
+                    bgcolor: alpha(origem === "livre" ? theme.palette.success.main : theme.palette.error.main, 0.1),
+                    color: origem === "livre" ? "success.main" : "error.main",
                   }}
                 >
-                  {origem === "receita" ? <IconWallet size={22} /> : <IconCreditCard size={22} />}
+                  {origem === "livre" ? <IconWallet size={22} /> : <IconCreditCard size={22} />}
                 </Box>
                 <Box>
                   <Typography
@@ -284,35 +301,37 @@ export default function RetiradaObjetivoModal({ open, onClose, objetivo }: Retir
                     color="text.primary"
                     sx={{ letterSpacing: "-0.01em" }}
                   >
-                    Lançamento de {origem === "despesa" ? "Despesa" : "Receita"}
+                    {origem === "despesa" ? "Lançamento de Despesa" : "Devolução de Saldo"}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                    Destino da quantia retirada
+                    {origem === "despesa" ? "Destino da quantia retirada" : "O valor retornará ao caixa geral"}
                   </Typography>
                 </Box>
               </Box>
             </Box>
 
             <Grid container spacing={2.5}>
-              <Grid item xs={12}>
-                <HookAutocomplete<FormData, any>
-                  name="itemId"
-                  control={control}
-                  options={itens}
-                  label={isDespesa ? "Despesa Selecionada" : "Receita Selecionada"}
-                  placeholder={isDespesa ? "Buscar despesa..." : "Buscar receita..."}
-                  getOptionLabel={(opt) => opt.nome}
-                  getOptionValue={(opt) => opt.id}
-                  shrinkLabel
-                  forcePopupIcon={false}
-                  textFieldProps={{
-                    InputProps: {
-                      startAdornment: <ItemIconAdornment item={selectedItem} isDespesa={isDespesa} />,
-                    },
-                  }}
-                  onChange={() => setTimeout(() => setFocus("valor"), 0)}
-                />
-              </Grid>
+              {origem === "despesa" && (
+                <Grid item xs={12}>
+                  <HookAutocomplete<FormData, any>
+                    name="itemId"
+                    control={control}
+                    options={itens}
+                    label="Despesa Selecionada"
+                    placeholder="Buscar despesa..."
+                    getOptionLabel={(opt) => opt.nome}
+                    getOptionValue={(opt) => opt.id}
+                    shrinkLabel
+                    forcePopupIcon={false}
+                    textFieldProps={{
+                      InputProps: {
+                        startAdornment: <ItemIconAdornment item={selectedItem} isDespesa={true} />,
+                      },
+                    }}
+                    onChange={() => setTimeout(() => setFocus("valor"), 0)}
+                  />
+                </Grid>
+              )}
               <Grid item xs={12}>
                 <HookCurrencyField
                   label="Valor da Retirada"

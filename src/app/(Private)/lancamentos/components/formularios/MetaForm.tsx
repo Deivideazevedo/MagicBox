@@ -303,7 +303,7 @@ export default function MetaForm({
                           color: "error.main",
                           borderColor: alpha(theme.palette.error.main, 0.4),
                         },
-                        "&[value='receita']": {
+                        "&[value='livre']": {
                           color: "success.main",
                           borderColor: alpha(theme.palette.success.main, 0.4),
                         },
@@ -317,52 +317,46 @@ export default function MetaForm({
                   <ToggleButton value="despesa">
                     <Box display="flex" alignItems="center" gap={1}>
                       <IconCreditCard size={18} />
-                      <span>Despesa</span>
+                      <span>Pagar uma Despesa</span>
                     </Box>
                   </ToggleButton>
-                  <ToggleButton value="receita">
+                  <ToggleButton value="livre">
                     <Box display="flex" alignItems="center" gap={1}>
                       <IconWallet size={18} />
-                      <span>Receita</span>
+                      <span>Devolver ao Saldo Livre</span>
                     </Box>
                   </ToggleButton>
                 </ToggleButtonGroup>
 
-                <HookAutocomplete
-                  name="destinoId"
-                  control={control}
-                  options={itensDestino as any[]}
-                  label={
-                    destinoOrigem === "despesa"
-                      ? "Despesa de Destino"
-                      : "Receita de Destino"
-                  }
-                  placeholder={
-                    destinoOrigem === "despesa"
-                      ? "Pagar qual despesa?"
-                      : "Como qual receita?"
-                  }
-                  getOptionLabel={(opt) => opt.nome}
-                  getOptionValue={(opt) => opt.id}
-                  forcePopupIcon={false}
-                  textFieldProps={{
-                    InputProps: {
-                      startAdornment: (
-                        <ItemIconAdornment
-                          item={selectedDestino}
-                          isDespesa={destinoOrigem === "despesa"}
-                          isReceita={destinoOrigem === "receita"}
-                        />
-                      ),
-                    },
-                  }}
-                  onChange={(_, value) => {
-                    value && setTimeout(() => setFocus("valor"), 0);
-                  }}
-                  sx={{
-                    backgroundColor: "background.paper",
-                  }}
-                />
+                {destinoOrigem === "despesa" && (
+                  <HookAutocomplete
+                    name="destinoId"
+                    control={control}
+                    options={itensDestino as any[]}
+                    label="Despesa de Destino"
+                    placeholder="Pagar qual despesa?"
+                    getOptionLabel={(opt) => opt.nome}
+                    getOptionValue={(opt) => opt.id}
+                    forcePopupIcon={false}
+                    textFieldProps={{
+                      InputProps: {
+                        startAdornment: (
+                          <ItemIconAdornment
+                            item={selectedDestino}
+                            isDespesa={true}
+                            isReceita={false}
+                          />
+                        ),
+                      },
+                    }}
+                    onChange={(_, value) => {
+                      value && setTimeout(() => setFocus("valor"), 0);
+                    }}
+                    sx={{
+                      backgroundColor: "background.paper",
+                    }}
+                  />
+                )}
               </Box>
             </Grid>
           )}

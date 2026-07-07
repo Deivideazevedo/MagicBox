@@ -55,9 +55,10 @@ export function useDespesaForm({
   const { data: session } = useSession();
 
   // Query de despesas
-  const { data: despesasApi = [], isLoading: isDespesasLoading } = useGetDespesasQuery(undefined, {
-    skip: !session,
-  });
+  const { data: despesasApi = [], isLoading: isDespesasLoading } =
+    useGetDespesasQuery(undefined, {
+      skip: !session,
+    });
 
   const [createLancamento, { isLoading: isCreating }] =
     useCreateLancamentoMutation();
@@ -147,7 +148,9 @@ export function useDespesaForm({
 
   // Filtrar despesas para listar apenas as ativas no Drawer (ou a já selecionada se for edição)
   const despesasAtivas = useMemo(() => {
-    return despesasApi.filter((item) => item.status === "A" || item.id === itemId);
+    return despesasApi.filter(
+      (item) => item.status === "A" || item.id === itemId,
+    );
   }, [despesasApi, itemId]);
 
   const valorTotal = useMemo(() => {
@@ -169,14 +172,18 @@ export function useDespesaForm({
       try {
         const userId = Number(session?.user?.id);
 
-        const isMultipleInstallments = formData.tipo === "agendamento" && formData.parcelas && formData.parcelas > 1;
-        const finalValor = isMultipleInstallments && formData.modoParcelamento === "total"
-          ? Number(formData.valor) / Number(formData.parcelas)
-          : Number(formData.valor);
+        const isMultipleInstallments =
+          formData.tipo === "agendamento" &&
+          formData.parcelas &&
+          formData.parcelas > 1;
+        const finalValor =
+          isMultipleInstallments && formData.modoParcelamento === "total"
+            ? Number(formData.valor) / Number(formData.parcelas)
+            : Number(formData.valor);
 
         let finalData = formData.data;
         if (formData.tipo === "agendamento") {
-          const item = despesasApi.find(d => d.id === formData.itemId);
+          const item = despesasApi.find((d) => d.id === formData.itemId);
           if (item?.diaVencimento && item.diaVencimento > 0) {
             finalData = fnApplyDueDay(formData.data, item.diaVencimento);
           }
@@ -228,6 +235,7 @@ export function useDespesaForm({
       updateLancamento,
       reset,
       defaultValues,
+      despesasApi,
       onSuccess,
       setFocus,
     ],

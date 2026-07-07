@@ -191,23 +191,52 @@ export const divergenciasService = {
       });
     }
 
-    // Diagnóstico B: Deficits em meses anteriores
-    const mesesComDeficit = fluxoRaw.filter(f => (f.receitas) < (f.despesas + f.metas));
+    // Diagnóstico B: Furo de Orçamento com base no Saldo Acumulado
+    // Apenas verificamos um furo se o fluxo mensal foi negativo o suficiente
+    // para fazer o SALDO ACUMULADO GLOBAL cair abaixo de zero. 
+    // Usar economias passadas não é considerado um furo, garantindo precisão matemática.
+    const mesesComDeficit: Array<{ mes: string, furoValor: number, despesas: number, metas: number, receitas: number }> = [];
+    let saldoAcumuladoLoop = 0;
+
+    for (const f of fluxoRaw) {
+      const rec = f.receitas ?? 0;
+      const desp = f.despesas ?? 0;
+      const meta = f.metas ?? 0;
+      const fluxoMensal = rec - desp - meta;
+      
+      const saldoAnterior = saldoAcumuladoLoop;
+      saldoAcumuladoLoop += fluxoMensal;
+
+      // Se o saldo acumulado caiu abaixo de zero e o fluxo do mês foi negativo
+      if (saldoAcumuladoLoop < -0.01 && fluxoMensal < 0) {
+        // Se antes estava positivo (ou zero), o furo real causado neste mês é apenas a parte que passou de zero.
+        // Se já estava negativo, o furo inteiro é contabilizado neste mês, agravando o déficit histórico.
+        const furoValor = saldoAnterior >= 0 ? Math.abs(saldoAcumuladoLoop) : Math.abs(fluxoMensal);
+        
+        mesesComDeficit.push({
+          mes: f.mes,
+          furoValor,
+          despesas: desp,
+          metas: meta,
+          receitas: rec,
+        });
+      }
+    }
+
     if (mesesComDeficit.length > 0) {
       const penalidadeDeficits = Math.min(30, mesesComDeficit.length * 10);
       score -= penalidadeDeficits;
 
       mesesComDeficit.forEach((item) => {
-        const furoValor = (item.despesas + item.metas) - item.receitas;
         const nomeMesFormatado = formatarMesAno(item.mes);
         diagnosticos.push({
           id: `deficit_passado_${item.mes}`,
           tipo: "DEFICIT_PASSADO",
-          severity: furoValor > 500 ? "high" : "medium",
+          severity: item.furoValor > 500 ? "high" : "medium",
           titulo: `Furo de Orçamento em ${nomeMesFormatado}`,
-          descricao: `Detectamos que em ${nomeMesFormatado} suas despesas e metas de poupança (totalizando R$ ${(item.despesas + item.metas).toFixed(2)}) superaram suas receitas (R$ ${item.receitas.toFixed(2)}), gerando um furo de R$ ${furoValor.toFixed(2)} neste mês. Esse deficit consome o saldo livre atual.`,
+          descricao: `Detectamos que em ${nomeMesFormatado} o seu saldo livre acumulado ficou negativo, criando um déficit de R$ ${item.furoValor.toFixed(2)}. Isso significa que as suas despesas ultrapassaram não só as receitas do mês, mas também as economias guardadas no passado.`,
           mesReferencia: item.mes,
-          diferenca: furoValor,
+          diferenca: item.furoValor,
         });
       });
     }
@@ -333,12 +362,12 @@ export const divergenciasService = {
     if (diferenca < 0) {
       // Cria despesa de ajuste para drenar saldo livre
       let despesaAjuste = await prisma.despesa.findFirst({
-        where: { userId, nome: "Ajuste de Saldo", deletedAt: null },
+        where: { userId, nome: "Ajuste Despesa (Auto)", deletedAt: null },
       });
       if (!despesaAjuste) {
         despesaAjuste = await prisma.despesa.create({
           data: {
-            nome: "Ajuste de Saldo",
+            nome: "Ajuste Despesa (Auto)",
             userId,
             categoriaId: cat.id,
             valorEstimado: 0,
@@ -351,12 +380,12 @@ export const divergenciasService = {
     } else {
       // Cria receita de ajuste para inflar saldo livre
       let receitaAjuste = await prisma.receita.findFirst({
-        where: { userId, nome: "Ajuste de Saldo", deletedAt: null },
+        where: { userId, nome: "Ajuste Receita (Auto)", deletedAt: null },
       });
       if (!receitaAjuste) {
         receitaAjuste = await prisma.receita.create({
           data: {
-            nome: "Ajuste de Saldo",
+            nome: "Ajuste Receita (Auto)",
             userId,
             categoriaId: cat.id,
             valorEstimado: 0,
@@ -427,12 +456,12 @@ export const divergenciasService = {
 
     // 3. Criar a Receita de ajuste
     let receitaAjuste = await prisma.receita.findFirst({
-      where: { userId, nome: "Ajuste de Saldo", deletedAt: null },
+      where: { userId, nome: "Ajuste Receita (Auto)", deletedAt: null },
     });
     if (!receitaAjuste) {
       receitaAjuste = await prisma.receita.create({
         data: {
-          nome: "Ajuste de Saldo",
+          nome: "Ajuste Receita (Auto)",
           userId,
           categoriaId: cat.id,
           valorEstimado: 0,
@@ -442,9 +471,9 @@ export const divergenciasService = {
       });
     }
 
-    // Calcular o último dia daquele mês
+    // Calcular o último dia daquele mês à meia-noite em UTC (evita cair às 03:00 e sair do filtro <= dataFim)
     const [ano, mesNum] = mes.split("-");
-    const ultimoDia = new Date(parseInt(ano, 10), parseInt(mesNum, 10), 0); // Dia 0 do próximo mês é o último dia do mês atual
+    const ultimoDia = new Date(Date.UTC(parseInt(ano, 10), parseInt(mesNum, 10), 0));
 
     // 4. Inserir lançamento pago (tipo = 'pagamento')
     const novoLancamento = await prisma.lancamento.create({
