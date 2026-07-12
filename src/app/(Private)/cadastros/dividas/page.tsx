@@ -184,14 +184,16 @@ function DividasPageContent() {
         <DividasDashboard
           resumo={{
             ...(resumo || {
-              totalDevidoUnicas: 0,
-              totalPagoUnicas: 0,
-              totalAgendadoVolateis: 0,
-              quantidadeTotalParcelas: 0,
+              totalDevidoGlobal: 0,
+              quantidadeDevidoGlobal: 0,
+              totalPagoMes: 0,
+              totalAmortizadoGlobal: 0,
+              valorTotalAPagarMes: 0,
+              quantidadeTotalAPagarMes: 0,
               dividasAtrasadas: 0,
-              proximosVencimentos: 0,
+              valorAtrasado: 0,
             }),
-            quantidadeTotalParcelas: qtdPendentes,
+            quantidadeTotalAPagarMes: qtdPendentes,
           }}
           onNew={handleNovaDivida}
           mostrarConcluidas={mostrarConcluidas}

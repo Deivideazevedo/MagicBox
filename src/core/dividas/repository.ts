@@ -188,7 +188,17 @@ export const dividasRepository = {
           }
         }
 
-        const isTotalmentePaga = Math.round(m.valorPago * 100) >= Math.round(m.valorAgendado * 100);
+        const mes = dateRefTruncated.getUTCMonth();
+        const ano = dateRefTruncated.getUTCFullYear();
+
+        const temAjusteQuitacaoNoMes = lancamentosDespesa.some(
+          (l) => l.tipo === 'pagamento' && 
+                 new Date(l.data).getUTCMonth() === mes && 
+                 new Date(l.data).getUTCFullYear() === ano && 
+                 l.observacaoAutomatica?.includes("[QUITAÇÃO]")
+        );
+
+        const isTotalmentePaga = temAjusteQuitacaoNoMes || Math.round(m.valorPago * 100) >= Math.round(m.valorAgendado * 100);
 
         let status: StatusSituacaoParcela = isTotalmentePaga ? 'pago' : (m.valorPago > 0 ? 'parcial' : 'pendente');
         if (status === 'pendente' && dateRef < hoje && !isSameMonth(dateRef, hoje)) {
@@ -224,7 +234,7 @@ export const dividasRepository = {
         tipo: "VOLATIL",
         valorTotalAgendado: valorTotalPendentes,
         valorPago: valorPagoPendentes,
-        valorRestante: Math.max(0, valorTotalPendentes - valorPagoPendentes),
+        valorRestante: situacaoParcelas.reduce((acc, p) => p.status === 'pago' ? acc : acc + Math.max(0, p.valorAgendado - p.valorPago), 0),
         quantidadeParcelas: situacaoParcelas.length,
         proximoVencimento: proximo?.dataVencimento || null,
         diasParaVencer: proximo ? differenceInCalendarDays(parseISO(fnFormatNaiveDate(proximo.dataVencimento, 'yyyy-MM-dd') + "T00:00:00"), parseISO(fnGetTodayISO() + "T00:00:00")) : null,
@@ -425,9 +435,20 @@ export const dividasRepository = {
       // Usamos o dia que foi gravado explicitamente no banco ou o dia da data de início
       const diaVencimentoBanco = d.diaVencimento || dataInicio.getUTCDate();
       const dateRef = new Date(Date.UTC(ano, mes, diaVencimentoBanco));
+      const lancamentosDoMes = lancamentos.filter(l => 
+        new Date(l.data).getUTCMonth() === mes && 
+        new Date(l.data).getUTCFullYear() === ano
+      );
+
+      const temAjusteQuitacaoNoMes = lancamentosDoMes.some(
+        (l) => l.tipo === 'pagamento' && l.observacaoAutomatica?.includes("[QUITAÇÃO]")
+      );
+
       let status: StatusSituacaoParcela = 'pendente';
 
-      if (!isMêsPlanejado && valorPagoNoMes > 0) {
+      if (temAjusteQuitacaoNoMes) {
+        status = 'pago';
+      } else if (!isMêsPlanejado && valorPagoNoMes > 0) {
         status = 'pago';
       } else if (valorFinalAgendado > 0) {
         if (valorPagoNoMes >= valorFinalAgendado - 0.01) {
@@ -438,7 +459,6 @@ export const dividasRepository = {
           status = 'atrasada';
         }
       } else if (valorPagoNoMes > 0) {
-        // Se não havia agendamento mas foi pago (ex: pagamento avulso antes/fora do plano)
         status = 'pago';
       }
 
@@ -460,11 +480,11 @@ export const dividasRepository = {
       .reduce((acc, l) => acc + Number(l.valor), 0);
 
     const valorTotalOriginal = Number(d.valorTotal || 0);
-    const valorRestante = Math.max(0, valorTotalOriginal - valorPagoTotalGlobal);
+    const valorRestante = situacaoParcelas.reduce((acc, p) => p.status === 'pago' ? acc : acc + Math.max(0, p.valorAgendado - p.valorPago), 0);
     const parcelasPagas = situacaoParcelas.filter(p => p.status === 'pago').length;
     
     // Progresso é medido sobre o planejado original para permitir progresso > 100%
-    const progresso = valorTotalOriginal > 0 ? (valorPagoTotalGlobal / valorTotalOriginal) * 100 : 0;
+    const progresso = valorTotalOriginal > 0 ? ((valorTotalOriginal - valorRestante) / valorTotalOriginal) * 100 : 0;
     const proximoAgendamento = situacaoParcelas.find(p => p.status !== 'pago');
 
     // Parcelas restantes medem apenas as parcelas em aberto do plano original

@@ -117,12 +117,14 @@ export function useDividas() {
   const {
     data: response = {
       resumo: {
-        totalDevidoUnicas: 0,
-        totalPagoUnicas: 0,
-        totalAgendadoVolateis: 0,
-        quantidadeTotalParcelas: 0,
+        totalDevidoGlobal: 0,
+        quantidadeDevidoGlobal: 0,
+        totalPagoMes: 0,
+        totalAmortizadoGlobal: 0,
+        valorTotalAPagarMes: 0,
+        quantidadeTotalAPagarMes: 0,
         dividasAtrasadas: 0,
-        proximosVencimentos: 0,
+        valorAtrasado: 0,
       },
       dividas: [],
     } as ListagemDividasResponse,
@@ -444,15 +446,32 @@ Sendo R$ ${valorRestante.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} 
 
   const handleQuitarRestante = useCallback(
     async (divida: Divida) => {
+      const isFixa = divida.tipo === "FIXA";
+      const isUnica = divida.tipo === "UNICA";
+      const proximaParcelaNum = isUnica ? (divida as DividaUnica).parcelasPagas + 1 : null;
+      const totalParcelasNum = isUnica ? (divida as DividaUnica).totalParcelas : null;
+
+      const title = isFixa 
+        ? "Marcar despesa como quitada?" 
+        : isUnica
+          ? `Quitar parcela ${proximaParcelaNum}/${totalParcelasNum}?`
+          : "Quitar próxima parcela?";
+          
+      const description = isFixa 
+        ? `Deseja dar baixa no saldo restante desta despesa para o mês atual (R$ 0,00)? Se você realizou um pagamento do próprio bolso, cancele e use "Novo Pagamento".`
+        : isUnica
+          ? `Deseja dar baixa na parcela ${proximaParcelaNum} desta dívida sem registrar gastos (R$ 0,00)? O saldo restante da dívida diminuirá normalmente, mas o seu Total Pago no mês não será alterado. Se você pagou esta parcela com o seu próprio bolso, cancele e use "Novo Pagamento".`
+          : `Deseja dar baixa na próxima parcela desta dívida sem registrar gastos (R$ 0,00)? O saldo restante da dívida diminuirá normalmente, mas o seu Total Pago no mês não será alterado. Se você pagou esta parcela com o seu próprio bolso, cancele e use "Novo Pagamento".`;
+
       confirm.show({
-        title: "Marcar despesa como quitada?",
-        description: `Deseja marcar esta despesa como quitada para o mês atual? O último pagamento registrado receberá a marcação de quitação.`,
+        title,
+        description,
         confirmText: "Sim, quitar",
         color: "success",
         onConfirm: async () => {
           try {
             await quitarDivida(Number(divida.id)).unwrap();
-            toast.success("Despesa marcada como quitada!");
+            toast.success(isFixa ? "Despesa marcada como quitada!" : "Parcela quitada com sucesso!");
           } catch (error) {
             // Tratado globalmente
           }

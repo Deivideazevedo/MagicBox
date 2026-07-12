@@ -14,6 +14,7 @@ import {
   ToggleButtonGroup,
   Typography,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { useEffect } from "react";
 import {
@@ -58,13 +59,16 @@ export default function MetaForm({
     selectedDestino,
   } = useMetaForm({ lancamentoParaEditar, onSuccess });
 
-  // Focar no campo de item ao montar o formulário
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Focar no campo de item ao montar o formulário (apenas no desktop)
   useEffect(() => {
+    if (isMobile) return;
     setTimeout(
       () => (lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId")),
       300,
     );
-  }, [setFocus, lancamentoParaEditar?.id]);
+  }, [setFocus, lancamentoParaEditar?.id, isMobile]);
 
   return (
     <Box py={2} px={3} component="form" onSubmit={handleSubmit}>

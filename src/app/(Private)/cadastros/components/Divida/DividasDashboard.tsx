@@ -144,12 +144,14 @@ export const DividasDashboard = ({
     (val || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   const safeResumo = {
-    totalDevidoUnicas: Number(resumo?.totalDevidoUnicas || 0),
-    totalPagoUnicas: Number(resumo?.totalPagoUnicas || 0),
-    totalAgendadoVolateis: Number(resumo?.totalAgendadoVolateis || 0),
-    quantidadeTotalParcelas: Number(resumo?.quantidadeTotalParcelas || 0),
+    totalDevidoGlobal: Number(resumo?.totalDevidoGlobal || 0),
+    quantidadeDevidoGlobal: Number(resumo?.quantidadeDevidoGlobal || 0),
+    totalPagoMes: Number(resumo?.totalPagoMes || 0),
+    totalAmortizadoGlobal: Number(resumo?.totalAmortizadoGlobal || 0),
+    valorTotalAPagarMes: Number(resumo?.valorTotalAPagarMes || 0),
+    quantidadeTotalAPagarMes: Number(resumo?.quantidadeTotalAPagarMes || 0),
     dividasAtrasadas: Number(resumo?.dividasAtrasadas || 0),
-    proximosVencimentos: Number(resumo?.proximosVencimentos || 0),
+    valorAtrasado: Number(resumo?.valorAtrasado || 0),
   };
 
   return (
@@ -163,19 +165,26 @@ export const DividasDashboard = ({
           <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Total em Dívidas"
-              value={formatCurrency(
-                safeResumo.totalDevidoUnicas + safeResumo.totalAgendadoVolateis,
-              )}
-              subtitle={`${safeResumo.quantidadeTotalParcelas} dívidas pendentes`}
+              value={formatCurrency(safeResumo.totalDevidoGlobal)}
+              subtitle={`${safeResumo.quantidadeDevidoGlobal} dívidas pendentes`}
               icon={IconCreditCard}
               color={theme.palette.primary.main}
             />
           </Grid>
           <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
+              title="Total a Pagar no Mês"
+              value={formatCurrency(safeResumo.valorTotalAPagarMes)}
+              subtitle={`${safeResumo.quantidadeTotalAPagarMes} vencimento${safeResumo.quantidadeTotalAPagarMes > 1 || safeResumo.quantidadeTotalAPagarMes === 0 ? 's' : ''} neste mês`}
+              icon={IconCalendarEvent}
+              color={theme.palette.warning.main}
+            />
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <SummaryCard
               title="Total Pago"
-              value={formatCurrency(safeResumo.totalPagoUnicas)}
-              subtitle="Valor amortizado"
+              value={formatCurrency(safeResumo.totalPagoMes)}
+              subtitle={`Total global amortizado: ${formatCurrency(safeResumo.totalAmortizadoGlobal)}`}
               icon={IconTrendingUp}
               color={theme.palette.success.main}
             />
@@ -183,19 +192,10 @@ export const DividasDashboard = ({
           <Grid item xs={6} sm={6} md={3}>
             <SummaryCard
               title="Atrasadas"
-              value={safeResumo.dividasAtrasadas}
-              subtitle="Dívidas com vencimento expirado"
+              value={formatCurrency(safeResumo.valorAtrasado)}
+              subtitle={`${safeResumo.dividasAtrasadas} dívida${safeResumo.dividasAtrasadas > 1 || safeResumo.dividasAtrasadas === 0 ? 's' : ''} com prazo expirado`}
               icon={IconAlertTriangle}
               color={theme.palette.error.main}
-            />
-          </Grid>
-          <Grid item xs={6} sm={6} md={3}>
-            <SummaryCard
-              title="Próximos 7 dias"
-              value={safeResumo.proximosVencimentos}
-              subtitle="Vencimentos próximos"
-              icon={IconCalendarEvent}
-              color={theme.palette.warning.main}
             />
           </Grid>
         </Grid>

@@ -751,7 +751,7 @@ export const Listagem = ({
                 <IconCircleCheck size={18} color={theme.palette.primary.main} />
               </ListItemIcon>
               <ListItemText
-                primary="Marcar como Quitada"
+                primary={selectedDivida?.tipo === "FIXA" ? "Marcar como Quitada" : "Quitar Próxima Parcela"}
                 primaryTypographyProps={{ variant: "caption", fontWeight: 600 }}
               />
             </MenuItem>

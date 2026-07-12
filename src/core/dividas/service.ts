@@ -9,7 +9,7 @@ import {
   UpdateDividaDTO,
 } from "./divida.dto";
 import { dividasRepository as repositorio } from "./repository";
-import { ListagemDividasResponse, DividaVolatil } from "./types";
+import { ListagemDividasResponse, DividaVolatil, DividaUnica, SituacaoParcela, Divida } from "./types";
 
 export const dividasService = {
   async listarPorUsuario(userId: number): Promise<ListagemDividasResponse> {
@@ -21,9 +21,13 @@ export const dividasService = {
 
     // Otimização de Payload: Remover chaves pesadas da listagem geral e injetar agregados simples
     const dividasOtimizadas = dividas.map((d) => {
-      const { lancamentos, ...rest } = d as any;
-      // Para evitar que situacaoParcelas seja enviada desnecessariamente, mas mantendo compatibilidade
-      const { situacaoParcelas, ...restSemParcelas } = rest;
+      const rest = { ...d };
+      delete rest.lancamentos;
+      
+      const restSemParcelas = { ...rest };
+      if (d.tipo === "UNICA" || d.tipo === "VOLATIL") {
+         delete (restSemParcelas as Partial<DividaUnica | DividaVolatil>).situacaoParcelas;
+      }
       return {
         ...restSemParcelas,
         valorProximaParcela: d.tipo === "UNICA"
@@ -45,25 +49,78 @@ export const dividasService = {
       };
     });
 
+    const hoje = new Date();
+    const isSameMonthStr = (dateStr: string) => {
+      if (!dateStr) return false;
+      const [year, month] = dateStr.split('-');
+      return parseInt(year) === hoje.getFullYear() && parseInt(month) === hoje.getMonth() + 1;
+    };
+
+    let valorTotalAPagarMes = 0;
+    let quantidadeTotalAPagarMes = 0;
+    let valorAtrasado = 0;
+
+    dividasOtimizadas.forEach((d) => {
+      if (d.tipo === "UNICA" || d.tipo === "VOLATIL") {
+        const parcelas = (d as DividaUnica | DividaVolatil).situacaoParcelas || [];
+        // Valor a Pagar no Mês (Parcelas do Mês que não estão pagas)
+        const parcelaMes = parcelas.find((p: SituacaoParcela) => isSameMonthStr(p.dataVencimento));
+        if (parcelaMes && parcelaMes.status !== 'pago') {
+          valorTotalAPagarMes += Math.max(0, parcelaMes.valorAgendado - parcelaMes.valorPago);
+          quantidadeTotalAPagarMes++;
+        }
+        
+        // Valor Atrasado
+        const parcelasAtrasadas = parcelas.filter((p: SituacaoParcela) => p.status === 'atrasada');
+        parcelasAtrasadas.forEach((p: SituacaoParcela) => {
+          valorAtrasado += Math.max(0, p.valorAgendado - p.valorPago);
+        });
+      } else if (d.tipo === "FIXA") {
+        if (!d.concluida) {
+          valorTotalAPagarMes += d.valorRestante || 0;
+          quantidadeTotalAPagarMes++;
+        }
+        if (d.atrasada) {
+          valorAtrasado += d.valorRestante || 0;
+        }
+      }
+    });
+
+    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    const despesaIds = dividas.map((d) => d.id);
+
+    const pagamentosMes = await prisma.lancamento.aggregate({
+      where: {
+        userId,
+        tipo: 'pagamento',
+        despesaId: { in: despesaIds },
+        data: { gte: dataInicioMes, lte: dataFimMes },
+      },
+      _sum: { valor: true }
+    });
+    const totalPagoMes = Number(pagamentosMes._sum.valor || 0);
+
+    const totalAmortizadoGlobal = unicas.reduce((acc, d) => acc + d.valorPago, 0) +
+                                  volateis.reduce((acc, d) => acc + d.valorPago, 0) +
+                                  fixas.reduce((acc, d) => acc + d.valorPago, 0);
+
+    const totalDevidoGlobal = unicas.reduce((acc, d) => acc + d.valorRestante, 0) +
+                              volateis.reduce((acc, d) => acc + d.valorRestante, 0) +
+                              fixas.reduce((acc, d) => acc + d.valorRestante, 0);
+
     const resumo = {
-      totalDevidoUnicas: unicas.reduce((acc, d) => acc + d.valorRestante, 0) +
-                         fixas.reduce((acc, d) => acc + d.valorRestante, 0),
-      totalPagoUnicas: unicas.reduce((acc, d) => acc + d.valorPago, 0) +
-                       fixas.reduce((acc, d) => acc + d.valorPago, 0),
-      totalAgendadoVolateis: volateis.reduce(
-        (acc, d) => acc + d.valorTotalAgendado,
-        0,
-      ),
-      quantidadeTotalParcelas: dividas.reduce(
-        (acc, d) =>
-          acc +
-          (d.tipo === "UNICA"
-            ? d.parcelasRestantes
-            : d.tipo === "VOLATIL"
-              ? d.quantidadeParcelas
-              : (d.concluida ? 0 : 1)),
-        0,
-      ),
+      totalDevidoGlobal,
+      quantidadeDevidoGlobal: dividas.filter((d) => 
+        (d.tipo === "UNICA" && !d.concluida) || 
+        (d.tipo === "VOLATIL" && d.valorRestante > 0) || 
+        (d.tipo === "FIXA" && !d.concluida)
+      ).length,
+      totalPagoMes,
+      totalAmortizadoGlobal,
+      valorTotalAPagarMes,
+      quantidadeTotalAPagarMes,
       dividasAtrasadas: dividas.filter(
         (d) =>
           (d.tipo === "UNICA" &&
@@ -72,17 +129,10 @@ export const dividasService = {
           (d.tipo === "VOLATIL" && d.atrasada) ||
           (d.tipo === "FIXA" && !d.concluida && d.diasParaVencer != null && d.diasParaVencer < 0)
       ).length,
-      proximosVencimentos: dividas.filter(
-        (d) =>
-          d.diasParaVencer != null &&
-          d.diasParaVencer >= 0 &&
-          d.diasParaVencer <= 7 &&
-          !(d.tipo === "FIXA" && d.concluida) &&
-          !(d.tipo === "UNICA" && d.concluida)
-      ).length,
+      valorAtrasado,
     };
 
-    return { resumo, dividas: dividasOtimizadas as any[] };
+    return { resumo, dividas: dividasOtimizadas as Divida[] };
   },
 
   async buscarPorId(id: number, userId: number) {
@@ -617,6 +667,9 @@ export const dividasService = {
     const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
     const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
 
+    const divida = await this.buscarPorId(dividaId, userId);
+    if (!divida) throw new NotFoundError("Dívida não encontrada");
+
     // Buscar o último pagamento do mês atual para esta despesa
     const ultimoPagamento = await prisma.lancamento.findFirst({
       where: {
@@ -639,7 +692,7 @@ export const dividasService = {
           tipo: "pagamento",
           valor: 0,
           data: hoje,
-          observacao: "Quitação - Despesa Fixa",
+          observacao: divida.tipo === "FIXA" ? "Quitação - Despesa Fixa" : "Quitação - Parcela",
           observacaoAutomatica: "Aporte Automático [QUITAÇÃO]",
         },
       });

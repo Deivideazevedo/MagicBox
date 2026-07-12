@@ -22,6 +22,7 @@ import {
   Tooltip,
   Typography,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { useEffect, useMemo } from "react";
 import {
@@ -76,14 +77,17 @@ export default function DespesaForm({
   };
   const theme = useTheme();
 
-  // Focar no campo de item (ou valor, se já houver dados) ao montar o formulário
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Focar no campo de item (ou valor, se já houver dados) ao montar o formulário (apenas no desktop)
   useEffect(() => {
+    if (isMobile) return;
     const hasPreselectedItem = !!lancamentoParaEditar?.id || !!dadosIniciais;
     setTimeout(
       () => (hasPreselectedItem ? setFocus("valor") : setFocus("itemId")),
       300,
     );
-  }, [setFocus, lancamentoParaEditar, dadosIniciais]);
+  }, [setFocus, lancamentoParaEditar, dadosIniciais, isMobile]);
 
   // Sincronizar automaticamente a data de agendamento ao mudar para "agendamento" com item selecionado
   useEffect(() => {

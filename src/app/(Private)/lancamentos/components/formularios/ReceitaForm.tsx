@@ -22,6 +22,7 @@ import {
   Tooltip,
   Typography,
   useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { useEffect } from "react";
 import {
@@ -89,13 +90,16 @@ export default function ReceitaForm({
 
   const theme = useTheme();
 
-  // Focar no campo de item ao montar o formulário
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Focar no campo de item ao montar o formulário (apenas no desktop)
   useEffect(() => {
+    if (isMobile) return;
     setTimeout(
       () => (lancamentoParaEditar?.id ? setFocus("valor") : setFocus("itemId")),
       300,
     );
-  }, [setFocus, lancamentoParaEditar?.id]);
+  }, [setFocus, lancamentoParaEditar?.id, isMobile]);
 
   // Sincronizar automaticamente a data de agendamento ao mudar para "agendamento" com item selecionado
   useEffect(() => {

@@ -76,12 +76,14 @@ export interface DividaFixa extends DividaBase {
 export type Divida = DividaUnica | DividaVolatil | DividaFixa;
 
 export interface ResumoDividas {
-  totalDevidoUnicas: number;
-  totalPagoUnicas: number;
-  totalAgendadoVolateis: number;
-  quantidadeTotalParcelas: number;
+  totalDevidoGlobal: number;
+  quantidadeDevidoGlobal: number;
+  totalPagoMes: number;
+  totalAmortizadoGlobal: number;
+  valorTotalAPagarMes: number;
+  quantidadeTotalAPagarMes: number;
   dividasAtrasadas: number;
-  proximosVencimentos: number; // Qtd de dívidas vencendo em breve
+  valorAtrasado: number;
 }
 
 export interface ListagemDividasResponse {
