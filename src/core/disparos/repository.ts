@@ -46,14 +46,16 @@ export const disparosRepository = {
           l."despesaId",
           l.data as data_vencimento,
           l.valor as valor_agendado,
-          COALESCE(lp.total_pago_mes, 0)::float as valor_pago_mes
+          COALESCE(lp.total_pago_mes, 0)::float as valor_pago_mes,
+          COALESCE(lp.tem_quitacao, false) as tem_quitacao
         FROM lancamento l
         INNER JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN (
           SELECT 
             "despesaId",
             DATE_TRUNC('month', data) as mes,
-            SUM(valor) as total_pago_mes
+            SUM(valor) as total_pago_mes,
+            BOOL_OR(COALESCE("observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as tem_quitacao
           FROM lancamento
           WHERE "userId" = ${userId} AND tipo = 'pagamento'
           GROUP BY "despesaId", DATE_TRUNC('month', data)
@@ -67,7 +69,7 @@ export const disparosRepository = {
           data_vencimento as proximo_vencimento,
           (valor_agendado - valor_pago_mes)::float as valor_proxima_parcela
         FROM agendamentos_unicas
-        WHERE valor_pago_mes < valor_agendado - 0.01
+        WHERE (NOT tem_quitacao) AND valor_pago_mes < valor_agendado - 0.01
         ORDER BY "despesaId", data_vencimento ASC
       ),
       unicas_consolidado AS (
@@ -94,7 +96,8 @@ export const disparosRepository = {
             ELSE COALESCE(MIN(CASE WHEN l.tipo = 'agendamento' THEN l.data END), MIN(l.data))
           END) as data_referencia,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as total_agendado,
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago,
+          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as tem_quitacao
         FROM lancamento l
         INNER JOIN despesa d ON l."despesaId" = d.id
         WHERE d."userId" = ${userId} 
@@ -112,7 +115,7 @@ export const disparosRepository = {
           total_pago,
           GREATEST(0, total_agendado - total_pago) as valor_aberto
         FROM volateis_meses
-        WHERE total_agendado > 0 AND total_pago < total_agendado - 0.01
+        WHERE total_agendado > 0 AND (NOT tem_quitacao) AND total_pago < total_agendado - 0.01
       ),
       volateis_proximo_parcela AS (
         SELECT DISTINCT ON ("despesaId")
@@ -273,14 +276,16 @@ export const disparosRepository = {
           l."despesaId",
           l.data as data_vencimento,
           l.valor as valor_agendado,
-          COALESCE(lp.total_pago_mes, 0)::float as valor_pago_mes
+          COALESCE(lp.total_pago_mes, 0)::float as valor_pago_mes,
+          COALESCE(lp.tem_quitacao, false) as tem_quitacao
         FROM lancamento l
         INNER JOIN despesas_ativas d ON l."despesaId" = d.id
         LEFT JOIN (
           SELECT 
             "despesaId",
             DATE_TRUNC('month', data) as mes,
-            SUM(valor) as total_pago_mes
+            SUM(valor) as total_pago_mes,
+            BOOL_OR(COALESCE("observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as tem_quitacao
           FROM lancamento
           WHERE tipo = 'pagamento'
           GROUP BY "despesaId", DATE_TRUNC('month', data)
@@ -294,7 +299,7 @@ export const disparosRepository = {
           data_vencimento as proximo_vencimento,
           (valor_agendado - valor_pago_mes)::float as valor_proxima_parcela
         FROM agendamentos_unicas
-        WHERE valor_pago_mes < valor_agendado - 0.01
+        WHERE (NOT tem_quitacao) AND valor_pago_mes < valor_agendado - 0.01
         ORDER BY "despesaId", data_vencimento ASC
       ),
       unicas_consolidado AS (
@@ -322,7 +327,8 @@ export const disparosRepository = {
             ELSE COALESCE(MIN(CASE WHEN l.tipo = 'agendamento' THEN l.data END), MIN(l.data))
           END) as data_referencia,
           COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as total_agendado,
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago
+          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as total_pago,
+          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as tem_quitacao
         FROM lancamento l
         INNER JOIN despesas_ativas d ON l."despesaId" = d.id
         WHERE d.tipo IN ('VARIAVEL', 'FIXA')
@@ -337,7 +343,7 @@ export const disparosRepository = {
           total_pago,
           GREATEST(0, total_agendado - total_pago) as valor_aberto
         FROM volateis_meses
-        WHERE total_agendado > 0 AND total_pago < total_agendado - 0.01
+        WHERE total_agendado > 0 AND (NOT tem_quitacao) AND total_pago < total_agendado - 0.01
       ),
       volateis_proximo_parcela AS (
         SELECT DISTINCT ON ("despesaId")
