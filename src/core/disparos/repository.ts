@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { formatInTimeZone } from "date-fns-tz";
 
 export interface DespesaPendenteRow {
   id: number;
@@ -23,8 +24,9 @@ export const disparosRepository = {
    * 3. Fixas puras: sem agendamento no mês atual e não quitadas.
    */
   async obterDespesasPendentesCTE(userId: number, dataAtual: Date): Promise<DespesaPendenteRow[]> {
+    const dataAtualStr = formatInTimeZone(dataAtual, 'America/Sao_Paulo', 'yyyy-MM-dd');
     // Para evitar problemas com timezone e garantir consistência,
-    // o truncamento e cálculo de data de hoje deve ser referenciado pela dataAtual passada por argumento.
+    // o truncamento e cálculo de data de hoje deve ser referenciado pela dataAtualStr local.
     const rows = await prisma.$queryRaw<any[]>`
       WITH despesas_ativas AS (
         SELECT id, nome, tipo, "valorTotal", "valorEstimado", "diaVencimento", "dataInicio", "userId"
@@ -151,8 +153,8 @@ export const disparosRepository = {
         FROM lancamento l
         WHERE l."userId" = ${userId} 
           AND l.tipo = 'pagamento'
-          AND l.data >= DATE_TRUNC('month', ${dataAtual}::timestamp)
-          AND l.data <= (DATE_TRUNC('month', ${dataAtual}::timestamp) + INTERVAL '1 month' - INTERVAL '1 millisecond')
+          AND l.data >= DATE_TRUNC('month', ${dataAtualStr}::date)
+          AND l.data <= (DATE_TRUNC('month', ${dataAtualStr}::date) + INTERVAL '1 month' - INTERVAL '1 millisecond')
         GROUP BY l."despesaId"
       ),
       fixas_sem_agendamentos AS (
@@ -192,10 +194,10 @@ export const disparosRepository = {
           (CASE WHEN fc.concluida THEN 0 ELSE GREATEST(0, fc."valorEstimado" - fc.pago_mes_atual) END)::float as valor_restante,
           (CASE WHEN fc.concluida THEN 0 ELSE fc."valorEstimado" END)::float as valor_proxima_parcela,
           (
-            DATE_TRUNC('month', ${dataAtual}::timestamp) + 
+            DATE_TRUNC('month', ${dataAtualStr}::date) + 
             (LEAST(
               fc."diaVencimento", 
-              EXTRACT(DAY FROM (DATE_TRUNC('month', ${dataAtual}::timestamp) + INTERVAL '1 month' - INTERVAL '1 day'))
+              EXTRACT(DAY FROM (DATE_TRUNC('month', ${dataAtualStr}::date) + INTERVAL '1 month' - INTERVAL '1 day'))
             )::integer - 1) * INTERVAL '1 day'
           )::timestamp as proximo_vencimento
         FROM fixas_calculadas fc
@@ -210,7 +212,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM unicas_consolidado
       
       UNION ALL
@@ -222,7 +224,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM volateis_consolidado
       
       UNION ALL
@@ -234,7 +236,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM fixas_consolidado;
     `;
 
@@ -254,6 +256,7 @@ export const disparosRepository = {
    * Retorna os dados com o respectivo userId para mapeamento em memória.
    */
   async obterDespesasPendentesGeralCTE(dataAtual: Date): Promise<DespesaPendenteGeralRow[]> {
+    const dataAtualStr = formatInTimeZone(dataAtual, 'America/Sao_Paulo', 'yyyy-MM-dd');
     const rows = await prisma.$queryRaw<any[]>`
       WITH despesas_ativas AS (
         SELECT d.id, d.nome, d.tipo, d."valorTotal", d."valorEstimado", d."diaVencimento", d."dataInicio", d."userId"
@@ -380,8 +383,8 @@ export const disparosRepository = {
         FROM lancamento l
         INNER JOIN despesas_ativas d ON l."despesaId" = d.id
         WHERE l.tipo = 'pagamento'
-          AND l.data >= DATE_TRUNC('month', ${dataAtual}::timestamp)
-          AND l.data <= (DATE_TRUNC('month', ${dataAtual}::timestamp) + INTERVAL '1 month' - INTERVAL '1 millisecond')
+          AND l.data >= DATE_TRUNC('month', ${dataAtualStr}::date)
+          AND l.data <= (DATE_TRUNC('month', ${dataAtualStr}::date) + INTERVAL '1 month' - INTERVAL '1 millisecond')
         GROUP BY l."despesaId"
       ),
       fixas_sem_agendamentos AS (
@@ -424,10 +427,10 @@ export const disparosRepository = {
           (CASE WHEN fc.concluida THEN 0 ELSE GREATEST(0, fc."valorEstimado" - fc.pago_mes_atual) END)::float as valor_restante,
           (CASE WHEN fc.concluida THEN 0 ELSE fc."valorEstimado" END)::float as valor_proxima_parcela,
           (
-            DATE_TRUNC('month', ${dataAtual}::timestamp) + 
+            DATE_TRUNC('month', ${dataAtualStr}::date) + 
             (LEAST(
               fc."diaVencimento", 
-              EXTRACT(DAY FROM (DATE_TRUNC('month', ${dataAtual}::timestamp) + INTERVAL '1 month' - INTERVAL '1 day'))
+              EXTRACT(DAY FROM (DATE_TRUNC('month', ${dataAtualStr}::date) + INTERVAL '1 month' - INTERVAL '1 day'))
             )::integer - 1) * INTERVAL '1 day'
           )::timestamp as proximo_vencimento
         FROM fixas_calculadas fc
@@ -443,7 +446,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM unicas_consolidado
       
       UNION ALL
@@ -456,7 +459,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM volateis_consolidado
       
       UNION ALL
@@ -469,7 +472,7 @@ export const disparosRepository = {
         valor_restante as "valorRestante",
         valor_proxima_parcela as "valorProximaParcela",
         proximo_vencimento as "proximoVencimento",
-        EXTRACT(DAY FROM (proximo_vencimento - DATE_TRUNC('day', ${dataAtual}::timestamp)))::integer as "diasParaVencer"
+        EXTRACT(DAY FROM (proximo_vencimento - ${dataAtualStr}::date))::integer as "diasParaVencer"
       FROM fixas_consolidado;
     `;
 
