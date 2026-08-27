@@ -113,12 +113,12 @@ export function useReceitaForm({
     } else if (dadosIniciais && dadosIniciais.origem === "receita") {
       reset({
         ...defaultValues,
-        itemId: dadosIniciais.origemId,
+        itemId: dadosIniciais.origemId ?? undefined,
         valor: dadosIniciais.valorPrevisto,
-        data: fnGetTodayISO(),
+        data: typeof dadosIniciais.data === "string" ? dadosIniciais.data : fnGetTodayISO(),
         tipo: "pagamento",
         observacao: "",
-        observacaoAutomatica: `Pagamento: ${dadosIniciais.nome}`,
+        observacaoAutomatica: `Pagamento: ${dadosIniciais.nome || ""}`,
       });
 
     }

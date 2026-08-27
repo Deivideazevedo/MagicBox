@@ -3,6 +3,7 @@ import { objetivosRepository as repositorio } from "./repository";
 import { CreateObjetivoDTO, UpdateObjetivoDTO } from "./objetivo.dto";
 import { lancamentoService } from "../lancamentos/service";
 import { Objetivo } from "./types";
+import { financeEngine } from "../financeiro";
 
 export const objetivoService = {
   async listarPorUsuario(userId: number): Promise<Objetivo[]> {
@@ -32,6 +33,7 @@ export const objetivoService = {
       });
     }
 
+    financeEngine.invalidarCache(dados.userId);
     return novoObjetivo;
   },
 
@@ -39,21 +41,30 @@ export const objetivoService = {
     const hasObjetivo = await repositorio.buscarPorId(id);
     if (!hasObjetivo) throw new NotFoundError("Objetivo não encontrado");
 
-    return await repositorio.atualizar(id, dados);
+    const resultado = await repositorio.atualizar(id, dados);
+    financeEngine.invalidarCache(hasObjetivo.userId);
+    return resultado;
   },
 
   async remover(id: number): Promise<boolean> {
     const hasObjetivo = await repositorio.buscarPorId(id);
     if (!hasObjetivo) throw new NotFoundError("Objetivo não encontrado");
 
-    return await repositorio.remover(id);
+    const resultado = await repositorio.remover(id);
+    financeEngine.invalidarCache(hasObjetivo.userId);
+    return resultado;
   },
 
   /**
    * Atualiza o valor acumulado do objetivo manualmente ou via gatilho
    */
   async atualizarValorAtual(id: number, novoValor: number): Promise<Objetivo> {
-    return await repositorio.atualizar(id, { valorAtual: novoValor });
+    const hasObjetivo = await repositorio.buscarPorId(id);
+    if (!hasObjetivo) throw new NotFoundError("Objetivo não encontrado");
+
+    const resultado = await repositorio.atualizar(id, { valorAtual: novoValor });
+    financeEngine.invalidarCache(hasObjetivo.userId);
+    return resultado;
   },
 
   async obterResumo(userId: number) {

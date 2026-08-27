@@ -1,10 +1,17 @@
 import { dashboardRepository } from "./repository";
 import { heatmapRepository } from "./heatmap.repository";
-import { dashboardFiltrosSchema } from "./dashboard.dto";
-import { PerformanceMensal } from "./types";
+import { dashboardFiltrosSchema, DashboardFiltros } from "./dashboard.dto";
+import { DashboardResponse, PerformanceMensal } from "./types";
+import { withFinanceiroCache } from "@/core/financeiro";
+
+interface SessionUser {
+  user?: {
+    id?: string | number;
+  };
+}
 
 export const dashboardService = {
-  async obterDashboard(query: any, session: any) {
+  async obterDashboard(query: Record<string, unknown>, session: SessionUser): Promise<DashboardResponse> {
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
@@ -14,10 +21,16 @@ export const dashboardService = {
       userId: Number(session.user.id),
     });
 
-    return await dashboardRepository.obterDashboard(filtrosValidados);
+    const fnCached = withFinanceiroCache(
+      async () => dashboardRepository.obterDashboard(filtrosValidados),
+      [`dashboard-${filtrosValidados.userId}-${filtrosValidados.dataInicio}-${filtrosValidados.dataFim}`],
+      filtrosValidados.userId!
+    );
+
+    return await fnCached();
   },
 
-  async obterHeatmap(query: any, session: any) {
+  async obterHeatmap(query: Record<string, unknown>, session: SessionUser) {
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
@@ -34,7 +47,7 @@ export const dashboardService = {
     );
   },
 
-  async obterPerformance(query: any, session: any): Promise<PerformanceMensal[]> {
+  async obterPerformance(query: Record<string, unknown>, session: SessionUser): Promise<PerformanceMensal[]> {
     if (!session?.user?.id) {
       throw new Error("Usuário não autenticado");
     }
@@ -42,6 +55,13 @@ export const dashboardService = {
     const ano = query.ano ? Number(query.ano) : new Date().getFullYear();
     const userId = Number(session.user.id);
 
-    return await dashboardRepository.obterPerformanceAnual(userId, ano);
+    const fnCached = withFinanceiroCache(
+      async () => dashboardRepository.obterPerformanceAnual(userId, ano),
+      [`dashboard-performance-${userId}-${ano}`],
+      userId
+    );
+
+    return await fnCached();
   }
 };
+

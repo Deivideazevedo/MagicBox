@@ -7,6 +7,7 @@ import {
   abrirDrawer as reduxAbrirDrawer,
   fecharDrawer as reduxFecharDrawer,
   LancamentoPagamentoDados,
+  LancamentoDadosDrawer,
 } from "@/store/apps/lancamentos/LancamentoSlice";
 import { LancamentoResposta } from "@/core/lancamentos/types";
 import { useModalUrl } from "./useModalUrl";
@@ -20,7 +21,7 @@ export function useLancamentoDrawer() {
   );
 
   const abrirDrawer = useCallback(
-    (modo: "novo" | "editar" | "pagar", dados?: LancamentoPagamentoDados | LancamentoResposta) => {
+    (modo: "novo" | "editar" | "pagar", dados?: LancamentoDadosDrawer) => {
       // 1. Salva os dados na Store do Redux
       dispatch(reduxAbrirDrawer({ modo, dados }));
       // 2. Sincroniza a URL abrindo o Drawer

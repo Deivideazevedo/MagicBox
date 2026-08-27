@@ -1,17 +1,20 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { LancamentoResposta } from "@/core/lancamentos/types";
+import { ResumoResposta } from "@/core/lancamentos/resumo/types";
 
 export interface LancamentoPagamentoDados {
-  origem: "despesa" | "receita" | "meta";
-  origemId: number;
-  valorPrevisto: number;
-  nome: string;
-  [key: string]: any; // Permite flexibilidade de campos adicionais da entidade de origem
+  origem: "despesa" | "receita" | "meta" | "ajuste";
+  origemId?: number;
+  valorPrevisto?: number;
+  nome?: string;
+  data?: string;
 }
+
+export type LancamentoDadosDrawer = LancamentoPagamentoDados | LancamentoResposta | ResumoResposta;
 
 interface LancamentoState {
   modo: "novo" | "editar" | "pagar";
-  dadosIniciais: LancamentoPagamentoDados | LancamentoResposta | null;
+  dadosIniciais: LancamentoDadosDrawer | null;
 }
 
 const initialState: LancamentoState = {
@@ -27,7 +30,7 @@ export const LancamentoSlice = createSlice({
       state,
       action: PayloadAction<{
         modo: "novo" | "editar" | "pagar";
-        dados?: LancamentoPagamentoDados | LancamentoResposta;
+        dados?: LancamentoDadosDrawer;
       }>
     ) => {
       state.modo = action.payload.modo;

@@ -3,6 +3,7 @@ import { relatoriosRepository } from "@/core/relatorios/repository";
 import { prisma } from "@/lib/prisma";
 import { DashboardFiltros } from "./dashboard.dto";
 import { DashboardResponse, PerformanceMensal, TransacaoRecente, UpcomingBillItem } from "./types";
+import { financeEngine } from "@/core/financeiro";
 
 export const dashboardRepository = {
   async obterDashboard({ userId, dataInicio, dataFim }: DashboardFiltros): Promise<DashboardResponse> {
@@ -11,17 +12,16 @@ export const dashboardRepository = {
     // 1. Obter cards com os totalizadores usando o módulo de Resumo
     const cards = await resumoRepository.obterCardResumo({ userId, dataInicio, dataFim });
 
-    // 1.1 Sincronizar com os cálculos Globais do Relatório para baterem 100%
-    const globais = await relatoriosRepository.obterContagensETotaisHistoricos(userId);
-    const totaisHist = globais.totaisHistoricos;
-    const saldoLivreGeral = totaisHist.receitasPagas - totaisHist.despesasPagas - totaisHist.metas;
-    const metasGeral = totaisHist.metas;
+    // 1.1 Sincronizar com os cálculos Globais do motor financeiro canônico
+    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
+    const saldoLivreGeral = totaisGerais.saldoLivreGeral;
+    const metasGeral = totaisGerais.metasPagasGeral;
 
-    // Substituímos os valores dos cards do Dashboard para espelharem exatamente a lógica da tela de relatórios:
-    cards.saldoLivre = saldoLivreGeral; // Saldo Disponível passa a ser o Geral, não apenas a sobra do período
-    cards.saldoBloqueado = metasGeral; // Saldo em Metas passa a ser o Acumulado Histórico, igual no relatório
-    cards.totalEntradas = cards.entradasPagas; // Passa a mostrar apenas o Valor REALIZADO
-    cards.totalSaidas = cards.saidasPagas; // Passa a mostrar apenas o Valor REALIZADO
+    // Substituímos os valores dos cards do Dashboard para espelharem exatamente a lógica canônica:
+    cards.saldoLivre = saldoLivreGeral; // Saldo Disponível passa a ser o Geral
+    cards.saldoBloqueado = metasGeral; // Saldo em Metas passa a ser o Acumulado Histórico
+    cards.totalEntradas = cards.entradasPagas; // Mostra o Valor REALIZADO
+    cards.totalSaidas = cards.saidasPagas; // Mostra o Valor REALIZADO
 
     // 2. Obter Transações Recentes (Últimos 10 lançamentos do período)
     const recentLancamentos = await prisma.lancamento.findMany({

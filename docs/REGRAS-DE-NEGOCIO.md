@@ -45,7 +45,7 @@ User (Usuário)
   │
   └── Meta (1:N)
         │
-        ├── ValorObjetivo: valorMeta
+        ├── ValorObjetivo: valorObjetivo
         ├── ValorAcumulado: soma de lançamentos (pagamentos)
         ├── Progresso: percentual calculado
         │
@@ -143,7 +143,7 @@ Resultado nas projeções:
   - Jan/2025: R$ 250,00 (projetado) - saldo: R$ 0,00 ← DÍVIDA QUITADA
   - Fev/2025: NÃO APARECE MAIS (saldo = 0)
 
-Regra: A dívida para de ser projetada quando (valorTotal - totalPago) <= 0
+Regra: Dívidas geram parcelas físicas no ato da criação e são amortizadas conforme os pagamentos.
 ```
 
 **Exemplo real de DESPESA VARIÁVEL:**
@@ -205,7 +205,7 @@ Um lançamento DEVE estar vinculado a APENAS UMA das seguintes entidades:
 Lançamento
   ├─ despesaId: número (OU)
   ├─ receitaId: número (OU)
-  └─ metaId: número (OU)
+  └─ objetivoId: número (OU)
       (nenhum dos três - despesa/receita/meta genérico)
 ```
 
@@ -244,8 +244,8 @@ Quando um lançamento é buscado, o sistema verifica se a despesa/receita/meta r
 WHERE (
   (despesaId IS NOT NULL AND despesa.deletedAt IS NULL) OR
   (receitaId IS NOT NULL AND receita.deletedAt IS NULL) OR
-  (metaId IS NOT NULL AND meta.deletedAt IS NULL) OR
-  (despesaId IS NULL AND receitaId IS NULL AND metaId IS NULL)
+  (objetivoId IS NOT NULL AND meta.deletedAt IS NULL) OR
+  (despesaId IS NULL AND receitaId IS NULL AND objetivoId IS NULL)
 )
 ```
 
@@ -255,7 +255,7 @@ WHERE (
 
 **Campos Importantes:**
 
-- **valorMeta**: Valor total que deseja economizar
+- **valorObjetivo**: Valor total que deseja economizar
 - **dataAlvo**: Prazo para atingir a meta
 - **status**: `'A'` (Ativo) ou `'I'` (Inativo)
 
@@ -265,7 +265,7 @@ Quando o usuário faz um lançamento vinculado a uma meta, esse valor é "bloque
 
 ```
 Meta: "Viagem para Disney"
-  - valorMeta: R$ 15.000,00
+  - valorObjetivo: R$ 15.000,00
   - dataAlvo: 2025-12-31
   - status: A
 
@@ -796,7 +796,7 @@ WITH metas_ativas AS (
   SELECT 
     COALESCE(SUM(l.valor), 0) as saldo_bloqueado 
   FROM lancamento l
-  INNER JOIN meta m ON l."metaId" = m.id
+  INNER JOIN meta m ON l."objetivoId" = m.id
   WHERE m."userId" = 1 
     AND m.status = 'A' 
     AND m."deletedAt" IS NULL
@@ -874,7 +874,7 @@ SELECT * FROM recorrencias_faltantes
 │  ├───────────────┤         ├───────────────┤         ├───────────────┤│
 │  │ id (PK)       │         │ id (PK)       │         │ id (PK)       ││
 │  │ nome          │         │ nome          │         │ nome          ││
-│  │ descricao     │         │ valorMeta      │         │ descricao     ││
+│  │ descricao     │         │ valorObjetivo      │         │ descricao     ││
 │  │ icone         │         │ dataAlvo       │         │ icone         ││
 │  │ cor           │         │ status         │         │ cor           ││
 │  │ userId (FK)   │         │ userId (FK)    │         │ userId (FK)   ││
@@ -919,7 +919,7 @@ SELECT * FROM recorrencias_faltantes
 │                         │ observacao      │                            │
 │                         │ despesaId (FK?) │                            │
 │                         │ receitaId (FK?) │                            │
-│                         │ metaId (FK?)    │                            │
+│                         │ objetivoId (FK?)    │                            │
 │                         │ userId (FK)     │                            │
 │                         │ categoriaId (FK)│                           │
 │                         │ createdAt       │                            │
@@ -1657,7 +1657,7 @@ interface Lancamento {
   categoriaId: number;           // Int, FK → Categoria.id
   despesaId: number | null;     // Int?, FK → Despesa.id (XOR)
   receitaId: number | null;      // Int?, FK → Receita.id (XOR)
-  metaId: number | null;         // Int?, FK → Meta.id (XOR)
+  objetivoId: number | null;         // Int?, FK → Meta.id (XOR)
   tipo: 'pagamento' | 'agendamento'; // Tipo da transação
   valor: Decimal;                // Valor da transação (R$)
   data: DateTime;                // Data da transação
@@ -1681,22 +1681,22 @@ Lancamento.meta: Meta | null          // N:1
 @@index([despesaId])
 @@index([receitaId])
 @@index([categoriaId])
-@@index([metaId])
+@@index([objetivoId])
 ```
 
 **Regras de Relacionamento (XOR - Ou Exclusivo):**
 
 ```
 ✅ Válido:
-  - despesaId = 5, receitaId = null, metaId = null
-  - despesaId = null, receitaId = 3, metaId = null
-  - despesaId = null, receitaId = null, metaId = 2
-  - despesaId = null, receitaId = null, metaId = null (lançamento genérico)
+  - despesaId = 5, receitaId = null, objetivoId = null
+  - despesaId = null, receitaId = 3, objetivoId = null
+  - despesaId = null, receitaId = null, objetivoId = 2
+  - despesaId = null, receitaId = null, objetivoId = null (lançamento genérico)
 
 ❌ Inválido:
   - despesaId = 5, receitaId = 3 (ambos preenchidos)
-  - despesaId = 5, metaId = 2 (ambos preenchidos)
-  - receitaId = 3, metaId = 2 (ambos preenchidos)
+  - despesaId = 5, objetivoId = 2 (ambos preenchidos)
+  - receitaId = 3, objetivoId = 2 (ambos preenchidos)
 ```
 
 **Regras de Tipo:**
@@ -1729,7 +1729,7 @@ interface Meta {
   id: number;                    // Int, PK, Autoincrement
   userId: number;                // Int, FK → User.id
   nome: string;                  // Nome da meta (ex: "Viagem para Disney")
-  valorMeta: Decimal;            // Valor objetivo (R$)
+  valorObjetivo: Decimal;            // Valor objetivo (R$)
   dataAlvo: DateTime;           // Prazo para atingir a meta
   status: 'A' | 'I';             // A=Ativo, I=Inativo
   icone: string | null;          // Ícone para exibição
@@ -1755,7 +1755,7 @@ Meta.lancamentos: Lancamento[]   // 1:N (aportes do usuário)
 
 ```sql
 saldoBloqueado = SUM(lancamento.valor) 
-                  WHERE metaId = Meta.id 
+                  WHERE objetivoId = Meta.id 
                   AND tipo = 'pagamento'
                   AND meta.status = 'A'
                   AND meta.deletedAt IS NULL
@@ -1763,7 +1763,7 @@ saldoBloqueado = SUM(lancamento.valor)
 
 **Regras de Validação:**
 - `nome`: Obrigatório, string, max 100 caracteres
-- `valorMeta`: Obrigatório, Decimal, > 0
+- `valorObjetivo`: Obrigatório, Decimal, > 0
 - `dataAlvo`: Obrigatório, DateTime, deve ser futura
 
 **Quando não aparece:**
@@ -1783,294 +1783,256 @@ enum TipoLancamento {
 
 **Uso:** Campo `tipo` na tabela `Lancamento`
 
----
+## 10. Módulo de Dívidas
 
-### 4.8 Enum: TipoDespesa
+O sistema de dívidas do MagicBox unifica o controle de passivos financeiros em três modalidades distintas: **Dívida Única**, **Dívida Volátil** e **Dívida Fixa**.
+
+### 10.1 Coexistência das Três Modalidades de Dívida
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TAXONOMIA DE DÍVIDAS                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                                DÍVIDAS
+                                   │
+         ┌─────────────────────────┼─────────────────────────┐
+         ▼                         ▼                         ▼
+┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│   DÍVIDA ÚNICA   │      │  DÍVIDA VOLÁTIL  │      │   DÍVIDA FIXA    │
+│  (tipo = UNICA)  │      │ (tipo = VOLATIL) │      │  (tipo = FIXA)   │
+├──────────────────┤      ├──────────────────┤      ├──────────────────┤
+│ Parcelamentos    │      │ Agrupamento de   │      │ Contas mensais   │
+│ com valorTotal   │      │ agendamentos de  │      │ do mês corrente  │
+│ e totalParcelas  │      │ variáveis        │      │ com status pago  │
+└──────────────────┘      └──────────────────┘      └──────────────────┘
+```
+
+### 10.2 Dívida Única (UNICA)
+
+**O que é:** Parcelamento formal de compra com prazo e valor total definidos.
+
+**Características:**
+- Armazenada na tabela `despesa` com `tipo = 'DIVIDA'`
+- Possui campos específicos: `valorTotal`, `totalParcelas`, `valorEstimado` (parcela base), `dataInicio`, `diaVencimento`
+- **Geração Física em Lote (`Bulk Insert`)**: Ao ser criada, gera imediatamente todos os registros físicos de `tipo = 'agendamento'` na tabela `lancamento` ("Parcela 01/12", "Parcela 02/12", etc.)
+- Suporta quitação antecipada via aportes e amortização direta por mês
+
+**Exemplo Real:**
+```
+Dívida: "TV LED 50 polegadas"
+  - valorTotal: R$ 3.000,00
+  - totalParcelas: 12
+  - valorEstimado: R$ 250,00 (3.000 / 12)
+  - diaVencimento: 15
+  - dataInicio: 2024-01-15
+  - status: A
+
+Agendamentos físicos criados no banco (Bulk Insert):
+  1. "TV LED 50 polegadas" - Parcela 01/12 - 15/01/2024 - R$ 250,00
+  2. "TV LED 50 polegadas" - Parcela 02/12 - 15/02/2024 - R$ 250,00
+  ...
+  12. "TV LED 50 polegadas" - Parcela 12/12 - 15/12/2024 - R$ 250,00
+```
+
+### 10.3 Dívida Volátil (VOLATIL)
+
+**O que é:** Agrupamento dinâmico de agendamentos futuros cadastrados em despesas variáveis ou comuns.
+
+**Características:**
+- Não cria despesa duplicada; é uma **visão agregada via CTE SQL** (`lancamentos_agrupados`)
+- Agrupa lançamentos com `tipo = 'agendamento'` vinculados a despesas não-DIVIDA
+- **Auto-Hide**: Só é visível enquanto houver parcelas com status `pendente`, `parcial` ou `atrasada`. Quando todas forem pagas, o card sai da listagem ativa
+
+### 10.4 Dívida Fixa (FIXA)
+
+**O que é:** Compromisso mensal recorrente avaliado na competência do mês atual.
+
+**Características:**
+- Despesas com `tipo = 'FIXA'` ativas que não possuem agendamentos manuais
+- Exibe o valor estimado da mensalidade, quanto já foi pago no mês atual e quanto ainda resta vencer
+- Suporta liquidação e estorno mensal via tag `[QUITAÇÃO]` no campo `observacaoAutomatica`
+
+### 10.5 Interfaces TypeScript Oficiais do Módulo de Dívidas
 
 ```typescript
-enum TipoDespesa {
-  FIXA = 'FIXA',                // Gasto mensal fixo
-  VARIAVEL = 'VARIAVEL',        // Gasto ocasional
-  DIVIDA = 'DIVIDA'             // Parcelamento
+export type StatusDivida = "A" | "I";
+export type StatusSituacaoParcela = 'pago' | 'parcial' | 'pendente' | 'atrasada';
+
+export interface SituacaoParcela {
+  numero: number;
+  label?: string;
+  dataVencimento: string;
+  valorAgendado: number;
+  valorPago: number;
+  status: StatusSituacaoParcela;
+  observacao?: string;
+}
+
+export interface DividaBase {
+  id: number;
+  nome: string;
+  icone?: string | null;
+  cor?: string | null;
+  status: StatusDivida;
+  tipo: "UNICA" | "VOLATIL" | "FIXA";
+  lancamentos?: Lancamento[];
+  proximoVencimento?: string | null;
+  diasParaVencer?: number | null;
+  categoriaNome?: string;
+  userId: number;
+  valorProximaParcela?: number | null;
+  atrasada?: boolean;
+}
+
+export interface DividaUnica extends DividaBase {
+  tipo: "UNICA";
+  valorTotal: number;
+  totalParcelas: number;
+  valorParcela: number;
+  dataInicio: string | Date;
+  diaVencimento: number;
+  categoriaId: number;
+  
+  // Metadados calculados
+  valorPago: number;
+  valorRestante: number;
+  parcelasPagas: number;
+  parcelasRestantes: number;
+  progresso: number; // 0 a 100%
+  concluida: boolean;
+  situacaoParcelas?: SituacaoParcela[];
+}
+
+export interface DividaVolatil extends DividaBase {
+  tipo: "VOLATIL";
+  despesaId: number;
+  
+  valorTotalAgendado: number;
+  valorPago: number;
+  valorRestante: number;
+  quantidadeParcelas: number;
+  atrasada: boolean;
+  situacaoParcelas?: SituacaoParcela[];
+}
+
+export interface DividaFixa extends DividaBase {
+  tipo: "FIXA";
+  valorEstimado: number;
+  diaVencimento: number;
+  
+  valorPago: number;
+  valorRestante: number;
+  concluida: boolean;
+  temAjusteQuitacao?: boolean;
+}
+
+export interface ResumoDividas {
+  totalDevidoGlobal: number;        // Saldo devedor total acumulado
+  quantidadeDevidoGlobal: number;   // Quantidade de dívidas com saldo em aberto
+  totalPagoMes: number;             // Total pago no mês corrente
+  totalAmortizadoGlobal: number;    // Total amortizado em todo o histórico
+  valorTotalAPagarMes: number;      // Total pendente com vencimento no mês corrente
+  quantidadeTotalAPagarMes: number; // Quantidade de parcelas a vencer no mês corrente
+  dividasAtrasadas: number;         // Quantidade de parcelas vencidas e não pagas
+  valorAtrasado: number;            // Montante total atrasado
+}
+
+export interface ListagemDividasResponse {
+  resumo: ResumoDividas;
+  dividas: (DividaUnica | DividaVolatil | DividaFixa)[];
 }
 ```
 
-**Uso:** Campo `tipo` na tabela `Despesa`
+### 10.6 Mecanismos de Amortização: Match Direto e Waterfall de Aporte
 
-**Comportamento nas projeções:**
+#### 1. Match Direto (Pagamento por Mês / Antecipado)
+- Permite pagar parcelas específicas fora de ordem cronológica (ex: pagar a parcela de Dezembro agora em Abril).
+- O pagamento lançado abate diretamente o agendamento daquela competência específica.
 
-| Tipo | Projetado? | Condição |
-|------|-----------|----------|
-| `FIXA` | ✅ Sim | status='A' E deletedAt IS NULL |
-| `VARIAVEL` | ❌ Não | Nunca é projetado |
-| `DIVIDA` | ✅ Sim | status='A' E deletedAt IS NULL E saldo>0 |
+#### 2. Waterfall de Aporte Centralizado (`processarAporte`)
+- O usuário realiza um aporte de valor livre (ex: R$ 500,00).
+- O algoritmo percorre as `situacaoParcelas` ordenadas, pulando as já quitadas (`pago`).
+- Para cada parcela pendente:
+  - Calcula `valorNecessario = valorAgendado - valorPago`.
+  - Abate o valor disponível e liquida a parcela gerando um lançamento de pagamento com a data de vencimento da parcela.
+- **Tratamento de Excedente Real**: Se todas as parcelas forem pagas e ainda sobrar saldo de aporte, o excedente é registrado no **mês subsequente à última parcela do cronograma** com a observação `"Aporte Excedente - Nome da Dívida"`.
+- **Auto-Conclusão**: Se `valorRestante <= 0` ou todas as parcelas forem pagas, a dívida é inativada automaticamente (`status = 'I'`) em transação atômica.
+
+#### 3. Quitação com Desconto (`[QUITAÇÃO]`)
+- Ao identificar a tag `[QUITAÇÃO]` no campo `observacaoAutomatica`, a pendência restante do mês/dívida é zerada e o status é marcado imediatamente como `pago`.
 
 ---
 
-### 4.9 Enum: TipoReceita
+## 11. Módulo de Objetivos (Metas e Reservas)
+
+### 11.1 Conceito e Tipologias
+
+Gerenciado na tabela `objetivo` (`src/core/objetivos/`), o módulo organiza o patrimônio poupado em duas tipologias:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                          OBJETIVOS                          │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+         ┌─────────────────────┴─────────────────────┐
+         ▼                                           ▼
+┌──────────────────┐                        ┌──────────────────┐
+│       META       │                        │     RESERVA      │
+│  (tipo = META)   │                        │ (tipo = RESERVA) │
+├──────────────────┤                        ├──────────────────┤
+│ Alvos com prazo  │                        │ Fundo contínuo   │
+│ e valor objetivo │                        │ de emergência/   │
+│ definidos        │                        │ oportunidade     │
+└──────────────────┘                        └──────────────────┘
+```
+
+### 11.2 Interfaces TypeScript de Objetivos
 
 ```typescript
-enum TipoReceita {
-  FIXA = 'FIXA',                // Renda mensal fixa
-  VARIAVEL = 'VARIAVEL'         // Renda ocasional
+export interface ObjetivoCalculado {
+  id: number;
+  nome: string;
+  tipo: 'META' | 'RESERVA';
+  valorObjetivo: number | null;
+  dataAlvo: Date | null;
+  status: string;
+  icone: string | null;
+  cor: string | null;
+  
+  // Métricas Calculadas Dinamicamente
+  valorAcumulado: number;       // Soma de aportes (lancamentos tipo='pagamento')
+  progresso: number | null;     // (valorAcumulado / valorObjetivo) * 100 (apenas META)
+  concluida: boolean;           // valorAcumulado >= valorObjetivo (apenas META)
+  previsaoDesteMes: number;     // Esforço mensal sugerido para atingir a meta no prazo
+  aportesDesteMes: number;      // Total aportado no mês corrente
+  difMeses: number;             // Quantidade de meses restantes até a dataAlvo
+  qtdAportes: number;           // Total de aportes realizados
+  ultimoAporte: Date | null;    // Data do último aporte
+}
+
+export interface ResumoObjetivosResponse {
+  totalObjetivado: number;      // Soma de todas as metas abertas
+  totalAcumulado: number;       // Total acumulado em metas e reservas
+  totalFaltante: number;        // Montante faltante para atingir os objetivos
+  objetivosConcluidos: number;  // Quantidade de metas concluídas
+  totalAtivas: number;          // Quantidade de objetivos com status = 'A'
+  objetivos: ObjetivoCalculado[];
 }
 ```
 
-**Uso:** Campo `tipo` na tabela `Receita`
+### 11.3 Bloqueio Patrimonial e Impacto no Saldo Livre
 
-**Comportamento nas projeções:**
-
-| Tipo | Projetado? | Condição |
-|------|-----------|----------|
-| `FIXA` | ✅ Sim | status='A' E deletedAt IS NULL |
-| `VARIAVEL` | ❌ Não | Nunca é projetado |
-
----
-
-### 4.10 Status (Campos Common)
-
-Várias entidades usam um campo `status` com os mesmos valores:
-
-```typescript
-type Status = 'A' | 'I';
-
-// A = Ativo (aparece em todas as operações)
-// I = Inativo (não aparece em nada)
-```
-
-**Entidades com campo `status`:**
-- User
-- Categoria
-- Despesa
-- Receita
-- Meta
-
-**Tabela de Referência:**
-
-| Status | Listagens | Projeções | Cálculos |
-|--------|-----------|-----------|----------|
-| `'A'` | ✅ Aparece | ✅ Incluído | ✅ Considerado |
-| `'I'` | ❌ Não aparece | ❌ Excluído | ❌ Ignorado |
-
----
-
-## 5. Tabela Resumo: Comportamento por Entidade
+- Todo aporte realizado em um objetivo ativo (`status = 'A'`) compõe o **Saldo Bloqueado**.
+- O **Saldo Livre** é calculado como: `Saldo Atual - Saldo Bloqueado`, garantindo que o dinheiro poupado não seja gasto acidentalmente.
 
 ```
-╔══════════════════╦═══════════╦════════════════════╦════════════════════╦═══════════════════╗
-║     ENTIDADE     ║ SOFT DEL  ║ PODE SER PROJETADO ║ TEM STATUS (A/I)  ║ TIPO DE DELETE    ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ User             ║ ✅        ║ ❌                 ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Categoria        ║ ✅        ║ ❌                 ║ ❌                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Despesa (FIXA)   ║ ✅        ║ ✅                 ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Despesa (VARIAV) ║ ✅        ║ ❌                 ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Despesa (DIVIDA) ║ ✅        ║ ✅ (enq. saldo>0)  ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Receita (FIXA)   ║ ✅        ║ ✅                 ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Receita (VARIAV) ║ ✅        ║ ❌                 ║ ✅                 ║ Soft Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Lancamento       ║ ❌        ║ N/A (é real)       ║ N/A               ║ Hard Delete      ║
-╠══════════════════╬═══════════╬════════════════════╬════════════════════╬═══════════════════╣
-║ Meta             ║ ✅        ║ ❌ (bloqueia saldo) ║ ✅                 ║ Soft Delete      ║
-╚══════════════════╩═══════════╩════════════════════╩════════════════════╩═══════════════════╝
-
-LEGENDA:
-═══════════════════════════════════════════════════════════════════════════════
-SOFT DELETE:
-  ✅ = Tem deletedAt (recuperável)
-  ❌ = Não tem (excluído permanentemente)
-
-PODE SER PROJETADO:
-  ✅ = Aparece automaticamente nas projeções do resumo
-  ❌ = Não é projetado (só aparece via lançamento manual)
-  ✅ (condição) = Projetado dependendo de alguma condição
-
-TEM STATUS (A/I):
-  ✅ = Tem campo status (ativa/inativa)
-  ❌ = Não tem campo status
-
-TIPO DE DELETE:
-  Soft Delete = deletedAt = NOW(), recuperável
-  Hard Delete = DELETE FROM, irreversível
-═══════════════════════════════════════════════════════════════════════════════
-```
-
----
-
-## 6. Glossário
-
-### Termos Técnicos
-
-| Termo | Significado |
-|-------|------------|
-| **Soft Delete** | Exclusão lógica usando `deletedAt` em vez de `DELETE`. Permite recuperação. |
-| **Hard Delete** | Exclusão física permanente. Não há volta. |
-| **Projeção** | Cálculo automático de valores esperados baseado em recorrências. |
-| **CTE** | Common Table Expression. Subquery nomeada no SQL (WITH ... AS). |
-| **XOR** | Ou Exclusivo. Apenas uma das opções pode ser verdadeira. |
-| **CROSS JOIN** | Produto cartesiano. Combina cada linha de uma tabela com todas da outra. |
-| **FULL OUTER JOIN** | Une duas tabelas, mantendo linhas de ambos os lados mesmo sem correspondência. |
-| **Generate Series** | Função PostgreSQL que gera uma série de valores/intervalos. |
-
-### Termos de Domínio
-
-| Termo | Significado |
-|-------|------------|
-| **Despesa Fixa** | Gasto recorrente mensal (aluguel, internet, etc) |
-| **Despesa Variável** | Gasto ocasional sem padrão definido (supermercado, lazer) |
-| **Dívida Única** | Parcelamento com valor total fixo e agendamentos automáticos |
-| **Dívida Volátil** | Agrupamento de agendamentos manuais para despesas não-DÍVIDA |
-| **Parcela** | Parte de um pagamento dividido (ex: 12x de R$ 250) |
-| **Amortização** | Redução progressiva do saldo devedor |
-| **Saldo Devedor** | Valor restante a pagar de uma dívida |
-| **Waterfall** | Algoritmo de cálculo de parcelas pagas/parciais |
-| **Aporte** | Depósito em uma meta de economia |
-| **Aporte em Dívida** | Quitação antecipada de parcelas de dívida |
-| **Valor Acumulado** | Soma de aportes em uma meta |
-| **Progresso** | Percentual de atingimento de uma meta |
-| **Meta Concluída** | Meta atingida (valorAcumulado >= valorMeta) |
-| **Lançamento** | Registro de uma transação (pagamento ou agendamento) |
-| **Agendamento** | Transação planejada para futuro |
-| **Saldo Bloqueado** | Dinheiro reservado em metas |
-| **Saldo Livre** | Dinheiro disponível para gastar |
-| **Mini Card** | Totalizador com max(pagas, previstas) |
-
----
-
-## 7. Exemplos Completos de Cenários
-
-### 7.1 Cenário 1: Usuário Iniciante
-
-```
-CONtexto:
-  Maria criou sua conta hoje (15/03/2024) e quer organizar suas finanças.
-
-AÇÕES:
-  1. Criou categorias:
-     - "Moradia" (casa/apartamento)
-     - "Transporte" (carro)
-     - "Alimentação" (comida)
-     - "Renda" (salário)
-
-  2. Criou despesas:
-     - "Aluguel": FIXA, R$ 1.200,00, dia 10, status: A
-     - "Internet": FIXA, R$ 100,00, dia 15, status: A
-     - "Carro": VARIAVEL, sem valor definido, status: A
-     - "TV": DIVIDA, R$ 3.000 total, R$ 250/mês, 12x, dia 5, status: A
-
-  3. Criou receitas:
-     - "Salário": FIXA, R$ 3.000,00, dia 5, status: A
-     - "Freelance": VARIAVEL, sem valor definido, status: A
-
-  4. Registrou pagamentos de Março:
-     - Dia 5: Recebi salário R$ 3.000 (pagamento)
-     - Dia 5: Paguei parcela TV R$ 250 (pagamento)
-     - Dia 10: Paguei aluguel R$ 1.200 (pagamento)
-     - Dia 15: Paguei internet R$ 100 (pagamento)
-     - Dia 20: Paguei supermercado R$ 350 (pagamento - despesa VARIAVEL)
-
-RESULTADO NO RESUMO MARÇO/2024:
-  Entradas:
-    - Salário: R$ 3.000,00 (Pago)
-    - Total: R$ 3.000,00
-
-  Saídas:
-    - Aluguel: R$ 1.200,00 (Pago)
-    - TV LED: R$ 250,00 (Pago)
-    - Internet: R$ 100,00 (Pago)
-    - Supermercado: R$ 350,00 (Pago)
-    - Total: R$ 1.900,00
-
-  Saldo Atual: R$ 1.100,00
-  Saldo Projetado (Abril): R$ 2.850,00
-    - Salário: R$ 3.000,00
-    - TV LED: R$ 250,00 (parcela 2/12)
-    - Internet: R$ 100,00
-    - Obs: Não projeta aluguel porque Maria criou em 15/mar
-          e o aluguel já passou (dia 10)
-
-  Saldo Livre: R$ 1.100,00 (sem metas)
-```
-
-### 7.2 Cenário 2: Dívida sendo Quitada
-
-```
-CONTEXTO:
-  João tem uma dívida de TV no valor total de R$ 3.000,00
-  Parcelas: 12x de R$ 250,00
-  Dia de vencimento: 5 de cada mês
-  Início: Janeiro/2024
-
-CRONOLOGIA DOS PAGAMENTOS:
-
-Janeiro/2024:
-  João paga: R$ 250,00
-  Saldo devedor: R$ 2.750,00
-  Projeção Fevereiro: ✅ Aparece (250 < 3000)
-
-Fevereiro/2024:
-  João paga: R$ 250,00
-  Saldo devedor: R$ 2.500,00
-  Projeção Março: ✅ Aparece
-
-Março/2024:
-  João paga: R$ 250,00
-  Saldo devedor: R$ 2.250,00
-  Projeção Abril: ✅ Aparece
-
-... (João continua pagando mensalmente)
-
-Dezembro/2024:
-  João paga: R$ 250,00
-  Saldo devedor: R$ 250,00
-  Projeção Janeiro/2025: ✅ Aparece
-
-Janeiro/2025:
-  João paga: R$ 250,00
-  Saldo devedor: R$ 0,00
-  Projeção Fevereiro/2025: ❌ NÃO APARECE (250 - 3000 = 0, não é > 0)
-
-RESUMO:
-  Total pago: R$ 3.000,00 (12 parcelas)
-  Duração real: 12 meses (Jan/2024 - Jan/2025)
-  Saldo final: R$ 0,00 (dívida quitada)
-
-  A partir de Fevereiro/2025, a TV LED não aparece mais
-  nas projeções porque (valorTotal - totalPago) = 0
-```
-
-### 7.3 Cenário 3: Soft Delete e Recuperação
-
-```
-CONTEXTO:
-  Carlos criou uma despesa "Aluguel" em Janeiro/2024
-  Em Março, ele quer "deletar" essa despesa para não ver mais.
-
-AÇÃO:
-  UPDATE despesa SET deletedAt = '2024-03-15' WHERE id = 1;
-
-RESULTADO IMEDIATO:
-  ❌ "Aluguel" não aparece mais nas listagens
-  ❌ "Aluguel" não aparece mais nas projeções de resumo
-  ❌ Saldo não considera mais essa despesa
-
-  Mas:
-  ✅ Os lançamentos vinculados ainda existem
-  ✅ Os lançamentos mostram "sem categoria"
-
-RECUPERAÇÃO (Carlos se arrepende):
-  UPDATE despesa SET deletedAt = NULL WHERE id = 1;
-
-RESULTADO PÓS-RECUPERAÇÃO:
-  ✅ "Aluguel" volta a aparecer nas listagens
-  ✅ "Aluguel" volta a aparecer nas projeções
-  ✅ Lançamentos voltam a mostrar a categoria corretamente
-  ✅ Tudo como era antes
+Exemplo Real:
+  - Saldo Atual em Conta: R$ 10.000,00
+  - Aportes na Meta "Carro": R$ 3.000,00
+  - Aportes na "Reserva de Emergência": R$ 4.000,00
+  - Saldo Bloqueado Total: R$ 7.000,00
+  - Saldo Livre para Gastos: R$ 3.000,00
 ```
 
 ---
@@ -2099,7 +2061,7 @@ USUÁRIO
   │   (FIXA/VARIAVEL)                  │
   │                                        │
   │                                        │
-  └─→ cria META ──────────────→ Meta { id, nome, valorMeta, userId }
+  └─→ cria META ──────────────→ Meta { id, nome, valorObjetivo, userId }
                                   │
                                   │
                                   │
@@ -2115,7 +2077,7 @@ USUÁRIO REGISTRA LANÇAMENTO
   ├─→ AGENDAMENTO ─────────────→ Lancamento { tipo: 'agendamento', valor, data }
   │                                   │
   │                                   │
-  └─→ APORTE META ───────────────→ Lancamento { tipo: 'pagamento', metaId }
+  └─→ APORTE META ───────────────→ Lancamento { tipo: 'pagamento', objetivoId }
                                       │
                                       │
 ═══════════════════════════════════════════════════════════════════════════════
@@ -2172,7 +2134,7 @@ SISTEMA JUNTA TUDO NO RESUMO
   │   PROJEÇÕES AUTOMÁTICAS (Recorrências)                      │
   │   ┌─────────────────────────────────────────────────────┐   │
   │   │  • Despesas FIXAS projetadas mensalmente            │   │
-  │   │  • DÍVIDAS projetadas enquanto saldo > 0            │   │
+  │   │  • Agendamentos de DÍVIDAS e Variáveis            │   │
   │   │  • Receitas FIXAS projetadas mensalmente            │   │
   │   └─────────────────────────────────────────────────────┘   │
   │                            │                                │
@@ -2207,11 +2169,11 @@ SISTEMA JUNTA TUDO NO RESUMO
 │  │  totalSaidas: max(saidasPagas, saidasPrevistas)                       │  │
 │  │  saidasPagas: soma de pagamentos com despesaId                        │  │
 │  │  saidasAgendadas: soma de agendamentos com despesaId                   │  │
-│  │  saidasProjetadas: soma de despesas FIXAS e DÍVIDAS projetadas        │  │
+│  │  saidasAgendadas: soma de agendamentos de despesas e parcelas de dívidas        │  │
 │  │                                                                       │  │
 │  │  saldoAtual: entradasPagas - saidasPagas                             │  │
 │  │  saldoProjetado: entradasPrevistas - saidasPrevistas                  │  │
-│  │  saldoBloqueado: soma de lançamentos com metaId (ativas)              │  │
+│  │  saldoBloqueado: soma de lançamentos com objetivoId (ativas)              │  │
 │  │  saldoLivre: saldoAtual - saldoBloqueado                              │  │
 │  │                                                                       │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
@@ -2301,7 +2263,7 @@ Este documento apresentou a **regra de negócio completa** do MagicBox, cobrindo
 
 ✅ **Soft Delete**: Categorias, Despesas, Receitas e Metas usam `deletedAt` para permitir recuperação
 
-✅ **Projeções**: Apenas Despesas FIXAS, DÍVIDAS (enquanto saldo>0) e Receitas FIXAS são projetadas automaticamente
+✅ **Projeções**: Apenas Despesas FIXAS, Dívidas (parcelas físicas em agendamento) e Receitas FIXAS são projetadas automaticamente
 
 ✅ **Status Calculation**: O sistema calcula automaticamente se cada item está pago, parcial, vencido ou a vencer
 
@@ -2622,15 +2584,15 @@ interface MetaCalculada {
   // Campos do banco
   id: number;
   nome: string;
-  valorMeta: number;           // Valor objetivo
+  valorObjetivo: number;           // Valor objetivo
   dataAlvo: Date;             // Prazo
   status: 'A' | 'I';
   
   // Campos CALCULADOS
   valorAcumulado: number;     // Soma de aportes (lancamentos tipo='pagamento')
-  progresso: number;          // (valorAcumulado / valorMeta) * 100
-  concluida: boolean;         // valorAcumulado >= valorMeta
-  totalFaltante: number;      // valorMeta - valorAcumulado
+  progresso: number;          // (valorAcumulado / valorObjetivo) * 100
+  concluida: boolean;         // valorAcumulado >= valorObjetivo
+  totalFaltante: number;      // valorObjetivo - valorAcumulado
 }
 ```
 
@@ -2642,7 +2604,7 @@ SELECT
   m.id,
   COALESCE(SUM(l.valor), 0) as valorAcumulado
 FROM meta m
-LEFT JOIN lancamento l ON l."metaId" = m.id AND l.tipo = 'pagamento'
+LEFT JOIN lancamento l ON l."objetivoId" = m.id AND l.tipo = 'pagamento'
 WHERE m."userId" = 1 AND m.status = 'A' AND m."deletedAt" IS NULL
 GROUP BY m.id;
 ```
@@ -2665,7 +2627,7 @@ async function criarMeta(dados) {
       data: new Date(),
       observacao: `Aporte inicial - ${novaMeta.nome}`,
       observacaoAutomatica: `Aporte inicial automático para a meta: ${novaMeta.nome}`,
-      metaId: novaMeta.id
+      objetivoId: novaMeta.id
     });
   }
   
@@ -2677,7 +2639,7 @@ async function criarMeta(dados) {
 
 ```typescript
 interface ResumoMetas {
-  totalObjetivado: number;    // Soma de todas as valorMeta
+  totalObjetivado: number;    // Soma de todas as valorObjetivo
   totalAcumulado: number;     // Soma de todos os valorAcumulado
   totalFaltante: number;      // totalObjetivado - totalAcumulado
   metasConcluidas: number;    // Quantidade de metas com concluida=true
@@ -2690,7 +2652,7 @@ interface ResumoMetas {
 
 ```
 Meta: "Viagem para Disney"
-  - valorMeta: R$ 15.000,00
+  - valorObjetivo: R$ 15.000,00
   - dataAlvo: 2025-12-31
   - status: A
 

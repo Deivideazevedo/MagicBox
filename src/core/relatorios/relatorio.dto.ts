@@ -44,6 +44,9 @@ export interface ResumoRelatorio {
   saldoLivreGeral: number;
   saldoBrutoLiquido: number;
   taxaEconomiaPeriodo: number;
+  ajustesEntrada?: number;
+  ajustesSaida?: number;
+  saldoAjustes?: number;
   totalAcumuladoMetas?: number;
   totalPlanejadoMetas?: number;
   totalAcumuladoMetasComAlvo?: number;

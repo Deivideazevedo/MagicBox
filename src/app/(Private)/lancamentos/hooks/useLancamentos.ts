@@ -25,7 +25,7 @@ const lancamentoSchema = z.object({
   userId: z.union([z.string(), z.number()]).optional(),
   despesaId: z.union([z.string(), z.number(), z.null()]).optional(),
   receitaId: z.union([z.string(), z.number(), z.null()]).optional(),
-  tipo: z.enum(["pagamento", "agendamento"]),
+  tipo: z.enum(["pagamento", "agendamento", "ajuste"]),
   valor: z.number(),
   data: z.string().min(1, "Data é obrigatória"),
   observacao: z.string().optional(),

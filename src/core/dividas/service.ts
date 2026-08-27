@@ -10,6 +10,7 @@ import {
 } from "./divida.dto";
 import { dividasRepository as repositorio } from "./repository";
 import { ListagemDividasResponse, DividaVolatil, DividaUnica, SituacaoParcela, Divida } from "./types";
+import { financeEngine } from "@/core/financeiro";
 
 export const dividasService = {
   async listarPorUsuario(userId: number): Promise<ListagemDividasResponse> {
@@ -237,6 +238,8 @@ export const dividasService = {
       data: lancamentosData,
     });
 
+    financeEngine.invalidarCache(userId);
+
     return novaDivida;
   },
 
@@ -434,13 +437,17 @@ export const dividasService = {
       await prisma.$transaction(operacoes);
     }
 
+    if (hasDivida.userId) {
+      financeEngine.invalidarCache(hasDivida.userId);
+    }
+
     return dividaAtualizada;
   },
 
   async remover(id: number) {
     const despesa = await prisma.despesa.findUnique({
       where: { id: Number(id) },
-      select: { id: true, deletedAt: true, tipo: true }
+      select: { id: true, deletedAt: true, tipo: true, userId: true }
     });
 
     if (!despesa || despesa.deletedAt) {
@@ -489,6 +496,10 @@ export const dividasService = {
       await prisma.lancamento.deleteMany({
         where: { id: { in: idsParaDeletar } },
       });
+    }
+
+    if (despesa.userId) {
+      financeEngine.invalidarCache(despesa.userId);
     }
 
     // 2. Soft-delete na despesa apenas se for do tipo DIVIDA (dívida única).
@@ -655,6 +666,8 @@ export const dividasService = {
       await prisma.$transaction(operacoes);
     }
 
+    financeEngine.invalidarCache(userId);
+
     return {
       mesesPagos,
       excedenteReal,
@@ -697,6 +710,8 @@ export const dividasService = {
         },
       });
 
+      financeEngine.invalidarCache(userId);
+
       return { success: true };
     }
 
@@ -712,6 +727,8 @@ export const dividasService = {
         observacaoAutomatica: novaObsAutomatica,
       },
     });
+
+    financeEngine.invalidarCache(userId);
 
     return { success: true };
   },
@@ -759,6 +776,8 @@ export const dividasService = {
         },
       });
     }
+
+    financeEngine.invalidarCache(userId);
 
     return { success: true, count: 1 };
   },

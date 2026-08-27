@@ -90,8 +90,20 @@ export const divergenciasRepository = {
     >`
       SELECT 
         TO_CHAR(l.data, 'YYYY-MM') as mes,
-        COALESCE(SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as receitas,
-        COALESCE(SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as despesas,
+        COALESCE(SUM(
+          CASE 
+            WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor 
+            WHEN l.tipo = 'ajuste' AND l.valor > 0 THEN l.valor
+            ELSE 0 
+          END
+        ), 0)::float as receitas,
+        COALESCE(SUM(
+          CASE 
+            WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor 
+            WHEN l.tipo = 'ajuste' AND l.valor < 0 THEN ABS(l.valor)
+            ELSE 0 
+          END
+        ), 0)::float as despesas,
         COALESCE(SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as metas
       FROM lancamento l
       LEFT JOIN despesa d ON l."despesaId" = d.id
@@ -101,7 +113,8 @@ export const divergenciasRepository = {
         AND (
           (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL AND d.status = 'A' ) OR
           (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL AND r.status = 'A' ) OR
-          (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+          (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' ) OR
+          (l.tipo = 'ajuste')
         )
       GROUP BY TO_CHAR(l.data, 'YYYY-MM')
       ORDER BY mes ASC

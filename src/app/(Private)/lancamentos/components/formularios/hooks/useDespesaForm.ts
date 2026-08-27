@@ -122,12 +122,12 @@ export function useDespesaForm({
     } else if (dadosIniciais && dadosIniciais.origem === "despesa") {
       reset({
         ...defaultValues,
-        itemId: dadosIniciais.origemId,
+        itemId: dadosIniciais.origemId ?? undefined,
         valor: dadosIniciais.valorPrevisto,
-        data: dadosIniciais.data || fnGetTodayISO(),
+        data: typeof dadosIniciais.data === "string" ? dadosIniciais.data : fnGetTodayISO(),
         tipo: "pagamento",
         observacao: "",
-        observacaoAutomatica: `Pagamento: ${dadosIniciais.nome}`,
+        observacaoAutomatica: `Pagamento: ${dadosIniciais.nome || ""}`,
       });
     }
   }, [lancamentoParaEditar, dadosIniciais, reset, defaultValues]);

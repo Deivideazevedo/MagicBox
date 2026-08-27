@@ -3,6 +3,7 @@ import { despesaRepository as repositorio } from "./repository";
 import { Despesa } from "./types";
 import { CreateDespesaDTO, UpdateDespesaDTO } from "./despesa.dto";
 import { lancamentoService } from "../lancamentos/service";
+import { financeEngine } from "../financeiro";
 
 export const despesaService = {
   async listarTodos(filtros: Partial<Despesa>) {
@@ -36,6 +37,7 @@ export const despesaService = {
       });
     }
 
+    financeEngine.invalidarCache(dados.userId);
     return novaDespesa;
   },
 
@@ -43,13 +45,17 @@ export const despesaService = {
     const despesa = await repositorio.buscarPorId(id);
     if (!despesa) throw new NotFoundError("Despesa não encontrada");
 
-    return await repositorio.remover(id);
+    const resultado = await repositorio.remover(id);
+    financeEngine.invalidarCache(despesa.userId);
+    return resultado;
   },
 
   async atualizar(id: number, dados: UpdateDespesaDTO) {
     const hasDespesa = await repositorio.buscarPorId(id);
     if (!hasDespesa) throw new NotFoundError("Despesa não encontrada");
 
-    return await repositorio.atualizar(id, dados);
+    const resultado = await repositorio.atualizar(id, dados);
+    financeEngine.invalidarCache(hasDespesa.userId);
+    return resultado;
   },
 };

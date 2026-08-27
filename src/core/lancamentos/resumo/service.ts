@@ -1,28 +1,39 @@
-// src/core/lancamentos/service.ts
+// src/core/lancamentos/resumo/service.ts
 import {
   ResumoFiltros,
   ResumoTodosFiltros,
   ResumoCardFiltros,
 } from "./resumo.dto";
 import { resumoRepository as repositorio } from "./repository";
+import { withFinanceiroCache } from "@/core/financeiro";
 
 /**
  * Serviço de resumo focado em listagens e totais para a UI (Dashboard/Extrato).
- * Métodos de diagnóstico para o Chat foram migrados para chat/diagnosis.service.ts
  */
 const resumoServico = {
   async listarTodos(filtros: ResumoTodosFiltros) {
-    // Sempre usa listarTodos com paginação
     return await repositorio.listarTodos(filtros);
   },
   async obterCardResumo(filtros: ResumoCardFiltros) {
-    // Sempre usa listarTodos com paginação
-    return await repositorio.obterCardResumo(filtros);
+    const userId = Number(filtros.userId);
+    const fnCache = withFinanceiroCache(
+      async () => repositorio.obterCardResumo(filtros),
+      [`resumo-card-${userId}-${filtros.dataInicio}-${filtros.dataFim}`],
+      userId
+    );
+    return await fnCache();
   },
   async obterResumo(filtros: ResumoFiltros) {
-    // Sempre usa listarTodos com paginação
-    return await repositorio.obterResumo(filtros);
+    const userId = Number(filtros.userId);
+    const fnCache = withFinanceiroCache(
+      async () => repositorio.obterResumo(filtros),
+      [`resumo-list-${userId}-${filtros.dataInicio}-${filtros.dataFim}`],
+      userId
+    );
+    return await fnCache();
   },
 };
 
 export { resumoServico };
+
+

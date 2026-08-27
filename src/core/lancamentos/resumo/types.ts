@@ -3,12 +3,13 @@ import { Despesa } from "../../despesas/types";
 import { Receita } from "../../receitas/types";
 import { ResumoFiltros } from "./resumo.dto";
 
-export type TipoLancamento = "pagamento" | "agendamento";
+export type TipoLancamento = "pagamento" | "agendamento" | "ajuste";
 
 export enum OrigemResumo {
   receita = "receita",
   despesa = "despesa",
   meta = "meta",
+  ajuste = "ajuste",
 }
 
 export interface TotaisHistoricos {
@@ -24,7 +25,7 @@ export interface TotaisHistoricos {
 export interface ResumoResposta {
   id: string;
   origemId: number;
-  origem: "receita" | "despesa" | "meta";
+  origem: "receita" | "despesa" | "meta" | "ajuste";
   nome: string;
   valorPrevisto: number;
   valorPago: number;

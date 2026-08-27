@@ -14,7 +14,7 @@ O sistema segue uma estrutura de propriedade:
     - **Despesa** (Pertence à Categoria e ao User)
     - **Receita** (Pertence à Categoria e ao User)
     - **Meta** (Pertence à Categoria e ao User)
-  - **Lancamento** (Vinculado a User e obrigatoriamente a: Despesa, Receita ou Meta)
+  - **Lancamento** (Vinculado a User; pode ser vinculado a Despesa/Receita/Meta ou ser um Ajuste de Conciliação Autônomo com sinal +/-)
 
 ---
 

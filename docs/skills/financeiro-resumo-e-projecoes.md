@@ -1,18 +1,19 @@
 # Skill: Resumo Financeiro e Projeções
 
-Esta skill descreve o funcionamento do motor de inteligência financeira do MagicBox, responsável por prever gastos e calcular a saúde do caixa.
+Esta skill descreve o funcionamento do motor canônico de inteligência financeira do MagicBox (`getCanonicBaseCTE`), responsável por consolidar lançamentos, prever gastos e calcular a saúde do caixa.
 
-## 1. O Motor de Projeção (SQL)
-O sistema gera "projeções virtuais" que coexistem com os lançamentos reais.
+## 1. O Motor de Projeção Canônico (SQL)
+O sistema gera "projeções virtuais" que coexistem com os lançamentos reais via `FULL OUTER JOIN`.
 
-### O que é projetado:
+### O que é projetado virtualmente (`CROSS JOIN`):
 - **Despesas FIXAS**: Projetadas mensalmente a partir da data de criação (`createdAt`).
-- **Dívidas (DIVIDA)**: Projetadas mensalmente enquanto houver saldo devedor (`valorTotal - totalPago > 0`).
 - **Receitas FIXAS**: Projetadas mensalmente se estiverem com `status = 'A'`.
+- *Nota*: Dívidas geram parcelas físicas (`tipo = 'agendamento'`) no ato do cadastro e variáveis entram pelo realizado.
 
 ### Regra de Coexistência (Projeção vs Reality):
-- Uma **projeção automática** é "calada" (removida do resumo) apenas se o usuário criar um **Agendamento Manual** (`tipo = 'agendamento'`) para aquele registro no mesmo mês/ano.
+- Uma **projeção automática** é "calada" (descartada do resumo) se houver um **Agendamento Real** (`tipo = 'agendamento'`) para aquele item no mesmo mês/ano.
 - Lançamentos do tipo **Pagamento** NÃO removem a projeção da lista; eles a atualizam para o status "Pago", permitindo comparar o Planejado vs Realizado.
+- Pagamentos com a tag `[QUITAÇÃO]` ajustam `valorPrevisto = valorPago` e encerram as pendências daquele mês.
 
 ## 2. Ajuste de Calendário (`ultimo_dia_mes`)
 Para evitar erros em meses curtos (ex: Fevereiro):
@@ -22,22 +23,24 @@ Para evitar erros em meses curtos (ex: Fevereiro):
 ## 3. Lógica de Mini Cards (Totais)
 Os totais exibidos no topo do Dashboard seguem a regra do "Teto Financeiro":
 - **Total Saídas**: `MAX(saidasPagas, saidasPrevistas)`.
-- Isso garante que se você gastar MAIS do que o planejado (excedente), o total reflita o gasto real. Se gastar MENOS, o total reflete o compromisso planejado até que o mês feche.
+- **Ajustes de Conciliação**: Entradas de ajuste (`valor > 0`) somam nas receitas; saídas de ajuste (`valor < 0`) somam nas despesas.
 
 ## 4. Cálculo de Status
-O status de cada item no resumo é determinado pela função `calcularStatus`:
-- **PAGO**: `valorPago >= valorPrevisto`.
+O status de cada item no resumo é determinado pelas regras canônicas:
+- **PAGO**: `temQuitacao` OU `valorPago >= valorPrevisto`.
 - **PARCIAL**: `valorPago > 0` mas `< valorPrevisto`.
 - **VENCIDO**: `valorPago = 0` e `dataVencimento < hoje`.
 - **VENCE HOJE / VENCE EM X DIAS**: Prazos futuros sem pagamento.
 
 ## 5. Tipos de Saldo
-- **Saldo Atual**: Dinheiro que entrou menos o que saiu (realizado).
-- **Saldo Projetado**: Previsão de quanto sobrará no fim do mês (considerando pendências).
-- **Saldo Bloqueado**: Soma de aportes em **Metas Ativas**.
-- **Saldo Livre**: `Saldo Atual - Saldo Bloqueado`. Representa o dinheiro que pode ser gasto sem comprometer os objetivos.
+- **Saldo Atual**: Dinheiro realizado que entrou menos o que saiu no período.
+- **Saldo Projetado**: Previsão de agendamentos pendentes (`entradasAgendadas - saidasAgendadas`).
+- **Saldo Bloqueado**: Soma de aportes realizados em **Metas Ativas**.
+- **Saldo Livre**: `Saldo Atual - Saldo Bloqueado`.
+- **Saldo Global Histórico**: Calculado via `financeEngine.calcularTotaisHistoricosGerais(userId)` cobrindo todo o histórico desde o primeiro lançamento.
 
 ---
 **Validação em Código:**
-- SQL verificado em `src/core/lancamentos/resumo/repository.ts`
-- Lógica de status verificada em `src/core/lancamentos/resumo/utils.ts`
+- CTE canônica central em `src/core/financeiro/canonicProjections.ts`
+- Agregações em `src/core/lancamentos/resumo/repository.ts` e `src/core/relatorios/service.ts`
+- Cache persistente via `withFinanceiroCache` com tag `financeiro-${userId}` em `src/core/financeiro/cache.ts`

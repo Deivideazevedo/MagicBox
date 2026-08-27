@@ -1,4 +1,4 @@
-import { DividaResumoItem, dividasRepository } from "@/core/despesas/dividasRepository";
+import { dividasService } from "@/core/dividas/service";
 import { resumoRepository as repositorio } from "@/core/lancamentos/resumo/repository";
 import { ResumoCardFiltros } from "@/core/lancamentos/resumo/resumo.dto";
 import { objetivosRepository } from "@/core/objetivos/repository";
@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
 import { chatDiagnosisRepository, DespesaComLancamentos } from "./diagnosis.repository";
 import { DiagnosticoFinanceiro, ItemPilarDespesa, ResultadoPilarDespesas, ItemDetalheMensal } from "../types";
+import { financeEngine } from "@/core/financeiro";
 
 export const chatDiagnosisService = {
   /**
@@ -20,19 +21,15 @@ export const chatDiagnosisService = {
   ): Promise<DiagnosticoFinanceiro> {
     const [historico, resumoObjetivos, resumoDividas, dadosPeriodo] =
       await Promise.all([
-        repositorio.obterTotaisHistoricos(userId),
+        financeEngine.calcularTotaisHistoricosGerais(userId),
         objetivosRepository.obterResumoObjetivos(userId),
-        dividasRepository.obterResumoDividas(userId, filtros),
+        dividasService.listarPorUsuario(userId),
         filtros ? repositorio.obterCardResumo(filtros) : null,
       ]);
 
-    // Saldo Bloqueado = somatório de aportes em OBJETIVOS ATIVOS
-    const saldoBloqueado = resumoObjetivos.objetivos
-      .filter((m: Objetivo) => m.status === "A")
-      .reduce((acc: number, m: Objetivo) => acc + (m.valorAcumulado ?? 0), 0);
-
-    // Saldo Atual (GLOBAL) = entradas pagas - saídas pagas
-    const saldoAtual = historico.receitasPagas - historico.despesasPagas;
+    const saldoBloqueado = historico.metasPagasGeral;
+    const saldoAtual = historico.saldoBrutoLiquido;
+    const saldoLivre = historico.saldoLivreGeral;
 
     const saldoAtualNoPeriodo =
       filtros && dadosPeriodo ? Number(dadosPeriodo.saldoAtual) : undefined;
@@ -54,7 +51,7 @@ export const chatDiagnosisService = {
         : undefined,
       contexto: filtros ? "MENSAL_PROJETADO" : "ABSOLUTO_HISTORICO",
       pilarReceitas: {
-        totalHistorico: historico.receitasPagas,
+        totalHistorico: historico.receitasPagasGeral,
         pagoNoPeriodo: dadosPeriodo ? Number(dadosPeriodo.entradasPagas) : 0,
         previstoNoPeriodo: dadosPeriodo
           ? Number(dadosPeriodo.entradasAgendadas)
@@ -62,10 +59,10 @@ export const chatDiagnosisService = {
         totalProjetadoNoPeriodo: dadosPeriodo
           ? Number(dadosPeriodo.totalEntradas)
           : 0,
-        mediaMensalHistorica: historico.receitasPagas / 12,
+        mediaMensalHistorica: historico.receitasPagasGeral / 12,
       },
       pilarDespesas: {
-        totalHistorico: historico.despesasPagas,
+        totalHistorico: historico.despesasPagasGeral,
         pagoNoPeriodo: dadosPeriodo ? Number(dadosPeriodo.saidasPagas) : 0,
         previstoNoPeriodo: dadosPeriodo
           ? Number(dadosPeriodo.saidasAgendadas)
@@ -73,16 +70,30 @@ export const chatDiagnosisService = {
         totalProjetadoNoPeriodo: dadosPeriodo
           ? Number(dadosPeriodo.totalSaidas)
           : 0,
-        totalDevedorDividas: resumoDividas.saldoDevedorTotal,
-        detalheDividas: resumoDividas.listagem.map((d: DividaResumoItem): ItemPilarDespesa => ({
-          ...d,
-          valorTotal: Number(d.valorTotal) || 0,
-          valorPago: (Number(d.valorTotal) || 0) - (Number(d.valorRestante) || 0),
-          saldoDevedor: Number(d.valorRestante) || 0,
-          status: d.isPaga ? "QUITADA" : "ATIVA",
-          dataLancamento: null,
-          isProjecao: false
-        })),
+        totalDevedorDividas: resumoDividas.resumo.totalDevidoGlobal,
+        detalheDividas: resumoDividas.dividas.map((d): ItemPilarDespesa => {
+          const valorTotal =
+            d.tipo === "UNICA"
+              ? d.valorTotal
+              : d.tipo === "VOLATIL"
+                ? d.valorTotalAgendado
+                : d.valorEstimado;
+          const isQuitada = d.status === "I" || d.valorRestante <= 0;
+
+          return {
+            id: d.id,
+            nome: d.nome,
+            tipo: d.tipo,
+            valorTotal: Number(valorTotal) || 0,
+            valorPago: Number(d.valorPago) || 0,
+            saldoDevedor: Number(d.valorRestante) || 0,
+            status: isQuitada ? "QUITADA" : "ATIVA",
+            diasParaVencer: d.diasParaVencer ?? null,
+            dataVencimento: d.proximoVencimento ?? null,
+            dataLancamento: null,
+            isProjecao: false,
+          };
+        }),
       },
       pilarMetas: {
         totalAcumulado: resumoObjetivos.totalAcumulado || 0,
@@ -105,7 +116,7 @@ export const chatDiagnosisService = {
       saldos: {
         saldoBloqueado,
         saldoAtual,
-        saldoLivre: saldoAtual - saldoBloqueado,
+        saldoLivre,
         saldoAtualNoPeriodo,
         saldoBloqueadoNoPeriodo,
         saldoLivreNoPeriodo,

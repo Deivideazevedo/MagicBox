@@ -7,6 +7,7 @@ import { ValidationError, NotFoundError } from "@/lib/errors";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { FindAllFilters } from "./lancamento.dto";
+import { financeEngine } from "../financeiro";
 
 /**
  * Gera a observação automática para lançamentos parcelados
@@ -128,6 +129,7 @@ export const lancamentoService = {
       lancamentosCriados.push(lancamento);
     }
 
+    financeEngine.invalidarCache(Number(dados.userId));
     return lancamentosCriados;
   },
 
@@ -162,6 +164,7 @@ export const lancamentoService = {
       }
     }
 
+    financeEngine.invalidarCache(lancamento.userId);
     return lancamentoAtualizado;
   },
 
@@ -179,7 +182,9 @@ export const lancamentoService = {
       }
     }
 
-    return await repositorio.remover(id);
+    const resultado = await repositorio.remover(id);
+    financeEngine.invalidarCache(lancamento.userId);
+    return resultado;
   },
 
   async removerEmMassa(ids: Array<string | number>, userId: string | number) {
@@ -195,6 +200,8 @@ export const lancamentoService = {
       throw new ValidationError("IDs inválidos para exclusão");
     }
 
-    return await repositorio.removerEmMassa(idsNumericos, Number(userId));
+    const resultado = await repositorio.removerEmMassa(idsNumericos, Number(userId));
+    financeEngine.invalidarCache(Number(userId));
+    return resultado;
   },
 };

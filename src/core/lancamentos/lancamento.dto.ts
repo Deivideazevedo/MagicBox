@@ -7,7 +7,7 @@ import { z } from "zod";
 // REGRAS DE NEGÓCIO implementadas aqui
 
 // Enums
-export const tipoLancamentoEnum = z.enum(["pagamento", "agendamento"]);
+export const tipoLancamentoEnum = z.enum(["pagamento", "agendamento", "ajuste"]);
 
 // Schema base do Lançamento
 export const lancamentoSchema = z.object({

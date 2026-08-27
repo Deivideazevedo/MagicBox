@@ -230,6 +230,19 @@ export default function CardsKPI({
             : "text.secondary",
       labelRightFooter: "Economia no Período",
       valueRightFooter: `${(resumo.taxaEconomiaPeriodo ?? 0).toFixed(1)}%`,
+      subItems:
+        resumo.saldoAjustes !== undefined && resumo.saldoAjustes !== 0
+          ? [
+              {
+                label: "Ajustes de Conciliação",
+                value: formatDiferenca(resumo.saldoAjustes),
+                dotColor:
+                  resumo.saldoAjustes >= 0
+                    ? theme.palette.success.main
+                    : theme.palette.error.main,
+              },
+            ]
+          : [],
       onClickDialog: (e: React.MouseEvent) => {
         e.stopPropagation();
         modalSaldoLivre.openModal();

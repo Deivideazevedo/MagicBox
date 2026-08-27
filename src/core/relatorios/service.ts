@@ -1,4 +1,5 @@
 import { relatoriosRepository } from "@/core/relatorios/repository";
+import { prisma } from "@/lib/prisma";
 import {
   RelatorioResponse,
   CategoriaRelatorio,
@@ -14,6 +15,7 @@ import {
 import { format, differenceInCalendarMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { fnFormatNaiveDate } from "@/utils/functions/fnFormatNaiveDate";
+import { financeEngine, withFinanceiroCache } from "@/core/financeiro";
 
 // Função auxiliar para contar meses distintos entre duas datas
 const contarMesesNoPeriodo = (inicio: Date, fim: Date) => {
@@ -29,7 +31,24 @@ export const relatoriosService = {
     dataInicio: Date,
     dataFim: Date,
   ): Promise<RelatorioResponse> {
-    const [dadosBrutos, dadosObjetivosCompletos, contagensETotais] =
+    const dInicioStr = dataInicio.toISOString().split("T")[0];
+    const dFimStr = dataFim.toISOString().split("T")[0];
+
+    const fnCached = withFinanceiroCache(
+      async () => this._gerarRelatorioInterno(userId, dataInicio, dataFim),
+      [`relatorio-${userId}-${dInicioStr}-${dFimStr}`],
+      userId
+    );
+
+    return await fnCached();
+  },
+
+  async _gerarRelatorioInterno(
+    userId: number,
+    dataInicio: Date,
+    dataFim: Date,
+  ): Promise<RelatorioResponse> {
+    const [dadosBrutos, dadosObjetivosCompletos, contagensETotais, ajustesPeriodoRaw] =
       await Promise.all([
         relatoriosRepository.obterDadosBrutosPorCategoria(
           userId,
@@ -42,6 +61,16 @@ export const relatoriosService = {
           dataFim,
         ),
         relatoriosRepository.obterContagensETotaisHistoricos(userId),
+        prisma.lancamento.findMany({
+          where: {
+            userId,
+            tipo: "ajuste",
+            data: {
+              gte: dataInicio,
+              lte: dataFim,
+            },
+          },
+        }),
       ]);
 
     const categoriasMap = new Map<number, CategoriaRelatorio>();
@@ -258,18 +287,28 @@ export const relatoriosService = {
       (m) => m.status === "A",
     ).length;
 
-    const totaisGerais = contagensETotais.totaisHistoricos;
-    const recPagasGeral = totaisGerais.receitasPagas;
-    const despPagasGeral = totaisGerais.despesasPagas;
-    const metasPagasGeral = totaisGerais.metas;
+    let totalAjustesEntradaPeriodo = 0;
+    let totalAjustesSaidaPeriodo = 0;
 
-    const saldoLivreGeral = recPagasGeral - despPagasGeral - metasPagasGeral;
-    const saldoBrutoLiquido = saldoLivreGeral + metasPagasGeral;
+    ajustesPeriodoRaw.forEach((aj) => {
+      const v = Number(aj.valor);
+      if (v > 0) {
+        totalAjustesEntradaPeriodo += v;
+      } else if (v < 0) {
+        totalAjustesSaidaPeriodo += Math.abs(v);
+      }
+    });
+
+    const saldoAjustesPeriodo = totalAjustesEntradaPeriodo - totalAjustesSaidaPeriodo;
+
+    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
+    const saldoLivreGeral = totaisGerais.saldoLivreGeral;
+    const saldoBrutoLiquido = totaisGerais.saldoBrutoLiquido;
 
     const receitasPagasPeriodo = totalReceitasPagas;
     const objetivosPagasPeriodo = totalObjetivosPagas;
     const saldoLivrePeriodo =
-      totalReceitasPagas + totalDespesasPagas - totalObjetivosPagas;
+      totalReceitasPagas + totalAjustesEntradaPeriodo - totalDespesasPagas - totalAjustesSaidaPeriodo - totalObjetivosPagas;
 
     const taxaEconomiaPeriodo =
       receitasPagasPeriodo > 0
@@ -313,13 +352,16 @@ export const relatoriosService = {
       despesasPagas: totalDespesasPagas,
       totalMetas: totalObjetivosPagas,
       metasPorcentagem: objetivosPorcentagem > 100 ? 100 : objetivosPorcentagem,
-      saldoLivre: totalReceitasPagas + totalDespesasPagas - totalObjetivosPagas,
+      saldoLivre: saldoLivrePeriodo,
       saldoProjetado: totalReceitasPlanejadas + totalDespesasPlanejadas,
       saldoBloqueado: somaRealizadoObjetivos,
       dividaPendente,
       saldoLivreGeral,
       saldoBrutoLiquido,
       taxaEconomiaPeriodo,
+      ajustesEntrada: totalAjustesEntradaPeriodo,
+      ajustesSaida: totalAjustesSaidaPeriodo,
+      saldoAjustes: saldoAjustesPeriodo,
       totalAcumuladoMetas: somaRealizadoTotalObjetivos,
       totalPlanejadoMetas: somaPlanejadoObjetivos,
       totalAcumuladoMetasComAlvo: somaRealizadoObjetivos,
@@ -381,19 +423,26 @@ export const relatoriosService = {
     userId: number,
     ano: number,
   ): Promise<EvolucaoAnualResponse> {
-    const dados = await relatoriosRepository.obterEvolucaoAnual(userId, ano);
+    const fnCached = withFinanceiroCache(
+      async () => {
+        const dados = await relatoriosRepository.obterEvolucaoAnual(userId, ano);
+        return dados.map((item) => {
+          const date = parseISO(item.dataReferencia);
+          return {
+            ...item,
+            mes: format(date, "MMM", { locale: ptBR }),
+            receitas: Math.abs(item.receitas),
+            despesas: Math.abs(item.despesas),
+            metas: Math.abs(item.metas),
+            receitasPrevistas: Math.abs(item.receitasPrevistas),
+            despesasPrevistas: Math.abs(item.despesasPrevistas),
+          };
+        });
+      },
+      [`relatorio-evolucao-${userId}-${ano}`],
+      userId
+    );
 
-    return dados.map((item) => {
-      const date = parseISO(item.dataReferencia);
-      return {
-        ...item,
-        mes: format(date, "MMM", { locale: ptBR }),
-        receitas: Math.abs(item.receitas),
-        despesas: Math.abs(item.despesas),
-        metas: Math.abs(item.metas),
-        receitasPrevistas: Math.abs(item.receitasPrevistas),
-        despesasPrevistas: Math.abs(item.despesasPrevistas),
-      };
-    });
+    return await fnCached();
   },
 };

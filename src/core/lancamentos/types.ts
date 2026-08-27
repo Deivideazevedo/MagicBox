@@ -2,7 +2,7 @@ import { Despesa } from "../despesas/types";
 import { Receita } from "../receitas/types";
 import { Objetivo } from "../objetivos/types";
 
-export type TipoLancamento = "pagamento" | "agendamento";
+export type TipoLancamento = "pagamento" | "agendamento" | "ajuste";
 
 export interface LancamentoResposta {
   id: number;

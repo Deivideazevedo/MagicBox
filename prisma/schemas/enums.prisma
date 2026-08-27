@@ -1,6 +1,7 @@
 enum TipoLancamento {
   pagamento
   agendamento
+  ajuste
 }
 
 enum TipoDespesa {

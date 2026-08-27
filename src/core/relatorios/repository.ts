@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import {
-  EvolucaoMensalItem,
-  RawCardResumo,
   RawDadosBrutosCategoria,
-  RawHistoricoAgrupado,
   RawRelatorioObjetivos,
+  RawCardResumo,
+  RawHistoricoAgrupado,
+  RawObjetivosProgresso,
+  EvolucaoMensalItem,
   RelatorioFiltros,
 } from "./relatorio.dto";
+import { getCanonicBaseCTE } from "@/core/financeiro";
 
 export const relatoriosRepository = {
   async obterDadosBrutosPorCategoria(
@@ -14,81 +16,29 @@ export const relatoriosRepository = {
     dataInicio: Date,
     dataFim: Date,
   ): Promise<RawDadosBrutosCategoria[]> {
+    const baseCTE = getCanonicBaseCTE(userId, dataInicio, dataFim);
     return await prisma.$queryRaw<RawDadosBrutosCategoria[]>`
-      WITH categorias_base AS (
-        SELECT id, nome, icone, cor FROM "categorias" WHERE "userId" = ${userId} AND "deletedAt" IS NULL
-      ),
-      detalhes AS (
-        -- Receitas
-        SELECT 
-          r.id, r.nome, 'RECEITA' as tipo,
-          r."categoriaId",
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as realizado,
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as planejado,
-          COALESCE(r."valorEstimado", 0)::float as estimado,
-          r.tipo::text as "origemTipo",
-          COALESCE((
-            SELECT AVG(mensal) FROM (
-              SELECT SUM(l2.valor) as mensal
-              FROM lancamento l2
-              WHERE l2."receitaId" = r.id AND l2.tipo = 'pagamento'
-              GROUP BY date_trunc('month', l2.data)
-              ORDER BY date_trunc('month', l2.data) DESC
-              LIMIT 12
-            ) s
-          ), 0)::float as media_mensal,
-          r."createdAt",
-          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as is_quitada
-        FROM receita r
-        LEFT JOIN lancamento l ON l."receitaId" = r.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE r."userId" = ${userId} AND r."deletedAt" IS NULL
-        GROUP BY r.id, r.nome, r."categoriaId", r."valorEstimado", r.tipo, r."createdAt"
-        
-        UNION ALL
-        
-        -- Despesas
-        SELECT 
-          d.id, d.nome, 'DESPESA' as tipo,
-          d."categoriaId",
-          COALESCE(SUM(CASE WHEN l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as realizado,
-          COALESCE(SUM(CASE WHEN l.tipo = 'agendamento' THEN l.valor ELSE 0 END), 0)::float as planejado,
-          COALESCE(d."valorEstimado", 0)::float as estimado,
-          d.tipo::text as "origemTipo",
-          COALESCE((
-            SELECT AVG(mensal) FROM (
-              SELECT SUM(l2.valor) as mensal
-              FROM lancamento l2
-              WHERE l2."despesaId" = d.id AND l2.tipo = 'pagamento'
-              GROUP BY date_trunc('month', l2.data)
-              ORDER BY date_trunc('month', l2.data) DESC
-              LIMIT 12
-            ) s
-          ), 0)::float as media_mensal,
-          d."createdAt",
-          BOOL_OR(COALESCE(l."observacaoAutomatica" LIKE '%[QUITAÇÃO]%', false)) as is_quitada
-        FROM despesa d
-        LEFT JOIN lancamento l ON l."despesaId" = d.id AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-        WHERE d."userId" = ${userId} AND d."deletedAt" IS NULL
-        GROUP BY d.id, d.nome, d."categoriaId", d."valorEstimado", d.tipo, d."createdAt"
-      )
+      ${baseCTE}
       SELECT 
-        c.id as "categoriaId", 
-        c.nome as "categoriaNome", 
-        c.icone as "categoriaIcone", 
-        c.cor as "categoriaCor", 
-        d.tipo as "categoriaTipo",
-        d.id as "itemId", 
-        d.nome as "itemName", d.tipo as "itemTipo", 
-        d.realizado as "valorRealizado", 
-        d.planejado as "valorAgendado",
-        d.estimado as "valorPlanejado",
-        d."origemTipo",
-        d.media_mensal as "mediaMensal",
-        d."createdAt" as "itemCreatedAt",
-        d.is_quitada
-      FROM categorias_base c
-      INNER JOIN detalhes d ON d."categoriaId" = c.id
-      ORDER BY c.nome, d.nome;
+        u."categoriaId", 
+        COALESCE(u."categoriaNome", 'Sem Categoria') as "categoriaNome", 
+        u."categoriaIcone", 
+        u."categoriaCor", 
+        UPPER(u."origem") as "categoriaTipo",
+        u."origemId" as "itemId", 
+        u.nome as "itemName", 
+        UPPER(u."origem") as "itemTipo", 
+        u."valorPago" as "valorRealizado", 
+        u."valorPrevisto" as "valorAgendado",
+        u."valorPrevisto" as "valorPlanejado",
+        'FIXA' as "origemTipo",
+        0 as "mediaMensal",
+        u."dataReferencia" as "itemCreatedAt",
+        (u."observacaoQuitacao" LIKE '%[QUITAÇÃO]%') as is_quitada
+      FROM uniao_canonica u
+      WHERE u."origem" IN ('despesa', 'receita')
+        AND u."categoriaId" IS NOT NULL
+      ORDER BY u."categoriaNome", u.nome;
     `;
   },
 
@@ -132,52 +82,6 @@ export const relatoriosRepository = {
     `;
 
     return result[0];
-  },
-
-  async obterCardResumo({
-    userId,
-    dataInicio,
-    dataFim,
-  }: RelatorioFiltros): Promise<RawCardResumo[]> {
-    return await prisma.$queryRaw`
-      WITH meses_do_periodo AS (
-        SELECT mes_referencia::date
-        FROM generate_series(${dataInicio}::date, ${dataFim}::date, '1 month'::interval) mes_referencia
-      ),
-      dados_resumo AS (
-        SELECT
-          m.mes_referencia,
-          COALESCE((
-            SELECT SUM(valor) FROM lancamento 
-            WHERE "userId" = ${userId} 
-            AND date_trunc('month', data AT TIME ZONE 'UTC') = m.mes_referencia 
-            AND tipo = 'pagamento' 
-            AND "receitaId" IS NOT NULL
-          ), 0)::float as receitas_reais,
-          COALESCE((
-            SELECT SUM(valor) FROM lancamento 
-            WHERE "userId" = ${userId} 
-            AND date_trunc('month', data AT TIME ZONE 'UTC') = m.mes_referencia 
-            AND tipo = 'pagamento' 
-            AND "despesaId" IS NOT NULL
-          ), 0)::float as despesas_reais,
-          COALESCE((
-            SELECT SUM("valorEstimado") FROM (
-              SELECT "valorEstimado", "createdAt", tipo FROM despesa WHERE "userId" = ${userId} AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
-              UNION ALL
-              SELECT "valorEstimado", "createdAt", tipo FROM receita WHERE "userId" = ${userId} AND status = 'A' AND tipo = 'FIXA' AND "deletedAt" IS NULL
-            ) d
-            WHERE date_trunc('month', d."createdAt" AT TIME ZONE 'UTC') <= m.mes_referencia
-            AND NOT EXISTS (
-              SELECT 1 FROM lancamento l 
-              WHERE (l."despesaId" IS NOT NULL OR l."receitaId" IS NOT NULL)
-              AND date_trunc('month', l.data AT TIME ZONE 'UTC') = m.mes_referencia
-            )
-          ), 0)::float as projecoes
-        FROM meses_do_periodo m
-      )
-      SELECT * FROM dados_resumo ORDER BY mes_referencia ASC;
-    `;
   },
 
   async obterHistoricoAgrupado(
@@ -316,75 +220,21 @@ export const relatoriosRepository = {
   ): Promise<EvolucaoMensalItem[]> {
     const dataInicio = `${ano}-01-01`;
     const dataFim = `${ano}-12-31`;
+    const baseCTE = getCanonicBaseCTE(userId, dataInicio, dataFim);
 
     return await prisma.$queryRaw<EvolucaoMensalItem[]>`
-      WITH meses AS (
-        SELECT date_trunc('month', d)::date as mes_ref
-        FROM generate_series(${dataInicio}::date, ${dataFim}::date, '1 month'::interval) d
-      ),
-      realizados AS (
-        SELECT
-          date_trunc('month', l.data AT TIME ZONE 'UTC')::date as mes_ref,
-          COALESCE(SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END), 0)::float as receitas,
-          COALESCE(SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN ABS(l.valor) ELSE 0 END), 0)::float as despesas,
-          COALESCE(SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN ABS(l.valor) ELSE 0 END), 0)::float as metas
-        FROM lancamento l
-        WHERE l."userId" = ${userId}
-          AND l.data >= ${dataInicio}::date AND l.data <= ${dataFim}::date
-          AND l.tipo = 'pagamento'
-        GROUP BY 1
-      ),
-      projecoes_receita AS (
-        SELECT
-          m.mes_ref,
-          COALESCE(SUM(r."valorEstimado"), 0)::float as previsto
-        FROM meses m
-        CROSS JOIN receita r
-        WHERE r."userId" = ${userId}
-          AND r.status = 'A'
-          AND r.tipo = 'FIXA'
-          AND r."deletedAt" IS NULL
-          AND m.mes_ref >= date_trunc('month', r."createdAt" AT TIME ZONE 'UTC')
-          AND NOT EXISTS (
-            SELECT 1 FROM lancamento la
-            WHERE la."receitaId" = r.id
-              AND la.tipo = 'agendamento'
-              AND date_trunc('month', la.data AT TIME ZONE 'UTC') = m.mes_ref
-          )
-        GROUP BY 1
-      ),
-      projecoes_despesa AS (
-        SELECT
-          m.mes_ref,
-          COALESCE(SUM(d."valorEstimado"), 0)::float as previsto
-        FROM meses m
-        CROSS JOIN despesa d
-        WHERE d."userId" = ${userId}
-          AND d.status = 'A'
-          AND d.tipo = 'FIXA'
-          AND d."deletedAt" IS NULL
-          AND m.mes_ref >= date_trunc('month', d."createdAt" AT TIME ZONE 'UTC')
-          AND NOT EXISTS (
-            SELECT 1 FROM lancamento la
-            WHERE la."despesaId" = d.id
-              AND la.tipo = 'agendamento'
-              AND date_trunc('month', la.data AT TIME ZONE 'UTC') = m.mes_ref
-          )
-        GROUP BY 1
-      )
+      ${baseCTE}
       SELECT
-        to_char(m.mes_ref, 'Mon') as "mes",
-        to_char(m.mes_ref, 'YYYY-MM-DD') as "dataReferencia",
-        COALESCE(r.receitas, 0)::float as "receitas",
-        COALESCE(r.despesas, 0)::float as "despesas",
-        COALESCE(r.metas, 0)::float as "metas",
-        COALESCE(pr.previsto, 0)::float as "receitasPrevistas",
-        COALESCE(pd.previsto, 0)::float as "despesasPrevistas"
-      FROM meses m
-      LEFT JOIN realizados r ON r.mes_ref = m.mes_ref
-      LEFT JOIN projecoes_receita pr ON pr.mes_ref = m.mes_ref
-      LEFT JOIN projecoes_despesa pd ON pd.mes_ref = m.mes_ref
-      ORDER BY m.mes_ref ASC;
+        to_char(date_trunc('month', u."dataReferencia"), 'Mon') as "mes",
+        to_char(date_trunc('month', u."dataReferencia"), 'YYYY-MM-DD') as "dataReferencia",
+        COALESCE(SUM(CASE WHEN u."origem" = 'receita' THEN u."valorPago" ELSE 0 END), 0)::float as "receitas",
+        COALESCE(SUM(CASE WHEN u."origem" = 'despesa' THEN u."valorPago" ELSE 0 END), 0)::float as "despesas",
+        COALESCE(SUM(CASE WHEN u."origem" = 'meta' THEN u."valorPago" ELSE 0 END), 0)::float as "metas",
+        COALESCE(SUM(CASE WHEN u."origem" = 'receita' THEN u."valorPrevisto" ELSE 0 END), 0)::float as "receitasPrevistas",
+        COALESCE(SUM(CASE WHEN u."origem" = 'despesa' THEN u."valorPrevisto" ELSE 0 END), 0)::float as "despesasPrevistas"
+      FROM uniao_canonica u
+      GROUP BY date_trunc('month', u."dataReferencia")
+      ORDER BY date_trunc('month', u."dataReferencia") ASC;
     `;
   },
 
@@ -400,6 +250,8 @@ export const relatoriosRepository = {
         despesasPagas: number;
         despesasPrevistas: number;
         metasPagas: number;
+        ajustesEntrada: number;
+        ajustesSaida: number;
       }>
     >`
       WITH contagens_receitas AS (
@@ -422,7 +274,9 @@ export const relatoriosRepository = {
           SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as rec_prev,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
-          SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga
+          SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga,
+          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'ajuste' THEN l.valor ELSE 0 END) as ajustes_entrada,
+          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'ajuste' THEN l.valor ELSE 0 END) as ajustes_saida
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
@@ -443,7 +297,9 @@ export const relatoriosRepository = {
         COALESCE(t.rec_prev, 0)::float as "receitasPrevistas",
         COALESCE(t.desp_paga, 0)::float as "despesasPagas",
         COALESCE(t.desp_prev, 0)::float as "despesasPrevistas",
-        COALESCE(t.meta_paga, 0)::float as "metasPagas"
+        COALESCE(t.meta_paga, 0)::float as "metasPagas",
+        COALESCE(t.ajustes_entrada, 0)::float as "ajustesEntrada",
+        COALESCE(t.ajustes_saida, 0)::float as "ajustesSaida"
       FROM contagens_receitas c1, contagens_despesas c2, totais_base t;
     `;
 
@@ -457,6 +313,8 @@ export const relatoriosRepository = {
       despesasPagas: 0,
       despesasPrevistas: 0,
       metasPagas: 0,
+      ajustesEntrada: 0,
+      ajustesSaida: 0,
     };
 
     return {
@@ -472,6 +330,9 @@ export const relatoriosRepository = {
         despesasPagas: Number(row.despesasPagas),
         despesasPrevistas: Number(row.despesasPrevistas),
         metas: Number(row.metasPagas),
+        ajustesEntrada: Number(row.ajustesEntrada || 0),
+        ajustesSaida: Number(row.ajustesSaida || 0),
+        saldoAjustes: Number(row.ajustesEntrada || 0) - Number(row.ajustesSaida || 0),
       },
     };
   },

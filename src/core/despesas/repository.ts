@@ -13,7 +13,6 @@ export const despesaRepository = {
       where: {
         ...filtros,
         deletedAt: filtros.deletedAt !== undefined ? filtros.deletedAt : null,
-        nome: filtros.nome ? filtros.nome : { not: { contains: "(Auto)" } },
       },
       orderBy: { nome: "asc" },
       include: { categoria: true },
@@ -35,7 +34,6 @@ export const despesaRepository = {
       where: {
         userId,
         deletedAt: null,
-        nome: { not: { contains: "(Auto)" } },
       },
       orderBy: { nome: "asc" },
       include: { categoria: true },

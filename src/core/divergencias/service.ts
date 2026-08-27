@@ -4,6 +4,7 @@ import { divergenciasRepository } from "./repository";
 import { DiagnosticoFinanceiro, ResumoAuditoria, LancamentoAtrasado, HistoricoDiscrepancia } from "./divergencia.dto";
 import { zonedTimeToUtc, utcToZonedTime } from "date-fns-tz";
 import { TIME_ZONE } from "@/constants/globals";
+import { financeEngine, withFinanceiroCache } from "@/core/financeiro";
 
 function formatarMesAno(mesAnoStr: string): string {
   const [ano, mes] = mesAnoStr.split("-");
@@ -17,17 +18,27 @@ function formatarMesAno(mesAnoStr: string): string {
 
 export const divergenciasService = {
   /**
-   * Executa a auditoria completa de anomalias e conciliação bancária
+   * Executa a auditoria completa de anomalias e conciliação bancária (Cacheada sob demanda)
    */
   async obterCentralDivergencias(userId: number, saldoRealBancario?: number): Promise<ResumoAuditoria> {
-        // 1. Totais históricos gerais
-    const totaisGerais = await relatoriosRepository.obterContagensETotaisHistoricos(userId);
-    const recPagasGeral = totaisGerais.totaisHistoricos.receitasPagas ?? 0;
-    const despPagasGeral = totaisGerais.totaisHistoricos.despesasPagas ?? 0;
-    const metasPagasGeral = totaisGerais.totaisHistoricos.metas ?? 0;
+    const fnCached = withFinanceiroCache(
+      async () => this._obterCentralDivergenciasInterno(userId, saldoRealBancario),
+      [`divergencias-${userId}-${saldoRealBancario || "auto"}`],
+      userId
+    );
 
-    const saldoLivreGeral = recPagasGeral - despPagasGeral - metasPagasGeral;
-    const saldoBrutoLiquido = saldoLivreGeral + metasPagasGeral;
+    return await fnCached();
+  },
+
+  async _obterCentralDivergenciasInterno(userId: number, saldoRealBancario?: number): Promise<ResumoAuditoria> {
+    // 1. Totais históricos gerais consolidados via motor financeiro
+    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
+    const recPagasGeral = totaisGerais.receitasPagasGeral;
+    const despPagasGeral = totaisGerais.despesasPagasGeral;
+    const metasPagasGeral = totaisGerais.metasPagasGeral;
+
+    const saldoLivreGeral = totaisGerais.saldoLivreGeral;
+    const saldoBrutoLiquido = totaisGerais.saldoBrutoLiquido;
     const saldoDigital = saldoBrutoLiquido;
 
     // Calcular início do dia de hoje no fuso horário configurado e converter para UTC para comparação consistente de atrasados
@@ -278,7 +289,13 @@ export const divergenciasService = {
 
     // Buscar último lançamento de ajuste
     const ultimoAjusteRaw = await prisma.lancamento.findFirst({
-      where: { userId, observacaoAutomatica: "Ajuste de Conciliação Bancária" },
+      where: {
+        userId,
+        OR: [
+          { tipo: "ajuste" },
+          { observacaoAutomatica: "Ajuste de Conciliação Bancária" },
+        ],
+      },
       orderBy: { data: "desc" },
     });
 
@@ -291,7 +308,13 @@ export const divergenciasService = {
 
     // Buscar histórico dos últimos 10 ajustes
     const historicoAjustesRaw = await prisma.lancamento.findMany({
-      where: { userId, observacaoAutomatica: "Ajuste de Conciliação Bancária" },
+      where: {
+        userId,
+        OR: [
+          { tipo: "ajuste" },
+          { observacaoAutomatica: "Ajuste de Conciliação Bancária" },
+        ],
+      },
       orderBy: { data: "desc" },
       take: 10,
     });
@@ -300,7 +323,7 @@ export const divergenciasService = {
       id: item.id,
       data: item.data.toISOString(),
       valor: Number(item.valor),
-      tipo: item.tipo as "RECEITA" | "DESPESA",
+      tipo: (Number(item.valor) >= 0 ? "RECEITA" : "DESPESA") as "RECEITA" | "DESPESA",
       observacao: item.observacao,
     }));
 
@@ -319,97 +342,35 @@ export const divergenciasService = {
   },
 
   /**
-   * Cria uma transação de despesa ou receita de ajuste automático para conciliar o saldo livre geral com o saldo real informado
+   * Cria uma transação de ajuste autônomo de conciliação com sinal (+/-) para alinhar o saldo livre geral com o saldo real informado
    */
   async ajustarSaldoReal(userId: number, saldoRealBancario: number) {
-    // 1. Obter saldos atuais
-    const totaisGerais = await relatoriosRepository.obterContagensETotaisHistoricos(userId);
-    const recPagasGeral = totaisGerais.totaisHistoricos.receitasPagas ?? 0;
-    const despPagasGeral = totaisGerais.totaisHistoricos.despesasPagas ?? 0;
-    const metasPagasGeral = totaisGerais.totaisHistoricos.metas ?? 0;
-
-    const saldoLivreGeral = recPagasGeral - despPagasGeral - metasPagasGeral;
+    // 1. Obter saldos atuais consolidados via motor financeiro
+    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
+    const saldoLivreGeral = totaisGerais.saldoLivreGeral;
     const diferenca = saldoRealBancario - saldoLivreGeral;
 
     if (Math.abs(diferenca) < 0.01) {
       return { success: true, message: "O saldo livre já está totalmente conciliado." };
     }
 
-    // 2. Garantir que exista uma categoria de ajuste ou usar uma existente
-    let cat = await prisma.categoria.findFirst({
-      where: { userId, nome: { in: ["Ajuste de Saldo", "Ajustes", "Outros"] }, deletedAt: null },
-    });
-    if (!cat) {
-      cat = await prisma.categoria.findFirst({
-        where: { userId, deletedAt: null },
-      });
-    }
-    if (!cat) {
-      cat = await prisma.categoria.create({
-        data: {
-          nome: "Ajuste de Saldo",
-          userId,
-          cor: "#e11d48",
-          icone: "IconAlertTriangle",
-        },
-      });
-    }
-
-    // 3. Criar a Receita ou Despesa de ajuste
-    let despesaAjusteId: number | null = null;
-    let receitaAjusteId: number | null = null;
-
-    if (diferenca < 0) {
-      // Cria despesa de ajuste para drenar saldo livre
-      let despesaAjuste = await prisma.despesa.findFirst({
-        where: { userId, nome: "Ajuste Despesa (Auto)", deletedAt: null },
-      });
-      if (!despesaAjuste) {
-        despesaAjuste = await prisma.despesa.create({
-          data: {
-            nome: "Ajuste Despesa (Auto)",
-            userId,
-            categoriaId: cat.id,
-            valorEstimado: 0,
-            diaVencimento: 1,
-            status: "A",
-          },
-        });
-      }
-      despesaAjusteId = despesaAjuste.id;
-    } else {
-      // Cria receita de ajuste para inflar saldo livre
-      let receitaAjuste = await prisma.receita.findFirst({
-        where: { userId, nome: "Ajuste Receita (Auto)", deletedAt: null },
-      });
-      if (!receitaAjuste) {
-        receitaAjuste = await prisma.receita.create({
-          data: {
-            nome: "Ajuste Receita (Auto)",
-            userId,
-            categoriaId: cat.id,
-            valorEstimado: 0,
-            diaRecebimento: 1,
-            status: "A",
-          },
-        });
-      }
-      receitaAjusteId = receitaAjuste.id;
-    }
-
-    // 4. Inserir lançamento pago (tipo = 'pagamento')
+    // 2. Inserir lançamento de ajuste autônomo com sinal (+/-) sem vincular a nenhuma entidade pai
     const novoLancamento = await prisma.lancamento.create({
       data: {
         userId,
-        tipo: "pagamento",
-        valor: Math.abs(diferenca),
+        tipo: "ajuste",
+        valor: diferenca, // Positivo para entrada (crédito), negativo para saída (débito)
         data: new Date(),
-        observacao: `Conciliação Bancária Expressa (Saldo real informado: R$ ${saldoRealBancario})`,
+        observacao: `Conciliação Bancária Expressa (Saldo real informado: R$ ${saldoRealBancario.toFixed(2)})`,
         observacaoAutomatica: "Ajuste de Conciliação Bancária",
-        despesaId: despesaAjusteId,
-        receitaId: receitaAjusteId,
+        despesaId: null,
+        receitaId: null,
+        objetivoId: null,
       },
     });
+
+    // 3. Invalidação do cache financeiro do usuário
+    financeEngine.invalidarCache(userId);
 
     return {
       success: true,
@@ -419,7 +380,7 @@ export const divergenciasService = {
   },
 
   /**
-   * Corrige um furo orçamentário em um mês específico criando uma receita de ajuste
+   * Corrige um furo orçamentário em um mês específico criando um lançamento autônomo de ajuste de entrada
    */
   async ajustarFuroMensal(userId: number, mes: string) {
     // 1. Obter o fluxo mensal histórico para encontrar o mês
@@ -434,59 +395,27 @@ export const divergenciasService = {
       return { success: true, message: `O mês ${mes} não possui furo orçamentário.` };
     }
 
-    // 2. Garantir que exista uma categoria de ajuste ou usar uma existente
-    let cat = await prisma.categoria.findFirst({
-      where: { userId, nome: { in: ["Ajuste de Saldo", "Ajustes", "Outros"] }, deletedAt: null },
-    });
-    if (!cat) {
-      cat = await prisma.categoria.findFirst({
-        where: { userId, deletedAt: null },
-      });
-    }
-    if (!cat) {
-      cat = await prisma.categoria.create({
-        data: {
-          nome: "Ajuste de Saldo",
-          userId,
-          cor: "#e11d48",
-          icone: "IconAlertTriangle",
-        },
-      });
-    }
-
-    // 3. Criar a Receita de ajuste
-    let receitaAjuste = await prisma.receita.findFirst({
-      where: { userId, nome: "Ajuste Receita (Auto)", deletedAt: null },
-    });
-    if (!receitaAjuste) {
-      receitaAjuste = await prisma.receita.create({
-        data: {
-          nome: "Ajuste Receita (Auto)",
-          userId,
-          categoriaId: cat.id,
-          valorEstimado: 0,
-          diaRecebimento: 1,
-          status: "A",
-        },
-      });
-    }
-
     // Calcular o último dia daquele mês à meia-noite em UTC (evita cair às 03:00 e sair do filtro <= dataFim)
     const [ano, mesNum] = mes.split("-");
     const ultimoDia = new Date(Date.UTC(parseInt(ano, 10), parseInt(mesNum, 10), 0));
 
-    // 4. Inserir lançamento pago (tipo = 'pagamento')
+    // 2. Inserir lançamento autônomo de ajuste com sinal positivo
     const novoLancamento = await prisma.lancamento.create({
       data: {
         userId,
-        tipo: "pagamento",
-        valor: furoValor,
+        tipo: "ajuste",
+        valor: furoValor, // Positivo (cobertura/crédito)
         data: ultimoDia,
         observacao: `Ajuste Orçamentário (Cobertura de Deficit do mês de ${formatarMesAno(mes)})`,
         observacaoAutomatica: "Ajuste de Conciliação Bancária",
-        receitaId: receitaAjuste.id,
+        despesaId: null,
+        receitaId: null,
+        objetivoId: null,
       },
     });
+
+    // 3. Invalidação do cache financeiro do usuário
+    financeEngine.invalidarCache(userId);
 
     return {
       success: true,
