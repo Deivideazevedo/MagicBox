@@ -5,7 +5,6 @@ import {
   useReconciliarMutation,
   useAjustarFuroMutation,
   useResolverAtrasadoMutation,
-  useEqualizarMetasMutation,
   useGetHistoricoAjustesQuery,
   useReverterAjusteMutation,
 } from "@/services/endpoints/divergenciasApi";
@@ -22,7 +21,7 @@ export function useDivergencias() {
   const confirm = useConfirm();
 
   // Form para controlar o HookTextField
-  const { control, handleSubmit, reset } = useForm<ReconciliacaoFormValues>({
+  const { control, handleSubmit, reset, setValue } = useForm<ReconciliacaoFormValues>({
     defaultValues: {
       saldoRealInput: "",
     },
@@ -43,7 +42,6 @@ export function useDivergencias() {
   const [reconciliar, { isLoading: reconciliando }] = useReconciliarMutation();
   const [ajustarFuro, { isLoading: ajustandoFuro }] = useAjustarFuroMutation();
   const [resolverAtrasado, { isLoading: resolvendoAtrasado }] = useResolverAtrasadoMutation();
-  const [equalizarMetas, { isLoading: equalizandoMetas }] = useEqualizarMetasMutation();
   const [reverterAjuste, { isLoading: revertendoAjuste }] = useReverterAjusteMutation();
 
   const [acaoAtrasadoId, setAcaoAtrasadoId] = useState<string | null>(null);
@@ -170,27 +168,6 @@ export function useDivergencias() {
     });
   }, [resolverAtrasado, confirm]);
 
-  // Equalizar Metas com Capital Inicial no Marco Zero
-  const handleEqualizarMetas = useCallback(async () => {
-    confirm.show({
-      title: "Equalizar Capital Inicial de Metas?",
-      description: "Deseja registrar o lastro das suas metas como Patrimônio Pré-existente no Marco Zero da sua conta? Isso equilibrará o volume de metas sem alterar os relatórios mensais e restaurará seu Score para 100%.",
-      confirmText: "Equalizar Capital",
-      cancelText: "Cancelar",
-      color: "success",
-      icon: IconShieldCheck,
-      onConfirm: async () => {
-        try {
-          const res = await equalizarMetas().unwrap();
-          toast.success(res.message);
-          refetchAjustes();
-        } catch (err: any) {
-          toast.error(err?.data?.message || "Erro ao equalizar capital de metas");
-        }
-      },
-    });
-  }, [equalizarMetas, confirm, refetchAjustes]);
-
   // Reverter ajuste de conciliação realizado
   const handleReverterAjuste = useCallback(async (ajusteId: number, descricao: string) => {
     confirm.delete({
@@ -217,7 +194,6 @@ export function useDivergencias() {
     reconciliando,
     ajustandoFuro,
     resolvendoAtrasado,
-    equalizandoMetas,
     revertendoAjuste,
     acaoAtrasadoId,
     ajustesHistorico: ajustesData?.ajustes || [],
@@ -229,11 +205,12 @@ export function useDivergencias() {
     handlePagarAtrasado,
     handleIsentarAtrasado,
     handleDescartarAtrasado,
-    handleEqualizarMetas,
     handleReverterAjuste,
     handleLimparBusca,
     refetch,
     refetchAjustes,
+    setValue,
   };
 }
+
 

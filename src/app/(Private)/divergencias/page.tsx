@@ -81,7 +81,6 @@ function DivergenciasPageContent() {
     reconciliando,
     ajustandoFuro,
     resolvendoAtrasado,
-    equalizandoMetas,
     acaoAtrasadoId,
     ajustesHistorico,
     loadingAjustes,
@@ -92,10 +91,10 @@ function DivergenciasPageContent() {
     handlePagarAtrasado,
     handleIsentarAtrasado,
     handleDescartarAtrasado,
-    handleEqualizarMetas,
     handleReverterAjuste,
     handleLimparBusca,
     refetch,
+    setValue,
   } = useDivergencias();
 
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
@@ -405,18 +404,19 @@ function DivergenciasPageContent() {
                                       Severidade: {diag.severity.toUpperCase()}
                                     </Typography>
 
-                                    {/* Atalho Rápido 1-Clique: Equalizar Capital de Metas no Marco Zero */}
-                                    {diag.tipo === "INCOERENCIA_METAS" && (
+                                    {/* Atalho Rápido: Calibrar Saldo Livre Negativo com o Conciliador */}
+                                    {diag.tipo === "SALDO_LIVRE_NEGATIVO" && (
                                       <Button
                                         variant="contained"
-                                        color="primary"
+                                        color="error"
                                         size="small"
                                         startIcon={<IconShieldCheck size={16} />}
-                                        onClick={handleEqualizarMetas}
-                                        disabled={equalizandoMetas}
+                                        onClick={() => {
+                                          window.scrollTo({ top: 0, behavior: "smooth" });
+                                        }}
                                         sx={{ py: 0.4, px: 1.8, fontWeight: "bold", textTransform: "none", borderRadius: 1.5 }}
                                       >
-                                        {equalizandoMetas ? <CircularProgress size={16} color="inherit" /> : "Equalizar Capital Inicial (Marco Zero)"}
+                                        Calibrar Saldo no Conciliador
                                       </Button>
                                     )}
 
@@ -457,7 +457,8 @@ function DivergenciasPageContent() {
                                   {diag.tipo === "LANCA_ATRASADO" && "Pague na data original, quite com isenção (R$ 0,00) ou descarte agendamentos que não foram realizados."}
                                   {diag.tipo === "DEFICIT_PASSADO" && "Mantenha um fundo de reserva. Deficits do passado reduzem seu saldo disponível hoje, mesmo se o mês atual estiver positivo."}
                                   {diag.tipo === "CONCILIACAO_DESVIO" && "Utilize a ferramenta de Auto-Ajuste expressa no painel acima para calibrar o saldo com sua conta do banco."}
-                                  {diag.tipo === "INCOERENCIA_METAS" && "Se este montante veio de antes de usar o MagicBox, clique no botão acima para registrar o Capital Inicial no Marco Zero sem inflar os relatórios mensais."}
+                                  {diag.tipo === "SALDO_LIVRE_NEGATIVO" && "Informe o seu saldo bancário real no Conciliador Expresso acima e clique em 'Auto-Ajustar' para equalizar seu caixa."}
+                                  {diag.tipo === "OBJETIVO_NEGATIVO" && "Acesse a tela de Objetivos e revise os lançamentos de resgate/aporte para garantir que as retiradas não excedam os valores guardados."}
                                 </Typography>
 
                                 {/* Listagem Otimizada e 100% Responsiva de Atrasados Integrada */}

@@ -1,6 +1,12 @@
 export interface DiagnosticoFinanceiro {
   id: string;
-  tipo: "DEFICIT_PASSADO" | "LANCA_ATRASADO" | "CONCILIACAO_DESVIO" | "INCOERENCIA_METAS";
+  tipo:
+    | "DEFICIT_PASSADO"
+    | "LANCA_ATRASADO"
+    | "CONCILIACAO_DESVIO"
+    | "INCOERENCIA_METAS"
+    | "SALDO_LIVRE_NEGATIVO"
+    | "OBJETIVO_NEGATIVO";
   severity: "low" | "medium" | "high";
   titulo: string;
   descricao: string;

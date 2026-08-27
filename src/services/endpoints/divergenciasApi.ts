@@ -37,13 +37,6 @@ export const divergenciasApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
     }),
-    equalizarMetas: builder.mutation<{ success: boolean; message: string; lancamento: any }, void>({
-      query: () => ({
-        url: "/divergencias/equalizar-metas",
-        method: "POST",
-      }),
-      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita", "Objetivos"],
-    }),
     getHistoricoAjustes: builder.query<{ success: boolean; ajustes: any[] }, void>({
       query: () => ({
         url: "/divergencias/ajustes",
@@ -65,8 +58,8 @@ export const {
   useReconciliarMutation,
   useAjustarFuroMutation,
   useResolverAtrasadoMutation,
-  useEqualizarMetasMutation,
   useGetHistoricoAjustesQuery,
   useReverterAjusteMutation,
 } = divergenciasApi;
+
 

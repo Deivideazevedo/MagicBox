@@ -272,15 +272,48 @@ export const divergenciasService = {
       }
     }
 
-    // Diagnóstico D: Incoerência de Metas em relação à Receita
-    if (metasPagasGeral > recPagasGeral && recPagasGeral > 0) {
-      score -= 20;
+    // Diagnóstico D: Objetivos com Saldo Negativo (Retiradas > Aportes)
+    const objetivosDoUsuario = await prisma.objetivo.findMany({
+      where: { userId, deletedAt: null },
+      select: { id: true, nome: true },
+    });
+
+    if (objetivosDoUsuario.length > 0) {
+      const saldosObjetivos = await prisma.lancamento.groupBy({
+        by: ["objetivoId"],
+        where: {
+          userId,
+          objetivoId: { in: objetivosDoUsuario.map((o) => o.id) },
+          tipo: "pagamento",
+        },
+        _sum: { valor: true },
+      });
+
+      const mapaSaldoObj = new Map(saldosObjetivos.map((s) => [s.objetivoId, Number(s._sum.valor || 0)]));
+      const objetivosNegativos = objetivosDoUsuario.filter((o) => (mapaSaldoObj.get(o.id) ?? 0) < -0.01);
+
+      if (objetivosNegativos.length > 0) {
+        score -= 15;
+        diagnosticos.push({
+          id: "objetivo_saldo_negativo",
+          tipo: "OBJETIVO_NEGATIVO",
+          severity: "high",
+          titulo: `${objetivosNegativos.length} Objetivo(s) com Saldo Negativo`,
+          descricao: `Os objetivos (${objetivosNegativos.map((o) => o.nome).join(", ")}) possuem retiradas registradas que superam os aportes acumulados. Revise os lançamentos vinculados a estes objetivos.`,
+        });
+      }
+    }
+
+    // Diagnóstico E: Saldo Livre Global Negativo
+    if (saldoLivreGeral < -0.01) {
+      score -= 25;
       diagnosticos.push({
-        id: "incoerencia_metas",
-        tipo: "INCOERENCIA_METAS",
+        id: "saldo_livre_negativo",
+        tipo: "SALDO_LIVRE_NEGATIVO",
         severity: "high",
-        titulo: "Incoerência no Volume de Metas",
-        descricao: `Seu valor alocado em metas poupadas (${metasPagasGeral.toFixed(2)}) supera o histórico total de receitas pagas (${recPagasGeral.toFixed(2)}). Isso cria distorções no cálculo do saldo livre.`,
+        titulo: "Saldo Livre Global Negativo",
+        descricao: `Seu saldo livre acumulado está negativo em R$ ${Math.abs(saldoLivreGeral).toFixed(2)}. Suas saídas e valores retidos ultrapassaram o total de entradas de caixa. Utilize o Conciliador Expresso para calibrar seu saldo real com o banco.`,
+        diferenca: Math.abs(saldoLivreGeral),
       });
     }
 
@@ -319,12 +352,12 @@ export const divergenciasService = {
       take: 10,
     });
 
-    const historicoAjustes = historicoAjustesRaw.map((item) => ({
-      id: item.id,
-      data: item.data.toISOString(),
-      valor: Number(item.valor),
-      tipo: (Number(item.valor) >= 0 ? "RECEITA" : "DESPESA") as "RECEITA" | "DESPESA",
-      observacao: item.observacao,
+    const historicoAjustes = historicoAjustesRaw.map((a) => ({
+      id: a.id,
+      data: a.data.toISOString(),
+      valor: Number(a.valor),
+      tipo: (Number(a.valor) >= 0 ? "RECEITA" : "DESPESA") as "RECEITA" | "DESPESA",
+      observacao: a.observacao || a.observacaoAutomatica || "Ajuste de Conciliação",
     }));
 
     return {
@@ -457,12 +490,12 @@ export const divergenciasService = {
             tipo: "pagamento",
             valor: valorFinal,
             data: dataVencimentoCompetencia,
-            observacao: `Quitação de atrasado - ${despesa.nome}`,
-            observacaoAutomatica: `[QUITAÇÃO] Pagamento de despesa fixa referente a ${String(mesNum).padStart(2, "0")}/${anoNum}`,
+            observacao: `Pagamento de atrasado - ${despesa.nome}`,
+            observacaoAutomatica: `Pagamento de despesa fixa referente a ${String(mesNum).padStart(2, "0")}/${anoNum}`,
           },
         });
       } else {
-        // Isenção / Descarte de competência passada: registra com valor 0 e tag de quitação para silenciar o mês passado sem desembolso
+        // Isenção / Quitação de competência passada sem desembolso (R$ 0,00)
         await prisma.lancamento.create({
           data: {
             userId,
@@ -505,7 +538,7 @@ export const divergenciasService = {
               where: { id: agendamento.id },
               data: {
                 tipo: "pagamento",
-                observacaoAutomatica: `[QUITAÇÃO] ${agendamento.observacaoAutomatica || "Pagamento liquidado"}`,
+                observacaoAutomatica: agendamento.observacaoAutomatica || `Pagamento referente a ${String(mesNum).padStart(2, "0")}/${anoNum}`,
               },
             });
           } else if (acao === "isentar") {
@@ -538,8 +571,10 @@ export const divergenciasService = {
                 tipo: "pagamento",
                 valor: acao === "quitar" ? (valor || Number(despesa.valorEstimado || 0)) : 0,
                 data: dataVenc,
-                observacao: `${acao === "quitar" ? "Quitação" : "Isenção"} de pendência passada`,
-                observacaoAutomatica: `[QUITAÇÃO] Referência ${String(mesNum).padStart(2, "0")}/${anoNum}`,
+                observacao: `${acao === "quitar" ? "Pagamento" : "Isenção"} de pendência passada`,
+                observacaoAutomatica: acao === "quitar"
+                  ? `Pagamento de referência ${String(mesNum).padStart(2, "0")}/${anoNum}`
+                  : `[QUITAÇÃO] Referência ${String(mesNum).padStart(2, "0")}/${anoNum} quitada sem desembolso`,
               },
             });
           }
@@ -553,7 +588,7 @@ export const divergenciasService = {
               where: { id: lancamentoId },
               data: {
                 tipo: "pagamento",
-                observacaoAutomatica: "[QUITAÇÃO] Pagamento liquidado",
+                observacaoAutomatica: "Pagamento liquidado",
               },
             });
           } else if (acao === "isentar") {
@@ -583,66 +618,6 @@ export const divergenciasService = {
           : acao === "isentar"
           ? "Lançamento quitado com isenção (R$ 0,00) na competência correta!"
           : "Lançamento pendente descartado!",
-    };
-  },
-
-  /**
-   * Equaliza a incoerência de metas criando um ajuste de capital inicial no Marco Zero (1 dia antes da 1ª movimentação)
-   */
-  async equalizarCapitalMetas(userId: number) {
-    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
-    const diferenca = totaisGerais.metasPagasGeral - totaisGerais.receitasPagasGeral;
-
-    if (diferenca <= 0) {
-      return { success: true, message: "O volume de metas já está devidamente coberto pelas receitas." };
-    }
-
-    // 1. Descobrir a data do Marco Zero (data mais antiga no banco para o usuário)
-    const primeiroLancamento = await prisma.lancamento.findFirst({
-      where: { userId },
-      orderBy: { data: "asc" },
-      select: { data: true },
-    });
-
-    let dataMarcoZero: Date;
-    if (primeiroLancamento && primeiroLancamento.data) {
-      dataMarcoZero = new Date(primeiroLancamento.data);
-      // Subtrai 1 dia da primeira transação para ficar no marco zero anterior a qualquer movimentação
-      dataMarcoZero.setUTCDate(dataMarcoZero.getUTCDate() - 1);
-      dataMarcoZero.setUTCHours(0, 0, 0, 0);
-    } else {
-      // Fallback: data de criação do usuário ou data de hoje menos 1 mês
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } });
-      if (user && user.createdAt) {
-        dataMarcoZero = new Date(user.createdAt);
-        dataMarcoZero.setUTCDate(dataMarcoZero.getUTCDate() - 1);
-        dataMarcoZero.setUTCHours(0, 0, 0, 0);
-      } else {
-        dataMarcoZero = new Date();
-        dataMarcoZero.setUTCMonth(dataMarcoZero.getUTCMonth() - 1);
-      }
-    }
-
-    const lancamento = await prisma.lancamento.create({
-      data: {
-        userId,
-        tipo: "ajuste",
-        valor: diferenca,
-        data: dataMarcoZero,
-        observacao: "Saldo Inicial / Capital Pré-Existente (Marco Zero)",
-        observacaoAutomatica: "Aporte de Capital Inicial / Conciliação de Metas",
-        despesaId: null,
-        receitaId: null,
-        objetivoId: null,
-      },
-    });
-
-    financeEngine.invalidarCache(userId);
-
-    return {
-      success: true,
-      message: `Capital inicial de R$ ${diferenca.toFixed(2)} registrado retroativamente no Marco Zero (${dataMarcoZero.toLocaleDateString("pt-BR")}). Seu score de integridade foi restaurado sem inflar relatórios mensais!`,
-      lancamento,
     };
   },
 
