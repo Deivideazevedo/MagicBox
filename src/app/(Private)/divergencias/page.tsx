@@ -41,6 +41,7 @@ import {
   IconChevronUp,
   IconHistory,
   IconSettings,
+  IconShieldCheck,
 } from "@tabler/icons-react";
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { useDivergencias } from "./hooks/useDivergencias";
@@ -79,14 +80,20 @@ function DivergenciasPageContent() {
     control,
     reconciliando,
     ajustandoFuro,
-    acaoPagarId,
-    acaoExcluirId,
+    resolvendoAtrasado,
+    equalizandoMetas,
+    acaoAtrasadoId,
+    ajustesHistorico,
+    loadingAjustes,
     saldoRealPesquisa,
     onSubmit,
     handleAutoAjustar,
     handleAjustarFuro,
-    handlePagarLancamento,
-    handleExcluirLancamento,
+    handlePagarAtrasado,
+    handleIsentarAtrasado,
+    handleDescartarAtrasado,
+    handleEqualizarMetas,
+    handleReverterAjuste,
     handleLimparBusca,
     refetch,
   } = useDivergencias();
@@ -398,6 +405,21 @@ function DivergenciasPageContent() {
                                       Severidade: {diag.severity.toUpperCase()}
                                     </Typography>
 
+                                    {/* Atalho Rápido 1-Clique: Equalizar Capital de Metas no Marco Zero */}
+                                    {diag.tipo === "INCOERENCIA_METAS" && (
+                                      <Button
+                                        variant="contained"
+                                        color="primary"
+                                        size="small"
+                                        startIcon={<IconShieldCheck size={16} />}
+                                        onClick={handleEqualizarMetas}
+                                        disabled={equalizandoMetas}
+                                        sx={{ py: 0.4, px: 1.8, fontWeight: "bold", textTransform: "none", borderRadius: 1.5 }}
+                                      >
+                                        {equalizandoMetas ? <CircularProgress size={16} color="inherit" /> : "Equalizar Capital Inicial (Marco Zero)"}
+                                      </Button>
+                                    )}
+
                                     {/* Botão de Auto-Ajustar do Mês de Deficit */}
                                     {diag.tipo === "DEFICIT_PASSADO" && diag.mesReferencia && diag.diferenca && (
                                       <Button
@@ -432,10 +454,10 @@ function DivergenciasPageContent() {
                                   💡 Como resolver na sua vida real:
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: "italic" }}>
-                                  {diag.tipo === "LANCA_ATRASADO" && "Marque os lançamentos planejados que já venceram como pagos ou exclua-os se forem cancelados."}
+                                  {diag.tipo === "LANCA_ATRASADO" && "Pague na data original, quite com isenção (R$ 0,00) ou descarte agendamentos que não foram realizados."}
                                   {diag.tipo === "DEFICIT_PASSADO" && "Mantenha um fundo de reserva. Deficits do passado reduzem seu saldo disponível hoje, mesmo se o mês atual estiver positivo."}
                                   {diag.tipo === "CONCILIACAO_DESVIO" && "Utilize a ferramenta de Auto-Ajuste expressa no painel acima para calibrar o saldo com sua conta do banco."}
-                                  {diag.tipo === "INCOERENCIA_METAS" && "Revise a quantia poupada em metas; você não pode alocar em poupança mais dinheiro do que o total recebido historicamente."}
+                                  {diag.tipo === "INCOERENCIA_METAS" && "Se este montante veio de antes de usar o MagicBox, clique no botão acima para registrar o Capital Inicial no Marco Zero sem inflar os relatórios mensais."}
                                 </Typography>
 
                                 {/* Listagem Otimizada e 100% Responsiva de Atrasados Integrada */}
@@ -457,7 +479,7 @@ function DivergenciasPageContent() {
                                                 <TableCell><Typography fontWeight="600" variant="body2">Tipo</Typography></TableCell>
                                                 <TableCell><Typography fontWeight="600" variant="body2">Valor</Typography></TableCell>
                                                 <TableCell><Typography fontWeight="600" variant="body2">Data Esperada</Typography></TableCell>
-                                                <TableCell align="right"><Typography fontWeight="600" variant="body2">Ações Rápidas</Typography></TableCell>
+                                                <TableCell align="right"><Typography fontWeight="600" variant="body2">Ações na Competência</Typography></TableCell>
                                               </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -504,33 +526,43 @@ function DivergenciasPageContent() {
                                                     </Box>
                                                   </TableCell>
                                                   <TableCell align="right">
-                                                    <Box display="flex" justifyContent="flex-end" gap={0.5}>
-                                                      <Tooltip title="Marcar como Pago">
-                                                        <IconButton
+                                                    <Box display="flex" justifyContent="flex-end" gap={1}>
+                                                      <Tooltip title="Pagar na Data Original">
+                                                        <Button
                                                           size="small"
+                                                          variant="contained"
                                                           color="success"
-                                                          onClick={() => handlePagarLancamento(item.id, item.nome, item.valor)}
-                                                          disabled={acaoPagarId === item.id}
+                                                          onClick={() => handlePagarAtrasado(item.id, item.nome, item.valor)}
+                                                          disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
+                                                          sx={{ textTransform: "none", py: 0.2, px: 1, fontSize: "0.75rem", borderRadius: 1.5 }}
                                                         >
-                                                          {acaoPagarId === item.id ? (
-                                                            <CircularProgress size={18} color="inherit" />
+                                                          {resolvendoAtrasado && acaoAtrasadoId === item.id ? (
+                                                            <CircularProgress size={14} color="inherit" />
                                                           ) : (
-                                                            <IconCheck size={18} />
+                                                            "Pagar"
                                                           )}
-                                                        </IconButton>
+                                                        </Button>
                                                       </Tooltip>
-                                                      <Tooltip title="Excluir/Inativar">
+                                                      <Tooltip title="Quitar com Isenção (R$ 0,00)">
+                                                        <Button
+                                                          size="small"
+                                                          variant="outlined"
+                                                          color="info"
+                                                          onClick={() => handleIsentarAtrasado(item.id, item.nome)}
+                                                          disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
+                                                          sx={{ textTransform: "none", py: 0.2, px: 1, fontSize: "0.75rem", borderRadius: 1.5 }}
+                                                        >
+                                                          Isentar
+                                                        </Button>
+                                                      </Tooltip>
+                                                      <Tooltip title="Descartar / Cancelar Pendência">
                                                         <IconButton
                                                           size="small"
                                                           color="error"
-                                                          onClick={() => handleExcluirLancamento(item.id, item.nome, item.valor)}
-                                                          disabled={acaoExcluirId === item.id}
+                                                          onClick={() => handleDescartarAtrasado(item.id, item.nome, item.valor)}
+                                                          disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
                                                         >
-                                                          {acaoExcluirId === item.id ? (
-                                                            <CircularProgress size={18} color="inherit" />
-                                                          ) : (
-                                                            <IconTrash size={18} />
-                                                          )}
+                                                          <IconTrash size={16} />
                                                         </IconButton>
                                                       </Tooltip>
                                                     </Box>
@@ -588,31 +620,33 @@ function DivergenciasPageContent() {
                                                     </Box>
                                                   </Box>
                                                   <Box display="flex" gap={1}>
-                                                    <IconButton
+                                                    <Button
                                                       size="small"
+                                                      variant="contained"
                                                       color="success"
-                                                      onClick={() => handlePagarLancamento(item.id, item.nome, item.valor)}
-                                                      disabled={acaoPagarId === item.id}
-                                                      sx={{ backgroundColor: alpha(theme.palette.success.main, 0.08), p: 0.8 }}
+                                                      onClick={() => handlePagarAtrasado(item.id, item.nome, item.valor)}
+                                                      disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
+                                                      sx={{ textTransform: "none", py: 0.2, px: 1, fontSize: "0.75rem", borderRadius: 1.5 }}
                                                     >
-                                                      {acaoPagarId === item.id ? (
-                                                        <CircularProgress size={16} color="inherit" />
-                                                      ) : (
-                                                        <IconCheck size={16} />
-                                                      )}
-                                                    </IconButton>
+                                                      Pagar
+                                                    </Button>
+                                                    <Button
+                                                      size="small"
+                                                      variant="outlined"
+                                                      color="info"
+                                                      onClick={() => handleIsentarAtrasado(item.id, item.nome)}
+                                                      disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
+                                                      sx={{ textTransform: "none", py: 0.2, px: 1, fontSize: "0.75rem", borderRadius: 1.5 }}
+                                                    >
+                                                      Isentar
+                                                    </Button>
                                                     <IconButton
                                                       size="small"
                                                       color="error"
-                                                      onClick={() => handleExcluirLancamento(item.id, item.nome, item.valor)}
-                                                      disabled={acaoExcluirId === item.id}
-                                                      sx={{ backgroundColor: alpha(theme.palette.error.main, 0.08), p: 0.8 }}
+                                                      onClick={() => handleDescartarAtrasado(item.id, item.nome, item.valor)}
+                                                      disabled={resolvendoAtrasado && acaoAtrasadoId === item.id}
                                                     >
-                                                      {acaoExcluirId === item.id ? (
-                                                        <CircularProgress size={16} color="inherit" />
-                                                      ) : (
-                                                        <IconTrash size={16} />
-                                                      )}
+                                                      <IconTrash size={16} />
                                                     </IconButton>
                                                   </Box>
                                                 </Box>
@@ -635,7 +669,7 @@ function DivergenciasPageContent() {
               </Card>
             </Grid>
 
-            {/* 5. Histórico de Reconciliações e Ajustes de Saldo */}
+            {/* 5. Histórico de Reconciliações e Ajustes de Conciliação */}
             <Grid item xs={12}>
               <Card
                 ref={tourRefs.historicoRef}
@@ -643,15 +677,19 @@ function DivergenciasPageContent() {
               >
                 <CardHeader
                   avatar={<IconHistory size={24} color={theme.palette.primary.main} />}
-                  title="Histórico de Reconciliações e Ajustes de Saldo"
-                  subheader="Registro das últimas conciliações expressas efetuadas para calibrar o saldo livre real"
+                  title="Histórico de Ajustes de Conciliação Realizados"
+                  subheader="Registro dos ajustes autônomos efetuados pelo sistema para equalização de saldo e metas"
                   titleTypographyProps={{ fontWeight: "bold", variant: "h6" }}
                 />
                 <CardContent sx={{ pt: 0 }}>
-                  {!auditoria?.historicoAjustes || auditoria.historicoAjustes.length === 0 ? (
+                  {loadingAjustes ? (
+                    <Box display="flex" justifyContent="center" py={4}>
+                      <CircularProgress size={30} />
+                    </Box>
+                  ) : !ajustesHistorico || ajustesHistorico.length === 0 ? (
                     <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" sx={{ py: 6 }}>
                       <Typography variant="body2" color="text.secondary" align="center">
-                        Nenhuma reconciliação de saldo expressa foi realizada ainda neste perfil.
+                        Nenhum ajuste de conciliação ativo no sistema.
                       </Typography>
                     </Box>
                   ) : (
@@ -659,63 +697,65 @@ function DivergenciasPageContent() {
                       <Table>
                         <TableHead sx={{ backgroundColor: theme.palette.action.hover }}>
                           <TableRow>
-                            <TableCell><Typography fontWeight="600">Data / Hora</Typography></TableCell>
-                            <TableCell><Typography fontWeight="600">Ação / Ajuste</Typography></TableCell>
+                            <TableCell><Typography fontWeight="600">Data de Referência</Typography></TableCell>
+                            <TableCell><Typography fontWeight="600">Tipo de Ajuste</Typography></TableCell>
                             <TableCell><Typography fontWeight="600">Valor do Ajuste</Typography></TableCell>
-                            <TableCell><Typography fontWeight="600">Referência e Notas</Typography></TableCell>
+                            <TableCell><Typography fontWeight="600">Motivo / Descrição</Typography></TableCell>
                             <TableCell align="right"><Typography fontWeight="600">Ações</Typography></TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {auditoria.historicoAjustes.map((item) => (
-                            <TableRow key={item.id} hover>
-                              <TableCell>
-                                <Typography variant="body2">
-                                  {new Date(item.data).toLocaleString("pt-BR")}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography
-                                  variant="body2"
-                                  fontWeight="600"
-                                  sx={{
-                                    color: item.tipo === "RECEITA" ? "success.main" : "error.main",
-                                  }}
-                                >
-                                  {item.tipo === "RECEITA" ? "Ajuste Positivo (+)" : "Ajuste Negativo (-)"}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography
-                                  fontWeight="bold"
-                                  sx={{ color: item.tipo === "RECEITA" ? "success.main" : "error.main" }}
-                                >
-                                  {item.tipo === "RECEITA" ? "+" : "-"}
-                                  {formatCurrency(item.valor)}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Typography variant="body2" color="text.secondary">
-                                  {item.observacao || "Ajuste manual de conciliação bancária"}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Tooltip title="Excluir Ajuste">
-                                  <IconButton
-                                    color="error"
-                                    onClick={() => handleExcluirLancamento(item.id, item.observacao || "Ajuste de Reconciliação", item.valor)}
-                                    disabled={acaoExcluirId === item.id}
+                          {ajustesHistorico.map((item: any) => {
+                            const isPositivo = Number(item.valor) >= 0;
+                            return (
+                              <TableRow key={item.id} hover>
+                                <TableCell>
+                                  <Typography variant="body2">
+                                    {new Date(item.data).toLocaleDateString("pt-BR")}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="600"
+                                    sx={{
+                                      color: isPositivo ? "success.main" : "error.main",
+                                    }}
                                   >
-                                    {acaoExcluirId === item.id ? (
-                                      <CircularProgress size={20} color="inherit" />
-                                    ) : (
-                                      <IconTrash size={20} />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                    {isPositivo ? "Crédito / Entrada (+)" : "Débito / Saída (-)"}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography
+                                    fontWeight="bold"
+                                    sx={{ color: isPositivo ? "success.main" : "error.main" }}
+                                  >
+                                    {isPositivo ? "+" : ""}
+                                    {formatCurrency(Number(item.valor))}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {item.observacao || item.observacaoAutomatica || "Ajuste de conciliação"}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Tooltip title="Reverter Ajuste">
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      color="error"
+                                      startIcon={<IconTrash size={14} />}
+                                      onClick={() => handleReverterAjuste(item.id, item.observacao || "Ajuste de Conciliação")}
+                                      sx={{ textTransform: "none", borderRadius: 1.5, py: 0.2 }}
+                                    >
+                                      Reverter
+                                    </Button>
+                                  </Tooltip>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </TableContainer>

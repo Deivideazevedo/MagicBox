@@ -423,4 +423,270 @@ export const divergenciasService = {
       lancamento: novoLancamento,
     };
   },
+
+  /**
+   * Resolve um lançamento atrasado na competência original correta (quitar com valor, isentar R$ 0 ou descartar)
+   */
+  async resolverAtrasado(userId: number, payload: { id: string; acao: "quitar" | "isentar" | "descartar"; valor?: number }) {
+    const { id, acao, valor } = payload;
+
+    if (id.startsWith("virtual-fix-")) {
+      const parts = id.split("-");
+      const despesaId = Number(parts[2]);
+      const mesNum = parseInt(parts[3], 10);
+      const anoNum = parseInt(parts[4], 10);
+
+      const despesa = await prisma.despesa.findFirst({
+        where: { id: despesaId, userId, deletedAt: null },
+      });
+
+      if (!despesa) {
+        throw new Error("Despesa fixa não encontrada.");
+      }
+
+      const ultimoDiaMes = new Date(anoNum, mesNum, 0).getDate();
+      const diaVenc = Math.min(despesa.diaVencimento || 1, ultimoDiaMes);
+      const dataVencimentoCompetencia = new Date(Date.UTC(anoNum, mesNum - 1, diaVenc));
+
+      if (acao === "quitar") {
+        const valorFinal = valor && valor > 0 ? valor : Number(despesa.valorEstimado || 0);
+        await prisma.lancamento.create({
+          data: {
+            userId,
+            despesaId,
+            tipo: "pagamento",
+            valor: valorFinal,
+            data: dataVencimentoCompetencia,
+            observacao: `Quitação de atrasado - ${despesa.nome}`,
+            observacaoAutomatica: `[QUITAÇÃO] Pagamento de despesa fixa referente a ${String(mesNum).padStart(2, "0")}/${anoNum}`,
+          },
+        });
+      } else {
+        // Isenção / Descarte de competência passada: registra com valor 0 e tag de quitação para silenciar o mês passado sem desembolso
+        await prisma.lancamento.create({
+          data: {
+            userId,
+            despesaId,
+            tipo: "pagamento",
+            valor: 0,
+            data: dataVencimentoCompetencia,
+            observacao: `Isenção/Quitação de competência passada - ${despesa.nome}`,
+            observacaoAutomatica: `[QUITAÇÃO] Competência ${String(mesNum).padStart(2, "0")}/${anoNum} quitada sem desembolso`,
+          },
+        });
+      }
+    } else {
+      // ID real composto: "itemId-YYYY-MM" ou ID numérico de agendamento
+      const parts = id.split("-");
+      const itemId = Number(parts[0]);
+      const anoNum = parseInt(parts[1], 10);
+      const mesNum = parseInt(parts[2], 10);
+
+      if (!isNaN(itemId) && !isNaN(anoNum) && !isNaN(mesNum)) {
+        const start = new Date(Date.UTC(anoNum, mesNum - 1, 1));
+        const end = new Date(Date.UTC(anoNum, mesNum, 0, 23, 59, 59, 999));
+
+        const agendamento = await prisma.lancamento.findFirst({
+          where: {
+            userId,
+            tipo: "agendamento",
+            data: { gte: start, lte: end },
+            OR: [
+              { despesaId: itemId },
+              { receitaId: itemId },
+              { objetivoId: itemId },
+            ],
+          },
+        });
+
+        if (agendamento) {
+          if (acao === "quitar") {
+            await prisma.lancamento.update({
+              where: { id: agendamento.id },
+              data: {
+                tipo: "pagamento",
+                observacaoAutomatica: `[QUITAÇÃO] ${agendamento.observacaoAutomatica || "Pagamento liquidado"}`,
+              },
+            });
+          } else if (acao === "isentar") {
+            await prisma.lancamento.update({
+              where: { id: agendamento.id },
+              data: {
+                tipo: "pagamento",
+                valor: 0,
+                observacaoAutomatica: `[QUITAÇÃO] ${agendamento.observacaoAutomatica || "Isenção sem desembolso"}`,
+              },
+            });
+          } else {
+            // Descartar agendamento físico órfão
+            await prisma.lancamento.delete({
+              where: { id: agendamento.id },
+            });
+          }
+        } else {
+          // Se não encontrou agendamento exato mas a despesa/receita existe, cria o pagamento na competência correta
+          const despesa = await prisma.despesa.findFirst({ where: { id: itemId, userId } });
+          if (despesa) {
+            const ultimoDiaMes = new Date(anoNum, mesNum, 0).getDate();
+            const diaVenc = Math.min(despesa.diaVencimento || 1, ultimoDiaMes);
+            const dataVenc = new Date(Date.UTC(anoNum, mesNum - 1, diaVenc));
+
+            await prisma.lancamento.create({
+              data: {
+                userId,
+                despesaId: itemId,
+                tipo: "pagamento",
+                valor: acao === "quitar" ? (valor || Number(despesa.valorEstimado || 0)) : 0,
+                data: dataVenc,
+                observacao: `${acao === "quitar" ? "Quitação" : "Isenção"} de pendência passada`,
+                observacaoAutomatica: `[QUITAÇÃO] Referência ${String(mesNum).padStart(2, "0")}/${anoNum}`,
+              },
+            });
+          }
+        }
+      } else {
+        // ID numérico direto de lancamento
+        const lancamentoId = Number(id);
+        if (!isNaN(lancamentoId)) {
+          if (acao === "quitar") {
+            await prisma.lancamento.update({
+              where: { id: lancamentoId },
+              data: {
+                tipo: "pagamento",
+                observacaoAutomatica: "[QUITAÇÃO] Pagamento liquidado",
+              },
+            });
+          } else if (acao === "isentar") {
+            await prisma.lancamento.update({
+              where: { id: lancamentoId },
+              data: {
+                tipo: "pagamento",
+                valor: 0,
+                observacaoAutomatica: "[QUITAÇÃO] Isenção sem desembolso",
+              },
+            });
+          } else {
+            await prisma.lancamento.delete({
+              where: { id: lancamentoId },
+            });
+          }
+        }
+      }
+    }
+
+    financeEngine.invalidarCache(userId);
+    return {
+      success: true,
+      message:
+        acao === "quitar"
+          ? "Lançamento pago na competência correta!"
+          : acao === "isentar"
+          ? "Lançamento quitado com isenção (R$ 0,00) na competência correta!"
+          : "Lançamento pendente descartado!",
+    };
+  },
+
+  /**
+   * Equaliza a incoerência de metas criando um ajuste de capital inicial no Marco Zero (1 dia antes da 1ª movimentação)
+   */
+  async equalizarCapitalMetas(userId: number) {
+    const totaisGerais = await financeEngine.calcularTotaisHistoricosGerais(userId);
+    const diferenca = totaisGerais.metasPagasGeral - totaisGerais.receitasPagasGeral;
+
+    if (diferenca <= 0) {
+      return { success: true, message: "O volume de metas já está devidamente coberto pelas receitas." };
+    }
+
+    // 1. Descobrir a data do Marco Zero (data mais antiga no banco para o usuário)
+    const primeiroLancamento = await prisma.lancamento.findFirst({
+      where: { userId },
+      orderBy: { data: "asc" },
+      select: { data: true },
+    });
+
+    let dataMarcoZero: Date;
+    if (primeiroLancamento && primeiroLancamento.data) {
+      dataMarcoZero = new Date(primeiroLancamento.data);
+      // Subtrai 1 dia da primeira transação para ficar no marco zero anterior a qualquer movimentação
+      dataMarcoZero.setUTCDate(dataMarcoZero.getUTCDate() - 1);
+      dataMarcoZero.setUTCHours(0, 0, 0, 0);
+    } else {
+      // Fallback: data de criação do usuário ou data de hoje menos 1 mês
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } });
+      if (user && user.createdAt) {
+        dataMarcoZero = new Date(user.createdAt);
+        dataMarcoZero.setUTCDate(dataMarcoZero.getUTCDate() - 1);
+        dataMarcoZero.setUTCHours(0, 0, 0, 0);
+      } else {
+        dataMarcoZero = new Date();
+        dataMarcoZero.setUTCMonth(dataMarcoZero.getUTCMonth() - 1);
+      }
+    }
+
+    const lancamento = await prisma.lancamento.create({
+      data: {
+        userId,
+        tipo: "ajuste",
+        valor: diferenca,
+        data: dataMarcoZero,
+        observacao: "Saldo Inicial / Capital Pré-Existente (Marco Zero)",
+        observacaoAutomatica: "Aporte de Capital Inicial / Conciliação de Metas",
+        despesaId: null,
+        receitaId: null,
+        objetivoId: null,
+      },
+    });
+
+    financeEngine.invalidarCache(userId);
+
+    return {
+      success: true,
+      message: `Capital inicial de R$ ${diferenca.toFixed(2)} registrado retroativamente no Marco Zero (${dataMarcoZero.toLocaleDateString("pt-BR")}). Seu score de integridade foi restaurado sem inflar relatórios mensais!`,
+      lancamento,
+    };
+  },
+
+  /**
+   * Lista o histórico completo de lançamentos de ajuste de conciliação do usuário
+   */
+  async listarHistoricoAjustes(userId: number) {
+    return await prisma.lancamento.findMany({
+      where: {
+        userId,
+        tipo: "ajuste",
+      },
+      orderBy: [
+        { data: "desc" },
+        { createdAt: "desc" },
+      ],
+    });
+  },
+
+  /**
+   * Reverte ou exclui um lançamento de ajuste de conciliação
+   */
+  async reverterAjuste(userId: number, ajusteId: number) {
+    const ajuste = await prisma.lancamento.findFirst({
+      where: {
+        id: ajusteId,
+        userId,
+        tipo: "ajuste",
+      },
+    });
+
+    if (!ajuste) {
+      throw new Error("Ajuste de conciliação não encontrado.");
+    }
+
+    await prisma.lancamento.delete({
+      where: { id: ajusteId },
+    });
+
+    financeEngine.invalidarCache(userId);
+
+    return {
+      success: true,
+      message: "Ajuste de conciliação revertido com sucesso!",
+    };
+  },
 };

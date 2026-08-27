@@ -4,16 +4,14 @@ import {
   useGetDivergenciasQuery,
   useReconciliarMutation,
   useAjustarFuroMutation,
+  useResolverAtrasadoMutation,
+  useEqualizarMetasMutation,
+  useGetHistoricoAjustesQuery,
+  useReverterAjusteMutation,
 } from "@/services/endpoints/divergenciasApi";
-import {
-  useUpdateLancamentoMutation,
-  useDeleteLancamentoMutation,
-  useCreateLancamentoMutation,
-} from "@/services/endpoints/lancamentosApi";
-import { useDeleteDespesaMutation } from "@/services/endpoints/despesasApi";
 import toast from "react-hot-toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
-import { IconAlertTriangle, IconCheck } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconShieldCheck } from "@tabler/icons-react";
 
 export interface ReconciliacaoFormValues {
   saldoRealInput: string;
@@ -40,15 +38,15 @@ export function useDivergencias() {
     saldoRealFilter !== undefined ? { saldoReal: saldoRealFilter } : undefined
   );
 
+  const { data: ajustesData, isLoading: loadingAjustes, refetch: refetchAjustes } = useGetHistoricoAjustesQuery();
+
   const [reconciliar, { isLoading: reconciliando }] = useReconciliarMutation();
   const [ajustarFuro, { isLoading: ajustandoFuro }] = useAjustarFuroMutation();
-  const [updateLancamento] = useUpdateLancamentoMutation();
-  const [deleteLancamento] = useDeleteLancamentoMutation();
-  const [createLancamento] = useCreateLancamentoMutation();
-  const [deleteDespesa] = useDeleteDespesaMutation();
+  const [resolverAtrasado, { isLoading: resolvendoAtrasado }] = useResolverAtrasadoMutation();
+  const [equalizarMetas, { isLoading: equalizandoMetas }] = useEqualizarMetasMutation();
+  const [reverterAjuste, { isLoading: revertendoAjuste }] = useReverterAjusteMutation();
 
-  const [acaoPagarId, setAcaoPagarId] = useState<number | string | null>(null);
-  const [acaoExcluirId, setAcaoExcluirId] = useState<number | string | null>(null);
+  const [acaoAtrasadoId, setAcaoAtrasadoId] = useState<string | null>(null);
 
   // Manipulador de calcular discrepância
   const onSubmitCalcular = useCallback((values: ReconciliacaoFormValues) => {
@@ -66,14 +64,14 @@ export function useDivergencias() {
     reset({ saldoRealInput: "" });
   }, [reset]);
 
-  // Manipulador do Auto-Ajuste Expressor
+  // Manipulador do Auto-Ajuste Expresso
   const handleAutoAjustar = useCallback(async () => {
     if (saldoRealFilter === undefined) return;
 
     const diferenca = saldoRealFilter - (auditoria?.saldoLivreGeral ?? 0);
     confirm.show({
-      title: "Reconciliar Saldo?",
-      description: `Deseja realmente ajustar o saldo livre do MagicBox para bater com o seu saldo bancário real de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoRealFilter)}?`,
+      title: "Reconciliar Saldo com Banco?",
+      description: `Deseja calibrar o saldo do MagicBox para ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(saldoRealFilter)}? Um ajuste de conciliação de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(diferenca)} será registrado.`,
       confirmText: "Ajustar Saldo",
       cancelText: "Cancelar",
       color: diferenca < 0 ? "error" : "success",
@@ -83,10 +81,11 @@ export function useDivergencias() {
         if (res.success) {
           toast.success(res.message);
           handleLimparBusca();
+          refetchAjustes();
         }
-      }
+      },
     });
-  }, [saldoRealFilter, reconciliar, handleLimparBusca, confirm, auditoria]);
+  }, [saldoRealFilter, reconciliar, handleLimparBusca, confirm, auditoria, refetchAjustes]);
 
   // Cobertura automática de deficit mensal
   const handleAjustarFuro = useCallback(async (mes: string) => {
@@ -94,82 +93,122 @@ export function useDivergencias() {
       const res = await ajustarFuro({ mes }).unwrap();
       if (res.success) {
         toast.success(res.message);
+        refetchAjustes();
       }
     } catch (err: any) {
       toast.error(err?.data?.message || "Erro ao cobrir deficit do mês");
     }
-  }, [ajustarFuro]);
+  }, [ajustarFuro, refetchAjustes]);
 
-  // Marcar lançamento planejado vencido como Pago
-  const handlePagarLancamento = useCallback(async (id: number | string, nome: string, valor: number) => {
+  // Quitar na Competência Correta (com desembolso)
+  const handlePagarAtrasado = useCallback(async (id: string | number, nome: string, valor: number) => {
+    const idStr = String(id);
     confirm.show({
-      title: "Confirmar Pagamento",
-      description: `Deseja marcar o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)} como pago?`,
-      confirmText: "Confirmar",
+      title: "Confirmar Pagamento na Competência",
+      description: `Deseja marcar "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)} como pago na respectiva data de vencimento?`,
+      confirmText: "Confirmar Pagamento",
       cancelText: "Cancelar",
       color: "success",
       icon: IconCheck,
       onConfirm: async () => {
         try {
-          setAcaoPagarId(id);
-          if (typeof id === "string" && id.startsWith("virtual-fix-")) {
-            const parts = id.split("-");
-            const despesaId = Number(parts[2]);
-            const mes = parts[3];
-            const ano = parts[4];
-            await createLancamento({
-              tipo: "pagamento",
-              valor,
-              data: new Date().toISOString().split("T")[0], // Paga hoje
-              despesaId,
-              observacaoAutomatica: `Pagamento de despesa fixa referente a ${mes}/${ano}`,
-            }).unwrap();
-          } else {
-            await updateLancamento({
-              id: String(id),
-              data: { tipo: "pagamento" } as any,
-            }).unwrap();
-          }
-          toast.success("Lançamento confirmado como pago com sucesso!");
-        } catch (err) {
-          toast.error("Erro ao realizar pagamento do lançamento");
+          setAcaoAtrasadoId(idStr);
+          const res = await resolverAtrasado({ id: idStr, acao: "quitar", valor }).unwrap();
+          toast.success(res.message);
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Erro ao realizar pagamento do lançamento");
         } finally {
-          setAcaoPagarId(null);
+          setAcaoAtrasadoId(null);
         }
-      }
+      },
     });
-  }, [updateLancamento, createLancamento, confirm]);
+  }, [resolverAtrasado, confirm]);
 
-  // Excluir lançamento
-  const handleExcluirLancamento = useCallback(async (id: number | string, nome: string, valor: number) => {
-    const isVirtual = typeof id === "string" && id.startsWith("virtual-fix-");
+  // Quitar com Isenção (sem desembolso - R$ 0,00)
+  const handleIsentarAtrasado = useCallback(async (id: string | number, nome: string) => {
+    const idStr = String(id);
+    confirm.show({
+      title: "Quitar com Isenção (R$ 0,00)?",
+      description: `Deseja quitar a pendência passada de "${nome}" sem desembolso financeiro (R$ 0,00)? Isso silenciará a cobrança passada sem alterar o seu saldo financeiro.`,
+      confirmText: "Quitar Isenção",
+      cancelText: "Cancelar",
+      color: "info",
+      icon: IconShieldCheck,
+      onConfirm: async () => {
+        try {
+          setAcaoAtrasadoId(idStr);
+          const res = await resolverAtrasado({ id: idStr, acao: "isentar" }).unwrap();
+          toast.success(res.message);
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Erro ao isentar pendência");
+        } finally {
+          setAcaoAtrasadoId(null);
+        }
+      },
+    });
+  }, [resolverAtrasado, confirm]);
+
+  // Descartar agendamento / pendência órfã
+  const handleDescartarAtrasado = useCallback(async (id: string | number, nome: string, valor: number) => {
+    const idStr = String(id);
     confirm.delete({
-      title: isVirtual ? "Excluir Despesa Fixa?" : "Excluir Lançamento?",
-      description: isVirtual
-        ? `Esta despesa é uma recorrência virtual. Deseja excluir permanentemente a despesa fixa "${nome.split(" (Ref:")[0]}" para evitar novas cobranças futuras?`
-        : `Deseja realmente excluir permanentemente o lançamento "${nome}" no valor de ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)}?`,
-      confirmText: "Excluir",
+      title: "Descartar Pendência Atrasada?",
+      description: `Deseja descartar a pendência passada de "${nome}" (${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(valor)})? O agendamento planejado será cancelado.`,
+      confirmText: "Descartar",
       cancelText: "Cancelar",
       onConfirm: async () => {
         try {
-          setAcaoExcluirId(id);
-          if (isVirtual) {
-            const parts = String(id).split("-");
-            const despesaId = Number(parts[2]);
-            await deleteDespesa(despesaId).unwrap();
-            toast.success("Despesa fixa excluída com sucesso!");
-          } else {
-            await deleteLancamento(String(id)).unwrap();
-            toast.success("Ajuste de conciliação removido!");
-          }
-        } catch (err) {
-          toast.error("Erro ao excluir registro");
+          setAcaoAtrasadoId(idStr);
+          const res = await resolverAtrasado({ id: idStr, acao: "descartar" }).unwrap();
+          toast.success(res.message);
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Erro ao descartar pendência");
         } finally {
-          setAcaoExcluirId(null);
+          setAcaoAtrasadoId(null);
         }
-      }
+      },
     });
-  }, [deleteLancamento, deleteDespesa, confirm]);
+  }, [resolverAtrasado, confirm]);
+
+  // Equalizar Metas com Capital Inicial no Marco Zero
+  const handleEqualizarMetas = useCallback(async () => {
+    confirm.show({
+      title: "Equalizar Capital Inicial de Metas?",
+      description: "Deseja registrar o lastro das suas metas como Patrimônio Pré-existente no Marco Zero da sua conta? Isso equilibrará o volume de metas sem alterar os relatórios mensais e restaurará seu Score para 100%.",
+      confirmText: "Equalizar Capital",
+      cancelText: "Cancelar",
+      color: "success",
+      icon: IconShieldCheck,
+      onConfirm: async () => {
+        try {
+          const res = await equalizarMetas().unwrap();
+          toast.success(res.message);
+          refetchAjustes();
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Erro ao equalizar capital de metas");
+        }
+      },
+    });
+  }, [equalizarMetas, confirm, refetchAjustes]);
+
+  // Reverter ajuste de conciliação realizado
+  const handleReverterAjuste = useCallback(async (ajusteId: number, descricao: string) => {
+    confirm.delete({
+      title: "Reverter Ajuste de Conciliação?",
+      description: `Deseja desfazer o ajuste "${descricao}"? Seu saldo e histórico serão recalculados.`,
+      confirmText: "Reverter Ajuste",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        try {
+          const res = await reverterAjuste(ajusteId).unwrap();
+          toast.success(res.message);
+          refetchAjustes();
+        } catch (err: any) {
+          toast.error(err?.data?.message || "Erro ao reverter ajuste");
+        }
+      },
+    });
+  }, [reverterAjuste, confirm, refetchAjustes]);
 
   return {
     auditoria,
@@ -177,15 +216,24 @@ export function useDivergencias() {
     control,
     reconciliando,
     ajustandoFuro,
-    acaoPagarId,
-    acaoExcluirId,
+    resolvendoAtrasado,
+    equalizandoMetas,
+    revertendoAjuste,
+    acaoAtrasadoId,
+    ajustesHistorico: ajustesData?.ajustes || [],
+    loadingAjustes,
     saldoRealPesquisa: saldoRealFilter,
     onSubmit: handleSubmit(onSubmitCalcular),
     handleAutoAjustar,
     handleAjustarFuro,
-    handlePagarLancamento,
-    handleExcluirLancamento,
+    handlePagarAtrasado,
+    handleIsentarAtrasado,
+    handleDescartarAtrasado,
+    handleEqualizarMetas,
+    handleReverterAjuste,
     handleLimparBusca,
     refetch,
+    refetchAjustes,
   };
 }
+

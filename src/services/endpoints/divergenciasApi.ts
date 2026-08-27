@@ -26,6 +26,37 @@ export const divergenciasApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
     }),
+    resolverAtrasado: builder.mutation<
+      { success: boolean; message: string },
+      { id: string; acao: "quitar" | "isentar" | "descartar"; valor?: number }
+    >({
+      query: (body) => ({
+        url: "/divergencias/resolver-atrasado",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
+    }),
+    equalizarMetas: builder.mutation<{ success: boolean; message: string; lancamento: any }, void>({
+      query: () => ({
+        url: "/divergencias/equalizar-metas",
+        method: "POST",
+      }),
+      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita", "Objetivos"],
+    }),
+    getHistoricoAjustes: builder.query<{ success: boolean; ajustes: any[] }, void>({
+      query: () => ({
+        url: "/divergencias/ajustes",
+      }),
+      providesTags: ["Lancamentos", "Resumo"],
+    }),
+    reverterAjuste: builder.mutation<{ success: boolean; message: string }, number>({
+      query: (id) => ({
+        url: `/divergencias/ajustes/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Lancamentos", "Resumo", "Despesas", "Receita"],
+    }),
   }),
 });
 
@@ -33,4 +64,9 @@ export const {
   useGetDivergenciasQuery,
   useReconciliarMutation,
   useAjustarFuroMutation,
+  useResolverAtrasadoMutation,
+  useEqualizarMetasMutation,
+  useGetHistoricoAjustesQuery,
+  useReverterAjusteMutation,
 } = divergenciasApi;
+
