@@ -676,14 +676,29 @@ export const dividasService = {
 
   async quitarDespesa(id: number, userId: number) {
     const dividaId = Number(id);
-    const hoje = new Date();
-    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
-
     const divida = await this.buscarPorId(dividaId, userId);
     if (!divida) throw new NotFoundError("Dívida não encontrada");
 
-    // Buscar o último pagamento do mês atual para esta despesa
+    const hoje = new Date();
+    let dataReferenciaQuitacao = hoje;
+
+    // Se tiver parcelas (UNICA ou VOLATIL), busca a primeira parcela em aberto (atrasada ou corrente)
+    if (divida.tipo === "UNICA" || divida.tipo === "VOLATIL") {
+      const parcelas = (divida as any).situacaoParcelas || [];
+      const parcelaAlvo = parcelas.find((p: any) => p.status !== "pago");
+      if (parcelaAlvo && parcelaAlvo.dataVencimento) {
+        dataReferenciaQuitacao = new Date(`${parcelaAlvo.dataVencimento}T12:00:00Z`);
+      }
+    } else if (divida.tipo === "FIXA") {
+      // Se for FIXA, respeita o dia de vencimento na competência atual
+      const diaVenc = Math.min(divida.diaVencimento || 1, new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate());
+      dataReferenciaQuitacao = new Date(Date.UTC(hoje.getFullYear(), hoje.getMonth(), diaVenc, 12, 0, 0));
+    }
+
+    const dataInicioMes = new Date(Date.UTC(dataReferenciaQuitacao.getUTCFullYear(), dataReferenciaQuitacao.getUTCMonth(), 1));
+    const dataFimMes = new Date(Date.UTC(dataReferenciaQuitacao.getUTCFullYear(), dataReferenciaQuitacao.getUTCMonth() + 1, 0, 23, 59, 59, 999));
+
+    // Buscar o último pagamento desta competência para esta despesa
     const ultimoPagamento = await prisma.lancamento.findFirst({
       where: {
         userId,
@@ -704,7 +719,7 @@ export const dividasService = {
           despesaId: dividaId,
           tipo: "pagamento",
           valor: 0,
-          data: hoje,
+          data: dataReferenciaQuitacao,
           observacao: divida.tipo === "FIXA" ? "Quitação - Despesa Fixa" : "Quitação - Parcela",
           observacaoAutomatica: "Aporte Automático [QUITAÇÃO]",
         },
@@ -735,29 +750,25 @@ export const dividasService = {
 
   async desquitarAporte(id: number, userId: number) {
     const dividaId = Number(id);
-    const hoje = new Date();
-    const dataInicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const dataFimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // Buscar o lançamento com a tag [QUITAÇÃO] no mês atual
+    // Buscar o último lançamento com a tag [QUITAÇÃO] para esta despesa
     const lancamentoQuitado = await prisma.lancamento.findFirst({
       where: {
         userId,
         despesaId: dividaId,
         tipo: "pagamento",
-        data: {
-          gte: dataInicioMes,
-          lte: dataFimMes,
-        },
         observacaoAutomatica: {
           contains: "[QUITAÇÃO]",
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { data: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     if (!lancamentoQuitado) {
-      throw new NotFoundError("Nenhum lançamento de quitação encontrado no mês atual.");
+      throw new NotFoundError("Nenhum lançamento de quitação encontrado para esta despesa.");
     }
 
     // Remover a tag [QUITAÇÃO] da observação automática

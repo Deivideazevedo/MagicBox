@@ -75,8 +75,8 @@ User             — conta do usuário (email, senha, role, phone, status, orige
 Categoria        — categorias com nome, ícone, cor e status
 Despesa          — despesas (FIXA | VARIAVEL | DIVIDA) com vencimento e parcelas
 Receita          — receitas (FIXA | VARIAVEL) com dia de recebimento
-Lancamento       — transações (pagamento | agendamento) vinculadas a despesa/receita/objetivo
-Objetivo         — metas (META | RESERVA) com valor-alvo e data-alvo
+Lancamento       — transações (pagamento | agendamento | ajuste) vinculadas a despesa/receita/objetivo ou autônomas de conciliação
+Objetivo         — metas e reservas (META | RESERVA) com valor-alvo e data-alvo
 AccessLog        — log de acesso com IP, latitude, longitude, cidade, país
 AiUsageLog       — log de uso do chat IA com modelo, latência e status
 NotificationLog  — log de campanhas de notificação por canal

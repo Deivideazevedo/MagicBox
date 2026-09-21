@@ -2785,8 +2785,9 @@ Total Saldo: R$ 5.000,00 - R$ 2.200,00 = R$ 2.800,00
 |--------|-------------|---------|-----|
 | Despesas | `src/core/despesas/` | Service de despesas | `despesa.dto.ts` |
 | Dívidas | `src/core/dividas/` | `dividas/service.ts` | `divida.dto.ts` |
-| Metas | `src/core/metas/` | `metas/service.ts` | `meta.dto.ts` |
-| Resumo | `src/core/lancamentos/resumo/` | N/A | `resumo.dto.ts` |
+| Objetivos (Metas/Reservas) | `src/core/objetivos/` | `objetivos/service.ts` | `objetivo.dto.ts` |
+| Resumo | `src/core/lancamentos/resumo/` | `resumo/service.ts` | `resumo.dto.ts` |
+| Divergências | `src/core/divergencias/` | `divergencias/service.ts` | `divergencia.dto.ts` |
 
 ### 14.3 Tags de Cache (RTK Query)
 

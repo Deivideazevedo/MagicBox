@@ -133,10 +133,15 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
       ),
       confirmText: "Sim, pagar agora",
       onConfirm: async () => {
+        const dataVencimentoCompetencia = getDueDateString(
+          bill.diaVencido,
+          bill.mes,
+          bill.ano
+        );
         await createLancamento({
           tipo: "pagamento",
           valor: bill.valorPrevisto,
-          data: fnGetTodayISO(),
+          data: dataVencimentoCompetencia,
           despesaId: bill.despesaId,
           observacaoAutomatica: `Pagamento de ${bill.nome} referente a ${bill.mes}/${bill.ano}`,
         }).unwrap();

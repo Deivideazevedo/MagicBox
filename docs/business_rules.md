@@ -61,11 +61,16 @@ $$\text{Saldo Final} = \text{Receitas Operacionais (pagas)} - \text{Despesas Ope
 
 ## 4. Regras Globais de Coexistência, Quitação e Calendário
 
-### 4.1 Regra de Coexistência (Agendamento Cala Projeção)
-Se existir qualquer lançamento real (`pagamento` ou `agendamento`) vinculado a uma despesa ou receita fixa no mês $M$, a projeção virtual daquele item para o mês $M$ é automaticamente suprimida, prevalecendo os dados do lançamento real.
+### 4.1 Regra de Coexistência e Preservação de Planejado
+* **Agendamento Cala Projeção:** Se existir um `agendamento` real no mês $M$, a projeção virtual é substituída pelo valor previsto no agendamento físico.
+* **Pagamento Parcial Avulso:** Se o usuário fizer um pagamento parcial avulso (`tipo = 'pagamento'`) para uma despesa fixa sem agendamento prévio, a projeção virtual **NÃO é suprimida** (`NULLIF(real.valorPrevisto, 0)`). A estimativa planejada original é preservada e o compromisso assume o status **PARCIAL**, exibindo com precisão o saldo restante a pagar.
+* **Quick Pay no Dashboard:** Ao quitar uma conta rápida no Dashboard, o pagamento é gravado estritamente na data de vencimento da competência da conta (`dataVencimentoCompetencia`), e não com a data atual (`today`), evitando descasamento entre competências passadas e presentes.
 
-### 4.2 Regra de Quitação Antecipada (`[QUITAÇÃO]`)
-Quando a observação de um lançamento contém a tag `[QUITAÇÃO]`, o sistema reconhece que aquele pagamento liquidou integralmente o compromisso daquele mês, forçando `valorPrevisto = valorPago` e concluindo o status do item como **PAGO**.
+### 4.2 Regra de Quitação (`[QUITAÇÃO]`) e Desquitação
+* **Quitação Integral ou com Desconto:** Quando a observação de um lançamento contém a tag `[QUITAÇÃO]`, o sistema força `valorPrevisto = valorPago` e conclui o status do item como **PAGO**.
+* **Quitação com Isenção / Pagos por Terceiros (R$ 0,00):** Se uma conta ou parcela foi isenta, cancelada ou paga por terceiros sem desembolso do usuário, gera-se um lançamento com `tipo = 'pagamento'`, `valor: 0` e tag `[QUITAÇÃO]`. Isso silencia o compromisso sem alterar o saldo financeiro em caixa.
+* **Ancoragem de Competência:** A quitação localiza a primeira parcela pendente em aberto e ancora o lançamento de quitação na sua **data de vencimento original**, garantindo que o motor de notificações/disparos e relatórios mensais reconheçam a quitação na competência exata da dívida.
+* **Operação de Desquitar (`desquitarAporte`):** Ao desquitar um item, se o lançamento tiver valor R$ 0,00 ele é excluído fisicamente; se tiver valor maior que zero, a tag `[QUITAÇÃO]` é removida da observação automática, reabrindo a pendência.
 
 ### 4.3 Regra de Calendário e Meses Curtos
 Para evitar datas inexistentes (como 30 ou 31 de Fevereiro), a data de vencimento virtual é truncada com segurança usando o último dia válido do mês:
@@ -97,3 +102,24 @@ Toda consulta analítica ou de agregação no banco de dados deve utilizar o fra
 📂 `src/core/financeiro/sql/canonicProjections.ts`
 
 Isso garante que **todas as telas da aplicação compartilhem a mesma fórmula matemática e nunca apresentem números divergentes**.
+
+---
+
+## 7. Central de Integridade Financeira e Divergências
+
+A Central de Divergências (`/divergencias`) monitora e audita em tempo real a consistência patrimonial e a saúde orçamentária do usuário.
+
+### 7.1 Score de Saúde Financeira (0 a 100)
+Inicia em 100 pontos e sofre penalidades proporcionais à severidade das inconsistências encontradas:
+* **`LANCA_ATRASADO`**: Contas ou parcelas vencidas no passado sem pagamento nem quitação.
+* **`DEFICIT_PASSADO`**: Meses históricos onde o saldo acumulado caiu abaixo de zero (furo de orçamento).
+* **`CONCILIACAO_DESVIO`**: Discrepância entre o saldo bancário real informado pelo usuário e o Saldo Livre calculado no MagicBox.
+* **`OBJETIVO_NEGATIVO`**: Incoerência interna em um objetivo que registrou mais retiradas do que aportes guardados.
+* **`SALDO_LIVRE_NEGATIVO`**: Déficit global de liquidez onde as saídas e montantes retidos em metas superaram as entradas totais.
+
+### 7.2 Ferramentas de Resolução Rápida (1-Clique)
+* **Conciliador Expresso (Auto-Ajustar Saldo Real):** Grava um lançamento de ajuste autônomo com sinal (+/-) na data atual, calibrando o Saldo Livre exatamente para o saldo visível na conta corrente bancária.
+* **Resolução de Atrasados na Competência:** Botões expressos para **Pagar** (com desembolso na data original), **Isentar / Quitar R$ 0,00** (sem desembolso com tag `[QUITAÇÃO]`) ou **Descartar** (exclusão de agendamentos cancelados).
+* **Cobertura de Déficit Mensal:** Auto-ajuste localizado no último dia do mês deficitário para equilibrar o passado sem alterar o fluxo do mês presente.
+* **Histórico e Reversão de Ajustes:** Painel com todos os ajustes de conciliação ativos, permitindo desfazer qualquer ajuste a qualquer momento.
+

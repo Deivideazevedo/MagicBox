@@ -275,8 +275,8 @@ export const relatoriosRepository = {
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as desp_paga,
           SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'agendamento' THEN l.valor ELSE 0 END) as desp_prev,
           SUM(CASE WHEN l."objetivoId" IS NOT NULL AND l.tipo = 'pagamento' THEN l.valor ELSE 0 END) as meta_paga,
-          SUM(CASE WHEN l."receitaId" IS NOT NULL AND l.tipo = 'ajuste' THEN l.valor ELSE 0 END) as ajustes_entrada,
-          SUM(CASE WHEN l."despesaId" IS NOT NULL AND l.tipo = 'ajuste' THEN l.valor ELSE 0 END) as ajustes_saida
+          SUM(CASE WHEN l.tipo = 'ajuste' AND l.valor > 0 THEN l.valor ELSE 0 END) as ajustes_entrada,
+          SUM(CASE WHEN l.tipo = 'ajuste' AND l.valor < 0 THEN ABS(l.valor) ELSE 0 END) as ajustes_saida
         FROM lancamento l
         LEFT JOIN despesa d ON l."despesaId" = d.id
         LEFT JOIN receita r ON l."receitaId" = r.id
@@ -285,7 +285,8 @@ export const relatoriosRepository = {
           AND (
             (l."despesaId" IS NOT NULL AND d."deletedAt" IS NULL) OR
             (l."receitaId" IS NOT NULL AND r."deletedAt" IS NULL) OR
-            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' )
+            (l."objetivoId" IS NOT NULL AND m."deletedAt" IS NULL AND m.status = 'A' ) OR
+            (l.tipo = 'ajuste')
           )
       )
       SELECT 

@@ -181,8 +181,8 @@ export function getCanonicBaseCTE(
         COALESCE(rec."diaVencido", d."diaVencimento", f."diaRecebimento", real."diaReferencia") as "diaVencido",
         COALESCE(rec.icone, d.icone, f.icone, m.icone, 'IconScale') as "icone",
         COALESCE(rec.cor, d.cor, f.cor, m.cor, '#3b82f6') as "cor",
-        -- Se houver agendamento/pagamento real, o valor previsto vem do agendamento real (ou 0 se for lançamento avulso); senão vem da projeção virtual
-        COALESCE(real."valorPrevisto", rec."valorPrevisto", 0)::float as "valorPrevisto",
+        -- Se houver agendamento real com valor previsto > 0, utiliza o agendamento real; senão, mantém a projeção virtual recorrente
+        COALESCE(NULLIF(real."valorPrevisto", 0), rec."valorPrevisto", 0)::float as "valorPrevisto",
         COALESCE(real."valorPago", 0)::float as "valorPago",
         COALESCE(real."valorAjuste", 0)::float as "valorAjuste",
         CASE WHEN real."origemId" IS NULL AND real."origem" IS NULL THEN true ELSE false END as "isProjetado",
