@@ -30,10 +30,8 @@ export const dividasApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
       ],
     }),
     updateDivida: builder.mutation<
@@ -45,11 +43,9 @@ export const dividasApi = api.injectEndpoints({
         method: "PATCH",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+      invalidatesTags: (_result, _error, { id }) => [
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
         { type: "Dividas" as const, id: String(id) },
       ],
     }),
@@ -59,11 +55,9 @@ export const dividasApi = api.injectEndpoints({
         method: "DELETE",
         body: {},
       }),
-      invalidatesTags: (result, error, id) => [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+      invalidatesTags: (_result, _error, id) => [
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
         { type: "Dividas" as const, id: String(id) },
       ],
     }),
@@ -76,11 +70,9 @@ export const dividasApi = api.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+      invalidatesTags: (_result, _error, { id }) => [
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
         { type: "Dividas" as const, id: String(id) },
       ],
     }),
@@ -92,11 +84,9 @@ export const dividasApi = api.injectEndpoints({
         url: `/dividas/${id}/aporte`,
         method: "PUT",
       }),
-      invalidatesTags: (result, error, id) => [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+      invalidatesTags: (_result, _error, id) => [
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
         { type: "Dividas" as const, id: String(id) },
       ],
     }),
@@ -108,11 +98,9 @@ export const dividasApi = api.injectEndpoints({
         url: `/dividas/${id}/aporte`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
-        ...DIVIDA_INVALIDATION_TAGS.map((tag) => ({
-          type: tag,
-          id: "LIST" as const,
-        })),
+      invalidatesTags: (_result, _error, id) => [
+        ...DIVIDA_INVALIDATION_TAGS,
+        { type: "Dividas" as const, id: "LIST" },
         { type: "Dividas" as const, id: String(id) },
       ],
     }),

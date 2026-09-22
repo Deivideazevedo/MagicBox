@@ -1,5 +1,6 @@
 import { api } from "../api";
 import { ResumoAuditoria } from "@/core/divergencias/divergencia.dto";
+import { LANCAMENTO_INVALIDATION_TAGS } from "@/constants/rtkTags";
 
 export const divergenciasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -8,7 +9,7 @@ export const divergenciasApi = api.injectEndpoints({
         url: "/divergencias",
         params: params || {},
       }),
-      providesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
+      providesTags: ["Divergencias", "Resumo", "Lancamentos", "Despesas", "Receita"],
     }),
     reconciliar: builder.mutation<{ success: boolean; message: string; lancamento: any }, { saldoReal: number }>({
       query: (body) => ({
@@ -16,7 +17,7 @@ export const divergenciasApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
     ajustarFuro: builder.mutation<{ success: boolean; message: string; lancamento: any }, { mes: string }>({
       query: (body) => ({
@@ -24,7 +25,7 @@ export const divergenciasApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
     resolverAtrasado: builder.mutation<
       { success: boolean; message: string },
@@ -35,20 +36,20 @@ export const divergenciasApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Resumo", "Lancamentos", "Despesas", "Receita"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
     getHistoricoAjustes: builder.query<{ success: boolean; ajustes: any[] }, void>({
       query: () => ({
         url: "/divergencias/ajustes",
       }),
-      providesTags: ["Lancamentos", "Resumo"],
+      providesTags: ["Lancamentos", "Resumo", "Divergencias"],
     }),
     reverterAjuste: builder.mutation<{ success: boolean; message: string }, number>({
       query: (id) => ({
         url: `/divergencias/ajustes/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Lancamentos", "Resumo", "Despesas", "Receita"],
+      invalidatesTags: LANCAMENTO_INVALIDATION_TAGS,
     }),
   }),
 });

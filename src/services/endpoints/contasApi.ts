@@ -1,6 +1,7 @@
 import { api } from '../api';
 import { Despesa, DespesaPayload } from '@/core/despesas/types';
 import { fnBuildSearchParams } from '@/utils/searchParams';
+import { DESPESA_INVALIDATION_TAGS } from '@/constants/rtkTags';
 
 export const contasApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -24,7 +25,7 @@ export const contasApi = api.injectEndpoints({
         method: 'POST',
         body: newConta,
       }),
-      invalidatesTags: ['Despesas'],
+      invalidatesTags: DESPESA_INVALIDATION_TAGS,
     }),
     
     updateConta: builder.mutation<Despesa, { id: number; data: DespesaPayload }>({
@@ -33,13 +34,14 @@ export const contasApi = api.injectEndpoints({
         method: 'PATCH',
         body: data,
       }),
-      invalidatesTags: ['Despesas'],
-    }),    deleteConta: builder.mutation<{ success: boolean }, string>({
+      invalidatesTags: DESPESA_INVALIDATION_TAGS,
+    }),
+    deleteConta: builder.mutation<{ success: boolean }, string>({
       query: (id) => ({
         url: `/despesas/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Despesas'],
+      invalidatesTags: DESPESA_INVALIDATION_TAGS,
     }),
   }),
 });

@@ -2,6 +2,7 @@ import { Categoria } from "./types";
 import { categoriaRepository as repositorio } from "./repository";
 import { NotFoundError } from "@/lib/errors";
 import { CreateCategoriaDTO, UpdateCategoriaDTO } from "./categoria.dto";
+import { financeEngine } from "../financeiro";
 
 export const categoriaService = {
   async listarTodos(filtros: Partial<Categoria>): Promise<Categoria[]> {
@@ -13,14 +14,18 @@ export const categoriaService = {
   },
 
   async criar(dados: CreateCategoriaDTO): Promise<Categoria> {
-    return await repositorio.criar(dados);
+    const categoria = await repositorio.criar(dados);
+    financeEngine.invalidarCache(categoria.userId);
+    return categoria;
   },
 
   async remover(categoriaId: number): Promise<boolean> {
     const categoria = await repositorio.buscarPorId(categoriaId);
     if (!categoria) throw new NotFoundError("Categoria não encontrada");
 
-    return await repositorio.remover(categoriaId);
+    const resultado = await repositorio.remover(categoriaId);
+    financeEngine.invalidarCache(categoria.userId);
+    return resultado;
   },
 
   async atualizar(categoriaId: number, categoria: UpdateCategoriaDTO & { deletedAt?: Date | null }, userRole?: string): Promise<Categoria> {
@@ -41,6 +46,8 @@ export const categoriaService = {
       }
     }
 
-    return await repositorio.atualizar(categoriaId, categoria);
+    const resultado = await repositorio.atualizar(categoriaId, categoria);
+    financeEngine.invalidarCache(hasCategoria.userId);
+    return resultado;
   },
 };

@@ -78,14 +78,16 @@ export const lancamentoService = {
         valor: valorNumerico,
         data: dataBase,
         observacao: dados.observacao || undefined,
-        observacaoAutomatica: undefined,
+        observacaoAutomatica: dados.observacaoAutomatica || undefined,
         despesaId: dados.despesaId || null,
         receitaId: dados.receitaId || null,
         objetivoId: dados.objetivoId || null,
         vinculoId: dados.vinculoId || null,
       };
 
-      return await repositorio.criar(data);
+      const lancamento = await repositorio.criar(data);
+      financeEngine.invalidarCache(Number(dados.userId));
+      return lancamento;
     }
 
     // Se houver parcelas, cria múltiplos registros

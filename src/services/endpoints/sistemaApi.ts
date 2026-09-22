@@ -19,6 +19,18 @@ export const sistemaApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
+      invalidatesTags: [
+        "Categorias",
+        "Despesas",
+        "Receita",
+        "Objetivos",
+        "Lancamentos",
+        "Resumo",
+        "Dashboard",
+        "Relatorios",
+        "Dividas",
+        "Divergencias",
+      ],
     }),
   }),
 });

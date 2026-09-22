@@ -56,6 +56,7 @@ export const createLancamentoSchema = z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use YYYY-MM-DD)"),
     observacao: z.string().max(255).trim().optional(),
+    observacaoAutomatica: z.string().max(255).trim().nullable().optional(),
 
     // Campos opcionais - relacionamentos
     despesaId: z.number().int().positive().nullable().optional(),
@@ -104,6 +105,7 @@ export const updateLancamentoSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
       .optional(),
     observacao: z.string().min(1).max(255).trim().optional(),
+    observacaoAutomatica: z.string().max(255).trim().nullable().optional(),
     despesaId: z.number().int().positive().nullable().optional(),
     receitaId: z.number().int().positive().nullable().optional(),
     objetivoId: z.number().int().positive().nullable().optional(),

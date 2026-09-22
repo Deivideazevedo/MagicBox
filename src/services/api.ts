@@ -136,6 +136,7 @@ export const api = createApi({
     "Objetivos",
     "Dividas",
     "Relatorios",
+    "Divergencias",
     "Disparos",
     "Notificacoes",
     "PreferenciaNotificacao",

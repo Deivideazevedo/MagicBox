@@ -9,11 +9,14 @@ export const LANCAMENTO_INVALIDATION_TAGS = [
   "Objetivos",
   "Dividas",
   "Relatorios",
+  "Despesas",
+  "Receita",
+  "Divergencias",
 ] as const;
 
 /**
  * Tags invalidadas por qualquer mutação de Despesa.
- * Uma mudança em despesa afeta: resumo projetado, dashboard, lançamentos vinculados e relatórios.
+ * Uma mudança em despesa afeta: resumo projetado, dashboard, lançamentos vinculados, dívidas e relatórios.
  */
 export const DESPESA_INVALIDATION_TAGS = [
   "Despesas",
@@ -21,6 +24,8 @@ export const DESPESA_INVALIDATION_TAGS = [
   "Dashboard",
   "Lancamentos",
   "Relatorios",
+  "Dividas",
+  "Divergencias",
 ] as const;
 
 /**
@@ -33,6 +38,7 @@ export const RECEITA_INVALIDATION_TAGS = [
   "Dashboard",
   "Lancamentos",
   "Relatorios",
+  "Divergencias",
 ] as const;
 
 /**
@@ -45,6 +51,7 @@ export const OBJETIVO_INVALIDATION_TAGS = [
   "Dashboard",
   "Lancamentos",
   "Relatorios",
+  "Divergencias",
 ] as const;
 
 /**
@@ -58,7 +65,9 @@ export const DIVIDA_INVALIDATION_TAGS = [
   "Lancamentos",
   "Objetivos",
   "Despesas",
+  "Receita",
   "Relatorios",
+  "Divergencias",
 ] as const;
 
 /**
