@@ -35,7 +35,6 @@ import { useCreateLancamentoMutation } from "@/services/endpoints/lancamentosApi
 import { useLancamentoDrawer } from "@/hooks/useLancamentoDrawer";
 import { toast } from "react-hot-toast";
 import { useConfirm } from "@/components/shared/ConfirmDialog";
-import { fnGetTodayISO } from "@/utils/functions/fnGetTodayISO";
 
 import { useDashboardTourRefs } from "../components/DashboardTourContext";
 import { UpcomingBillsSkeleton } from "./DashboardSkeletons";
@@ -70,13 +69,17 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
   };
 
   const getDueDateString = (dia: number | null, mes: number, ano: number) => {
-    if (!dia) return new Date(ano, mes - 1, 1).toISOString();
-    return new Date(ano, mes - 1, dia).toISOString();
+    const diaFinal = dia && dia >= 1 && dia <= 31 ? dia : 1;
+    const ultimoDia = new Date(ano, mes, 0).getDate();
+    const diaGarantido = Math.min(diaFinal, ultimoDia);
+    return `${ano}-${String(mes).padStart(2, "0")}-${String(diaGarantido).padStart(2, "0")}`;
   };
 
   const formatDueDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR", {
+    const safeDate = !dateString.includes("T")
+      ? new Date(dateString + "T00:00:00")
+      : new Date(dateString);
+    return safeDate.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
     });
@@ -86,7 +89,9 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
     const now = new Date();
     // zerar horas
     now.setHours(0, 0, 0, 0);
-    const due = new Date(dueDate);
+    const due = !dueDate.includes("T")
+      ? new Date(dueDate + "T00:00:00")
+      : new Date(dueDate);
     due.setHours(0, 0, 0, 0);
 
     const diffTime = due.getTime() - now.getTime();
@@ -156,6 +161,7 @@ const UpcomingBills = ({ date }: { date?: Date }) => {
       ...bill,
       origemId: bill.despesaId || bill.id,
       origem: "despesa", // No dashboard de UpcomingBills são sempre despesas
+      data: getDueDateString(bill.diaVencido, bill.mes, bill.ano),
     });
   };
 
