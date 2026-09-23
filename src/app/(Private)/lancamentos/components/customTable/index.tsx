@@ -33,6 +33,8 @@ import {
   IconTarget,
   IconTrendingDown,
   IconTrash,
+  IconScale,
+  IconAdjustments,
 } from "@tabler/icons-react";
 import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
@@ -94,8 +96,22 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.origem,
     render: (row) => {
+      const isAjuste = row.tipo === "ajuste" || row.origem === "Ajuste";
       const isDespesa = Boolean(row.despesa);
       const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
+
+      if (isAjuste) {
+        return (
+          <Chip
+            size="small"
+            icon={<IconScale size={16} />}
+            label="Ajuste"
+            color="info"
+            variant="outlined"
+            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+          />
+        );
+      }
 
       if (isMeta) {
         return (
@@ -131,9 +147,23 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.tipo,
     render: (row) => {
+      const isAjuste = row.tipo === "ajuste";
       const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
       const isInvestimento = row?.valor && Number(row.valor) >= 0;
       const isPagamento = row.tipo === "pagamento";
+
+      if (isAjuste) {
+        const isPositivo = Number(row.valor) >= 0;
+        return (
+          <Chip
+            size="small"
+            icon={isPositivo ? <IconTrendingUp size={16} /> : <IconTrendingDown size={16} />}
+            label={isPositivo ? "Ajuste (+)" : "Ajuste (-)"}
+            color={isPositivo ? "success" : "error"}
+            sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+          />
+        );
+      }
 
       if (isMeta) {
         return (
@@ -159,7 +189,14 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
         />
       );
     },
-    filterValue: (row) => row.objetivoId || row.objetivo_id || row.metaId || row.meta_id ? "Retirada" : (row.tipo === "pagamento" ? "Pagamento" : "Agendamento"),
+    filterValue: (row) =>
+      row.tipo === "ajuste"
+        ? (Number(row.valor) >= 0 ? "Ajuste (+)" : "Ajuste (-)")
+        : row.objetivoId || row.objetivo_id || row.metaId || row.meta_id
+          ? (Number(row.valor) >= 0 ? "Investimento" : "Retirada")
+          : row.tipo === "pagamento"
+            ? "Pagamento"
+            : "Agendamento",
   },
   {
     key: "nome",
@@ -167,8 +204,9 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "left",
     sortValue: (row) => row.nome,
     render: (row) => {
+      const isAjuste = row.tipo === "ajuste";
       const iconeStr = row.objetivo?.icone || row.meta?.icone || row.despesa?.icone || row.receita?.icone;
-      const corStr = row.objetivo?.cor || row.meta?.cor || row.despesa?.cor || row.receita?.cor;
+      const corStr = isAjuste ? "#0288d1" : row.objetivo?.cor || row.meta?.cor || row.despesa?.cor || row.receita?.cor;
 
       return (
         <Stack direction="row" spacing={1.2} alignItems="center">
@@ -181,13 +219,15 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
               "& svg": { width: 16, height: 16 },
             }}
           >
-            {iconeStr && AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
+            {isAjuste ? (
+              <IconScale size={16} />
+            ) : iconeStr && AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS] ? (
               AVAILABLE_ICONS[iconeStr as keyof typeof AVAILABLE_ICONS]
             ) : (
               <IconCategory />
             )}
           </Avatar>
-          <Typography variant="body2" noWrap>
+          <Typography variant="body2" noWrap fontWeight={isAjuste ? 600 : 400}>
             {row.nome}
           </Typography>
         </Stack>
@@ -213,11 +253,14 @@ const TABLE_COLUMNS: IColumnProps<OrigemType>[] = [
     align: "right",
     sortValue: (row) => row.valor,
     render: (row) => {
+      const isAjuste = row.tipo === "ajuste";
       const isDespesa = Boolean(row.despesa);
       const isMeta = Boolean(row.objetivoId || row.objetivo_id || row.metaId || row.meta_id);
 
       let color = isDespesa ? "error.main" : "success.main";
-      if (isMeta) {
+      if (isAjuste) {
+        color = Number(row.valor) < 0 ? "error.main" : "success.main";
+      } else if (isMeta) {
         color = Number(row.valor) < 0 ? "warning.main" : "primary.main";
       }
 

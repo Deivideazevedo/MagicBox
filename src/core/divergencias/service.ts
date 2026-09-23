@@ -356,7 +356,7 @@ export const divergenciasService = {
       id: a.id,
       data: a.data.toISOString(),
       valor: Number(a.valor),
-      tipo: (Number(a.valor) >= 0 ? "RECEITA" : "DESPESA") as "RECEITA" | "DESPESA",
+      tipo: (Number(a.valor) >= 0 ? "CREDITO" : "DEBITO") as "CREDITO" | "DEBITO",
       observacao: a.observacao || a.observacaoAutomatica || "Ajuste de Conciliação",
     }));
 

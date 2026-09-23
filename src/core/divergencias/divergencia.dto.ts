@@ -35,7 +35,7 @@ export interface AjusteSaldoHistorico {
   id: number;
   data: string;
   valor: number;
-  tipo: "RECEITA" | "DESPESA";
+  tipo: "CREDITO" | "DEBITO" | "RECEITA" | "DESPESA";
   observacao: string | null;
 }
 

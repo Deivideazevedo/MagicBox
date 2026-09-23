@@ -46,6 +46,7 @@ import {
 import { HookTextField } from "@/app/components/forms/hooksForm/HookTextField";
 import { useDivergencias } from "./hooks/useDivergencias";
 import { useModalUrl } from "@/hooks/useModalUrl";
+import { ModalCalibrarSaldo } from "./components/ModalCalibrarSaldo";
 
 // Importações do Tour Guiado
 import { DivergenciasTourProvider, useDivergenciasTourRefs } from "./components/DivergenciasTourContext";
@@ -95,9 +96,13 @@ function DivergenciasPageContent() {
     handleLimparBusca,
     refetch,
     setValue,
+    setFocus,
+    handleCalibrarSaldo,
   } = useDivergencias();
 
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
+  const [isCalibrarModalOpen, setIsCalibrarModalOpen] = useState(false);
+  const [conciliadorDestacado, setConciliadorDestacado] = useState(false);
 
   // Modais Url Acessíveis com histórico do navegador
   const { isOpen: isAjusteFuroOpen, openModal: openAjusteFuro, closeModal: closeAjusteFuro } = useModalUrl("ajusteFuro");
@@ -116,6 +121,20 @@ function DivergenciasPageContent() {
 
   // Lógica do Tour Guiado
   const tourRefs = useDivergenciasTourRefs();
+
+  // Focar e destacar o Conciliador Expresso
+  const focusConciliadorCard = React.useCallback(() => {
+    if (tourRefs.conciliadorRef.current) {
+      tourRefs.conciliadorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    setTimeout(() => {
+      setFocus("saldoRealInput");
+      setConciliadorDestacado(true);
+      setTimeout(() => setConciliadorDestacado(false), 2500);
+    }, 300);
+  }, [setFocus, tourRefs.conciliadorRef]);
   const steps = React.useMemo(() => criarDivergenciasTourSteps(tourRefs), [tourRefs]);
   const tour = useTour({ storageKey: "tour-divergencias-visto", steps, autoStart: true });
 
@@ -253,9 +272,14 @@ function DivergenciasPageContent() {
                     0.9
                   )} 100%)`,
                   backdropFilter: "blur(20px)",
-                  border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                  boxShadow: theme.shadows[4],
+                  border: conciliadorDestacado
+                    ? `2px solid ${theme.palette.primary.main}`
+                    : `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+                  boxShadow: conciliadorDestacado
+                    ? `0 0 24px ${alpha(theme.palette.primary.main, 0.45)}`
+                    : theme.shadows[4],
                   borderRadius: 3,
+                  transition: "all 0.35s ease-in-out",
                 }}
               >
                 <CardContent sx={{ p: 4 }}>
@@ -404,21 +428,19 @@ function DivergenciasPageContent() {
                                       Severidade: {diag.severity.toUpperCase()}
                                     </Typography>
 
-                                    {/* Atalho Rápido: Calibrar Saldo Livre Negativo com o Conciliador */}
-                                    {diag.tipo === "SALDO_LIVRE_NEGATIVO" && (
-                                      <Button
-                                        variant="contained"
-                                        color="error"
-                                        size="small"
-                                        startIcon={<IconShieldCheck size={16} />}
-                                        onClick={() => {
-                                          window.scrollTo({ top: 0, behavior: "smooth" });
-                                        }}
-                                        sx={{ py: 0.4, px: 1.8, fontWeight: "bold", textTransform: "none", borderRadius: 1.5 }}
-                                      >
-                                        Calibrar Saldo no Conciliador
-                                      </Button>
-                                    )}
+                                     {/* Atalho Rápido: Calibrar Saldo Livre Negativo com o Conciliador */}
+                                     {diag.tipo === "SALDO_LIVRE_NEGATIVO" && (
+                                       <Button
+                                         variant="contained"
+                                         color="error"
+                                         size="small"
+                                         startIcon={<IconShieldCheck size={16} />}
+                                         onClick={() => setIsCalibrarModalOpen(true)}
+                                         sx={{ py: 0.4, px: 1.8, fontWeight: "bold", textTransform: "none", borderRadius: 1.5 }}
+                                       >
+                                         Calibrar Saldo no Conciliador
+                                       </Button>
+                                     )}
 
                                     {/* Botão de Auto-Ajustar do Mês de Deficit */}
                                     {diag.tipo === "DEFICIT_PASSADO" && diag.mesReferencia && diag.diferenca && (
@@ -804,7 +826,7 @@ function DivergenciasPageContent() {
             </Typography>
             <Stack spacing={1} component="ul" sx={{ pl: 2, margin: 0 }}>
               <Typography component="li" variant="body2" color="text.secondary">
-                Será criado um lançamento automático de <strong>Receita</strong> no valor de <strong>{selectedAjusteFuro ? formatCurrency(selectedAjusteFuro.valor) : ""}</strong> sob a categoria de <strong>"Ajuste de Saldo"</strong>.
+                Será criado um lançamento autônomo de <strong>Ajuste de Conciliação</strong> no valor de <strong>{selectedAjusteFuro ? formatCurrency(selectedAjusteFuro.valor) : ""}</strong> para equalização de saldo.
               </Typography>
               <Typography component="li" variant="body2" color="text.secondary">
                 A data do lançamento será programada para o último dia do respectivo mês para neutralizar a diferença orçamentária acumulada.
@@ -834,6 +856,16 @@ function DivergenciasPageContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* MODAL DE CALIBRAÇÃO EXPRESSA DO SALDO REAL */}
+      <ModalCalibrarSaldo
+        open={isCalibrarModalOpen}
+        onClose={() => setIsCalibrarModalOpen(false)}
+        saldoLivreGeral={auditoria?.saldoLivreGeral ?? 0}
+        onConfirm={handleCalibrarSaldo}
+        loading={reconciliando}
+        onFocusConciliador={focusConciliadorCard}
+      />
 
       {/* Renderização do Tour de Onboarding */}
       <ProductTour

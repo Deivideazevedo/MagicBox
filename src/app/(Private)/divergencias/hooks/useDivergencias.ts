@@ -21,7 +21,7 @@ export function useDivergencias() {
   const confirm = useConfirm();
 
   // Form para controlar o HookTextField
-  const { control, handleSubmit, reset, setValue } = useForm<ReconciliacaoFormValues>({
+  const { control, handleSubmit, reset, setValue, setFocus } = useForm<ReconciliacaoFormValues>({
     defaultValues: {
       saldoRealInput: "",
     },
@@ -84,6 +84,21 @@ export function useDivergencias() {
       },
     });
   }, [saldoRealFilter, reconciliar, handleLimparBusca, confirm, auditoria, refetchAjustes]);
+
+  // Calibrar saldo direto com valor informado (ex: via modal explicativo)
+  const handleCalibrarSaldo = useCallback(async (saldoReal: number) => {
+    try {
+      const res = await reconciliar({ saldoReal }).unwrap();
+      if (res.success) {
+        toast.success(res.message);
+        handleLimparBusca();
+        refetchAjustes();
+        refetch();
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Erro ao calibrar saldo");
+    }
+  }, [reconciliar, handleLimparBusca, refetchAjustes, refetch]);
 
   // Cobertura automática de deficit mensal
   const handleAjustarFuro = useCallback(async (mes: string) => {
@@ -210,6 +225,8 @@ export function useDivergencias() {
     refetch,
     refetchAjustes,
     setValue,
+    setFocus,
+    handleCalibrarSaldo,
   };
 }
 

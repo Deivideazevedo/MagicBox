@@ -81,12 +81,22 @@ function LancamentosPageContent() {
     autoStart: totalRows > 0,
   });
 
-  // Handler de "Editar" — agora abre o Drawer Único Global
+  // Handler de "Editar" — agora abre o Drawer Único Global (ou informa sobre ajustes)
   const handleEditarLancamento = useCallback(
     (lancamento: LancamentoResposta) => {
+      if (lancamento.tipo === "ajuste") {
+        confirm.show({
+          title: "Ajuste de Conciliação Bancária",
+          description: "Este lançamento foi gerado pela Conciliação Expressa para equalizar seu saldo real. Para ajustar valores, você pode excluí-lo ou recalibrar seu saldo diretamente na Central de Divergências.",
+          confirmText: "Entendi",
+          cancelText: "Fechar",
+          color: "info",
+        });
+        return;
+      }
       openLancamentoDrawer("editar", lancamento);
     },
-    [openLancamentoDrawer],
+    [openLancamentoDrawer, confirm],
   );
 
   const handleExcluirLancamento = useCallback(
@@ -155,6 +165,7 @@ function LancamentosPageContent() {
 
   const fullLancamentos = useMemo(() => {
     return lancamentos.map((lancamento) => {
+      const isAjuste = lancamento.tipo === "ajuste";
       const isObjetivo = Boolean(
         lancamento.objetivoId ||
         lancamento.objetivo_id ||
@@ -163,17 +174,20 @@ function LancamentosPageContent() {
       );
       return {
         ...lancamento,
-        origem: isObjetivo
-          ? "Objetivo"
-          : lancamento.despesa
-            ? "Despesa"
-            : "Receita",
-        nome:
-          lancamento.objetivo?.nome ||
-          (lancamento as any).meta?.nome ||
-          lancamento.despesa?.nome ||
-          lancamento.receita?.nome ||
-          "-",
+        origem: isAjuste
+          ? "Ajuste"
+          : isObjetivo
+            ? "Objetivo"
+            : lancamento.despesa
+              ? "Despesa"
+              : "Receita",
+        nome: isAjuste
+          ? (lancamento.observacaoAutomatica || "Ajuste de Conciliação")
+          : lancamento.objetivo?.nome ||
+            (lancamento as any).meta?.nome ||
+            lancamento.despesa?.nome ||
+            lancamento.receita?.nome ||
+            "-",
       };
     });
   }, [lancamentos]);

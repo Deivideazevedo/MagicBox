@@ -23,6 +23,8 @@ import {
   IconNotes,
   IconTag,
   IconReceipt,
+  IconScale,
+  IconAdjustments,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -51,8 +53,18 @@ export default function ModalVisualizacao({
   const despesa = lancamento.despesa;
   const receita = lancamento.receita;
 
+  const isAjuste = lancamento.tipo === "ajuste";
+  const isPositivo = Number(lancamento.valor) >= 0;
   const isPagamento = lancamento.tipo === "pagamento";
   const isDespesa = Boolean(lancamento.despesa);
+
+  const corStatus = isAjuste
+    ? (isPositivo ? "success" : "error")
+    : (isPagamento ? "success" : "warning");
+
+  const corValor = isAjuste
+    ? (isPositivo ? "success" : "error")
+    : (isDespesa ? "error" : "success");
 
   const formatarValor = (valor: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -111,23 +123,33 @@ export default function ModalVisualizacao({
               height: 48,
               borderRadius: 2,
               backgroundColor: (theme) =>
-                alpha(theme.palette[isPagamento ? "success" : "warning"].main, 0.1),
+                alpha(theme.palette[corStatus].main, 0.1),
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: `${isPagamento ? "success" : "warning"}.main`,
+              color: `${corStatus}.main`,
             }}
           >
-            {isPagamento ? <IconChecks size={24} /> : <IconCalendar size={24} />}
+            {isAjuste ? (
+              <IconScale size={24} />
+            ) : isPagamento ? (
+              <IconChecks size={24} />
+            ) : (
+              <IconCalendar size={24} />
+            )}
           </Box>
           <Box flex={1}>
             <Typography variant="h5" fontWeight={700}>
-              Detalhes do Lançamento
+              {isAjuste ? "Detalhes do Ajuste de Conciliação" : "Detalhes do Lançamento"}
             </Typography>
             <Chip
               size="small"
-              label={isPagamento ? "Pagamento" : "Agendamento"}
-              color={isPagamento ? "success" : "warning"}
+              label={
+                isAjuste
+                  ? (isPositivo ? "Ajuste de Crédito (+)" : "Ajuste de Débito (-)")
+                  : (isPagamento ? "Pagamento" : "Agendamento")
+              }
+              color={corStatus}
               sx={{ mt: 0.5, fontWeight: 600 }}
             />
           </Box>
@@ -147,10 +169,10 @@ export default function ModalVisualizacao({
               p: 2.5,
               borderRadius: 3,
               bgcolor: (theme) =>
-                alpha(theme.palette[isDespesa ? "error" : "success"].main, 0.08),
+                alpha(theme.palette[corValor].main, 0.08),
               border: "1px solid",
               borderColor: (theme) =>
-                alpha(theme.palette[isDespesa ? "error" : "success"].main, 0.2),
+                alpha(theme.palette[corValor].main, 0.2),
             }}
           >
             <Box display="flex" alignItems="center" gap={1.5}>
@@ -159,7 +181,7 @@ export default function ModalVisualizacao({
                   width: 40,
                   height: 40,
                   borderRadius: 2,
-                  bgcolor: `${isDespesa ? "error" : "success"}.main`,
+                  bgcolor: `${corValor}.main`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -170,9 +192,10 @@ export default function ModalVisualizacao({
               </Box>
               <Box>
                 <Typography variant="caption" color="textSecondary" fontWeight={600}>
-                  Valor
+                  {isAjuste ? "Valor do Ajuste" : "Valor"}
                 </Typography>
-                <Typography variant="h4" fontWeight={700} color={`${isDespesa ? "error" : "success"}.main`}>
+                <Typography variant="h4" fontWeight={700} color={`${corValor}.main`}>
+                  {isAjuste && isPositivo ? "+" : ""}
                   {formatarValor(Number(lancamento.valor))}
                 </Typography>
               </Box>
@@ -190,21 +213,29 @@ export default function ModalVisualizacao({
               />
             </Grid>
 
-
             <Grid item xs={12}>
-              <InfoItem
-                icon={IconReceipt}
-                label={isDespesa ? "Despesa" : "Receita"}
-                value={despesa?.nome || receita?.nome || "-"}
-                color={isDespesa ? "error" : "success"}
-              />
+              {isAjuste ? (
+                <InfoItem
+                  icon={IconScale}
+                  label="Origem / Finalidade"
+                  value="Conciliação Bancária Expressa (Ajuste de Caixa)"
+                  color="info"
+                />
+              ) : (
+                <InfoItem
+                  icon={IconReceipt}
+                  label={isDespesa ? "Despesa" : "Receita"}
+                  value={despesa?.nome || receita?.nome || "-"}
+                  color={isDespesa ? "error" : "success"}
+                />
+              )}
             </Grid>
 
             {lancamento.observacao && (
               <Grid item xs={12}>
                 <InfoItem
                   icon={IconNotes}
-                  label="Obersavação"
+                  label="Observação"
                   value={lancamento.observacao}
                   color="info"
                 />
@@ -225,7 +256,11 @@ export default function ModalVisualizacao({
                   <Box display="flex" alignItems="center" gap={1} mb={1}>
                     <IconNotes size={16} color="var(--mui-palette-info-main)" />
                     <Typography variant="caption" color="info.main" fontWeight={600}>
-                      Observação Automática (Parcelamento)
+                      {isAjuste
+                        ? "Observação do Sistema (Conciliação)"
+                        : lancamento.observacaoAutomatica.includes("Parcela")
+                          ? "Observação Automática (Parcelamento)"
+                          : "Observação Automática"}
                     </Typography>
                   </Box>
                   <Typography variant="body2" color="textSecondary">
