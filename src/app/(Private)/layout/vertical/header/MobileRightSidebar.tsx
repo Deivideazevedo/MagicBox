@@ -44,7 +44,11 @@ const MobileRightSidebar = () => {
           component="nav"
           aria-labelledby="nested-list-subheader"
         >
-          <ListItemButton component={Link} href="/apps/chats">
+          <ListItemButton
+            component="a"
+            href="/api/download/chat-app"
+            onClick={() => setShowDrawer(false)}
+          >
             <ListItemIcon sx={{ minWidth: 35 }}>
               <IconMessages size="21" stroke="1.5" />
             </ListItemIcon>

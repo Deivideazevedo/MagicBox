@@ -120,8 +120,9 @@ const AppDD = () => {
         color="inherit"
         sx={{ color: (theme) => theme.palette.text.secondary }}
         variant="text"
-        href="/"
-        component={Link}
+        href="/api/download/chat-app"
+        component="a"
+        title="Baixar versão mais recente do Chat"
       >
         Chat
       </Button>
