@@ -27,7 +27,11 @@ export const PROTECTED_API_ROUTES = [
 //  - /api/telegram/webhook → valida o header x-telegram-bot-api-secret-token
 //  - /api/cron/disparos     → valida Authorization: Bearer ${CRON_SECRET}
 // (Chamadas externas — Telegram e Vercel Cron — não têm sessão de usuário.)
-const PUBLIC_API_ROUTES = ["/api/telegram/webhook", "/api/cron/disparos"];
+const PUBLIC_API_ROUTES = [
+  "/api/telegram/webhook",
+  "/api/cron/disparos",
+  "/api/download/chat-app",
+];
 
 // Rotas administrativas (requerem role admin)
 const ADMIN_ROUTES = ["/usuarios", "/sistema"];

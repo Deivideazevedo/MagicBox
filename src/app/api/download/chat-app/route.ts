@@ -4,13 +4,13 @@ export const dynamic = "force-dynamic";
 
 const GOOGLE_DRIVE_FOLDER_ID = "1Kk62LK6Dx8ErwlcRd17CdB2Gg3s5sjEZ";
 const FALLBACK_FILE = {
-  filename: "app-release-v3.0.apk",
-  id: "1bKuLi7fA0dcUJbP8p7Os9bmGNLMe6Gu4",
+  filename: "app-release-v3.4.apk",
+  id: "1e-wAbtRSmb9SqXvJB1n4ONshoUOdEDgA",
 };
 
-// Cache simples em memória com TTL de 5 minutos
+// Cache ultra-curto (5 segundos) apenas para prevenir requisições duplicadas simultâneas
 let cachedFile: { filename: string; id: string; timestamp: number } | null = null;
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 5 * 1000;
 
 function parseVersion(filename: string): number[] {
   const match = filename.match(/v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/i);
@@ -46,9 +46,12 @@ async function fetchLatestDriveFile(): Promise<{ filename: string; id: string }>
 
     const response = await fetch(folderUrl, {
       signal: controller.signal,
+      cache: "no-store",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
       },
     });
 
@@ -60,7 +63,7 @@ async function fetchLatestDriveFile(): Promise<{ filename: string; id: string }>
 
     const html = await response.text();
 
-    // Regex para identificar arquivos executáveis/instaladores no payload javascript do Drive
+    // Regex para identificar arquivos instaladores (.apk, .zip, etc.) no payload da pasta
     const regex =
       /(?:\\x22|")([^"\\\/,]+\.(?:apk|zip|rar|tar\.gz))\\x22[\s\S]{1,4000}?drive\.google\.com\\\/file\\\/d\\\/([a-zA-Z0-9_-]+)/g;
 
@@ -87,7 +90,6 @@ async function fetchLatestDriveFile(): Promise<{ filename: string; id: string }>
     console.warn("Aviso ao buscar versão mais recente do Google Drive, usando fallback:", err);
   }
 
-  // Fallback seguro caso haja timeout ou formato inesperado
   return cachedFile
     ? { filename: cachedFile.filename, id: cachedFile.id }
     : FALLBACK_FILE;
@@ -97,16 +99,26 @@ export async function GET(request: NextRequest) {
   const latestFile = await fetchLatestDriveFile();
   const searchParams = request.nextUrl.searchParams;
 
+  // Headers estritos anti-cache para garantir que navegador e CDN nunca guardem versão antiga
+  const headers = new Headers({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+
   // Permite inspecionar informações do arquivo caso chamado com ?json=true
   if (searchParams.get("json") === "true") {
-    return NextResponse.json({
-      success: true,
-      file: latestFile,
-      downloadUrl: `https://drive.usercontent.google.com/download?id=${latestFile.id}&export=download&confirm=t`,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        file: latestFile,
+        downloadUrl: `https://drive.usercontent.google.com/download?id=${latestFile.id}&export=download&confirm=t`,
+      },
+      { headers }
+    );
   }
 
   // Redireciona diretamente para o download do arquivo no Google Drive
   const downloadUrl = `https://drive.usercontent.google.com/download?id=${latestFile.id}&export=download&confirm=t`;
-  return NextResponse.redirect(downloadUrl, 307);
+  return NextResponse.redirect(downloadUrl, { status: 307, headers });
 }
